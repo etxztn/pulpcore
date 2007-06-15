@@ -1,0 +1,176 @@
+/*
+    Copyright (c) 2007, Interactive Pulp, LLC
+    All rights reserved.
+    
+    Redistribution and use in source and binary forms, with or without 
+    modification, are permitted provided that the following conditions are met:
+
+        * Redistributions of source code must retain the above copyright 
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright 
+          notice, this list of conditions and the following disclaimer in the 
+          documentation and/or other materials provided with the distribution.
+        * Neither the name of Interactive Pulp, LLC nor the names of its 
+          contributors may be used to endorse or promote products derived from 
+          this software without specific prior written permission.
+    
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+    POSSIBILITY OF SUCH DAMAGE.
+*/
+
+package pulpcore.animation;
+
+/**
+    An Int is an integer value that can be animated over time.
+*/
+public class Int extends Property {
+
+    
+    protected int value;
+    
+    
+    /**
+        Constructs a new Int object with no listener and the value of zero.
+    */
+    public Int() {
+        this(null, 0);
+    }
+
+    
+    /**
+        Constructs a new Int object with the specified listener and the value of zero.
+        The listener is notified when the value is modified.
+    */
+    public Int(PropertyListener listener) {
+        this(listener, 0);
+    }
+    
+    
+    /**
+        Constructs a new Int object with the specified value and no listener.
+    */
+    public Int(int value) {
+        this(null, value);
+    }
+    
+    
+    /**
+        Constructs a new Int object with the specified listener and value.
+        The listener is notified when the value is modified.
+    */
+    public Int(PropertyListener listener, int value) {
+        super(listener);
+        this.value = value;
+    }
+    
+    
+    protected void setValue(int value) {
+        if (this.value != value) {
+            this.value = value;
+            notifyListener();
+        }
+    }
+    
+    
+    public int get() {
+        return value;
+    }
+    
+    
+    public String toString() {
+        return Integer.toString(get());
+    }
+    
+    
+    /**
+        Sets the value of this Int. 
+        Any previous animations are stopped.
+    */
+    public void set(int value) {
+        setValue(value);
+        this.anim = null;
+    }
+    
+    
+    /**
+        Sets the value of this Int after a specific delay. 
+        Any previous animations are stopped.
+    */
+    public void set(int value, int delay) {
+        animateTo(value, 0, null, delay);
+    }
+    
+    
+    public void animate(Animation anim) {
+        this.anim = anim;
+        if (anim.getStartDelay() == 0) {
+            setValue(anim.getValue());
+        }
+    }
+    
+    
+// CONVENIENCE METHODS - BELOW THIS LINE THAR BE DRAGONS 
+
+    
+    /**
+        Animates this Int from the one value (fromValue) to another (toValue).
+        Any previous animations are stopped.
+    */
+    public void animate(int fromValue, int toValue, int duration) {
+        animate(new Animation(fromValue, toValue, duration));
+    }
+    
+    
+    /**
+        Animates this Int from the one value (fromValue) to another (toValue).
+        Any previous animations are stopped.
+    */
+    public void animate(int fromValue, int toValue, int duration, Easing easing) {
+        animate(new Animation(fromValue, toValue, duration, easing));
+    }
+    
+    
+    /**
+        Animates this Int from the one value (fromValue) to another (toValue).
+        Any previous animations are stopped.
+    */
+    public void animate(int fromValue, int toValue, int duration, Easing easing, int startDelay) {
+        animate(new Animation(fromValue, toValue, duration, easing, startDelay));
+    }
+    
+    
+    /**
+        Animates this Int from the current value to the specified value.
+        Any previous animations are stopped.
+    */
+    public void animateTo(int toValue, int duration) {
+        animate(new Animation(get(), toValue, duration));
+    }
+    
+    
+    /**
+        Animates this Int from the current value to the specified value.
+        Any previous animations are stopped.
+    */
+    public void animateTo(int toValue, int duration, Easing easing) {
+        animate(new Animation(get(), toValue, duration, easing));
+    }
+    
+    
+    /**
+        Animates this Int from the current value to the specified value.
+        Any previous animations are stopped.
+    */
+    public void animateTo(int toValue, int duration, Easing easing, int startDelay) {
+        animate(new Animation(get(), toValue, duration, easing, startDelay));
+    }
+}

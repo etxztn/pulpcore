@@ -1,0 +1,345 @@
+/*
+    Copyright (c) 2007, Interactive Pulp, LLC
+    All rights reserved.
+    
+    Redistribution and use in source and binary forms, with or without 
+    modification, are permitted provided that the following conditions are met:
+
+        * Redistributions of source code must retain the above copyright 
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright 
+          notice, this list of conditions and the following disclaimer in the 
+          documentation and/or other materials provided with the distribution.
+        * Neither the name of Interactive Pulp, LLC nor the names of its 
+          contributors may be used to endorse or promote products derived from 
+          this software without specific prior written permission.
+    
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+    POSSIBILITY OF SUCH DAMAGE.
+*/
+
+package pulpcore.assettools;
+
+import java.io.File;
+import java.io.IOException;
+import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.Project;
+import org.apache.tools.ant.Task;
+import org.apache.tools.ant.taskdefs.Copy;
+
+public class AssetTask extends Task {
+    
+/*    
+    private static void printUsage() {
+        System.out.println("Usage: java ImageConvert [-R] [-d dir] src1...srcN");
+        System.out.println("       -R       Recurse directories (if src is a directory).");
+        System.out.println("       -d dir   Destination directory. If not specified, the current directory is used.");
+        System.out.println("       src      Either an image file or a directory containing image files. PNG, BMP, and GIF are accepted.");
+    }
+    
+    
+    public static void main(String[] args) throws IOException {
+        
+        boolean recurseDirectories = false;
+        File destDir = new File(".");
+        List<File> src = new ArrayList<File>();
+        
+        if (args.length == 0) {
+            printUsage();
+            return;
+        }
+        
+        // Check options
+        for (int i = 0; i < args.length; i++) {
+            String arg = args[i];
+            
+            if (arg.equals("-R")) {
+                recurseDirectories = true;
+            }
+            else if (arg.equals("-d")) {
+                if (i == args.length - 1) {
+                    printUsage();
+                    return;
+                }
+                destDir = new File(args[i + 1]);
+                if (destDir.isDirectory()) {
+                    System.out.println(args[i + 1] + " is not a directory.");
+                    printUsage();
+                    return;
+                }
+            }
+            else if (arg.startsWith("-")) {
+                System.out.println("Unrecognized option: " + arg);
+                printUsage();
+                return;
+            }
+            else {
+                File file = new File(arg);
+                if (file.exists()) {
+                    src.add(file);
+                }
+                else {
+                    System.out.println("File " + arg + " does not exist.");
+                }
+            }
+        }
+        
+        if (src.size() == 0) {
+            printUsage();
+            return;
+        }
+        
+        // Do it
+        for (File file : src) {
+            if (file.isFile() && isImageFile(file)) {
+                convert(file, destDir);
+            }
+            else if (file.isDirectory()) {
+                handleDirectory(file, destDir, recurseDirectories);
+            }
+            else {
+                System.out.println("Ignoring " + file.getName() + ". ");
+            }
+        }
+    }
+*/    
+    
+    private File srcDir;
+    private File destDir;
+    
+    
+    public void setSrcDir(File srcDir) {
+        this.srcDir = srcDir;
+    }
+    
+    
+    public void setDestDir(File destDir) {
+        this.destDir = destDir;
+    }
+    
+    
+    public void execute() throws BuildException {
+        if (srcDir == null) {
+            throw new BuildException("The srcDir is not specified.");
+        }
+        if (destDir == null) {
+            throw new BuildException("The destDir is not specified.");
+        }
+        
+        if (!srcDir.exists()) {
+            log("Ignoring nonexisting path: " + srcDir);
+            return;
+        }
+        
+        String javaVersion = System.getProperty("java.version");
+        if (javaVersion.compareTo("1.6") < 0) {
+            log("Java 6 or newer is recommended for font creation.", Project.MSG_WARN);
+        }
+        
+        try {
+            traverseDirectory(srcDir, destDir, true);
+        }
+        catch (IOException ex) {
+            throw new BuildException("Error converting assets", ex);
+        }
+    }
+    
+    
+    private boolean isImageFile(File file) {
+        String name = file.getName().toLowerCase();
+        return 
+            file.isFile() && 
+            (name.endsWith(".png") ||
+            name.endsWith(".bmp") ||
+            name.endsWith(".gif"));
+    }
+    
+    
+    private boolean isImagePropertyFile(File file) {
+        String name = file.getName().toLowerCase();
+        return file.isFile() && name.endsWith(".properties") && !name.endsWith(".font.properties");
+    }
+    
+    
+    private boolean isFontFile(File file) {
+        String name = file.getName().toLowerCase();
+        return (file.isFile() && name.endsWith(".font.properties"));
+    }
+    
+    
+    private boolean isSoundFile(File file) {
+        String name = file.getName().toLowerCase();
+        return 
+            file.isFile() &&
+            (name.endsWith(".wav") ||
+            name.endsWith(".au"));
+    }
+    
+    
+    private boolean isOtherAsset(File file) {
+        String name = file.getName();
+        String lowerCaseName = name.toLowerCase();
+        
+        return (file.isFile() && 
+            !isImageFile(file) && !isImagePropertyFile(file) && !isFontFile(file) &&
+            !isIgnoredAsset(file));
+    }
+    
+    
+    private boolean isIgnoredAsset(File file) {
+        String name = file.getName();
+        String lowerCaseName = name.toLowerCase();
+        
+        // Set of file to ignore. Ignore .java files because of the "quick" template
+        // directory structure.
+        return (
+            lowerCaseName.endsWith(".ttf") || 
+            lowerCaseName.endsWith(".java") || 
+            name.equals("Thumbs.db") || 
+            name.equals(".DS_Store") ||
+            name.equals(".cvsignore") || 
+            name.equals("vssver.scc"));
+    }
+    
+    
+    private boolean isTraverseableDirectory(File dir) {
+        String name = dir.getName();
+        
+        return (dir.isDirectory() && !name.equals("CVS") && !name.equals("SCCS") &&
+            !name.equals(".svn"));
+    }
+    
+    
+    private void traverseDirectory(File dir, File destDir, boolean recurse) throws IOException {
+        
+        destDir.mkdir();
+        File[] files = dir.listFiles();
+        
+        for (File file : files) {
+            if (isImageFile(file)) {
+                File propertyFile = new File(removeExtension(file.getPath()) + ".properties");
+                File destFile = new File(destDir, removeExtension(file.getName()) + ".png");
+                if (needsUpdate("image", destFile, file, propertyFile)) {
+                    ConvertImageTask imageTask = new ConvertImageTask();
+                    initSubTask(imageTask);
+                    imageTask.setSrcFile(file);
+                    if (propertyFile.exists()) {
+                        imageTask.setSrcPropertyFile(propertyFile);
+                    }
+                    imageTask.setDestFile(destFile);
+                    imageTask.execute();
+                }
+            }
+            else if (isFontFile(file)) {
+                // From ".font.properties" to ".font.png"
+                String newName = removeExtension(file.getName()) + ".png";
+                File destFile = new File(destDir, newName);
+                if (needsUpdate("font", destFile, file)) {
+                    ConvertFontTask fontTask = new ConvertFontTask();
+                    initSubTask(fontTask);
+                    fontTask.setSrcFile(file);
+                    fontTask.setDestFile(destFile);
+                    fontTask.execute();
+                }
+            }
+            else if (isSoundFile(file)) {
+                File destFile = new File(destDir, file.getName());
+                if (needsUpdate("sound", destFile, file)) {
+                    ConvertSoundTask soundTask = new ConvertSoundTask();
+                    initSubTask(soundTask);
+                    soundTask.setSrcFile(file);
+                    soundTask.setDestFile(destFile);
+                    soundTask.execute();
+                }
+            }
+            else if (isImagePropertyFile(file)) {
+                String[] types = { "png", "gif", "bmp" };
+                boolean imageExists = false;
+                for (int i = 0; i < types.length; i++) {
+                     File imageFile = new File(removeExtension(file.getPath()) + "." + types[i]);
+                     if (imageFile.exists()) {
+                         imageExists = true;
+                         break;
+                     }
+                }
+                if (!imageExists) {
+                    log("Unused image property file " + file, Project.MSG_WARN);
+                }
+            }
+            else if (isOtherAsset(file)) {
+                File destFile = new File(destDir, file.getName());
+                if (needsUpdate("file", destFile, file)) {
+                    Copy copyTask = new Copy();
+                    initSubTask(copyTask);
+                    copyTask.setFile(file);
+                    copyTask.setTofile(destFile);
+                    copyTask.execute();
+                }
+            }
+            else if (isTraverseableDirectory(file) && recurse) {
+                File newDestDir = new File(destDir, file.getName());
+                traverseDirectory(file, newDestDir, true);
+            }
+            else {
+                log("Ignoring: " + file, Project.MSG_VERBOSE);
+            }
+        }
+    }
+    
+    
+    private void initSubTask(Task task) {
+        task.setProject(getProject());
+        task.setTaskName(getTaskName());
+    }
+    
+    
+    private boolean needsUpdate(String type, File destFile, File srcFile) {
+        return needsUpdate(type, destFile, srcFile, null);
+    }
+    
+        
+    private boolean needsUpdate(String type, File destFile, File srcFile, File srcMetaFile) {
+        if (!destFile.exists()) {
+            return true;
+        }
+        else {
+            long destDate = destFile.lastModified();
+            long srcDate = srcFile.lastModified();
+            if (srcMetaFile != null) {
+                srcDate = Math.max(srcDate, srcMetaFile.lastModified());
+            }
+            
+            if (destDate == 0 || srcDate == 0) {
+                // Unknown date - go ahead and update
+                return true;
+            }
+            else if (srcDate > destDate) {
+                return true;
+            }
+            else {
+                log("Not updating " + type + ": " + destFile, Project.MSG_VERBOSE);
+                return false;
+            }
+        }
+    }
+    
+    
+    public static String removeExtension(String name) {
+        int index = name.lastIndexOf('.');
+        
+        if (index != -1) {
+            name = name.substring(0, index);
+        }
+        
+        return name;
+    }
+}
