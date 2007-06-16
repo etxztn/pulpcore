@@ -44,11 +44,11 @@ public final class StringUtil {
     /**
         Calls
         <code>
-        StringUtil.formatString(message, new Object[] { arg });
+        StringUtil.format(message, new Object[] { arg });
         </code>
     */
-    public static String formatString(String message, Object arg) {
-        return formatString(message, new Object[] { arg });
+    public static String format(String message, Object arg) {
+        return format(message, new Object[] { arg });
     }
     
     
@@ -97,12 +97,12 @@ public final class StringUtil {
         <p>
         
         Example:
-          formatString("Name: %s  Score: %,d", new Object[] {"Fred", new Integer(1000)});
+          format("Name: %s  Score: %,d", new Object[] {"Fred", new Integer(1000)});
         returns
           "Name: Fred  Score: 1,000"
         
     */
-    public static String formatString(String message, Object[] args) {
+    public static String format(String message, Object[] args) {
         if (message == null) {
             return null;
         }
@@ -238,7 +238,7 @@ public final class StringUtil {
         Word-wraps a line of text to multiple lines. Newline characters ('\n')
         can be used for explicit line breaks.
     */
-    public static String[] wordWrapText(String text, CoreFont font, int maxWidth) {
+    public static String[] wordWrap(String text, CoreFont font, int maxWidth) {
         if (text == null) {
             return null;
         }

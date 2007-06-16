@@ -198,7 +198,7 @@ public class ConsoleScene extends Scene2D {
             numLines = 0;
             int y = 0;
             for (int i = 0; i < logLines.size(); i++) {
-                String[] text = StringUtil.wordWrapText((String)logLines.elementAt(i),
+                String[] text = StringUtil.wordWrap((String)logLines.elementAt(i),
                     null, width.getAsInt());
                 
                 if (text.length == 0) {

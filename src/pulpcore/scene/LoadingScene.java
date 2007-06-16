@@ -167,7 +167,7 @@ public class LoadingScene extends Scene2D {
         errorLayer.removeAll();
         errorLayer.add(new FilledSprite(backgroundColor));
         
-        String[] strings = StringUtil.wordWrapText(message, font, Stage.getWidth() * 4 / 5);
+        String[] strings = StringUtil.wordWrap(message, font, Stage.getWidth() * 4 / 5);
         
         int y = Stage.getHeight()/4;
         for (int i = 0; i < strings.length; i++) {
