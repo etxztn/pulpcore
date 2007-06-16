@@ -402,7 +402,15 @@ public class CoreSystem {
     }
     
     
+    /**
+        Gets the number of sounds currently playing in the sound engine.
+    */
     public static int getNumSoundsPlaying() {
+        // Don't create the sound engine if it's not already created
+        if (!getPlatform().isSoundEngineCreated()) {
+            return 0;
+        }
+        
         SoundEngine soundEngine = getPlatform().getSoundEngine();
         if (soundEngine == null) {
             return 0;
@@ -413,6 +421,9 @@ public class CoreSystem {
     }
     
     
+    /**
+        Gets the maximum number of sounds that can be played simultaneously.
+    */
     public static int getMaxSimultaneousSounds() {
         SoundEngine soundEngine = getPlatform().getSoundEngine();
         if (soundEngine == null) {
