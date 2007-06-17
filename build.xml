@@ -344,6 +344,7 @@
         
         <copy todir="${dist.temp}" file="README" />
         <copy todir="${dist.temp}" file="LICENSE" />
+        <copy todir="${dist.temp}" file="CHANGES" />
         
         <!-- Compile templates and examples -->
         <ant inheritAll="false" antfile="${dist.temp}/templates/quick/build.xml" target="build" />

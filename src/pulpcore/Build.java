@@ -13,7 +13,7 @@
             public static final String VERSION = "0.9";
             
             /** The build number of this PulpCore build. */
-            public static final String BUILD_NUMBER = "207";
+            public static final String BUILD_NUMBER = "208";
             
             /** The platform name of this PulpCore build. */
             public static final String PLATFORM = "applet";

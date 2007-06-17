@@ -1,10 +1,11 @@
-June 17 (build 207)
+June 17 (build 208)
   * Rename: StringUtils.formatString() -> StringUtils.format()
   * Rename: StringUtils.wordWrapText() -> StringUtils.wordWrap()
   * Fixed Regression: Sound Engine was created on a call to CoreSystem.getNumSoundsPlaying()
   * Fixed Regression: bug that prevented PulpCore Player from emulating browsers cookies via LiveConnect.
   * Fixed Bug: PulpCore Player didn't work correctly on Windows.
   * Documentation: More explanation in build.properties
+  * Documentation: This file (CHANGES) is now included in the distribution archive.
 
 June 14 (build 202)
   * First public release
