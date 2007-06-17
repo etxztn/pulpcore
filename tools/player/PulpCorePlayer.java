@@ -260,9 +260,9 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         unloadApplet();
         
         // Create the Applet
+        // Use this class loader as the parent so that the applet has access to JSObject
         ClassLoader classLoader = new NoResourceCacheClassLoader(new URL[] { archiveURL, codeBaseURL },
-            //getClass().getClassLoader());
-            ClassLoader.getSystemClassLoader());
+            getClass().getClassLoader());
         try {
             applet = (Applet)classLoader.loadClass("pulpcore.platform.applet.CoreApplet").newInstance();
         }
