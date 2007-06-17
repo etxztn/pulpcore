@@ -220,12 +220,12 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             // Assume a local path
             File file = new File(documentURL);
             if (file.isDirectory()) {
-                documentBaseURL = new URL("file://" + file.toString() + "/");
+                documentBaseURL = file.toURL();
                 codeBaseURL = documentBaseURL;
             }
             else {
-                documentBaseURL = new URL("file://" + file.toString());
-                codeBaseURL = new URL("file://" + file.getParent() + "/");
+                documentBaseURL = file.toURL();
+                codeBaseURL = file.getParentFile().toURL();
             }
         }
         archiveURL = new URL(codeBaseURL, archive);
