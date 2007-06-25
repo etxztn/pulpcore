@@ -53,13 +53,13 @@ import pulpcore.util.crypt.ARC4;
     Note that, when the position is at the end, the length of the underlying data array is 
     increased each time a write method is called. It can often be more economical to first 
     allocate a larger array, perform the writes, and then call the truncate() method:
-    <code>
+    <pre>
     ByteArray byteArray = new ByteArray(1000);
     for (int i = 0; i < 100; i++) {
         byteArray.writeInt(i);
     }
     byteArray.truncate();
-    </code>
+    </pre>
 */
 public class ByteArray {
     
