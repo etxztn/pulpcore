@@ -1,11 +1,23 @@
-June 17 (build 208)
-  * Rename: StringUtils.formatString() -> StringUtils.format()
-  * Rename: StringUtils.wordWrapText() -> StringUtils.wordWrap()
+0.9 b210 (June 25, 2007)
+  * API: Added CoreSystem.isWindows() and CoreSystem.isWindowsXPorNewer()
+  * Fixed Regression: Stage was still creating the Sound Engine even if it was not needed.
+  * Fixed Bug: Fixed keyboard focus: Java 5 + Windows XP + Firefox.
+  * Fixed Bug: Windows more accuratly hits 60fps, allowing for smoother animation. These
+    issues were focused on:
+    - More accurate sleep() function. This fix may need a change in Java 1.7 - keep watch of bug 
+      6435126. http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
+    - Changed Platform.sleepUntilTimeMillis() to Platform.sleepUntilTimeMicros();
+    - Windows 9x and non-Windows platforms have no changes.
+
+0.9 b208 (June 17, 2007)
+  * API: Rename StringUtil.formatString() -> StringUtil.format()
+  * API: Rename StringUtil.wordWrapText() -> StringUtil.wordWrap()
   * Fixed Regression: Sound Engine was created on a call to CoreSystem.getNumSoundsPlaying()
-  * Fixed Regression: bug that prevented PulpCore Player from emulating browsers cookies via LiveConnect.
+  * Fixed Regression: bug that prevented PulpCore Player from emulating browsers cookies via 
+    LiveConnect.
   * Fixed Bug: PulpCore Player didn't work correctly on Windows.
   * Documentation: More explanation in build.properties
   * Documentation: This file (CHANGES) is now included in the distribution archive.
 
-June 14 (build 202)
+0.9 b202 (June 14, 2007)
   * First public release
