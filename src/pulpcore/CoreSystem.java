@@ -48,7 +48,18 @@ public class CoreSystem {
             "(build " + Build.BUILD_NUMBER + ") " +
             "by Interactive Pulp, LLC.");
         
-        IS_MAC_OS_X = "Mac OS X".equals(getJavaProperty("os.name"));
+        String osName = getJavaProperty("os.name");
+        String osVersion = getJavaProperty("os.version");
+        if (osName == null) {
+            osName = "";
+        }
+        if (osVersion == null) {
+            osVersion = "";
+        }
+        
+        IS_MAC_OS_X = osName.equals("Mac OS X");
+        IS_WINDOWS = osName.startsWith("Windows");
+        IS_WINDOWS_XP = osName.startsWith("Windows") && (osVersion.compareTo("5.1") >= 0);
         
         String javaVersion = getJavaProperty("java.version");
 
@@ -71,8 +82,14 @@ public class CoreSystem {
     private static final boolean IS_JAVA_1_5;
     private static final boolean IS_JAVA_1_6;
     private static final boolean IS_MAC_OS_X;
+    private static final boolean IS_WINDOWS;
+    private static final boolean IS_WINDOWS_XP;
 
     private static Platform platform;
+    
+    
+    // Prevent instantiation
+    private CoreSystem() { }
 
 
     public static void init(Platform platform) {
@@ -144,8 +161,27 @@ public class CoreSystem {
     }
     
     
+    /**
+        Returns true if the current operating system is any version of Mac OS X.
+    */
     public static final boolean isMacOSX() {
         return IS_MAC_OS_X;
+    }
+    
+    
+    /**
+        Returns true if the current operating system is any version of Windows.
+    */
+    public static final boolean isWindows() {
+        return IS_WINDOWS;
+    }
+    
+    
+    /**
+        Returns true if the current operating system is any Windows XP (5.1) or newer.
+    */
+    public static final boolean isWindowsXPorNewer() {
+        return IS_WINDOWS_XP;
     }
 
 
@@ -270,17 +306,29 @@ public class CoreSystem {
         the data length to a minimum.
         <p>
         Example: CoreSystem.putUserData("MyGame", data);
+        @see #getUserData(String)
+        @see #removeUserData(String)
     */
     public static void putUserData(String key, byte[] data) {
         getThisAppContext().putUserData(key, data);
     }
     
     
+    /**
+        Attempts to get persistant user data from the local machine.
+        @see #putUserData(String, byte[])
+        @see #removeUserData(String)
+    */
     public static byte[] getUserData(String key) {
         return getThisAppContext().getUserData(key);
     }
 
 
+    /**
+        Attempts to remove persistant user data from the local machine.
+        @see #putUserData(String, byte[])
+        @see #getUserData(String)
+    */
     public static void removeUserData(String key) {
         getThisAppContext().removeUserData(key);
     }
@@ -304,6 +352,7 @@ public class CoreSystem {
     public static void showDocument(String url) {
         showDocument(url, "_top");
     }
+    
     
     public static void showDocument(String url, String target) {
         getThisAppContext().showDocument(url, target);
@@ -342,7 +391,8 @@ public class CoreSystem {
 
     /**
         Returns the text currently in the clipboard. Returns an empty string
-        if there is no text in the clipboard.
+        if there is no text in the clipboard. If the native clipboard is not accessible (typical
+        in Applet environments), an application clipboard is used.
     */
     public static String getClipboardText() {
         return platform.getClipboardText();
@@ -350,7 +400,8 @@ public class CoreSystem {
 
 
     /**
-        Sets the text in the clipboard.
+        Sets the text in the clipboard. If the native clipboard is not accessible (typical
+        in Applet environments), an application clipboard is used.
     */
     public static void setClipboardText(String text) {
         platform.setClipboardText(text);
@@ -358,7 +409,7 @@ public class CoreSystem {
     
     
     /**
-        Returns true if this platform is hosted in a browser (Applets)
+        Returns true if this platform is hosted in a browser (Applets).
     */
     public static boolean isBrowserHosted() {
         return platform.isBrowserHosted();
@@ -387,16 +438,28 @@ public class CoreSystem {
     //
     
     
-    public static void setMute(boolean m) {
-        getThisAppContext().setMute(m);
+    /**
+        Sets the audio mute setting for this application. There may be a slight delay before
+        the new setting takes affect.
+        @param mute true if the application is muted (silent), false otherwise
+    */
+    public static void setMute(boolean mute) {
+        getThisAppContext().setMute(mute);
     }
 
     
+    /**
+        Gets the audio mute setting for this application.
+        @return true if the application is muted (silent), false otherwise
+    */
     public static boolean isMute() {
         return getThisAppContext().isMute();
     }
     
     
+    /**
+        Returns true if the user's system can play sound.
+    */
     public static boolean isSoundEngineAvailable() {
         return (getPlatform().getSoundEngine() != null);
     }
