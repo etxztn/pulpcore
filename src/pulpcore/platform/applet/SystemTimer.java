@@ -29,24 +29,52 @@
 
 package pulpcore.platform.applet;
 
+import pulpcore.CoreSystem;
+
 /**
     Uses System.currentTimeMillis() and compensates for backward jumps in
     time that can occur on some systems (notably, Java 5 on Windows 98).
 */
 public class SystemTimer {
     
+    private Thread granularityThread;
     private long lastTime;
     private long virtualTime;
     
     
-    public void start() {
+    public synchronized void start() {
         lastTime = System.currentTimeMillis();
         virtualTime = 0;
+        granularityThread = null;
+        
+        if (CoreSystem.isWindowsXPorNewer()) {
+            // Improves the granularity of the sleep() function on Windows XP
+            // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
+            granularityThread = new Thread("PulpCore-Win32Granularity") {
+                
+                public void run() {
+                    while (Thread.currentThread() == granularityThread) {
+                        try {
+                            Thread.sleep(Integer.MAX_VALUE);
+                        }
+                        catch (InterruptedException ex) {
+                            // Ignore
+                        }
+                    }
+                }
+            };
+            granularityThread.setDaemon(true);
+            granularityThread.start();
+        }
     }
     
     
-    public void stop() {
-        
+    public synchronized void stop() {
+        if (granularityThread != null) {
+            Thread t = granularityThread;
+            granularityThread = null;
+            t.interrupt();
+        }
     }
     
     
@@ -71,15 +99,28 @@ public class SystemTimer {
     }
     
     
-    public long sleepUntilTimeMillis(long timeMillis) {
-        long currentTimeMillis = getTimeMillis();
-        if (timeMillis > currentTimeMillis) {
-            try {
-                Thread.sleep((int)(timeMillis - currentTimeMillis));
+    public long sleepUntilTimeMicros(long timeMicros) {
+        if (CoreSystem.isWindowsXPorNewer()) {
+            while (true) {
+                long currentTimeMicros = getTimeMicros();
+                if (currentTimeMicros >= timeMicros - 666) {
+                    return currentTimeMicros;
+                }
+                try {
+                    Thread.sleep(1);
+                }
+                catch (InterruptedException ex) { }
             }
-            catch (InterruptedException ex) { }
         }
-        return getTimeMillis();
+        else {
+            long time = timeMicros - getTimeMicros();
+            if (time >= 500) {
+                try {
+                    Thread.sleep((int)((time + 500) / 1000));
+                }
+                catch (InterruptedException ex) { }
+            }
+            return getTimeMicros();
+        }
     }
-
 }

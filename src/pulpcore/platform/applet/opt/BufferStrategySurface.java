@@ -108,7 +108,6 @@ public class BufferStrategySurface extends Surface {
         }
         else if (image == null || getWidth() != size.width || getHeight() != size.height) {
             setSize(size.width, size.height);
-            canvas.requestFocus();
         }
         
         if (bufferStrategy == null) {

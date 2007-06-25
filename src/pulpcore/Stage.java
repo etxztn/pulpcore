@@ -457,7 +457,7 @@ public class Stage implements Runnable {
         
         Thread currentThread = Thread.currentThread();
         
-        long lastTime = CoreSystem.getTimeMillis();
+        long lastTimeMicros = CoreSystem.getTimeMicros();
         int elapsedTime = 0;
         
         while (animationThread == currentThread) {
@@ -469,8 +469,9 @@ public class Stage implements Runnable {
                     Thread.sleep(100);
                 }
                 catch (InterruptedException ex) { }
-                lastTime = CoreSystem.getTimeMillis();
+                lastTimeMicros = CoreSystem.getTimeMicros();
                 elapsedTime = 0;
+                remainderMicros = 0;
                 continue;
             }
             
@@ -488,8 +489,9 @@ public class Stage implements Runnable {
                 }
             }
             if (hasNewScene()) {
-                lastTime = CoreSystem.getTimeMillis();
+                lastTimeMicros = CoreSystem.getTimeMicros();
                 elapsedTime = 0;
+                remainderMicros = 0;
             }
             if (currentScene == null) {
                 animationLoopStop();
@@ -602,34 +604,37 @@ public class Stage implements Runnable {
             appContext.notifyFrameComplete();
             
             // Send pending sound data to sound system
-            SoundEngine soundEngine = CoreSystem.getPlatform().getSoundEngine();
-            if (soundEngine != null) {
-                soundEngine.poll();
+            // (Don't create the sound engine if it's not already created)
+            if (CoreSystem.getPlatform().isSoundEngineCreated()) {
+                SoundEngine soundEngine = CoreSystem.getPlatform().getSoundEngine();
+                if (soundEngine != null) {
+                    soundEngine.poll();
+                }
             }
             
             // Sleep to create correct frame rate
-            long currTime;
+            long currTimeMicros;
             if (desiredFPS == MAX_FPS) {
                 Thread.yield();
-                currTime = CoreSystem.getTimeMillis();
+                currTimeMicros = CoreSystem.getTimeMicros();
             }
             else {
-                long goalTimeMicros = 1000 * lastTime + 1000000L / desiredFPS + remainderMicros;
-                long goalTime = goalTimeMicros / 1000;
-                remainderMicros = goalTimeMicros - goalTime * 1000;
-                
-                // sleepUntilTimeMillis() is in better sync with the system time on some platforms.
-                long priorToSleepTime = CoreSystem.getTimeMillis();
-                currTime = CoreSystem.getPlatform().sleepUntilTimeMillis(goalTime);
+                long goalTimeMicros = lastTimeMicros + 1000000L / desiredFPS;
+                long priorToSleepTime = CoreSystem.getTimeMicros();
+                currTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(goalTimeMicros);
                 
                 if (Build.DEBUG) {
-                    overlaySleepTime += currTime - priorToSleepTime;
+                    overlaySleepTime += (currTimeMicros - priorToSleepTime) / 1000;
                 }
             }
             
             // Update elapsed time
-            elapsedTime = (int)(currTime - lastTime);
-            lastTime = currTime;
+            long elapsedTimeMicros = currTimeMicros - lastTimeMicros + remainderMicros;
+            elapsedTime = (int)(elapsedTimeMicros / 1000);
+            remainderMicros = elapsedTimeMicros - elapsedTime * 1000;
+            //
+            lastTimeMicros = currTimeMicros;
+            //lastTimeMicros += elapsedTime * 1000;
             
             if (Build.DEBUG && speed != 1) {
                 float e = elapsedTime * speed + elapsedTimeRemainder;

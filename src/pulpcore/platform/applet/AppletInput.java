@@ -31,6 +31,7 @@ package pulpcore.platform.applet;
 
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
@@ -38,6 +39,7 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import pulpcore.CoreSystem;
 import pulpcore.Input;
 
 /**
@@ -61,32 +63,38 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     private int appletMouseReleaseX = -1;
     private int appletMouseReleaseY = -1;
     private boolean appletHasKeyboardFocus;
+    private int focusCountdown;
     
     private StringBuffer textInputSinceLastPoll = new StringBuffer();
     
     public AppletInput(Component comp) {
-        this.comp = comp;
+        appletHasKeyboardFocus = false;
+        cursorCode = CURSOR_DEFAULT;
         
+        this.comp = comp;
         comp.addKeyListener(this);
         comp.addMouseListener(this);
         comp.addMouseMotionListener(this);
         comp.addFocusListener(this);
 
         // Allow input of the TAB key (normally used for focus traversal)
-        try {
-            java.lang.reflect.Method method = comp.getClass().getMethod(
-                "setFocusTraversalKeysEnabled", new Class[] { Boolean.TYPE });
-            method.invoke(comp, new Object[] { Boolean.FALSE });
+        // Requires Java 1.4
+        if (CoreSystem.isJava14orNewer()) {
+            try {
+                java.lang.reflect.Method method = comp.getClass().getMethod(
+                    "setFocusTraversalKeysEnabled", new Class[] { Boolean.TYPE });
+                method.invoke(comp, new Object[] { Boolean.FALSE });
+            }
+            catch (Throwable t) {
+                // Ignore
+            }
         }
-        catch (Throwable t) {
-            // ignore
-        }
-        
-        cursorCode = CURSOR_DEFAULT;
-        
-        appletHasKeyboardFocus = false;
-        
-        comp.requestFocus();
+        // This is a hack and probably won't work on all machines.
+        // Firefox 2 + Windows XP + Java 5 + pulpcore.js appears to need a delay
+        // before calling comp.requestFocus(). Calling it repeatedly does not focus
+        // the component; there must be a delay.
+        // A value of 10 tested fine; I've increased it here for slower machines.
+        focusCountdown = 30;
     }
     
     
@@ -96,6 +104,21 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     
     
     protected synchronized void pollImpl() {
+        
+        if (focusCountdown > 0) {
+            if (appletHasKeyboardFocus) {
+                focusCountdown = 0;
+            }
+            else {
+                Dimension size = comp.getSize();
+                if (size.width > 0 && size.height > 0) {
+                    focusCountdown--;
+                    if (focusCountdown == 0) {
+                        requestKeyboardFocusImpl();
+                    }
+                }
+            }
+        }
         
         for (int i = 0; i < NUM_KEY_CODES; i++) {
             
@@ -413,7 +436,6 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         synchronized (this) {
             if (appletHasKeyboardFocus == false) {
                 comp.requestFocus();
-                appletHasKeyboardFocus = true;
             }
             keyEvent(getKeyCode(e), true);
         
@@ -518,7 +540,6 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     
     public void focusGained(FocusEvent e) {
         appletHasKeyboardFocus = true;
-        //clearImpl();
     }
     
     

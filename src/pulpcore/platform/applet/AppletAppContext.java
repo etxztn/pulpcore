@@ -192,7 +192,7 @@ public final class AppletAppContext extends AppContext {
         try {
             Class c = Class.forName("netscape.javascript.JSObject");
             Method call = c.getMethod("call", 
-                new Class[] { method.getClass(), new Object[0].getClass()});
+                new Class[] { method.getClass(), new Object[0].getClass() });
             return call.invoke(jsObject, new Object[] { method, args });
         }
         catch (Throwable t) {

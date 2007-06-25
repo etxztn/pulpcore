@@ -90,8 +90,7 @@ public final class AppletPlatform implements Platform {
         
         // Use an estimating timer on Windows
         if (timer == null) {
-            String osName = CoreSystem.getJavaProperty("os.name");
-            if (osName != null && osName.startsWith("Windows")) {
+            if (CoreSystem.isWindows()) {
                 timer = new Win32Timer();
             }
         }
@@ -241,7 +240,6 @@ public final class AppletPlatform implements Platform {
             }
         }
         
-        
         if (getNumRegisteredApps() == 0) {
             timer.stop();
             if (soundEngine != null) {
@@ -268,8 +266,8 @@ public final class AppletPlatform implements Platform {
     }
     
     
-    public long sleepUntilTimeMillis(long time) {
-        return timer.sleepUntilTimeMillis(time);
+    public long sleepUntilTimeMicros(long time) {
+        return timer.sleepUntilTimeMicros(time);
     }
     
     

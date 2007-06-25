@@ -55,11 +55,11 @@ public interface Platform {
     
     
     /**
-        Sleeps until the specified time, in milliseconds, occurs.
+        Sleeps until the specified time, in microseconds, occurs.
         This is an absolute version of Thread.sleep().
-        @return the current time in milliseconds (as near timeMillis as possible).
+        @return the current time in microseconds (as near timeMicros as possible).
     */
-    public long sleepUntilTimeMillis(long timeMillis);    
+    public long sleepUntilTimeMicros(long timeMicros);    
     
     
     /**

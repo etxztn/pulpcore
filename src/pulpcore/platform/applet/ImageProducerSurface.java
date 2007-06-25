@@ -81,7 +81,6 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
         }
         else if (getWidth() != size.width || getHeight() != size.height) {
             setSize(size.width, size.height);
-            component.requestFocus();
         }
         
         return true;

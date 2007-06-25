@@ -31,7 +31,7 @@ package pulpcore.platform.applet;
 
 /**
     Attempts to compensate for the 55ms granularity on Windows 95/98 and 15ms
-    on Windows NT/2000.
+    on Windows XP/NT/2000.
 */
 public class Win32Timer extends SystemTimer implements Runnable {
     
@@ -61,6 +61,7 @@ public class Win32Timer extends SystemTimer implements Runnable {
 
     
     public void start() {
+        super.start();
         timerThread = null;
         
         numSamples = 0;
@@ -77,6 +78,7 @@ public class Win32Timer extends SystemTimer implements Runnable {
     
     
     public void stop() {
+        super.stop();
         timerThread = null;
     }
     
@@ -91,26 +93,20 @@ public class Win32Timer extends SystemTimer implements Runnable {
     }
     
     
-    public long sleepUntilTimeMillis(long timeMillis) {
-        long currentTimeMillis = getTimeMillis();
-        
-        if (timeMillis <= currentTimeMillis) {
-            return currentTimeMillis;
-        }
-        
+    public long sleepUntilTimeMicros(long timeMicros) {
         while (true) {
+            // Typical granularity on Windows seems to be about 10ms,
+            // so return if the time is within 5ms.
+            long currentTimeMicros = getTimeMicros();
+            if (currentTimeMicros >= timeMicros - 5000) {
+                return currentTimeMicros;
+            }
+            
             synchronized (this) {
                 try {
                      wait(100);
                 }
                 catch (InterruptedException ex) { }
-            }
-            
-            // Typical granularity on Windows seems to be about 10ms,
-            // so return if the time is within 5ms.
-            currentTimeMillis = getTimeMillis();
-            if (currentTimeMillis >= timeMillis - 5) {
-                return currentTimeMillis;
             }
         }
     }
