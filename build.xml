@@ -251,6 +251,7 @@
             author="true"
             version="true"
             use="true"
+            linksource="true"
             windowtitle="PulpCore ${version} API"
             access="public"
             extdirs="lib/lwjgl">
@@ -262,6 +263,7 @@
             </packageset>
             
             <doctitle><![CDATA[<h1>PulpCore ${version} (build ${build.number})</h1>]]></doctitle>
+            <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore Home</a>]]></header>
             <bottom>Copyright &amp;copy; 2007 Interactive Pulp, LLC.</bottom>
             <group title="PulpCore" packages="pulpcore*"/>
             <group title="PulpCore platform implementations" packages="pulpcore.platform*"/>
