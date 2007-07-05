@@ -291,7 +291,7 @@ public class LoadingScene extends Scene2D {
         }
         
         // Default progress bar view
-        float p = getProgress();
+        double p = getProgress();
         if (shouldProgressBeVisible() && download != null && p > 0) {
             progressBar.width.set(p * (progressBarBackground.width.get() - 4));
             progressBar.visible.set(true);
@@ -313,7 +313,7 @@ public class LoadingScene extends Scene2D {
         Returns a value from 0 to 1. If the download hasn't started,
         returns a value less than 0.
     */
-    public float getProgress() {
+    public double getProgress() {
         if (state == Download.SUCCESS) {
             return 1;
         }
@@ -324,11 +324,11 @@ public class LoadingScene extends Scene2D {
         if (download == null) {
             return -1;
         }
-        float p = download.getPercentDownloaded();
+        double p = download.getPercentDownloaded();
         
-        if (p == -1 && download.getSize() == -1 && totalTime > 0) {
+        if (p < 0 && download.getSize() == -1 && totalTime > 0) {
             // Content length unknown. Use a 30 second half life
-            p = 1 - (float)Math.pow(0.5, (float)totalTime/30000);
+            p = 1 - Math.pow(0.5, totalTime / 30000.0);
         }
         
         if (p < 0) {

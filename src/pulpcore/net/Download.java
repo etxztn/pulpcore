@@ -145,15 +145,15 @@ public class Download implements Runnable {
     
     
     /**
-        Returns -1 if percent not known
+        Returns a values less than zero if the percent not known
     */
-    public float getPercentDownloaded() {
+    public double getPercentDownloaded() {
         synchronized (lock) {
             if (size <= 0) {
                 return -1;
             }
             else {
-                return (float)currentPosition / size;
+                return (double)currentPosition / size;
             }
         }
     }
