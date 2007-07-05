@@ -1,3 +1,18 @@
+0.9 b215 (July 4, 2007)
+  * Examples: updated the Widgets example to show transformed widgets.
+  * Fixed Bug: Timelines didn't properly accept startDelay as a parameter in its constructor.
+  * Fixed Bug: Audio popping in Mac OS X.
+  * Fixed Bug: More logical handling of the add() and remove() methods of Group that will allow
+    for potential methods moveToTop(), moveToBottom(), moveDown(), moveUp(), etc.
+  * API: Sprite now has easier compass-style anchor names (NORTH, NORTHWEST, CENTER, etc.)
+  * API: Fixed typo in the API of the Sprite scale() and scaleTo() methods.
+  * API: Added constructors to each Sprite subclass to take doubles as parameters.
+  * API: Removed several public methods that took a float as a parameter when there was 
+    an identical method that took a double as a parameter.
+  * API: Removed Scene2D.hasTimelines() (Scene2D.getNumTimelines() is available).
+  * API: Renamed Scene2D.clearTimelines() -> Scene2D.removeAllTimelines().
+  * Documentation: More Javadocs in Assets and Scene2D.
+  
 0.9 b210 (June 25, 2007)
   * API: Added CoreSystem.isWindows() and CoreSystem.isWindowsXPorNewer()
   * Fixed Regression: Stage was still creating the Sound Engine even if it was not needed.
@@ -10,8 +25,8 @@
     - Windows 9x and non-Windows platforms have no changes.
 
 0.9 b208 (June 17, 2007)
-  * API: Rename StringUtil.formatString() -> StringUtil.format()
-  * API: Rename StringUtil.wordWrapText() -> StringUtil.wordWrap()
+  * API: Renamed StringUtil.formatString() -> StringUtil.format()
+  * API: Renamed StringUtil.wordWrapText() -> StringUtil.wordWrap()
   * Fixed Regression: Sound Engine was created on a call to CoreSystem.getNumSoundsPlaying()
   * Fixed Regression: bug that prevented PulpCore Player from emulating browsers cookies via 
     LiveConnect.
