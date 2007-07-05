@@ -172,10 +172,11 @@ public class JavaSound implements SoundEngine {
             }
             
             try {
-                // Attempt to get a 500ms buffer
-                int byteRate = Math.round(PLAYBACK_FORMAT.getFrameRate() * 
-                    PLAYBACK_FORMAT.getFrameSize());
-                int bufferSize = byteRate / 2;                
+                // On some systems, a 1-second buffer eliminates pops that otherwise occur when
+                // a smaller buffer is used.
+                int byteRate = Math.round(PLAYBACK_FORMAT.getFrameRate()) * 
+                    PLAYBACK_FORMAT.getFrameSize();
+                int bufferSize = byteRate;                
                 DataLine.Info lineInfo =
                     new DataLine.Info(SourceDataLine.class, PLAYBACK_FORMAT, bufferSize);
                 line = (SourceDataLine)AudioSystem.getLine(lineInfo);
@@ -214,7 +215,7 @@ public class JavaSound implements SoundEngine {
         public synchronized void play(AppContext context, SoundClip clip, Fixed level, 
             boolean loop) 
         {
-            stream = new SoundStream(context, clip, level, loop, 160, line.getBufferSize());
+            stream = new SoundStream(context, clip, level, loop, 0, line.getBufferSize());
             lastMute = stream.isMute();
         }
         
