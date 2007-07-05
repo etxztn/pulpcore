@@ -52,7 +52,7 @@ public final class Timeline extends Animation {
     private Vector propertyList;
     
     private boolean playing;
-    private float playSpeed = 1;
+    private double playSpeed = 1;
     
     // Remainder, in microseconds, of the play time. Used when playSpeed != 1.
     private int remainderMicros;
@@ -71,7 +71,7 @@ public final class Timeline extends Animation {
     
     
     public Timeline(Easing easing, int startDelay) {
-        super(0, 0, 0, easing);
+        super(0, 0, 0, easing, startDelay);
         
         animationList = new Vector();
         propertyList = new Vector();
@@ -117,12 +117,12 @@ public final class Timeline extends Animation {
         top-level Timelines - child Timelines play at their parent's 
         speed.
     */
-    public void setPlaySpeed(float speed) {
+    public void setPlaySpeed(double speed) {
         playSpeed = speed;
     }
     
     
-    public float getPlaySpeed() {
+    public double getPlaySpeed() {
         return playSpeed;
     }
     
