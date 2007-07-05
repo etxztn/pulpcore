@@ -50,6 +50,7 @@ import java.awt.ImageCapabilities;
 import java.awt.Point;
 import java.awt.Toolkit;
 import java.util.Hashtable;
+import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.math.Rect;
 import pulpcore.platform.Surface;
@@ -120,7 +121,12 @@ public class BufferStrategySurface extends Surface {
                         (caps.getFlipContents() == BufferCapabilities.FlipContents.COPIED);
                 }
             }
-            catch (Exception ex) { }
+            catch (Exception ex) {
+                // There is a ClassCastException when running under Eclipse 3.3 for Mac OS X Java 5.
+                // My guess is there is a SWT conflict. This won't affect end users, but developers 
+                // will have to use appletviewer or a web browser to run PulpCore apps.
+                if (Build.DEBUG) CoreSystem.print("Couldn't create surface", ex);
+            }
         }
         else if (!contentsLost) {
             contentsLost = bufferStrategy.contentsLost() | bufferStrategy.contentsRestored();
