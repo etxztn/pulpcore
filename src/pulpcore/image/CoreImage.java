@@ -41,7 +41,7 @@ import pulpcore.util.ByteArray;
     methods for creating transformed copies of the image. 
     <p>
     Methods like 
-    {@link #crop(int, int, int, int)}, {@link #scale(float)}, and {@link #tint(int)} return new
+    {@link #crop(int, int, int, int)}, {@link #scale(double)}, and {@link #tint(int)} return new
     CoreImages. The image's raster data can be manipulated using the 
     {@link #createGraphics() } method, or by directly modifying pixels retrieved
     from the {@link #getData()} method.
@@ -360,28 +360,6 @@ public class CoreImage {
         Same as calling rotate(angle, true);
         @param angle an angle, typically in the range from 0 to Math.PI * 2
     */
-    public CoreImage rotate(float angle) {
-        return rotate(CoreMath.toFixed(angle), true);
-    }
-    
-    
-    /**
-        Creates a rotated version of this image.
-        @param sizeAsNeeded if true, the resulting image is sized to contain 
-        the entire rotated image. If false, the resulting image is the same 
-        size as this image. The hotspot is rotated accordingly.
-        @param angle an angle, typically in the range from 0 to Math.PI * 2
-    */
-    public CoreImage rotate(float angle, boolean sizeAsNeeded) {
-        return rotate(CoreMath.toFixed(angle), sizeAsNeeded);
-    }
-    
-    
-    /**
-        Creates a rotated version of this image. 
-        Same as calling rotate(angle, true);
-        @param angle an angle, typically in the range from 0 to Math.PI * 2
-    */
     public CoreImage rotate(double angle) {
         return rotate(CoreMath.toFixed(angle), true);
     }
@@ -444,16 +422,6 @@ public class CoreImage {
             width, height, angle);
         
         return rotatedImage;
-    }
-    
-    
-   
-    /**
-        Returns a new CoreImage whose raster data represents a scaled version 
-        of this image. The hotspot is scaled accordingly.
-    */
-    public CoreImage scale(float scale) {
-        return scale(Math.round(scale * width), Math.round(scale * height));
     }
     
     

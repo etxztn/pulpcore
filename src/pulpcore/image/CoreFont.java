@@ -278,7 +278,7 @@ public class CoreFont {
     /**
         Creates a scaled instance of this font.
     */
-    public CoreFont scale(float scale) {
+    public CoreFont scale(double scale) {
         
         int numChars = lastChar - firstChar + 1;
         
@@ -288,13 +288,14 @@ public class CoreFont {
         for (int i = 0; i < numChars; i++) {
             scaledCharPositions[i] = position;
             int charWidth = charPositions[i+1] - charPositions[i];
-            int scaledWidth = Math.round(charWidth * scale);
+            int scaledWidth = (int)Math.round(charWidth * scale);
             position += scaledWidth;
         }
         scaledCharPositions[numChars] = position;
         
         // Scale each character image
-        CoreImage scaledImage = new CoreImage(position, Math.round(getHeight() * scale), false);
+        CoreImage scaledImage = new CoreImage(position, 
+            (int)Math.round(getHeight() * scale), false);
         CoreGraphics g = scaledImage.createGraphics();
         g.setComposite(CoreGraphics.COMPOSITE_SRC);
         for (int i = 0; i < numChars; i++) {
@@ -308,8 +309,8 @@ public class CoreFont {
         int[] scaledKerningLeft = new int[kerningLeft.length];
         int[] scaledKerningRight = new int[kerningRight.length];
         for (int i = 0; i < kerningLeft.length; i++) {
-            scaledKerningLeft[i] = Math.round(kerningLeft[i] * scale);
-            scaledKerningRight[i] = Math.round(kerningRight[i] * scale);
+            scaledKerningLeft[i] = (int)Math.round(kerningLeft[i] * scale);
+            scaledKerningRight[i] = (int)Math.round(kerningRight[i] * scale);
         }
         
         // Create the new font
@@ -318,7 +319,7 @@ public class CoreFont {
         scaledFont.kerningLeft = scaledKerningLeft;
         scaledFont.kerningRight = scaledKerningRight;
         scaledFont.image = scaledImage;
-        scaledFont.tracking = Math.round(tracking * scale);
+        scaledFont.tracking = (int)Math.round(tracking * scale);
         
         return scaledFont;
     }
