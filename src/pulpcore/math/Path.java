@@ -204,8 +204,8 @@ public class Path {
     }
     
     
-    public float getLength() {
-        return CoreMath.toFloat(totalLength);
+    public double getLength() {
+        return CoreMath.toDouble(totalLength);
     }
     
     
@@ -327,15 +327,6 @@ public class Path {
     //
     //
     
-    public float getX(float p) {
-        return CoreMath.toFloat(get(0, CoreMath.toFixed(p)));
-    }
-    
-    
-    public float getY(float p) {
-        return CoreMath.toFloat(get(1, CoreMath.toFixed(p)));
-    }
-    
     
     public double getX(double p) {
         return CoreMath.toDouble(get(0, CoreMath.toFixed(p)));
@@ -346,32 +337,12 @@ public class Path {
         return CoreMath.toDouble(get(1, CoreMath.toFixed(p)));
     }
 
-
-    public float getAngle(float p) {
-        int i = getLowerSegment(CoreMath.toFixed(p));
-        
-        //return CoreMath.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
-        return (float)Math.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
-    }
-    
     
     public double getAngle(double p) {
         int i = getLowerSegment(CoreMath.toFixed(p));
         
         //return CoreMath.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
         return Math.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
-    }
-    
-    
-    /**
-        Places a Sprite at a position along the path.
-        @param sprite The Sprite to place.
-        @param p The position along the path to place the sprite, from 0 to 1. 
-    */
-    public void place(Sprite sprite, float p) {
-        int P = CoreMath.toFixed(p);
-        sprite.x.setAsFixed(get(0, P));
-        sprite.y.setAsFixed(get(1, P));
     }
     
     
