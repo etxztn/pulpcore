@@ -4,6 +4,7 @@ import pulpcore.Input;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
+import pulpcore.sprite.Group;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Sprite;
 import pulpcore.sprite.TextField;
@@ -14,7 +15,7 @@ public class Widgets extends Scene2D {
     Label answer;
     TextField textField;
     TextField passwordField;
-    Button button;
+    Button okButton;
     Button checkbox;
     
     public void load() {
@@ -22,32 +23,32 @@ public class Widgets extends Scene2D {
         CoreFont font = CoreFont.getSystemFont();
         
         Label label = new Label("Name: ", 275, 140);
-        label.setAnchor(Sprite.VCENTER | Sprite.RIGHT);
+        label.setAnchor(Sprite.EAST);
         
-        textField = new TextField(280, 140, 150, TextField.AUTO);
-        textField.setAnchor(Sprite.VCENTER | Sprite.LEFT);
+        textField = new TextField(280, 140, 150, font.getHeight());
+        textField.setAnchor(Sprite.WEST);
         textField.setFocus(true);
         
         Label label2 = new Label("Secret Password: ", 275, 180);
-        label2.setAnchor(Sprite.VCENTER | Sprite.RIGHT);
+        label2.setAnchor(Sprite.EAST);
         
-        passwordField = new TextField(280, 180, 150, TextField.AUTO);
+        passwordField = new TextField(280, 180, 150, font.getHeight());
         passwordField.setPasswordMode(true);
-        passwordField.setAnchor(Sprite.VCENTER | Sprite.LEFT);
+        passwordField.setAnchor(Sprite.WEST);
         
         CoreImage buttonImage = CoreImage.load("button.png");
-        button = new Button(buttonImage.split(3), 275, 260);
-        button.setAnchor(Sprite.TOP | Sprite.HCENTER);
-        button.setKeyBinding(Input.KEY_ENTER);
+        okButton = new Button(buttonImage.split(3), 275, 260);
+        okButton.setAnchor(Sprite.NORTH);
+        okButton.setKeyBinding(Input.KEY_ENTER);
         
         CoreImage checkboxImage = CoreImage.load("checkbox.png");
         checkbox = Button.createLabeledToggleButton(checkboxImage.split(3,2), font, 
-            "Remember Me", 280, 220, 30, 12, Sprite.VCENTER | Sprite.LEFT, false);
+            "Rotate", 280, 220, 30, 12, Sprite.WEST, false);
         checkbox.setCursor(Input.CURSOR_DEFAULT);
-        checkbox.setAnchor(Sprite.VCENTER | Sprite.LEFT);
+        checkbox.setAnchor(Sprite.WEST);
         
         answer = new Label("", 275, 350);
-        answer.setAnchor(Sprite.VCENTER | Sprite.HCENTER);
+        answer.setAnchor(Sprite.CENTER);
         
         add(new FilledSprite(0x9999ff));
         add(label);
@@ -56,7 +57,7 @@ public class Widgets extends Scene2D {
         add(textField);
         add(createBackground(passwordField));
         add(passwordField);
-        add(button);
+        add(okButton);
         add(checkbox);
         add(answer);
     }
@@ -72,9 +73,16 @@ public class Widgets extends Scene2D {
     }
     
     public void update(int elapsedTime) {
-        if (button.isClicked()) {
-            answer.setText("The name is \"" + textField.getText() + "\" " + 
-                "and the secret password is \"" + passwordField.getText() + "\"");
+        if (okButton.isClicked()) {
+            answer.setText("Hello \"" + textField.getText() + "\"! " + 
+                (checkbox.isSelected() ? "Look, widgets work when transformed!" : ""));
+            
+            // Rotate all sprites except the background
+            double newAngle = checkbox.isSelected() ? Math.PI / 16 : 0;
+            Group layer = getMainLayer();
+            for (int i = 1; i < layer.size(); i++) {
+                layer.get(i).angle.animateTo(newAngle, 500);
+            }
         }
         
         if (Input.isPressed(Input.KEY_TAB)) {
