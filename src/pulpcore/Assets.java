@@ -52,6 +52,10 @@ public class Assets {
     private static final Hashtable ASSETS = new Hashtable();
     
     
+    // Prevent instantiation
+    private Assets() { }
+    
+    
     /**
         Adds the contents of an asset catalog (zip file) into memory.
         <p>
@@ -60,6 +64,7 @@ public class Assets {
         no existing assets are affected and this method returns false.
         
         @param zipFileData a zip file
+        @return true on success; false otherwise.
     */
     public static boolean addCatalog(String catalogName, byte[] zipFileData) {
         if (zipFileData == null) {
@@ -78,6 +83,7 @@ public class Assets {
         no existing assets are affected and this method returns false.
         
         @param is an input stream that points to the contents of a zip file.
+        @return true on success; false otherwise.
     */
     public static boolean addCatalog(String catalogName, InputStream is) {
         // NOTE: this method used by PulpCorePlayer via reflection 
@@ -159,14 +165,17 @@ public class Assets {
     }
     
     
-    // NOTE: this method used by PulpCorePlayer via reflection 
+    /**
+        Gets an enumeration of catalog names (zip files) stored in memory.
+    */
     public static Enumeration getCatalogs() {
+        // NOTE: this method used by PulpCorePlayer via reflection
         return CATALOGS.keys();
     }
 
 
     /**
-        Checks if the specified zip file is added to the asset list.
+        Checks if the specified catalog name (zip file) is stored in memory.
     */
     public static boolean containsCatalog(String catalogName) {
         return (CATALOGS.get(catalogName) != null);
@@ -174,7 +183,7 @@ public class Assets {
     
     
     /**
-        Removes all assets downloaded from the specified zip file.
+        Removes all assets downloaded from the specified catalog (zip file).
     */
     public static void removeCatalog(String catalogName) {
         
@@ -233,6 +242,8 @@ public class Assets {
         platforms (Applets), the originating server is also checked if the
         asset is not in the zip file(s) or the jar file.
         Returns null if the asset was not found.
+        <p>
+        The returned ByteArray's position is set to zero.
     */
     public static ByteArray get(String assetName) {
         

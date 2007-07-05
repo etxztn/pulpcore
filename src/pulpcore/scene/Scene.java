@@ -38,9 +38,8 @@ import pulpcore.image.CoreGraphics;
     <p>A typical game will have several Scenes: for example, a title scene, 
     menu scene, main game scene, high score scene, help scene, etc.
     <p>The first Scene is created
-    from the {@link pulpcore.platform.Platform} implementation 
-    ({@link pulpcore.platform.applet.CoreApplet} for applets).
-    <p>{@link pulpcore.Stage} is responsible for invoking the 
+    from the {@link pulpcore.platform.AppContext} implementation.
+    <p>The {@link pulpcore.Stage} is responsible for invoking the 
     Scene's methods and other Scene management.
     
     @see pulpcore.platform.AppContext#createFirstScene()
@@ -93,8 +92,8 @@ public abstract class Scene {
 
     /**
         Updates the scene. This method is peridocally called by 
-        Stage while this Scene is active. A scene typically updates
-        sprites and handles input.
+        Stage while this Scene is active. A scene will typically update
+        sprites and handle input.
         <p>
         When a Scene is first shown (after a call to showNotify), the 
         elapsedTime is zero.
@@ -104,8 +103,8 @@ public abstract class Scene {
 
 
     /**
-        Draws to the surface's graphics context. The Stage class calls this  
-        method immediately after calling updateScene().
+        Draws to the surface's graphics context. The Stage calls this  
+        method after calling updateScene().
         @param g the CoreGraphics object to draw to. The CoreGraphics clip is 
         set to the entire display area.
     */

@@ -46,7 +46,7 @@ import pulpcore.Stage;
 
 /**
     The Scene2D class is a Scene that provdes commonly used features like
-    Sprite management, Layer management, Timeline management,
+    Sprite management, layer management, Timeline management,
     and dirty rectangle drawing. 
     <p>
     Note the updateScene() method cannot be overridden,
@@ -54,10 +54,12 @@ import pulpcore.Stage;
 */
 public class Scene2D extends Scene {
     
+    // NOTE: experiment with these two values for screen sizes other than 550x400
     /** If the non-dirty area inbetween two dirty rects is less than this value, the two
-    rects are union'ed */
+    rects are union'ed. */
     private static final int MAX_NON_DIRTY_AREA = 2048;
     private static final int NUM_DIRTY_RECTANGLES = 64;
+    
     private static final int DEFAULT_MAX_ELAPSED_TIME = 100;
     
     // For debugging - same setting for all Scene2D instances
@@ -97,7 +99,9 @@ public class Scene2D extends Scene {
     private boolean isTextInputMode;
     
     
-    
+    /**
+        Creates a new Scene2D with one layer and with dirty rectangles enabled.
+    */
     public Scene2D() {
         desiredFPS = Stage.DEFAULT_FPS;
         isTextInputMode = false;
@@ -112,33 +116,52 @@ public class Scene2D extends Scene {
     }
     
     
+    /**
+        Sets the paused state of this Scene2D. A paused Scene2D does not update sprites or 
+        timelines, but update() is called as usual. By default, a Scene2D is not paused.
+    */
     public void setPaused(boolean paused) {
         this.paused = paused;
     }
     
     
+    /**
+        Gets the paused state of this Scene2D.
+        @return true if this Scene2D is paused.
+        @see #setPaused(boolean)
+    */
     public boolean isPaused() {
         return paused;
     }
     
     
-    public void setDirtyRectanglesEnabled(boolean b) {
-        if (dirtyRectanglesEnabled != b) {
-            dirtyRectanglesEnabled = b;
+    /**
+        Sets the dirty rectangle mode on or off. By default, a Scene2D has dirty rectangles
+        enabled, but some apps may have better performance with
+        dirty rectangles disabled.
+    */
+    public void setDirtyRectanglesEnabled(boolean dirtyRectanglesEnabled) {
+        if (this.dirtyRectanglesEnabled != dirtyRectanglesEnabled) {
+            this.dirtyRectanglesEnabled = dirtyRectanglesEnabled;
             needsFullRedraw = true;
         }
     }
     
     
+    /**
+        Checks the dirty rectangles are enabled for this Scene2D.
+        @return true if dirty rectangles are enabled.
+        @see #setDirtyRectanglesEnabled(boolean)
+    */
     public boolean isDirtyRectanglesEnabled() {
         return dirtyRectanglesEnabled;
     }
     
     
     /**
-        Sets the maximum elapsed time used to update this Scene.
+        Sets the maximum elapsed time used to update this Scene2D.
         If this value is zero, no maximum elapsed time is enforced: 
-        the elapsed time always follows system time (while the Scene is active.)
+        the elapsed time always follows system time (while the Scene2D is active.)
         <p>
         If the maximum elapsed time is greater than zero, 
         long pauses between updates
@@ -153,6 +176,10 @@ public class Scene2D extends Scene {
     }
     
     
+    /**
+        Gets the maximum elapsed time used to update this Scene2D.
+        @see #setMaxElapsedTime(int)
+    */
     public int getMaxElapsedTime() {
         return maxElapsedTime;
     }
@@ -163,6 +190,10 @@ public class Scene2D extends Scene {
     //
     
     
+    /**
+        Adds a TimelineEvent to this Scene2D. The TimelineEvent is automatically triggered
+        in the updateScene() method. The TimelineEvent is removed after triggering.
+    */
     public void addEvent(TimelineEvent event) {
         Timeline timeline = new Timeline();
         timeline.addEvent(event);
@@ -170,6 +201,10 @@ public class Scene2D extends Scene {
     }
     
     
+    /**
+        Adds a Timeline to this Scene2D. The Timeline is automatically updated in the updateScene()
+        method. The Timeline is removed when is is finished animating.
+    */
     public void addTimeline(Timeline timeline) {
         if (!timelines.contains(timeline)) {
             timelines.addElement(timeline);
@@ -178,6 +213,7 @@ public class Scene2D extends Scene {
     
     
     /**
+        Removes a timeline from this Scene2D.
         @param gracefully if true and the timeline is not 
         looping, the timeline is 
         fastforwarded to its end before it is removed.
@@ -194,10 +230,11 @@ public class Scene2D extends Scene {
     
     
     /**
+        Removes all timelines from this Scene2D.
         @param gracefully if true, all non-looping timelines are 
         fastforwarded to their end before they are removed.
     */
-    public void clearTimelines(boolean gracefully) {
+    public void removeAllTimelines(boolean gracefully) {
         if (gracefully) {
             for (int i = 0; i < timelines.size(); i++) {
                 Timeline t = (Timeline)timelines.elementAt(i);
@@ -208,11 +245,9 @@ public class Scene2D extends Scene {
     }
     
     
-    public boolean hasTimelines() {
-        return timelines.size() != 0;
-    }
-    
-    
+    /**
+        Gets the number of currently animating timelines. 
+    */
     public int getNumTimelines() {
         return timelines.size();
     }
@@ -231,11 +266,18 @@ public class Scene2D extends Scene {
     }
     
     
+    /**
+        Adds the specified Group as the top-most layer.
+    */
     public void addLayer(Group layer) {
         layers.add(layer);
     }
 
     
+    /**
+        Removes the specified layer. If the specified layer is the main layer, this method
+        does nothing.
+    */
     public void removeLayer(Group layer) {
         if (layer != getMainLayer()) {
             layers.remove(layer);
@@ -617,7 +659,7 @@ public class Scene2D extends Scene {
     
     
     /**
-        Draws all of the sprites in this scene.
+        Draws all of the sprites in this scene. Most apps will not override this method.
     */
     public void drawScene(CoreGraphics g) {
         
