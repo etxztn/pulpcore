@@ -87,14 +87,39 @@ public class Button extends ImageSprite {
     public Button(CoreImage[] images, int x, int y, boolean isToggleButton) {
         super(images[0], x, y);
         
+        this.isToggleButton = isToggleButton;
+        this.images = new CoreImage[images.length];
+        init(images, isToggleButton);
+    }
+    
+    
+    /**
+        @param images an array of three images: normal, hover, and pressed. 
+    */
+    public Button(CoreImage[] images, double x, double y) {
+        this(images, x, y, false);
+    }
+    
+    
+    /**
+        @param images an array of three images: normal, hover, and pressed.
+        Use six image for toggle buttons (unselected and selected).
+    */
+    public Button(CoreImage[] images, double x, double y, boolean isToggleButton) {
+        super(images[0], x, y);
+        
+        this.isToggleButton = isToggleButton;
+        this.images = new CoreImage[images.length];
+        init(images, isToggleButton);
+    }
+    
+    
+    private void init(CoreImage[] images, boolean isToggleButton) {
         if (images.length < (isToggleButton?6:3)) {
             throw new IllegalArgumentException("Not enough button images.");
         }
         
-        this.images = new CoreImage[images.length];
         System.arraycopy(images, 0, this.images, 0, images.length);
-        
-        this.isToggleButton = isToggleButton;
         
         outsideCursor = Input.getCursor();
     }

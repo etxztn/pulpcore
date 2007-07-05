@@ -45,10 +45,14 @@ import pulpcore.scene.Scene2D;
 */
 public class Group extends Sprite {
 
+    private static final Object COMMAND_ADD = new Integer(0);
+    private static final Object COMMAND_REMOVE = new Integer(1);
+    private static final Object COMMAND_REMOVE_ALL = new Integer(2);
+    
     private Group parent;
-    private Vector sprites;
-    private Vector spritesToAdd;
-    private Vector spritesToRemove;
+    private Vector sprites = new Vector();
+    private Vector commandsTypes;
+    private Vector commandsSprites;
     protected int fNaturalWidth;
     protected int fNaturalHeight;
     private int fInnerX;
@@ -68,7 +72,18 @@ public class Group extends Sprite {
     
     public Group(int x, int y, int width, int height) {
         super(x, y, width, height);
-        sprites = new Vector();
+        fNaturalWidth = CoreMath.toFixed(width);
+        fNaturalHeight = CoreMath.toFixed(height);
+    }
+    
+    
+    public Group(double x, double y) {
+        this(x, y, -1, -1);
+    }
+    
+    
+    public Group(double x, double y, double width, double height) {
+        super(x, y, width, height);
         fNaturalWidth = CoreMath.toFixed(width);
         fNaturalHeight = CoreMath.toFixed(height);
     }
@@ -141,28 +156,25 @@ public class Group extends Sprite {
     //
     
     
+    private void addCommand(Object command, Object sprite) {
+        if (commandsTypes == null) {
+            commandsTypes = new Vector();
+            commandsSprites = new Vector();
+        }
+        
+        commandsTypes.addElement(command);
+        commandsSprites.addElement(sprite);
+    }
+    
+    
     /**
         Adds a Sprite to this Group.
         <p>The add doesn't occur until {@link #commitChanges() } is invoked, which is invoked by
         Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     */
     public void add(Sprite sprite) {
-        if (sprite == null) {
-            return;
-        }
-        
-        if (!sprites.contains(sprite) && 
-            (spritesToAdd == null || !spritesToAdd.contains(sprite))) 
-        {
-            sprite.setDirty(true);
-            sprite.clearDirtyRect();
-            if (spritesToAdd == null) {
-                spritesToAdd = new Vector();
-            }
-            spritesToAdd.addElement(sprite);
-        }
-        if (spritesToRemove != null) {
-            spritesToRemove.removeElement(sprite);
+        if (sprite != null) {
+            addCommand(COMMAND_ADD, sprite);
         }
     }
     
@@ -173,20 +185,8 @@ public class Group extends Sprite {
         Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     */
     public void remove(Sprite sprite) {
-        if (sprite == null) {
-            return;
-        }
-        if (sprites.contains(sprite) && 
-            (spritesToRemove == null || !spritesToRemove.contains(sprite)))
-        {
-            sprite.setDirty(true);
-            if (spritesToRemove == null) {
-                spritesToRemove = new Vector();
-            }
-            spritesToRemove.addElement(sprite);
-        }
-        if (spritesToAdd != null) {
-            spritesToAdd.removeElement(sprite);
+        if (sprite != null) {
+            addCommand(COMMAND_REMOVE, sprite);
         }
     }
     
@@ -197,13 +197,7 @@ public class Group extends Sprite {
         Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     */
     public void removeAll() {
-        spritesToAdd = null;
-        spritesToRemove = new Vector();
-        for (int i = 0; i < size(); i++) {
-            Sprite sprite = get(i);
-            sprite.setDirty(true);
-            spritesToRemove.addElement(sprite);
-        }
+        addCommand(COMMAND_REMOVE_ALL, COMMAND_REMOVE_ALL);
     }
 
 
@@ -222,35 +216,55 @@ public class Group extends Sprite {
     */
     public void commitChanges(Scene2D scene) {
         
-        if (spritesToAdd != null) {
-            for (int i = 0; i < spritesToAdd.size(); i++) {
-                Sprite sprite = (Sprite)spritesToAdd.elementAt(i);
-                sprite.setDirty(true);
-                sprite.clearDirtyRect();
-                if (sprite instanceof Group) {
-                    Group group = (Group)sprite;
-                    group.parent = this;
+        if (commandsTypes != null) {
+            for (int i = 0; i < commandsTypes.size(); i++) {
+                // Ideally this would be more object-oriented (a Command class for every command
+                // type), but that would increase the jar size without much benefit.
+                Object command = commandsTypes.elementAt(i);
+                if (command == COMMAND_ADD) {
+                    Sprite sprite = (Sprite)commandsSprites.elementAt(i);
+                    if (!sprites.contains(sprite)) {
+                        sprite.setDirty(true);
+                        sprite.clearDirtyRect();
+                        if (sprite instanceof Group) {
+                            Group group = (Group)sprite;
+                            group.parent = this;
+                        }
+                        sprites.addElement(sprite);
+                    }
                 }
-                sprites.addElement(sprite);
+                else if (command == COMMAND_REMOVE) {
+                    Sprite sprite = (Sprite)commandsSprites.elementAt(i);
+                    if (sprites.contains(sprite)) {
+                        if (sprite instanceof Group) {
+                            Group group = (Group)sprite;
+                            group.parent = null;
+                        }
+                        if (scene != null) {
+                            scene.notifyRemovedSprite(sprite);
+                        }
+                        sprites.removeElement(sprite);
+                    }
+                }
+                else if (command == COMMAND_REMOVE_ALL) {
+                    for (int j = 0; j < sprites.size(); j++) {
+                        Sprite sprite = get(j);
+                        if (sprite instanceof Group) {
+                            Group group = (Group)sprite;
+                            group.parent = null;
+                        }
+                        if (scene != null) {
+                            scene.notifyRemovedSprite(sprite);
+                        }
+                    }
+                    sprites = new Vector();
+                }
             }
-            spritesToAdd = null;
+            
+            commandsTypes = null;
+            commandsSprites = null;
         }
-        
-        if (spritesToRemove != null) {
-            for (int i = 0; i < spritesToRemove.size(); i++) {
-                Sprite sprite = (Sprite)spritesToRemove.elementAt(i);
-                if (sprite instanceof Group) {
-                    Group group = (Group)sprite;
-                    group.parent = null;
-                }
-                if (scene != null) {
-                    scene.notifyRemovedSprite(sprite);
-                }
-                sprites.removeElement(sprite);
-            }
-            spritesToRemove = null;
-        }
-        
+             
         for (int i = 0; i < size(); i++) {
             Sprite sprite = get(i);
             if (sprite instanceof Group) {

@@ -73,6 +73,17 @@ public class FilledSprite extends Sprite {
     }
     
     
+    public FilledSprite(double x, double y, double w, double h, int fillColor) {
+        this(x, y, w, h, fillColor, false);
+    }
+    
+    
+    public FilledSprite(double x, double y, double w, double h, int fillColor, boolean hasAlpha) {
+        super(x, y, w, h);
+        setFillColor(fillColor, hasAlpha);
+    }
+    
+    
     public void setFillColor(int r, int g, int b) {
         setFillColor((r << 16) | (g << 8) | b, false);
     }

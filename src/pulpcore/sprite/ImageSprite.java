@@ -51,7 +51,7 @@ public class ImageSprite extends Sprite {
         Creates an ImageSprite that has the same dimensions as the image.
     */
     public ImageSprite(String imageAsset, int x, int y) {
-        this(imageAsset, x, y, AUTO, AUTO);
+        this(imageAsset, x, y, -1, -1);
     }
     
     
@@ -59,7 +59,7 @@ public class ImageSprite extends Sprite {
         Creates an ImageSprite that has the same dimensions as the image.
     */
     public ImageSprite(CoreImage image, int x, int y) {
-        this(image, x, y, AUTO, AUTO);
+        this(image, x, y, -1, -1);
     }
     
     
@@ -77,13 +77,52 @@ public class ImageSprite extends Sprite {
     public ImageSprite(CoreImage image, int x, int y, int w, int h) {
         super(x, y, w, h);
         setImage(image);
-        if (w == AUTO) {
+        if (w < 0) {
             width.set(image.getWidth());
         }
-        if (h == AUTO) {
+        if (h < 0) {
             height.set(image.getHeight());
         }
     }
+    
+    
+    /**
+        Creates an ImageSprite that has the same dimensions as the image.
+    */
+    public ImageSprite(String imageAsset, double x, double y) {
+        this(imageAsset, x, y, -1, -1);
+    }
+    
+    
+    /**
+        Creates an ImageSprite that has the same dimensions as the image.
+    */
+    public ImageSprite(CoreImage image, double x, double y) {
+        this(image, x, y, -1, -1);
+    }
+    
+    
+    /**
+        Creates an ImageSprite that draws the image scaled to the specified dimensions.
+    */
+    public ImageSprite(String imageAsset, double x, double y, double w, double h) {
+        this(CoreImage.load(imageAsset), x, y, w, h);
+    }
+    
+    
+    /**
+        Creates an ImageSprite that draws the image scaled to the specified dimensions.
+    */
+    public ImageSprite(CoreImage image, double x, double y, double w, double h) {
+        super(x, y, w, h);
+        setImage(image);
+        if (w < 0) {
+            width.set(image.getWidth());
+        }
+        if (h < 0) {
+            height.set(image.getHeight());
+        }
+    }    
     
    
     public void setImage(CoreImage image) {

@@ -52,9 +52,9 @@ import pulpcore.math.Transform;
 */
 public abstract class Sprite implements PropertyListener {
 
-    public static final int AUTO = -1;
-  
+    //
     // Text anchors
+    //
     
     /** 
         Constant for positioning the anchor point at the "default" location
@@ -82,6 +82,63 @@ public abstract class Sprite implements PropertyListener {
     /** Constant for positioning the anchor point in the vertical center of the sprite. */
     public static final int VCENTER = 32;
     
+    /** 
+        Constant for positioning the anchor point in the upper center of the sprite.
+        Equivalent to TOP | HCENTER.
+    */
+    public static final int NORTH = TOP | HCENTER;
+    
+    /** 
+        Constant for positioning the anchor point in the lower center of the sprite.
+        Equivalent to BOTTOM | HCENTER.
+    */
+    public static final int SOUTH = BOTTOM | HCENTER;
+    
+    /** 
+        Constant for positioning the anchor point in the left center of the sprite.
+        Equivalent to LEFT | VCENTER.
+    */
+    public static final int WEST = LEFT | VCENTER;
+    
+    /** 
+        Constant for positioning the anchor point in the right center of the sprite.
+        Equivalent to RIGHT | VCENTER.
+    */
+    public static final int EAST = RIGHT | VCENTER;
+    
+    /** 
+        Constant for positioning the anchor point in the upper left corner of the sprite.
+        Equivalent to TOP | LEFT.
+    */
+    public static final int NORTH_WEST = TOP | LEFT;
+    
+    /** 
+        Constant for positioning the anchor point in the upper right corner of the sprite.
+        Equivalent to TOP | RIGHT.
+    */
+    public static final int NORTH_EAST = TOP | RIGHT;
+    
+    /** 
+        Constant for positioning the anchor point in the lower left corner of the sprite.
+        Equivalent to BOTTOM | LEFT.
+    */
+    public static final int SOUTH_WEST = BOTTOM | LEFT;
+    
+    /** 
+        Constant for positioning the anchor point in the lower right corner of the sprite.
+        Equivalent to BOTTOM | RIGHT.
+    */
+    public static final int SOUTH_EAST = BOTTOM | RIGHT;
+    
+    /** 
+        Constant for positioning the anchor point in the center of the sprite.
+        Equivalent to VCENTER | HCENTER.
+    */
+    public static final int CENTER = VCENTER | HCENTER;
+    
+    //
+    // Properties
+    //
     
     /** The x location of this Sprite. */
     public final Fixed x = new Fixed(this);
@@ -104,7 +161,7 @@ public abstract class Sprite implements PropertyListener {
 
     /** 
         The alpha of this Sprite, in range from 0 to 255. A value of 0 is fully 
-        tranaparent and a value of 255 is fully opaque.
+        tranaparent and a value of 255 is fully opaque. The default is 255.
     */
     public final Int alpha = new Int(this, 0xff);
     
@@ -124,10 +181,13 @@ public abstract class Sprite implements PropertyListener {
     */
     public final Bool pixelSnapping = new Bool(false);
     
-    private int anchor;
-    private int composite = -1;
-    private boolean dirty;
+    //
+    // Private fields
+    //
     
+    private int anchor = DEFAULT;
+    private int composite = -1;
+    private boolean dirty = true;
     protected final Transform drawTransform = new Transform();
     
     /** The draw bounding box used for directy rectangles in Scene2D */
@@ -142,12 +202,20 @@ public abstract class Sprite implements PropertyListener {
         this.y.set(y);
         this.width.set(width);
         this.height.set(height);
-        
-        anchor = DEFAULT;
-        dirty = true;
     }
     
     
+    public Sprite(double x, double y, double width, double height) {
+        this.x.set(x);
+        this.y.set(y);
+        this.width.set(width);
+        this.height.set(height);
+    }
+    
+    
+    /**
+        On a property change this Sprite is marked as dirty.
+    */
     public void propertyChange(Property property) {
         setDirty(true);
         
@@ -274,15 +342,6 @@ public abstract class Sprite implements PropertyListener {
     /**
         Sets the absolute location of this Sprite.
     */
-    public void setLocation(float x, float y) {
-        this.x.set(x);
-        this.y.set(y);
-    }
-    
-    
-    /**
-        Sets the absolute location of this Sprite.
-    */
     public void setLocation(double x, double y) {
         this.x.set(x);
         this.y.set(y);
@@ -293,15 +352,6 @@ public abstract class Sprite implements PropertyListener {
         Translates the absolute location of this Sprite.
     */
     public void translate(int x, int y) {
-        this.x.set(this.x.get() + x);
-        this.y.set(this.y.get() + y);
-    }
-    
-    
-    /**
-        Translates the absolute location of this Sprite.
-    */
-    public void translate(float x, float y) {
         this.x.set(this.x.get() + x);
         this.y.set(this.y.get() + y);
     }
@@ -324,19 +374,6 @@ public abstract class Sprite implements PropertyListener {
         CoreGraphics methods to draw a scaled version of its image.
     */
     public void setSize(int width, int height) {
-        this.width.set(width);
-        this.height.set(height);
-    }    
-    
-    
-    /**
-        Sets the size of this Sprite.
-        Changing the size is non-destructive - for example, an ImageSprite 
-        doesn't internally scale it's image when this method is called. 
-        Instead, an ImageSprite uses appropriate
-        CoreGraphics methods to draw a scaled version of its image.
-    */
-    public void setSize(float width, float height) {
         this.width.set(width);
         this.height.set(height);
     }    
@@ -397,6 +434,10 @@ public abstract class Sprite implements PropertyListener {
     }    
     
     
+    /**
+        Updates all of this Sprite's properties. Subclasses that override this method should
+        call super.update().
+    */
     public void update(int elapsedTime) {
         x.update(elapsedTime);
         y.update(elapsedTime);
@@ -729,7 +770,7 @@ public abstract class Sprite implements PropertyListener {
     //
 
     
-    public void scale(Sprite sprite, int width1, int height1, int width2, int height2, 
+    public void scale(int width1, int height1, int width2, int height2, 
         int duration) 
     {
         width.animate(width1, width2, duration);
@@ -737,7 +778,7 @@ public abstract class Sprite implements PropertyListener {
     }
     
     
-    public void scale(Sprite sprite, int width1, int height1, int width2, int height2, 
+    public void scale(int width1, int height1, int width2, int height2, 
         int duration, Easing easing) 
     {
         width.animate(width1, width2, duration, easing);
@@ -745,7 +786,7 @@ public abstract class Sprite implements PropertyListener {
     }
     
     
-    public void scale(Sprite sprite, int width1, int height1, int width2, int height2, 
+    public void scale(int width1, int height1, int width2, int height2, 
         int duration, Easing easing, int startDelay)
     {
         width.animate(width1, width2, duration, easing, startDelay);
@@ -753,19 +794,19 @@ public abstract class Sprite implements PropertyListener {
     }
     
     
-    public void scaleTo(Sprite sprite, int width, int height, int duration) {
+    public void scaleTo(int width, int height, int duration) {
         this.width.animateTo(width, duration);
         this.height.animateTo(height, duration);
     }
     
     
-    public void scaleTo(Sprite sprite, int width, int height, int duration, Easing easing) {
+    public void scaleTo(int width, int height, int duration, Easing easing) {
         this.width.animateTo(width, duration, easing);
         this.height.animateTo(height, duration, easing);
     }    
     
     
-    public void scaleTo(Sprite sprite, int width, int height, int duration, Easing easing, 
+    public void scaleTo(int width, int height, int duration, Easing easing, 
         int startDelay) 
     {
         this.width.animateTo(width, duration, easing, startDelay);
@@ -778,7 +819,7 @@ public abstract class Sprite implements PropertyListener {
     //
     
     
-    public void scale(Sprite sprite, double width1, double height1, double width2, double height2, 
+    public void scale(double width1, double height1, double width2, double height2, 
         int duration) 
     {
         width.animate(width1, width2, duration);
@@ -786,7 +827,7 @@ public abstract class Sprite implements PropertyListener {
     }
     
     
-    public void scale(Sprite sprite, double width1, double height1, double width2, double height2, 
+    public void scale(double width1, double height1, double width2, double height2, 
         int duration, Easing easing) 
     {
         width.animate(width1, width2, duration, easing);
@@ -794,7 +835,7 @@ public abstract class Sprite implements PropertyListener {
     }
     
     
-    public void scale(Sprite sprite, double width1, double height1, double width2, double height2, 
+    public void scale(double width1, double height1, double width2, double height2, 
         int duration, Easing easing, int startDelay)
     {
         width.animate(width1, width2, duration, easing, startDelay);
@@ -802,19 +843,19 @@ public abstract class Sprite implements PropertyListener {
     }
     
     
-    public void scaleTo(Sprite sprite, double width, double height, int duration) {
+    public void scaleTo(double width, double height, int duration) {
         this.width.animateTo(width, duration);
         this.height.animateTo(height, duration);
     }
     
     
-    public void scaleTo(Sprite sprite, double width, double height, int duration, Easing easing) {
+    public void scaleTo(double width, double height, int duration, Easing easing) {
         this.width.animateTo(width, duration, easing);
         this.height.animateTo(height, duration, easing);
     }    
     
     
-    public void scaleTo(Sprite sprite, double width, double height, int duration, Easing easing, 
+    public void scaleTo(double width, double height, int duration, Easing easing, 
         int startDelay) 
     {
         this.width.animateTo(width, duration, easing, startDelay);

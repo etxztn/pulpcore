@@ -111,7 +111,7 @@ public class TextField extends Sprite {
     
     
     /**
-        If height is AUTO, the height is automatically set to fit the font
+        If height < 0, the height is automatically set to fit the font
         height.
     */
     public TextField(int x, int y, int w, int h) {
@@ -120,7 +120,16 @@ public class TextField extends Sprite {
     
     
     /**
-        If height is AUTO, the height is automatically set to fit the font
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
+    public TextField(double x, double y, double w, double h) {
+        this(null, null, "", x, y, w, h);
+    }
+    
+    
+    /**
+        If height < 0, the height is automatically set to fit the font
         height.
     */
     public TextField(String text, int x, int y, int w, int h) {
@@ -129,14 +138,42 @@ public class TextField extends Sprite {
     
     
     /**
-        If height is AUTO, the height is automatically set to fit the font
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
+    public TextField(String text, double x, double y, double w, double h) {
+        this(null, null, text, x, y, w, h);
+    }
+    
+    
+    
+    /**
+        If height < 0, the height is automatically set to fit the font
         height.
     */
     public TextField(CoreFont font, CoreFont selectionFont, 
         String text, int x, int y, int w, int h) 
     {
         super(x, y, w, h);
-        
+        this.text = text;
+        init(font, selectionFont, h < 0);
+    }
+    
+    
+    /**
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
+    public TextField(CoreFont font, CoreFont selectionFont, 
+        String text, double x, double y, double w, double h) 
+    {
+        super(x, y, w, h);
+        this.text = text;
+        init(font, selectionFont, h < 0);
+    }
+    
+    
+    private void init(CoreFont font, CoreFont selectionFont, boolean autoHeight) {
         if (font == null) {
             this.font = CoreFont.getSystemFont();
         }
@@ -159,11 +196,9 @@ public class TextField extends Sprite {
             this.selectionFont = selectionFont;
         }
         
-        if (h == AUTO) {
+        if (autoHeight) {
             height.set(this.font.getHeight() + EXTRA_CARET_HEIGHT * 2);
         }
-        
-        this.text = text;
         
         setMaxNumChars(256);
         

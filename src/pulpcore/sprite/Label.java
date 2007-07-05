@@ -61,23 +61,66 @@ public class Label extends Sprite {
     
     
     public Label(String text, int x, int y) {
-        this(null, text, x, y, AUTO, AUTO);
+        this(null, text, x, y, -1, -1);
     }
     
     
+    public Label(String text, double x, double y) {
+        this(null, text, x, y, -1, -1);
+    }
+    
+    
+    /**
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
     public Label(String text, int x, int y, int w, int h) {
         this(null, text, x, y, w, h);
     }
     
     
-    public Label(CoreFont font, String text, int x, int y) {
-        this(font, text, x, y, AUTO, AUTO);
+    /**
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
+    public Label(String text, double x, double y, double w, double h) {
+        this(null, text, x, y, w, h);
     }
     
     
+    public Label(CoreFont font, String text, int x, int y) {
+        this(font, text, x, y, -1, -1);
+    }
+    
+    
+    public Label(CoreFont font, String text, double x, double y) {
+        this(font, text, x, y, -1, -1);
+    }
+    
+    
+    /**
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
     public Label(CoreFont font, String text, int x, int y, int w, int h) {
         super(x, y, w, h);
         
+        init(font, text, w < 0, h < 0);
+    }
+    
+    
+    /**
+        If height < 0, the height is automatically set to fit the font
+        height.
+    */
+    public Label(CoreFont font, String text, double x, double y, double w, double h) {
+        super(x, y, w, h);
+        
+        init(font, text, w < 0, h < 0); 
+    }
+    
+    
+    private void init(CoreFont font, String text, boolean autoWidth, boolean autoHeight) {
         lastImageFrame = -1;
         
         if (font == null) {
@@ -87,8 +130,8 @@ public class Label extends Sprite {
             this.font = font;
         }
         
-        autoWidth = (w == AUTO);
-        autoHeight = (h == AUTO);
+        this.autoWidth = autoWidth;
+        this.autoHeight = autoHeight;
         
         setText(text);
     }
