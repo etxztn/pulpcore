@@ -37,13 +37,11 @@ import pulpcore.image.CoreGraphics;
     handles input from the user. All PulpCore apps will implement a Scene. 
     <p>A typical game will have several Scenes: for example, a title scene, 
     menu scene, main game scene, high score scene, help scene, etc.
-    <p>The first Scene is created
-    from the {@link pulpcore.platform.AppContext} implementation.
+    <p>For Applets, the first Scene is defined by the "scene" applet parameter:
+    <pre>&lt;param name=&quot;scene&quot; value=&quot;MyFirstScene&quot; /&gt;</pre>
     <p>The {@link pulpcore.Stage} is responsible for invoking the 
     Scene's methods and other Scene management.
     
-    @see pulpcore.platform.AppContext#createFirstScene()
-    @see pulpcore.platform.applet.CoreApplet#createFirstScene()
     @see pulpcore.Stage#setScene(Scene)
     @see pulpcore.Stage#interruptScene(Scene)
     @see pulpcore.Stage#gotoInterruptedScene()
