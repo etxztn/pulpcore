@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+    <title>Balls animation test</title>
+</head>
+  
+<body>
+  
+<div style="width: 500px">
+<script type="text/javascript"><!--
+@APPLET_PARAMS@
+//--> 
+</script> 
+<script type="text/javascript" src="pulpcore.js"></script>
+<noscript><p>To play, enable JavaScript from the Options or Preferences menu.</p></noscript>
+</div>
+
+<div id="demoControls">
+        <a href="#" onclick="pulpcore_object.getCurrentScene().setRunning(true); return false;">start</a> | 
+        <a href="#" onclick="pulpcore_object.getCurrentScene().setRunning(false); return false;">stop</a> -->
+        # of balls: <select onchange="pulpcore_object.getCurrentScene().setNumBalls(this.value);">
+            <option value="1" >1</option>
+            <option value="8">8</option>
+            <option value="16" selected="selected">16</option>
+            <option value="32">32</option>
+            <option value="64">64</option>
+            <option value="128">128</option>
+            <option value="512">512</option>
+        </select>
+    </div>
+</body>
+</html>
