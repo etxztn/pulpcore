@@ -76,6 +76,9 @@ public class ImageSprite extends Sprite {
     */
     public ImageSprite(CoreImage image, int x, int y, int w, int h) {
         super(x, y, w, h);
+        if (image == null) {
+            image = CoreImage.getBrokenImage();
+        }
         setImage(image);
         if (w < 0) {
             width.set(image.getWidth());

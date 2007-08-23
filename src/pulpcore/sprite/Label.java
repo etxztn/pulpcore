@@ -240,8 +240,8 @@ public class Label extends Sprite {
         formatArgs = args;
         if (formatArgs != null) {
             for (int i = 0; i < formatArgs.length; i++) {
-                if (formatArgs[i] instanceof Int) {
-                    ((Int)formatArgs[i]).setListener(this);
+                if (formatArgs[i] instanceof Property) {
+                    ((Property)formatArgs[i]).setListener(this);
                 }
                 
             }
