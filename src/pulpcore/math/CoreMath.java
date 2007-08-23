@@ -366,7 +366,7 @@ public class CoreMath {
     
     
     /**
-        Returns true if the number is a power of two.
+        Returns true if the number (greater than 1) is a power of two.
     */
     public static final boolean isPowerOfTwo(int n) {
         return (n & (n - 1)) == 0;
@@ -396,9 +396,13 @@ public class CoreMath {
     
     
     /**
-        Returns the log base 2 of an integer
+        Returns the log base 2 of an integer greater than 0. The returned value
+        is equal to <code>Math.floor(Math.log(n) / Math.log(2))</code>.
     */
     public static final int log2(int n) {
+        //if (n <= 1) {
+        //    throw new ArithmeticException("NaN");
+        //}
         int count = 0;
         while (true) {
             n >>= 1;
@@ -660,98 +664,6 @@ public class CoreMath {
     }
     
     
-    /**
-        Returns the natural log of fixed-point number fx.
-    */
-    public static final int log(int fx) {
-        
-        if (fx < 0) {
-            throw new ArithmeticException("NaN");
-        }
-        else if (fx == 0) {
-            return Integer.MIN_VALUE;
-        }
-        else if (fx == ONE) {
-            return 0;
-        }
-        
-        // Keep x in the range from 0 .. 2
-        boolean invert = false;
-        if (fx > (2 << FRACTION_BITS)) {
-            invert = true;
-            fx = div(ONE, fx);
-        }
-        
-        // Mercator Series
-        fx -= ONE;
-        int log = fx;
-        int m = fx;
-        
-        // TODO: pick # of iterations
-        for (int i = 0; i < 64; i++) {
-            m = -mul(m, fx);
-            log += m / (i + 2);
-            
-            if (m == 0 || m == -1) {
-                break;
-            }
-        }
-        
-        // Undo the inversion. log(1/x) = -log(x)
-        if (invert) {
-            return -log;
-        }
-
-        return log;
-    }
-    
-    
-    public static final int exp(int fx) {
-        
-        if (fx == 0) {
-            return ONE;
-        }
-        
-        int answer = ONE + fx;
-        int m = fx;
-        int n = 1;
-        // TODO: pick # of iterations
-        for (int i = 2; i < 16; i++) {
-            
-            m = mul(fx, m);
-            n *= i;
-            answer += m / n; 
-            
-        }
-        
-        return answer;
-    }
-    
-    
-    public static final int pow(int fx, int fp) {
-        // Simple pow()
-        if (fp == ONE) {
-            return fx;
-        }
-        else if (fp == 0) {
-            return ONE;
-        }
-        else if (fracPart(fp) == 0 && fp >= 2*ONE && fp <= 64*ONE) {
-            // Simple pow()
-            int answer = fx;
-            int n = fp >> FRACTION_BITS;
-            for (int i = 1; i < n; i++) {
-                answer = mul(answer, fx);
-            }
-            return answer;
-        }
-        else {
-            //pow(x, p)  =  exp(p * log(x))
-            return exp(mul(fp, log(fx)));
-        }
-    }
-    
-    
     //
     // Fixed-point Trigonometry
     //
@@ -958,25 +870,13 @@ public class CoreMath {
     // Random number generation and Noise functions
     //
     
-    /*static {
-        // Test rand() distribution
-        int[] count = new int[10];
-        for (int i = 0; i < 10000; i++) {
-            int num = rand(0, count.length - 1);
-            count[num]++;
-        }
-        
-        for (int i = 0; i < count.length; i++) {
-            System.out.println(count[i]);
-        }
-    }*/
-
-    
     /**
         Returns a random integer from min to max, inclusive
     */
     public static final int rand(int min, int max) {
-        int value = min + (int)(Math.random()*(max-min+1));
+        // Prevent overflow
+        long range = (long)max - (long)min + 1;
+        int value = (int)(min + (long)(Math.random() * range));
         
         // The Java 1.1 doc is unclear -  Math.random() could return 1.0.
         // In later versions of the doc, Math.random() is stated to return 
