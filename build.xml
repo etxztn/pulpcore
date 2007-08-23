@@ -257,18 +257,18 @@
             extdirs="lib/lwjgl">
         
             <packageset dir="${src}" defaultexcludes="yes">
-                <include name="**" />
-                <!-- Ignore LWJGL port which currently does not compile -->
-                <exclude name="**/lwjgl/**" />
+                <!-- Hide implementation details -->
+                <exclude name="pulpcore/platform/**" />
             </packageset>
             
             <doctitle><![CDATA[<h1>PulpCore ${version} (build ${build.number})</h1>]]></doctitle>
-            <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore Home</a>]]></header>
+            <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore</a>]]></header>
             <bottom>Copyright &amp;copy; 2007 Interactive Pulp, LLC.</bottom>
+            <!-- 
             <group title="PulpCore" packages="pulpcore*"/>
             <group title="PulpCore platform implementations" packages="pulpcore.platform*"/>
+            -->
             <link href="http://java.sun.com/javase/6/docs/api/"/>
-            <link href="http://www.lwjgl.org/javadoc/"/>
         </javadoc>
     </target>
     
@@ -303,6 +303,25 @@
                 
             <fileset dir="${src}" includes="**/*.java"/>
         </jcsc>
+    </target>
+    
+    
+    <target name="test" description="Runs JUnit tests">
+        <javac srcdir="tests"
+                destdir="tests"
+                classpath="${build}/${project.debug.jar.file}:${junit.path}"
+                debug="on"
+                deprecation="on">
+            <include name="*.java" />
+        </javac>
+        
+        <java classname="org.junit.runner.JUnitCore" fork="true" dir="${basedir}/tests">
+            <arg value="CoreMathTest"/>
+            <classpath>
+                <pathelement path="${basedir}/tests;${build}/${project.debug.jar.file};${junit.path}"/>
+            </classpath>
+        </java>
+       
     </target>
     
     
@@ -355,6 +374,8 @@
         <ant inheritAll="false" antfile="${dist.temp}/templates/project/build.xml" target="clean-temp" />
         <ant inheritAll="false" antfile="${dist.temp}/examples/AnimationEasing/build.xml" target="build" />
         <ant inheritAll="false" antfile="${dist.temp}/examples/AnimationEasing/build.xml" target="clean-temp" />
+        <ant inheritAll="false" antfile="${dist.temp}/examples/BubbleMark/build.xml" target="build" />
+        <ant inheritAll="false" antfile="${dist.temp}/examples/BubbleMark/build.xml" target="clean-temp" />
         <ant inheritAll="false" antfile="${dist.temp}/examples/ImagesAndFonts/build.xml" target="build" />
         <ant inheritAll="false" antfile="${dist.temp}/examples/ImagesAndFonts/build.xml" target="clean-temp" />
         <ant inheritAll="false" antfile="${dist.temp}/examples/Particles/build.xml" target="build" />
