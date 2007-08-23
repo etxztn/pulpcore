@@ -93,6 +93,7 @@ public class Stage implements Runnable {
     
     // Stage info
     private int desiredFPS = DEFAULT_FPS;
+    private double actualFPS = -1;
     private long remainderMicros;
     private Thread animationThread;
     private final Surface surface;
@@ -200,6 +201,9 @@ public class Stage implements Runnable {
         invoke <code>setFrameRate(Stage.MAX_FPS)</code>. Note, however, 
         running at the highest frame rate possible usually means
         as many processor cycles are used as possible.
+        
+        @see #getFrameRate()
+        @see #getActualFrameRate()
     */
     public static void setFrameRate(int desiredFPS) {
         Stage instance = getThisStage();
@@ -219,8 +223,27 @@ public class Stage implements Runnable {
     }
     
     
+    /**
+        Gets the current desired frame rate in frames per second. This is the same value passed
+        in to {@link #setFrameRate(int)}.
+        @see #setFrameRate(int)
+        @see #getActualFrameRate()
+    */
     public static int getFrameRate() {
         return getThisStage().desiredFPS;
+    }
+    
+    
+    /**
+        Gets the actual frame rate the Stage is displaying in frames per second. 
+        The actual frame rate
+        may vary from the desired frame rate. This method returns -1 if the frame rate has not
+        yet been calculated. The actual frame rate is calculated periodically.
+        @see #setFrameRate(int)
+        @see #getFrameRate()
+    */
+    public static double getActualFrameRate() {
+        return getThisStage().actualFPS;
     }
     
     
@@ -272,11 +295,17 @@ public class Stage implements Runnable {
     }
     
     
+    /**
+        Gets the current active Scene.
+    */
     public static Scene getScene() {
         return getThisStage().currentScene;
     }
     
     
+    /**
+        Returns true if the current Scene interrupted another Scene.
+    */
     public static boolean isInterrupted() {
         Stage instance = getThisStage();
         return (instance.interruptScene != null || !instance.interruptedScenes.empty());
@@ -590,8 +619,8 @@ public class Stage implements Runnable {
                     g.getTransform().concatenate(defaultTransform);
                     infoOverlay.draw(g);
                 }
-                doInfoSample();
             }
+            doInfoSample();
                 
             // Show surface (blocks until surface is updated)
             if (surface.contentsLost() || numDirtyRectangles < 0) {
@@ -614,7 +643,7 @@ public class Stage implements Runnable {
             
             // Sleep to create correct frame rate
             long currTimeMicros;
-            if (desiredFPS == MAX_FPS) {
+            if (desiredFPS == MAX_FPS || surface.getRefreshRate() > 0) {
                 Thread.yield();
                 currTimeMicros = CoreSystem.getTimeMicros();
             }
@@ -805,9 +834,15 @@ public class Stage implements Runnable {
             return;
         }
         
-        // Take a sample of CPU, memory, and Scene info
+        // For release mode, just calculate the frame rate and return;
+        actualFPS = overlayFrames * 1000.0 / time;
+        if (!Build.DEBUG) {
+            return;
+        }
         
-        int fixedFPS = (int)(1000L*CoreMath.toFixed(overlayFrames) / time);
+        // Take a sample of CPU, memory, and Scene info
+        int fixedFPS = CoreMath.toFixed(actualFPS);
+        //int fixedFPS = (int)(1000L*CoreMath.toFixed(overlayFrames) / time);
         int fixedSleepTime = (int)(CoreMath.toFixed(overlaySleepTime) / overlayFrames);
         int fixedCPU = CoreMath.ONE - (int)(CoreMath.toFixed(overlaySleepTime) / time);
         
