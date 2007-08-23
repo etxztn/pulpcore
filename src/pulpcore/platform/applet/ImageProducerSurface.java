@@ -66,6 +66,11 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
     }
     
     
+    public int getRefreshRate() {
+        return -1;
+    }
+    
+    
     protected void notifyResized() {
         contentsLost = true;
         consumer = null;

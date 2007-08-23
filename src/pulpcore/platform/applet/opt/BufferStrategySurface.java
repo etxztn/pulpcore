@@ -35,6 +35,7 @@ import java.awt.BufferCapabilities;
 import java.awt.Canvas;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.DisplayMode;
 import java.awt.event.AWTEventListener;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -82,6 +83,11 @@ public class BufferStrategySurface extends Surface {
         canvas.setLocation(0, 0);
     }
     
+
+    public int getRefreshRate() {
+        return -1;
+    }
+    
     
     public Canvas getCanvas() {
         return canvas;
@@ -113,12 +119,16 @@ public class BufferStrategySurface extends Surface {
         
         if (bufferStrategy == null) {
             try {
+                useDirtyRects = false;
                 createBufferStrategy();
                 bufferStrategy = canvas.getBufferStrategy();
                 if (bufferStrategy != null) {
-                    BufferCapabilities caps = bufferStrategy.getCapabilities();
-                    useDirtyRects = 
-                        (caps.getFlipContents() == BufferCapabilities.FlipContents.COPIED);
+                    // Commented out: It looks like Mac OS X says "COPIED" when it means "UNDEFINED".
+                    // So, always copy the entire buffer.
+                    // BufferCapabilities caps = bufferStrategy.getCapabilities();
+                    //if (caps.getFlipContents() == BufferCapabilities.FlipContents.COPIED) {
+                    //    useDirtyRects = true;
+                    //}
                 }
             }
             catch (Exception ex) {
@@ -191,29 +201,18 @@ public class BufferStrategySurface extends Surface {
     
     private void createBufferStrategy() {
         // First, try Copied method (double buffering)
-        try {
-            canvas.createBufferStrategy(2, new BufferCapabilities(
-                new ImageCapabilities(true),
-                new ImageCapabilities(true),
-                BufferCapabilities.FlipContents.COPIED));
-            return;
-        } 
-        catch (AWTException e) {
-            // Ignore
-        }
+        //try {
+        //    canvas.createBufferStrategy(2, new BufferCapabilities(
+        //        new ImageCapabilities(true),
+        //        new ImageCapabilities(true),
+        //        BufferCapabilities.FlipContents.COPIED));
+        //    return;
+        //} 
+        //catch (AWTException e) {
+        //    // Ignore
+        //}
         
-        // If it failed, try what ever the system wants
+        // Try whatever the system wants
         canvas.createBufferStrategy(2);
-        /*
-        try {
-            canvas.createBufferStrategy(2, new BufferCapabilities(
-                new ImageCapabilities(false),
-                new ImageCapabilities(false),
-                null)); // Implies blitting
-        } 
-        catch (AWTException e) {
-            // Ignore (should never happen)
-        }
-        */
     }
 }
