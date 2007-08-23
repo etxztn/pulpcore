@@ -1,3 +1,20 @@
+0.9 b216 (August 23, 2007)
+  * Examples: Added BubbleMark
+  * Documentation: The platform implementation Javadocs are no longer included in the distribution 
+    archive. 
+  * Fixed Bug: Tweaked BufferStrategy usage for Mac OS X. Animations previously appeared jerky in 
+    some situations.
+  * Fixed Bug: Labels are now updated if any of its Property arguments change. (Previously, only
+    Int arguments were listened to for changes)
+  * Fixed Bug: Added null check for ImageSprite(CoreImage image) constructor.
+  * Fixed Bug: Fixed range of CoreMath.rand(int, int). 
+    CoreMath.rand(Integer.MIN_VALUE, Integer.MAX_VALUE) now works correctly.
+  * Tests: Added some unit tests (in Subversion repository)
+  * API: Removed CoreMath.log() and CoreMath.exp() due to inaccuracy. CoreMath.pow() was also 
+    removed because it depends on log() and exp().
+  * API: Added CoreApplet.getCurrentScene() for convenient access from JavaScript.
+  * API: Added Stage.getActualFrameRate() to programmatically access the displayed frame rate.
+    
 0.9 b215 (July 4, 2007)
   * Examples: updated the Widgets example to show transformed widgets.
   * Fixed Bug: Timelines didn't properly accept startDelay as a parameter in its constructor.
