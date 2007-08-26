@@ -104,6 +104,10 @@ public class CoreMath {
     private static final int INTERNAL_BITS = 24;
     
     
+    // Prevent instantiation
+    private CoreMath() { }
+    
+    
     /**
         Converts an integer to a fixed-point value.
     */

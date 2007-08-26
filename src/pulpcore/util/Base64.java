@@ -59,6 +59,9 @@ public class Base64 {
         }
     }
     
+    // Prevent instantiation
+    private Base64() { }
+    
     
     /**
         Encodes binary data using the standard Base64 alphabet. The padding character

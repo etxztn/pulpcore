@@ -41,6 +41,9 @@ import pulpcore.math.CoreMath;
 public final class StringUtil {
 
     
+    // Prevent instantiation
+    private StringUtil() { }
+    
     /**
         Calls
         <code>

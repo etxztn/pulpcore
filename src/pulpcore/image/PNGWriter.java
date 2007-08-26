@@ -72,6 +72,10 @@ public class PNGWriter {
         }
     }
     
+    
+    // Prevent instantiation
+    private PNGWriter() { }
+    
 
     private static int getCRC(byte[] buf, int offset, int length) {
         int crc = 0xffffffff;
