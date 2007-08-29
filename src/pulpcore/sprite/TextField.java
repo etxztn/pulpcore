@@ -237,7 +237,7 @@ public class TextField extends Sprite {
     }
     
     
-    protected void setText(String text) {
+    public void setText(String text) {
         if (text == null) {
             this.text = "";
         }
