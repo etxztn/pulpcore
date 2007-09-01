@@ -2,10 +2,8 @@ import pulpcore.animation.Fixed;
 import pulpcore.image.CoreImage;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
-import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
-import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
 
 /**
@@ -21,6 +19,7 @@ public class BubbleMark extends Scene2D {
     int numBalls = 16;
     Ball[] balls;
     boolean running = true;
+    boolean capFrameRate = true;
     Fixed frameRate = new Fixed();
     
     public void load() {
@@ -60,7 +59,7 @@ public class BubbleMark extends Scene2D {
             Stage.setFrameRate(5);
         }
         else {
-            Stage.setFrameRate(Stage.MAX_FPS);
+            Stage.setFrameRate(capFrameRate ? Stage.DEFAULT_FPS : Stage.MAX_FPS);
         
             // Check collisions
             for (int i = 0; i < balls.length; i++) {
@@ -83,6 +82,10 @@ public class BubbleMark extends Scene2D {
     
     public void setRunning(boolean running) {
         this.running = running;
+    }
+    
+    public void setCapFrameRate(boolean capFrameRate) {
+        this.capFrameRate = capFrameRate;
     }
     
     class BallSprite extends ImageSprite {
