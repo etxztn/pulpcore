@@ -189,6 +189,17 @@ public class CoreSystem {
     // Shorcut methods to AppContext
     //
     
+    
+    /**
+        Gets a named property for this application instance. Returns null if the named parameter
+        does not exist.
+        <p>
+        For Applets, the named properties are the applet parameters.
+    */
+    public static String getAppProperty(String name) {
+        return getThisAppContext().getAppProperty(name);
+    }
+    
 
     /**
         Sets a new TalkBack field. If the named field already exists, it is replaced.
@@ -254,6 +265,38 @@ public class CoreSystem {
 
     public static void clearLog() {
         getThisAppContext().clearLog();
+    }
+    
+    
+    /**
+        Prints a the string representation of an object to the log.
+    */
+    public static void print(Object object) {
+        print((String)object);
+    }
+    
+    
+    /**
+        Prints the string representation of a boolean to the log.
+    */
+    public static void print(boolean b) {
+        print(Boolean.toString(b));
+    }
+    
+    
+    /**
+        Prints the string representation of an integer to the log.
+    */
+    public static void print(int n) {
+        print(Integer.toString(n));
+    }
+    
+    
+    /**
+        Prints the string representation of a double to the log.
+    */
+    public static void print(double n) {
+        print(Double.toString(n));
     }
 
 

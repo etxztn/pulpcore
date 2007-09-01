@@ -113,6 +113,11 @@ public final class AppletAppContext extends AppContext {
     }
     
     
+    public String getAppProperty(String name) {
+        return applet.getParameter(name);
+    }
+    
+    
     public Scene createFirstScene() {
         return applet.createFirstScene();
     }

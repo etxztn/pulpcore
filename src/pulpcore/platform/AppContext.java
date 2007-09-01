@@ -141,6 +141,8 @@ public abstract class AppContext {
         }
     }
     
+    public abstract String getAppProperty(String name);
+    
     
     public abstract Scene createFirstScene();
     
@@ -314,6 +316,9 @@ public abstract class AppContext {
         Prints a line of text to the log.
     */
     public void print(String statement) {
+        if (statement == null) {
+            statement = "null";
+        }
         if (consoleOut) {
             System.out.println(statement);
         }
