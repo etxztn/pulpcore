@@ -44,6 +44,7 @@
     <property name="project.assets.zip" value="${project.scene}.zip" />    
     <property name="project.width" value="500" />
     <property name="project.height" value="300" />
+    <property name="project.params" value="" />
     <property name="pulpcore.build" value="debug" />
     <property name="pulpcore.path" value="../../build" />
     <property name="proguard.path" value="" />
@@ -214,6 +215,7 @@
             height="${project.height}"
             scene="${project.scene}"
             assets="${autoload.assets.zip}"
+            params="${project.params}"
             displaySource="${src}/${project.scene}.java"/>
     </target>
 
@@ -240,6 +242,7 @@
         <pulpcore-player path="${basedir}/${build}" archive="${project.jar}" 
             width="${project.width}" height="${project.height}"
             scene="${project.scene}" assets="${autoload.assets.zip}"
+            params="${project.params}"
             waitUntilClosed="${pulpcore.player.wait}" />
     </target>
     

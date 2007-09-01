@@ -40,6 +40,7 @@
     <property name="project.scene" value="HelloWorld" />
     <property name="project.width" value="550" />
     <property name="project.height" value="400" />
+    <property name="project.params" value="" />
     <property name="project.version" value="1.0" />    
     <property name="pulpcore.build" value="debug" />
     <property name="pulpcore.path" value="../../build" />
@@ -59,6 +60,7 @@
     <!-- Project paths -->
     <property name="src" value="src" />
     <property name="res" value="res" />
+    <property name="lib" value="lib" />
     <property name="build" value="build/${pulpcore.platform}" />
     <property name="build.temp" value="${build}/temp" />
     <property name="build.classes" value="${build.temp}/classes" />
@@ -168,20 +170,29 @@
                 target="1.1"
                 debug="on"
                 deprecation="on"
-                classpath="${core.jar.file}"
                 bootclasspath="${library.path}">
 
             <include name="**/*.java"/>
+            
+            <classpath>
+                <pathelement location="${core.jar.file}"/>
+                <fileset dir="${lib}">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
         </javac>
     </target>
     
 
-    <!-- Creates a jar of the compiled code -->
+    <!-- Creates a jar of the compiled code and libraries -->
     <target name="jar" depends="compile">
         <jar destfile="${build}/${project.jar}">
             <fileset dir="${build.classes}" includes="**/*.class" />
             <fileset dir="${build.res}/jar" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
+            <zipgroupfileset dir="${lib}" includes="**/*.jar">
+                <exclude name="META-INF/**/*"/>
+            </zipgroupfileset>
         </jar>
     </target>
    
@@ -222,7 +233,8 @@
             width="${project.width}"
             height="${project.height}"
             scene="${project.scene}"
-            assets="${autoload.assets.zip}" />
+            assets="${autoload.assets.zip}"
+            params="${project.params}" />
     </target>
 
     
@@ -249,11 +261,13 @@
         <pulpcore-player path="${basedir}/${build}" archive="${project.jar}" 
             width="${project.width}" height="${project.height}"
             scene="${project.scene}" assets="${autoload.assets.zip}" 
+            params="${project.params}"
             waitUntilClosed="${pulpcore.player.wait}" />
     </target>
     
     
     <target name="run-profiler" description="Run in a profiler">
+        <!-- NOTE: extra applet params ${project.params} is ignored here. -->
         <echo file="${build}/appletviewer.html" append="false"><![CDATA[
         <applet code="pulpcore.platform.applet.CoreApplet.class" archive="${project.jar}" 
             width="${project.width}" height="${project.height}">
