@@ -1,3 +1,14 @@
+0.9 b217 (September 1, 2007)
+  * Examples: BubbleMark test now caps the frame rate by default.
+  * Examples: build files can now optionally use applet parameters.
+  * Examples: "project" template now accepts library jars in the lib folder.
+  * API: Prevent instantiation of static classes Base64, CoreMath, PNGWriter, and StringUtil.
+  * API: TextField.setText() is now public.
+  * API: Added CoreSystem.getAppProperty() for applet parameters. Also the PulpCorePlayer and
+    applet HTML generator were updated to accomodate. See the project template for an example.
+  * API: Added several CoreSystem.print() methods for printing ints, doubles, etc. to the log.
+  * Cleaned up some pulpcore.js issues found by JSLint.
+  
 0.9 b216 (August 23, 2007)
   * Examples: Added BubbleMark
   * Documentation: The platform implementation Javadocs are no longer included in the distribution 
@@ -53,3 +64,4 @@
 
 0.9 b202 (June 14, 2007)
   * First public release
+  
