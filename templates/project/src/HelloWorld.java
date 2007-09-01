@@ -1,3 +1,4 @@
+import pulpcore.CoreSystem;
 import pulpcore.image.CoreFont;
 import pulpcore.Input;
 import pulpcore.scene.Scene2D;
@@ -13,8 +14,10 @@ public class HelloWorld extends Scene2D {
     public void load() {
         add(new ImageSprite("background.png", 0, 0));
         
+        String message = CoreSystem.getAppProperty("message");
+        
         CoreFont font = CoreFont.load("hello.font.png");
-        label = new Label(font, "Hello World", 275, 200);
+        label = new Label(font, message, 275, 200);
         label.setAnchor(Sprite.HCENTER | Sprite.VCENTER);
         add(label);
         
