@@ -31,12 +31,27 @@
         <mkdir dir="${build.temp}/assettools" />
     </target>
     
-    
-    <target name="init" depends="clean">
-    
+    <target name="check-dependencies">
         <condition property="ctags.task">
             <available file="${ctags.command}" />
         </condition>
+        
+        <condition property="jslint.task">
+            <available file="${rhino.path}" />
+        </condition>
+        
+        <fail message="Required file not found: ${ant.jar}">
+            <condition><not><available file="${ant.jar}" /></not></condition>
+        </fail>
+
+        <fail message="Required file not found: ${library.path}">
+            <condition><not><available file="${library.path}" /></not></condition>
+        </fail>
+
+    </target>
+    
+    
+    <target name="init" depends="check-dependencies, clean">
     
         <condition property="src.tiger" value="pulpcore/platform/${platform}">
             <not><equals arg1="${platform}" arg2="applet"/></not>
@@ -151,8 +166,23 @@
         <delete dir="${build.temp}" />
     </target>
     
+    
+    <!-- 
+        Use Douglas Crockford's JavaScript checker
+        See http://jslint.com/
+    -->
+    <target name="jslint" if="jslint.task" depends="check-dependencies">
+        <java classname="org.mozilla.javascript.tools.shell.Main">
+            <classpath>
+                <pathelement location="${rhino.path}"/>
+            </classpath>
+            <arg file="lib/jslint.js"/>
+            <arg file="${tools.src}/assettools/pulpcore.js"/>
+        </java>
+    </target>
+    
    
-    <target name="compile-tools">
+    <target name="compile-tools" depends="jslint">
     
         <antcall target="init" >
             <param name="debug" value="true"/>
