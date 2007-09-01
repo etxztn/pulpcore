@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.swing.Box;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -76,6 +77,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     private static HashMap<String, PulpCorePlayer> players = new HashMap<String, PulpCorePlayer>();
     
+    /*
     public static void main(String[] args) {
         if (args.length != 6 && args.length != 7) {
             System.out.println("PulpCorePlayer is an applet viewer for PulpCore applets.");
@@ -97,15 +99,22 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         if (args.length > 6 && "false".equalsIgnoreCase(args[6])) {
             waitUntilClosed = false;
         }
+    }
+    */
+    
+    public static void start(String documentURL, String archive, int width, int height,
+        Map<String, String> params, boolean waitUntilClosed)
+    {
         
-        
+        String scene = params.get("scene");
+        String assets = params.get("assets");
         final String key = documentURL + archive;
         
         if (waitUntilClosed && !EventQueue.isDispatchThread()) {
             try {
                 synchronized (key) {
                     PulpCorePlayer player = new PulpCorePlayer(key, documentURL, archive, scene, 
-                        width, height, assets);
+                        width, height, assets, params);
                     // Wait until closed
                     try {
                         key.wait();
@@ -130,7 +139,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 else {
                     try {
                         player = new PulpCorePlayer(key, documentURL, archive, scene, width, height,
-                            assets);
+                            assets, params);
                         players.put(key, player);
                     }
                     catch (MalformedURLException ex) {
@@ -152,6 +161,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private final String assets;
     private final int width;
     private final int height;
+    private final Map<String, String> params;
     
     private Class appletClass;
     private Applet applet;
@@ -162,7 +172,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     
     public PulpCorePlayer(String key, String documentURL, String archive, String scene, 
-        int width, int height, String assets) 
+        int width, int height, String assets, Map<String, String> params) 
         throws MalformedURLException, IOException
     { 
         // Setup the JFrame 
@@ -177,6 +187,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         this.width = width;
         this.height = height;
         this.assets = assets;
+        this.params = params;
         
         
         addWindowListener(new WindowAdapter() {
@@ -495,7 +506,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             }
         }
         else {
-            return null;
+            return params.get(name);
         }
     }
     

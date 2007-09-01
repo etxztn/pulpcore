@@ -31,6 +31,10 @@ package pulpcore.tools;
 
 import java.awt.Frame;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
@@ -40,9 +44,10 @@ public class PlayerTask extends Task {
     private String path;
     private String archive;
     private String scene;
-    private String width;
-    private String height;
+    private int width;
+    private int height;
     private String assets;
+    private String params;
     private boolean waitUntilClosed = true;
     
     
@@ -61,17 +66,22 @@ public class PlayerTask extends Task {
     }
     
     
+    public void setParams(String params) {
+        this.params = params;
+    }
+    
+    
     public void setAssets(String assets) {
         this.assets = assets;
     }
     
     
-    public void setWidth(String width) {
+    public void setWidth(int width) {
         this.width = width;
     }
     
     
-    public void setHeight(String height) {
+    public void setHeight(int height) {
         this.height = height;
     }
     
@@ -91,15 +101,16 @@ public class PlayerTask extends Task {
         if (scene == null) {
             throw new BuildException("The scene is not specified.");
         }
-        if (width == null) {
+        if (width <= 0) {
             throw new BuildException("The width is not specified.");
         }
-        if (height == null) {
+        if (height <= 0) {
             throw new BuildException("The height is not specified.");
         }
         
-        String[] args = { path, archive, scene, width, height, assets, 
-            waitUntilClosed ? "true" : "false" };
+        Map<String, String> appProperties = parseParams();
+        appProperties.put("scene", scene);
+        appProperties.put("assets", assets);
         
         if (!waitUntilClosed) {
             
@@ -113,8 +124,10 @@ public class PlayerTask extends Task {
                 Class c = frames[i].getClass();
                 if (c.getName().equals(className)) {
                     try {
-                        Method m = c.getMethod("main", new Class[] { args.getClass() });
-                        m.invoke(null, new Object[] { args });
+                        Method m = c.getMethod("start", String.class, String.class, 
+                            Integer.TYPE, Integer.TYPE, Map.class, Boolean.TYPE);
+                        m.invoke(null, path, archive, width, height, 
+                            appProperties, waitUntilClosed ? true : false);
                         return;
                     }
                     catch (Exception ex) {
@@ -125,7 +138,61 @@ public class PlayerTask extends Task {
         }
         
         // No running copy found: start a new one.
-        PulpCorePlayer.main(args);
+        PulpCorePlayer.start(path, archive, width, height, 
+            appProperties, waitUntilClosed ? true : false);
+    }
+    
+    /**
+        Parse JavaScript formatted parameters. Example:
+        <code>name: "John", avatar: "robot", id: 12345</code>
+    */
+    private Map<String, String> parseParams() throws BuildException {
+        
+        Map<String, String> map = new HashMap<String, String>();
+        
+        if (params == null || params.length() == 0) {
+            return map;
+        }
+        
+        String optionalSpace = "\\s*";
+        String identifierStart = "[a-zA-Z_\\$]";
+        String identifierPart = "[a-zA-Z_\\$0-9]";
+        String identifier = "(" + identifierStart + identifierPart + "*" + ")";
+        String stringValue = "\"([^\\\"]*)\"";
+        String decimalValue = "[0-9\\.]+";
+        String value = "(" + stringValue + "|" + decimalValue + ")";
+        String end = optionalSpace + "(,|\\z)";
+        
+        String regex = optionalSpace +
+            identifier + ":" + optionalSpace + 
+            value + end;
+        
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(params);
+        
+        int index = 0;
+        while (matcher.find(index)) {
+            if (matcher.start() != index) {
+                throw new BuildException("Could not parse substring: " + 
+                    params.substring(index, matcher.start()));
+            }
+            index = matcher.end();
+            
+            String paramName = matcher.group(1);
+            String paramValue = matcher.group(3); // stringValue
+            if (paramValue == null) {
+                paramValue = matcher.group(2); // decimalValue
+            }
+            
+            map.put(paramName, paramValue);
+            log(paramName + " = " + paramValue);
+        }
+        
+        if (map.size() == 0) {
+            throw new BuildException("Invalid params: " + params);
+        }
+        
+        return map;
     }
   
 }
