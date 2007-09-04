@@ -591,7 +591,7 @@ public class TextField extends Sprite {
     }
     
     
-    private void selectAll() {
+    public void selectAll() {
         caretPosition = 0;
         setCaretPosition(text.length(), true);
     }
