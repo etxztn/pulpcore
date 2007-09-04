@@ -41,7 +41,7 @@ public class JSObject {
     private Preferences prefs;
     
     private JSObject() {
-        prefs = Preferences.userNodeForPackage(pulpcore.tools.PulpCorePlayer.class); 
+        prefs = Preferences.userNodeForPackage(pulpcore.player.PulpCorePlayer.class); 
     }
     
     

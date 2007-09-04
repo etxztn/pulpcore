@@ -27,7 +27,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-package pulpcore.tools;
+package pulpcore.player;
 
 import java.awt.Frame;
 import java.lang.reflect.Method;
@@ -185,7 +185,7 @@ public class PlayerTask extends Task {
             }
             
             map.put(paramName, paramValue);
-            log(paramName + " = " + paramValue);
+            //log(paramName + " = " + paramValue);
         }
         
         if (map.size() == 0) {

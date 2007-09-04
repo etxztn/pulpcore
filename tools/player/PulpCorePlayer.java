@@ -27,7 +27,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-package pulpcore.tools;
+package pulpcore.player;
 
 import java.applet.Applet;
 import java.applet.AppletContext;
@@ -37,84 +37,194 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.EventQueue;
 import java.awt.Image;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.Box;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.UIManager;
 
 
 /**
     PulpCorePlayer is an applet viewer for PulpCore applets. 
-    Significant features include:
+    Significant features not available in appletviewer include:
     <ul>
     <li>Ability to run in the save VM as an IDE or Ant runner.
-    <li>Ability to restart the current scene 
+    <li>Ability to reload the app, at the same scene
+    <li>User Data - CoreSystem.getUserData() and CoreSystem.putUserData()
     </ul>
 */
 public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext {
     
+    private static final int MAC_GROWBOX_SIZE = 15;
+    
     private static HashMap<String, PulpCorePlayer> players = new HashMap<String, PulpCorePlayer>();
     
     /*
+        Note: running from the command-line has only been tested with the html generated
+        by Eclipse. NetBeans can use the Ant file's "run" task.
+        
+        <applet archive="archive.jar" width="550" height="400">
+        <param name="name1" value="value1">
+        <param name="name2" value="value2">
+        <param name="name3" value="value3">
+        </applet>
+    */
     public static void main(String[] args) {
-        if (args.length != 6 && args.length != 7) {
-            System.out.println("PulpCorePlayer is an applet viewer for PulpCore applets.");
-            System.out.println("Arguments: documentURL archive scene width height assets");
-            System.out.println();
-            System.out.println("Note, PulpCorePlayer does not install a SecurityManager.");
-            System.out.println("Always be sure to test applets in web browsers.");
+        if (args.length != 1) {
+            showUsage();
             return;
         }
         
-        String documentURL = args[0];
-        String archive = args[1];
-        String scene = args[2];
-        int width = Integer.parseInt(args[3]);
-        int height = Integer.parseInt(args[4]);
-        String assets = args[5];
-        boolean waitUntilClosed = true;
+        // Read text
+        String html;
+        File file = new File(args[0]);
+        if (!file.exists() || !file.isFile()) {
+            showUsage();
+            return;
+        }
+        try {
+            html = readTextFile(new FileReader(file));
+        }
+        catch (IOException ex) {
+            System.out.println("Couldn't read file: " + args[0]);
+            return;
+        }
         
-        if (args.length > 6 && "false".equalsIgnoreCase(args[6])) {
-            waitUntilClosed = false;
+        // Default values
+        String documentURL = file.getAbsolutePath();
+        String archive = null;
+        int width = 550;
+        int height = 400;
+        Map<String, String> params = new HashMap<String, String>();
+        
+        // Prepare applet tag regex
+        String htmlSpace = "\\s+";
+        String inTagChars = "[^>]*";
+        String stringValue = "\"([^\\\"]*)\"";
+        String integerValue = "\"([0-9]+)\"";
+        String appletStart ="<applet" + htmlSpace;
+        String paramStart ="<param" + htmlSpace;
+        
+        String archiveRegex = appletStart + inTagChars + "archive=" + stringValue;
+        String dimRegex = appletStart + inTagChars + "width=" + integerValue +
+            htmlSpace + "height=" + integerValue;
+        String paramRegex = paramStart +
+            "name=" + stringValue + htmlSpace + "value=" + stringValue;
+        
+        // Parse archive attribute
+        Pattern pattern = Pattern.compile(archiveRegex, Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(html);
+        if (matcher.find()) {
+            archive = matcher.group(1);
+        }
+        
+        // Parse width & height attributes
+        pattern = Pattern.compile(dimRegex, Pattern.DOTALL);
+        matcher = pattern.matcher(html);
+        if (matcher.find()) {
+            width = Integer.parseInt(matcher.group(1));
+            height = Integer.parseInt(matcher.group(2));
+        }
+        
+        // Parse extra params
+        pattern = Pattern.compile(paramRegex, Pattern.DOTALL);
+        matcher = pattern.matcher(html);
+        while (matcher.find()) {
+            params.put(matcher.group(1), matcher.group(2));
+        }
+        
+        if (params.get("scene") == null) {
+            showUsage();
+            return;
+        }
+        
+        // Use system Look and Feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        }
+        catch (Exception ex) {
+            // ignore
+        }
+        
+        start(documentURL, archive, width, height, params, false);
+    }
+    
+    
+    private static void showUsage() {
+        System.out.println("PulpCorePlayer is an applet viewer for PulpCore applets.");
+        System.out.println("Usage: java pulpcore.player.PulpCorePlayer file");
+        System.out.println("Where 'file' is an HTML file containing an applet tag.");
+        System.out.println("The applet tag must contain a 'scene' parameter.");
+        System.out.println();
+        System.out.println("Note, PulpCorePlayer does not install a SecurityManager.");
+        System.out.println("Always be sure to test applets in web browsers.");
+    }
+    
+    
+    private static String readTextFile(Reader in) throws IOException {
+        String text = "";
+        
+        BufferedReader reader = new BufferedReader(in);
+        while (true) {
+            String line = reader.readLine();
+            if (line == null) {
+                reader.close();
+                return text;
+            }
+            text += line + '\n';
         }
     }
-    */
+
     
     public static void start(String documentURL, String archive, int width, int height,
         Map<String, String> params, boolean waitUntilClosed)
     {
-        
-        String scene = params.get("scene");
-        String assets = params.get("assets");
         final String key = documentURL + archive;
         
         if (waitUntilClosed && !EventQueue.isDispatchThread()) {
             try {
                 synchronized (key) {
-                    PulpCorePlayer player = new PulpCorePlayer(key, documentURL, archive, scene, 
-                        width, height, assets, params);
+                    PulpCorePlayer player = new PulpCorePlayer(key, documentURL, archive, 
+                        width, height, params);
                     // Wait until closed
                     try {
                         key.wait();
@@ -138,8 +248,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 }
                 else {
                     try {
-                        player = new PulpCorePlayer(key, documentURL, archive, scene, width, height,
-                            assets, params);
+                        player = new PulpCorePlayer(key, documentURL, archive, width, height,
+                            params);
                         players.put(key, player);
                     }
                     catch (MalformedURLException ex) {
@@ -157,8 +267,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private final URL codeBaseURL;
     private final URL archiveURL;
     private final String key;
-    private final String scene;
-    private final String assets;
     private final int width;
     private final int height;
     private final Map<String, String> params;
@@ -171,8 +279,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private String savedScene;
     
     
-    public PulpCorePlayer(String key, String documentURL, String archive, String scene, 
-        int width, int height, String assets, Map<String, String> params) 
+    public PulpCorePlayer(String key, String documentURL, String archive, 
+        int width, int height, Map<String, String> params) 
         throws MalformedURLException, IOException
     { 
         // Setup the JFrame 
@@ -181,12 +289,20 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(0,0));
         
+        // Setup menu bar
+        // Use setLightWeightPopupEnabled(false) because we're mixing lightweight and 
+        // heavyweight components
+        JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu(new FileAction());
+        fileMenu.getPopupMenu().setLightWeightPopupEnabled(false);
+        fileMenu.add(new JMenuItem(new ReloadAction()));
+        menuBar.add(fileMenu);
+        setJMenuBar(menuBar);
+        
         // Setup applet parameters
         this.key = key;
-        this.scene = scene;
         this.width = width;
         this.height = height;
-        this.assets = assets;
         this.params = params;
         
         
@@ -239,11 +355,16 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 codeBaseURL = file.getParentFile().toURL();
             }
         }
-        archiveURL = new URL(codeBaseURL, archive);
+        if (archive == null) {
+            archiveURL = null;
+        }
+        else {
+            archiveURL = new URL(codeBaseURL, archive);
+        }
 
         // Show the window
         if ("Mac OS X".equals(System.getProperty("os.name"))) {
-            getContentPane().setPreferredSize(new Dimension(width, height + 15));
+            getContentPane().setPreferredSize(new Dimension(width, height + MAC_GROWBOX_SIZE));
         }
         else {
             getContentPane().setPreferredSize(new Dimension(width, height));
@@ -270,9 +391,17 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         
         unloadApplet();
         
+        URL[] urls;
+        if (archiveURL == null) {
+            urls = new URL[] { codeBaseURL };
+        }
+        else {
+            urls = new URL[] { archiveURL, codeBaseURL };
+        }
+        
         // Create the Applet
         // Use this class loader as the parent so that the applet has access to JSObject
-        ClassLoader classLoader = new NoResourceCacheClassLoader(new URL[] { archiveURL, codeBaseURL },
+        ClassLoader classLoader = NoResourceCacheClassLoader.create(urls,
             getClass().getClassLoader());
         try {
             applet = (Applet)classLoader.loadClass("pulpcore.platform.applet.CoreApplet").newInstance();
@@ -297,7 +426,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         getContentPane().add(applet, BorderLayout.CENTER);
         // Add 15 pixels for the growbox
         if ("Mac OS X".equals(System.getProperty("os.name"))) {
-            Component c = Box.createVerticalStrut(15);
+            Component c = Box.createVerticalStrut(MAC_GROWBOX_SIZE);
             c.setBackground(Color.BLACK);
             c.setForeground(Color.BLACK);
             getContentPane().add(c, BorderLayout.SOUTH);
@@ -488,22 +617,12 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     
     public String getParameter(String name) {
-        if ("scene".equals(name)) {
-            if (savedScene != null && savedAssets != null) {
-                restoreState();
-                return savedScene;
-            }
-            else {
-                return scene;
-            }
+        if ("scene".equals(name) && savedScene != null && savedAssets != null) {
+            restoreState();
+            return savedScene;
         }
-        else if ("assets".equals(name)) {
-            if (savedScene != null && savedAssets != null) {
-                return null;
-            }
-            else {
-                return assets;
-            }
+        else if ("assets".equals(name) && savedScene != null && savedAssets != null) {
+            return null;
         }
         else {
             return params.get(name);
@@ -541,12 +660,19 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     
     public void showDocument(URL url) {
-        // Do nothing
+        showDocument(url, "_self");
     }
 
     
     public void showDocument(URL url, String target) {
-        // Do nothing
+        try {
+            BrowserLaunch.open(url);
+        }
+        catch (UnsupportedOperationException ex) {
+            ex.getCause().printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Could not launch browser.\n" + url);
+        }
     }
     
 
@@ -572,14 +698,63 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     }
     
     
-    public class NoResourceCacheClassLoader extends URLClassLoader {
+    //
+    // Swing actions
+    //
+    
+    
+    public class FileAction extends EditAction { }
+    
+    public class ReloadAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            reloadApplet();
+        }
+    }
+
+    
+    //
+    // ClassLoader hack
+    //
+    
+    public static class NoResourceCacheClassLoader extends URLClassLoader {
         
-        public NoResourceCacheClassLoader(URL[] urls, ClassLoader parent) {
+        private NoResourceCacheClassLoader(URL[] urls, ClassLoader parent) {
             super(urls, parent);
         }
         
-        // I'm not sure why this is necesary, but it works. I was getting ZipExceptions loading 
-        // resources from the jar after it was modified. Classes always loaded fine.
+        /*
+            This is mostly a hack for Eclipse, which supplies the applet codebase in the 
+            system classpath rather than using the applet tag's codebase attribute.
+            
+            In order for reloading to work, the applet classes need to be loaded in a 
+            throw-away class loader - not the system class loader.
+            
+            For this to work, the PulpCore player jar must be in the bootclasspath.
+        */
+        public static NoResourceCacheClassLoader create(URL[] urls, ClassLoader parent) {
+            // If parent is null, the PulpCorePlayer is running from the bootstrap class
+            // loader.
+            if (parent == null) {
+                parent = ClassLoader.getSystemClassLoader();
+            }
+            
+            // If the parent is a URLClassLoader, use all of its URLs
+            List<URL> urlList = new ArrayList<URL>();
+            urlList.addAll(Arrays.asList(urls));
+            
+            while (parent instanceof URLClassLoader) { 
+                urlList.addAll(Arrays.asList(((URLClassLoader)parent).getURLs()));
+                parent = parent.getParent();
+            }
+            
+            urls = (URL[])urlList.toArray(new URL[0]);
+            
+            return new NoResourceCacheClassLoader(urls, parent);
+        }
+        
+        
+        // Don't cache resources inside jars - a ZipException will occur if 
+        // the jar is modified.
         public InputStream getResourceAsStream(String name) {
             URL url = super.getResource(name);
             if (url != null) {
@@ -599,5 +774,4 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             return null;
         }
     }
-
 }
