@@ -272,7 +272,12 @@ public class CoreSystem {
         Prints a the string representation of an object to the log.
     */
     public static void print(Object object) {
-        print((String)object);
+        if (object == null) {
+            print("null");
+        }
+        else {
+            print(object.toString());
+        }
     }
     
     
