@@ -398,27 +398,35 @@
         <copy todir="${dist.temp}" file="CHANGES" />
         
         <!-- Compile templates and examples -->
-        <ant inheritAll="false" antfile="${dist.temp}/templates/quick/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/templates/quick/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/templates/project/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/templates/project/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/AnimationEasing/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/AnimationEasing/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/BubbleMark/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/BubbleMark/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/ImagesAndFonts/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/ImagesAndFonts/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/Particles/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/Particles/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/Scenes/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/Scenes/build.xml" target="clean-temp" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/Widgets/build.xml" target="build" />
-        <ant inheritAll="false" antfile="${dist.temp}/examples/Widgets/build.xml" target="clean-temp" />
-
-        
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/templates/quick/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/templates/project/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/AnimationEasing/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/BubbleMark/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/ImagesAndFonts/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Particles/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Scenes/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Widgets/build.xml"/></antcall>
+               
         <zip destfile="${build}/pulpcore-${version}-(${build.number}).zip" basedir="${dist.temp}" />
             
         <delete dir="${dist.temp}" /> 
+    </target>
+    
+    <target name="build-example">
+        <ant inheritAll="false" antfile="${example.build.file}" target="build">
+            <property name="library.path" value="${library.path}"/>
+            <property name="proguard.path" value="${proguard.path}"/>
+            <property name="obfuscate.task" value="true"/>
+        </ant>
+        <ant inheritAll="false" antfile="${example.build.file}" target="clean-temp" />
     </target>
     
 </project>
