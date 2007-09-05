@@ -1,3 +1,14 @@
+0.9 b218 (September 4, 2007)
+  * Examples: Example jar files in distribution archive are obfuscated - this brings the jar of 
+    each example from 200K+ to about 84K. The total size of the distribution archive shrinks by 
+    about 900K.
+  * API: TextField.selectAll() is now public.
+  * Player: CoreSystem.showDocument() now works under PulpCorePlayer.
+  * Player: PulpCorePlayer can now open simple HTML files containing an applet tag (for Eclipse).
+  * Player: PulpCorePlayer now has a File->Reload command. Tested in Eclipse Europa, 
+    NetBeans 6, and jEdit 4.3/AntFarm 1.5. 
+  * Fixed Bug: CoreSystem.print(Object)
+  
 0.9 b217 (September 1, 2007)
   * Examples: BubbleMark test now caps the frame rate by default.
   * Examples: build files can now optionally use applet parameters.
