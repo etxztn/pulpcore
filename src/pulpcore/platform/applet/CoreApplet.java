@@ -31,7 +31,12 @@ package pulpcore.platform.applet;
 
 import java.applet.Applet;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.Graphics;
+import java.net.MalformedURLException;
+import java.net.URL;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.platform.Surface;
@@ -47,6 +52,7 @@ import pulpcore.scene.Scene;
 public final class CoreApplet extends Applet {
     
     private AppletAppContext context;
+    private boolean oldJava = false;
 
     
     public final void init() {
@@ -59,10 +65,35 @@ public final class CoreApplet extends Applet {
             catch (NumberFormatException ex) { }
         }
         
-        if (context != null) {
-            context.stop();
+        String javaVersion = "1.1";
+        try {
+            javaVersion = System.getProperty("java.version");
         }
-        context = (AppletAppContext)AppletPlatform.getInstance().registerApp(this);
+        catch (SecurityException ex) { }
+        
+        if (javaVersion.compareTo("1.4") < 0) {
+            oldJava = true;
+            
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            
+            final Applet applet = this;
+            addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    try {
+                        applet.getAppletContext().showDocument(
+                            new URL("http://www.java.com/"), "_blank");
+                    }
+                    catch (MalformedURLException ex) { }
+                }
+            });
+        }
+        else {
+            oldJava = false;
+            if (context != null) {
+                context.stop();
+            }
+            context = (AppletAppContext)AppletPlatform.getInstance().registerApp(this);
+        }
     }
     
     
@@ -83,41 +114,43 @@ public final class CoreApplet extends Applet {
     public final void destroy() {
         if (context != null) {
             context.stop();
+            AppletPlatform.getInstance().unregisterApp(this);
+            context = null;
         }
-        AppletPlatform.getInstance().unregisterApp(this);
-        context = null;
     }
     
     
     public final void update(Graphics g) {
-        Surface surface = null;
-        if (context != null) {
-            surface = context.getSurface();
-        }
-        
-        if (surface == null) {
-            paintBlank(g);
-        }
-        else if (surface instanceof ImageProducerSurface) {
-            ((ImageProducerSurface)surface).update(g);
-        }
-        else {
-            surface.notifyOSRepaint();
-        }
+        paint(g);
     }
     
     
     public final void paint(Graphics g) {
-        Surface surface = null;
-        if (context != null) {
-            surface = context.getSurface();
+        if (oldJava) {
+            drawUpgradeMessage(g);
         }
+        else if (context == null) {
+            drawBlank(g);
+        }
+        else {
+            drawSurface(g);
+        }
+    }
+    
+    
+    private final void drawUpgradeMessage(Graphics g) {
+        g.setColor(Color.white);
+        g.fillRect(0, 0, getSize().width, getSize().height);
+        g.setColor(Color.blue);
+        g.drawString("Get Java at www.java.com", 5, 25);
+    }
+    
+    
+    private final void drawSurface(Graphics g) {
+        Surface surface = context.getSurface();
         
-        if (surface == null) {
-            paintBlank(g);
-        }
-        else if (surface instanceof ImageProducerSurface) {
-            ((ImageProducerSurface)surface).paint(g);
+        if (surface instanceof BufferedImageSurface) {
+            ((BufferedImageSurface)surface).draw(g);
         }
         else {
             surface.notifyOSRepaint();
@@ -125,7 +158,7 @@ public final class CoreApplet extends Applet {
     }
     
     
-    private final void paintBlank(Graphics g) {
+    private final void drawBlank(Graphics g) {
         g.setColor(getBackground());
         g.fillRect(0, 0, getSize().width, getSize().height);
     }
@@ -177,12 +210,4 @@ public final class CoreApplet extends Applet {
         }
     }
     
-    
-    /**
-        This class exists to prevent the MS VM from performing an extra HTTP 
-        request on the web server.
-    */
-    public static class COMClassObject {
-    
-    }
 }

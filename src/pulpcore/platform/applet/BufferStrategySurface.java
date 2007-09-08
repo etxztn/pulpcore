@@ -27,7 +27,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-package pulpcore.platform.applet.opt;
+package pulpcore.platform.applet;
 
 import java.awt.AWTEvent;
 import java.awt.AWTException;

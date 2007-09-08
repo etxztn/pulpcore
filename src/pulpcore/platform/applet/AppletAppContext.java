@@ -39,7 +39,6 @@ import java.awt.MediaTracker;
 import java.awt.Panel;
 import java.awt.Toolkit;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -49,8 +48,6 @@ import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.platform.AppContext;
-import pulpcore.platform.applet.opt.BufferedImageSurface;
-import pulpcore.platform.applet.opt.BufferStrategySurface;
 import pulpcore.platform.Platform;
 import pulpcore.platform.Surface;
 import pulpcore.scene.Scene;
@@ -241,9 +238,8 @@ public final class AppletAppContext extends AppContext {
         // Try to use BufferedImage. It's faster than using ImageProducer, and,
         // on some VMs, the ImageProducerSurface creates a lot of 
         // garbage for the GC to cleanup.
-        if (surface == null && CoreSystem.isJava13orNewer()) {
+        if (surface == null) {
             try {
-                Class.forName("java.awt.image.BufferedImage");
                 surface = new BufferedImageSurface(app);
                 setTalkBackField("pulpcore.platform.surface", "BufferedImage");
             }
@@ -252,10 +248,9 @@ public final class AppletAppContext extends AppContext {
             }
         }
         
-        // BufferedImage is not available, so use the ImageProducer surface
+        // BufferedImage is not available - should not happen
         if (surface == null) {
-            surface = new ImageProducerSurface(app);
-            setTalkBackField("pulpcore.platform.surface", "ImageProducer");
+            setTalkBackField("pulpcore.platform.surface", "none");
         }
         
         inputSystem = new AppletInput(inputComponent);

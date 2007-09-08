@@ -32,8 +32,10 @@ package pulpcore.platform;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
@@ -51,11 +53,11 @@ public abstract class AppContext {
     private static int nextContextID = 0;
     
     private ThreadGroup threadGroup;
-    private Hashtable talkbackFields = new Hashtable();
+    private Map talkbackFields = new HashMap();
 
     // Logging
 
-    private Vector logLines = new Vector();
+    private LinkedList logLines = new LinkedList();
     private boolean consoleOut = Build.DEBUG;
     
     /** Last memory value recorded in the printMemory() method. */
@@ -224,7 +226,7 @@ public abstract class AppContext {
 
 
     public void clearTalkBackFields() {
-        talkbackFields = new Hashtable();
+        talkbackFields = new HashMap();
     }
 
 
@@ -290,17 +292,18 @@ public abstract class AppContext {
 
 
     /**
-        Each element in the Vector represents one line of text.
+        Each element in the List represents one line of text.
     */
-    public Vector getLogLines() {
+    public LinkedList getLogLines() {
         return logLines;
     }
 
     
     public String getLogText() {
         StringBuffer buffer = new StringBuffer();
-        for (int i = 0; i < logLines.size(); i++) {
-            buffer.append(logLines.elementAt(i));
+        Iterator i = logLines.iterator();
+        while (i.hasNext()) {
+            buffer.append(i.next());
             buffer.append("\n");
         }
         return buffer.toString();
@@ -308,7 +311,7 @@ public abstract class AppContext {
     
 
     public void clearLog() {
-        logLines = new Vector();
+        logLines = new LinkedList();
     }
 
 
@@ -331,18 +334,18 @@ public abstract class AppContext {
         while (true) {
             int index = statement.indexOf('\n');
             if (index != -1) {
-                logLines.addElement(statement.substring(0, index));
+                logLines.add(statement.substring(0, index));
                 statement = statement.substring(index + 1);
             }
             else {
                 break;
             }
         }
-        logLines.addElement(statement);
+        logLines.add(statement);
         
         // Trim the log if there are too many lines.
         while (logLines.size() > MAX_LOG_LINES) {
-            logLines.removeElementAt(0);
+            logLines.removeFirst();
         }
     }
 

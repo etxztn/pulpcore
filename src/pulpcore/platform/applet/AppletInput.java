@@ -39,6 +39,11 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.image.BufferedImage;
+import java.awt.Point;
+import java.awt.Toolkit;
 import pulpcore.CoreSystem;
 import pulpcore.Input;
 
@@ -46,7 +51,7 @@ import pulpcore.Input;
     An input manager for Applets.
 */
 public class AppletInput extends Input implements KeyListener, MouseListener,
-    MouseMotionListener, FocusListener
+    MouseMotionListener, MouseWheelListener, FocusListener
 {
     private Component comp;
     
@@ -56,12 +61,17 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     private int cursorCode;
     private int awtCursorCode;
     
+    private Cursor invisibleCursor;
+    
     private int appletMouseX = -1;
     private int appletMouseY = -1;
     private int appletMousePressX = -1;
     private int appletMousePressY = -1;
     private int appletMouseReleaseX = -1;
     private int appletMouseReleaseY = -1;
+    private int appletMouseWheelX = -1;
+    private int appletMouseWheelY = -1;
+    private int appletMouseWheel = 0;
     private boolean appletHasKeyboardFocus;
     private int focusCountdown;
     
@@ -75,20 +85,24 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         comp.addKeyListener(this);
         comp.addMouseListener(this);
         comp.addMouseMotionListener(this);
+        comp.addMouseWheelListener(this);
         comp.addFocusListener(this);
-
-        // Allow input of the TAB key (normally used for focus traversal)
-        // Requires Java 1.4
-        if (CoreSystem.isJava14orNewer()) {
-            try {
-                java.lang.reflect.Method method = comp.getClass().getMethod(
-                    "setFocusTraversalKeysEnabled", new Class[] { Boolean.TYPE });
-                method.invoke(comp, new Object[] { Boolean.FALSE });
-            }
-            catch (Throwable t) {
-                // Ignore
-            }
+        comp.setFocusTraversalKeysEnabled(false);
+        
+        Dimension cursorSize = Toolkit.getDefaultToolkit().getBestCursorSize(32, 32);
+        if (cursorSize.width <= 0 || cursorSize.height <= 0) {
+            // No cursor
+            invisibleCursor = null;
         }
+        else {
+            BufferedImage cursorImage = new BufferedImage(
+                cursorSize.width, cursorSize.height, BufferedImage.TYPE_INT_ARGB);
+            
+            invisibleCursor = Toolkit.getDefaultToolkit().createCustomCursor(
+                cursorImage, new Point(0, 0), "invisible");
+        }
+        
+
         // This is a hack and probably won't work on all machines.
         // Firefox 2 + Windows XP + Java 5 + pulpcore.js appears to need a delay
         // before calling comp.requestFocus(). Calling it repeatedly does not focus
@@ -152,7 +166,12 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         super.mousePressY = appletMousePressY;
         super.mouseReleaseX = appletMouseReleaseX;
         super.mouseReleaseY = appletMouseReleaseY;
+        super.mouseWheelX = appletMouseWheelX;
+        super.mouseWheelY = appletMouseWheelY;
+        super.mouseWheel = appletMouseWheel;
         super.hasKeyboardFocus = appletHasKeyboardFocus;
+        
+        appletMouseWheel = 0;
         
         if (super.textInputMode) {
             if (textInputSinceLastPoll.length() > 0) {
@@ -185,10 +204,14 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         
         int awtCursorCode;
         if (cursorCode == CURSOR_CUSTOM) {
-            awtCursorCode = Cursor.DEFAULT_CURSOR;
+            awtCursorCode = Cursor.CUSTOM_CURSOR;
         }
         else {
             awtCursorCode = getAWTCursorCode(cursorCode);
+        }
+        
+        if (awtCursorCode == Cursor.CUSTOM_CURSOR && invisibleCursor == null) {
+            awtCursorCode = Cursor.DEFAULT_CURSOR;
         }
         
         if (awtCursorCode == Cursor.DEFAULT_CURSOR) {
@@ -196,7 +219,12 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         }
         
         if (this.cursorCode != cursorCode || this.awtCursorCode != awtCursorCode) {
-            comp.setCursor(Cursor.getPredefinedCursor(awtCursorCode));
+            if (awtCursorCode == Cursor.CUSTOM_CURSOR) {
+                comp.setCursor(invisibleCursor);
+            }
+            else {
+                comp.setCursor(Cursor.getPredefinedCursor(awtCursorCode));
+            }
             this.awtCursorCode = awtCursorCode;
             this.cursorCode = cursorCode;
         }
@@ -212,7 +240,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         
         switch (cursorCode) {
             case CURSOR_DEFAULT:   return Cursor.DEFAULT_CURSOR; 
-            case CURSOR_OFF:       return Cursor.DEFAULT_CURSOR; 
+            case CURSOR_OFF:       return Cursor.CUSTOM_CURSOR; 
             case CURSOR_CROSSHAIR: return Cursor.CROSSHAIR_CURSOR; 
             case CURSOR_HAND:      return Cursor.HAND_CURSOR; 
             case CURSOR_MOVE:      return Cursor.MOVE_CURSOR; 
@@ -256,6 +284,17 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             case KeyEvent.VK_PRINTSCREEN:  return KEY_PRINT_SCREEN;
             case KeyEvent.VK_INSERT:       return KEY_INSERT;
             case KeyEvent.VK_DELETE:       return KEY_DELETE;
+            case KeyEvent.VK_SEMICOLON:    return KEY_SEMICOLON;
+            case KeyEvent.VK_EQUALS:       return KEY_EQUALS;
+            case KeyEvent.VK_COMMA:        return KEY_COMMA;
+            case KeyEvent.VK_MINUS:        return KEY_MINUS;
+            case KeyEvent.VK_PERIOD:       return KEY_PERIOD;
+            case KeyEvent.VK_SLASH:        return KEY_SLASH;
+            case KeyEvent.VK_BACK_QUOTE:   return KEY_BACK_QUOTE;
+            case KeyEvent.VK_OPEN_BRACKET: return KEY_OPEN_BRACKET;
+            case KeyEvent.VK_BACK_SLASH:   return KEY_BACK_SLASH;
+            case KeyEvent.VK_CLOSE_BRACKET:return KEY_CLOSE_BRACKET;
+            case KeyEvent.VK_QUOTE:        return KEY_QUOTE;
             case KeyEvent.VK_0:            return KEY_0;
             case KeyEvent.VK_1:            return KEY_1;
             case KeyEvent.VK_2:            return KEY_2;
@@ -320,31 +359,54 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             case KeyEvent.VK_F10:          return KEY_F10;
             case KeyEvent.VK_F11:          return KEY_F11;
             case KeyEvent.VK_F12:          return KEY_F12;
-            // F13 - F24 is only available for Java 1.2+
+            case KeyEvent.VK_F13:          return KEY_F13;
+            case KeyEvent.VK_F14:          return KEY_F14;
+            case KeyEvent.VK_F15:          return KEY_F15;
+            case KeyEvent.VK_F16:          return KEY_F16;
+            case KeyEvent.VK_F17:          return KEY_F17;
+            case KeyEvent.VK_F18:          return KEY_F18;
+            case KeyEvent.VK_F19:          return KEY_F19;
+            case KeyEvent.VK_F20:          return KEY_F20;
+            case KeyEvent.VK_F21:          return KEY_F21;
+            case KeyEvent.VK_F22:          return KEY_F22;
+            case KeyEvent.VK_F23:          return KEY_F23;
+            case KeyEvent.VK_F24:          return KEY_F24;
             case KeyEvent.VK_NUM_LOCK:     return KEY_NUM_LOCK;
             case KeyEvent.VK_SCROLL_LOCK:  return KEY_SCROLL_LOCK;
                 
-            case KeyEvent.VK_SHIFT:        return KEY_LEFT_SHIFT;
-            case KeyEvent.VK_CONTROL:      return KEY_LEFT_CONTROL;
-            case KeyEvent.VK_ALT:          return KEY_LEFT_ALT;
-            // Apple "Command" key
-            case KeyEvent.VK_META:         return KEY_LEFT_META;
+            case KeyEvent.VK_SHIFT:
+                if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
+                    return KEY_RIGHT_SHIFT;
+                }
+                else {
+                    return KEY_LEFT_SHIFT;
+                }
+                
+            case KeyEvent.VK_CONTROL:
+                if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
+                    return KEY_RIGHT_CONTROL;
+                }
+                else {
+                    return KEY_LEFT_CONTROL;
+                }
+                
+            case KeyEvent.VK_ALT:
+                if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
+                    return KEY_RIGHT_ALT;
+                }
+                else {
+                    return KEY_LEFT_ALT;
+                }
             
+            case KeyEvent.VK_META:
+                if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
+                    return KEY_RIGHT_META;
+                }
+                else {
+                    return KEY_LEFT_META;
+                }
         }
         
-        switch (e.getKeyChar()) {
-            case ';':  return KEY_SEMICOLON;
-            case '=':  return KEY_EQUALS;
-            case ',':  return KEY_COMMA;
-            case '-':  return KEY_MINUS;
-            case '.':  return KEY_PERIOD;
-            case '/':  return KEY_SLASH;
-            case '`':  return KEY_BACK_QUOTE;
-            case '[':  return KEY_OPEN_BRACKET;
-            case '\\': return KEY_BACK_SLASH;
-            case ']':  return KEY_CLOSE_BRACKET;
-            case '\'': return KEY_QUOTE;
-        }
      
         // Unknown key code
         return -1;
@@ -352,7 +414,14 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     
     
     private int getKeyCode(MouseEvent e) {
-        return KEY_MOUSE_BUTTON_1;
+        switch (e.getButton()) {
+            default: case MouseEvent.BUTTON1:
+                return KEY_MOUSE_BUTTON_1;
+            case MouseEvent.BUTTON2:
+                return KEY_MOUSE_BUTTON_2;
+            case MouseEvent.BUTTON3:
+                return KEY_MOUSE_BUTTON_3;
+        }
     }
     
     
@@ -486,6 +555,11 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
                  keyCode = KEY_TRIPLE_MOUSE_BUTTON_1;
             }
             
+            switch (e.getButton()) {
+                case MouseEvent.BUTTON2: keyCode += 1; break;
+                case MouseEvent.BUTTON3: keyCode += 2; break;
+            }
+            
             keyPressed[keyCode] = true;
             keyDown[keyCode] = false;
             
@@ -531,6 +605,22 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             */
         }
 
+    }
+    
+    
+    //
+    // MouseWheelListener
+    //
+    
+    
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        synchronized (this) {
+            appletMouseWheelX = e.getX();
+            appletMouseWheelY = e.getY();
+            
+            int rotation = e.getWheelRotation();
+            appletMouseWheel += (rotation < 0) ? -1 : (rotation > 0) ? 1 : 0;
+        }
     }
 
     

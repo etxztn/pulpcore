@@ -30,12 +30,11 @@
 package pulpcore.platform;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.Vector;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import pulpcore.Build;
@@ -56,7 +55,7 @@ import pulpcore.Stage;
 */
 public class SceneSelector extends Scene2D {
     
-    private static Vector scenes;
+    private static List scenes;
     
     private Button cancel;
     private Button[] buttons;
@@ -78,7 +77,7 @@ public class SceneSelector extends Scene2D {
         
         buttons = new Button[scenes.size()];
         for (int i = 0; i < scenes.size(); i++) {
-            Class c = (Class)scenes.elementAt(i);
+            Class c = (Class)scenes.get(i);
             buttons[i] = Button.createLabeledButton("Switch to " + c.getName(), x, y);
             add(buttons[i]);
             
@@ -89,18 +88,17 @@ public class SceneSelector extends Scene2D {
     
     public void update(int elapsedTime) {
         if (cancel.isClicked()) {
-            Stage.gotoInterruptedScene();
+            Stage.popScene();
             return;
         }
         
         for (int i = 0; i < buttons.length; i++) {
             if (buttons[i].isClicked()) {
                 
-                Class c = (Class)scenes.elementAt(i);
+                Class c = (Class)scenes.get(i);
                 
                 try {
                     Scene scene = (Scene)c.newInstance();
-                    Stage.clearInterruptedScenes();
                     Stage.setScene(scene);
                 }
                 catch (Throwable t) {
@@ -115,18 +113,18 @@ public class SceneSelector extends Scene2D {
     // Private methods to find scenes
     //
     
-    private Vector findSceneClasses() {
-        Vector sceneClasses = new Vector();
+    private List findSceneClasses() {
+        List sceneClasses = new ArrayList();
         try {
-            Vector jars = getJars();
+            List jars = getJars();
             for (int i = 0; i < jars.size(); i++) {
-                Vector classes = getClasses((String)jars.elementAt(i));
+                List classes = getClasses((String)jars.get(i));
                 for (int j = 0; j < classes.size(); j++) {
-                    String c = (String)classes.elementAt(j);
+                    String c = (String)classes.get(j);
                     
                     Class t = Class.forName(c);
                     if (isScene(t)) {
-                        sceneClasses.addElement(t);
+                        sceneClasses.add(t);
                     }
                 }
             }
@@ -194,8 +192,8 @@ public class SceneSelector extends Scene2D {
         Gets a list of all the classes inside a jar.
         TODO: Use pulpcore.net.Download in the background
     */
-    private Vector getClasses(String jar) throws Throwable {
-        Vector classes = new Vector();
+    private List getClasses(String jar) throws Throwable {
+        List classes = new ArrayList();
         
         URL url = new URL(CoreSystem.getBaseURL(), jar);
         ZipInputStream is = new ZipInputStream(url.openStream());
@@ -207,7 +205,7 @@ public class SceneSelector extends Scene2D {
             }
             String name = e.getName();
             if (name.endsWith(".class")) {
-                classes.addElement(getClassName(name));
+                classes.add(getClassName(name));
             }
         }
         
@@ -220,29 +218,26 @@ public class SceneSelector extends Scene2D {
     /**
         Gets a list of all the jars that are available to this class loader.
     */
-    private Vector getJars() throws Throwable {
+    private List getJars() throws Throwable {
         String base = CoreSystem.getBaseURL().toString();
         
         ClassLoader classLoader = getClass().getClassLoader();
-        Class t = Class.forName("java.net.URLClassLoader");
         
-        if (t.isAssignableFrom(classLoader.getClass())) {
-            Method method = t.getMethod("getURLs", new Class[] { } ); 
+        if (classLoader instanceof URLClassLoader) {
+            URL[] urls = ((URLClassLoader)classLoader).getURLs();
             
-            URL[] urls = (URL[])method.invoke(classLoader, new Object[] { } );
-            
-            Vector jars = new Vector();
+            List jars = new ArrayList();
             for (int i = 0; i < urls.length; i++) {
                 String s = urls[i].toString();
                 if (s.toLowerCase().endsWith(".jar") && s.startsWith(base)) {
-                    jars.addElement(s.substring(base.length()));
+                    jars.add(s.substring(base.length()));
                 }
             }
             return jars;
         }
         else {
             if (Build.DEBUG) CoreSystem.print("Couldn't get Scene list");
-            return new Vector();
+            return new ArrayList();
         }
     }
     

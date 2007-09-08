@@ -27,7 +27,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-package pulpcore.platform.applet.opt;
+package pulpcore.platform.applet;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;

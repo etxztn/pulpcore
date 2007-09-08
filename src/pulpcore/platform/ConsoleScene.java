@@ -29,7 +29,8 @@
 
 package pulpcore.platform;
 
-import java.util.Vector;
+import java.util.Iterator;
+import java.util.LinkedList;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
@@ -76,7 +77,9 @@ public class ConsoleScene extends Scene2D {
         if (CoreSystem.isNativeClipboard()) {
             add(copyButton);
         }
-        add(backButton);
+        if (Stage.canPopScene()) {
+            add(backButton);
+        }
     }
     
     
@@ -88,8 +91,8 @@ public class ConsoleScene extends Scene2D {
         
         // Check button presses
         if (backButton.isClicked() || Input.isPressed(Input.KEY_ESCAPE)) {
-            if (Stage.isInterrupted()) {
-                Stage.gotoInterruptedScene();
+            if (Stage.canPopScene()) {
+                Stage.popScene();
             }
         }
         if (clearButton.isClicked()) {
@@ -116,6 +119,9 @@ public class ConsoleScene extends Scene2D {
         if (Input.isTyped(Input.KEY_PAGE_DOWN)) {
             textbox.scrollPage(-1);
         }
+        if (textbox.isMouseWheelRotated()) {
+            textbox.scrollLine(Input.getMouseWheelRotation() * -3);
+        }
     }
     
     
@@ -140,10 +146,10 @@ public class ConsoleScene extends Scene2D {
         
         
         public boolean needsRefresh() {
-            Vector logLines = CoreSystem.getLogLines();
+            LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
             String line = null;
             if (logLines.size() > 0) {
-                line = (String)logLines.lastElement();
+                line = (String)logLines.getLast();
             }
             return (lastLine != line);
         }
@@ -186,9 +192,9 @@ public class ConsoleScene extends Scene2D {
         
         
         public void refresh() {
-            Vector logLines = CoreSystem.getLogLines();
+            LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
             if (logLines.size() > 0) {
-                lastLine = (String)logLines.lastElement();
+                lastLine = (String)logLines.getLast();
             }
             else {
                 lastLine = null;
@@ -197,9 +203,9 @@ public class ConsoleScene extends Scene2D {
             contents.removeAll();
             numLines = 0;
             int y = 0;
-            for (int i = 0; i < logLines.size(); i++) {
-                String[] text = StringUtil.wordWrap((String)logLines.elementAt(i),
-                    null, width.getAsInt());
+            Iterator i = logLines.iterator();
+            while (i.hasNext()) {
+                String[] text = StringUtil.wordWrap((String)i.next(), null, width.getAsInt());
                 
                 if (text.length == 0) {
                     text = new String[] { " " };

@@ -31,20 +31,27 @@ package pulpcore.platform.applet;
 
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Graphics;
-import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
 import java.awt.image.DirectColorModel;
-import java.awt.image.ImageConsumer;
-import java.awt.image.ImageProducer;
+import java.awt.image.Raster;
+import java.awt.image.SampleModel;
+import java.awt.image.SinglePixelPackedSampleModel;
+import java.awt.image.WritableRaster;
+import java.awt.Point;
 import java.awt.Toolkit;
-
-import pulpcore.platform.Surface;
+import java.util.Hashtable;
 import pulpcore.math.Rect;
+import pulpcore.platform.Surface;
 
 /**
-    The ImageProducerSurface class is a Surface implementation for Java 1.1.
+    The BufferedImageSurface class is a Surface implementation for Java 1.3 or 
+    newer. It provides faster performace compared to ImageProducerSurface.
 */
-public class ImageProducerSurface extends Surface implements ImageProducer {
+public class BufferedImageSurface extends Surface {
     
     protected static final DirectColorModel COLOR_MODEL = 
         new DirectColorModel(24, 0xff0000, 0x00ff00, 0x0000ff);
@@ -52,8 +59,7 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
     private final Object paintLock = new Object();
     
     private Component component;
-    protected Image awtImage;
-    private ImageConsumer consumer;
+    protected BufferedImage awtImage;
     private boolean needsRefresh;
     
     private Rect repaintBounds = new Rect();
@@ -61,7 +67,7 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
     protected int numDirtyRectangles;
     
     
-    public ImageProducerSurface(Component component) {
+    public BufferedImageSurface(Component component) {
         this.component = component;
     }
     
@@ -73,8 +79,19 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
     
     protected void notifyResized() {
         contentsLost = true;
-        consumer = null;
-        awtImage = Toolkit.getDefaultToolkit().createImage(this);
+        
+        int w = getWidth();
+        int h = getHeight();
+        
+        SampleModel sampleModel = new SinglePixelPackedSampleModel(
+            DataBuffer.TYPE_INT, w, h, new int[] { 0xff0000, 0x00ff00, 0x0000ff }); 
+        
+        DataBuffer dataBuffer = new DataBufferInt(getData(), w * h);
+        
+        WritableRaster raster = Raster.createWritableRaster(
+            sampleModel, dataBuffer, new Point(0,0));
+        
+        awtImage = new BufferedImage(COLOR_MODEL, raster, true, new Hashtable());
     }
     
     
@@ -128,12 +145,7 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
     }
     
     
-    public void update(Graphics g) {
-        paint(g);
-    }
-    
-    
-    public void paint(Graphics g) {
+    public void draw(Graphics g) {
         
         if (!needsRefresh) {
             // Call from the OS?
@@ -153,73 +165,18 @@ public class ImageProducerSurface extends Surface implements ImageProducer {
     
     protected void show(Graphics g) {
         
-        if (consumer != null) {
-            if (contentsLost || numDirtyRectangles < 0) {
-                consumer.setPixels(0, 0, getWidth(), getHeight(), 
-                    COLOR_MODEL, getData(), 0, getWidth());
-            }
-            else {
-                int scanSize = getWidth();
-                
-                for (int i = 0; i < numDirtyRectangles; i++) {
-                    Rect r = dirtyRectangles[i];
-                    int offset = r.x + r.y * scanSize;
-                    consumer.setPixels(r.x, r.y, r.width, r.height, 
-                        COLOR_MODEL, getData(), offset, scanSize);
-                }
-                
-                g.setClip(repaintBounds.x, repaintBounds.y, 
-                    repaintBounds.width, repaintBounds.height);
-            }
-            consumer.imageComplete(ImageConsumer.SINGLEFRAMEDONE);
+        if (contentsLost || numDirtyRectangles < 0) {
+            g.drawImage(awtImage, 0, 0, null);
         }
-        g.drawImage(awtImage, 0, 0, null);
+        else {
+            for (int i = 0; i < numDirtyRectangles; i++) {
+                Rect r = dirtyRectangles[i];
+                g.setClip(r.x, r.y, r.width, r.height);
+                g.drawImage(awtImage, 0, 0, null);
+            }
+        }
         
         contentsLost = false;
     }
-
-
-    //
-    // ImageProducer interface
-    //
-
-    public void addConsumer(ImageConsumer newConsumer) {
-        if (newConsumer == null || consumer == newConsumer) {
-            return;
-        }
-        
-        int width = getWidth();
-        int height = getHeight();
-        int[] data = getData();
-        
-        consumer = newConsumer;
-
-        consumer.setDimensions(width, height);
-        consumer.setColorModel(COLOR_MODEL);
-        consumer.setHints(ImageConsumer.TOPDOWNLEFTRIGHT | ImageConsumer.COMPLETESCANLINES);
-        consumer.setPixels(0, 0, width, height, COLOR_MODEL, data, 0, width);
-        consumer.imageComplete(ImageConsumer.SINGLEFRAMEDONE);
-    }
     
-
-    public boolean isConsumer(ImageConsumer consumer) {
-        return (this.consumer == consumer);
-    }
-    
-    
-    public void removeConsumer(ImageConsumer ic) {
-        if (this.consumer == consumer) {
-            this.consumer = null;
-        }
-    }
-    
-    
-    public void startProduction(ImageConsumer consumer) {
-        addConsumer(consumer);
-    }
-    
-    
-    public void requestTopDownLeftRightResend(ImageConsumer ic) {
-        // do nothing
-    }
 }

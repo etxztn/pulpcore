@@ -36,11 +36,11 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.Toolkit;
 import java.io.IOException;
-import java.util.Vector;
+import java.util.List;
+import java.util.ArrayList;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.platform.AppContext;
-import pulpcore.platform.applet.opt.JavaSound;
 import pulpcore.platform.applet.opt.NanoTimer;
 import pulpcore.platform.Platform;
 import pulpcore.platform.SoundEngine;
@@ -63,7 +63,7 @@ public final class AppletPlatform implements Platform {
     private SystemTimer timer;
     
     private AppletAppContext mainContext = null;
-    private Vector allContexts = null;
+    private List allContexts = null;
     
     private boolean soundEngineCreated;
     private SoundEngine soundEngine;
@@ -125,7 +125,7 @@ public final class AppletPlatform implements Platform {
             // Look through all registered apps and find the context for this ThreadGroup
             ThreadGroup currentThreadGroup = Thread.currentThread().getThreadGroup();
             for (int i = 0; i < allContexts.size(); i++) {
-                AppletAppContext context = (AppletAppContext)allContexts.elementAt(i);
+                AppletAppContext context = (AppletAppContext)allContexts.get(i);
                 ThreadGroup contextThreadGroup = context.getThreadGroup();
                 if (contextThreadGroup == currentThreadGroup ||
                     contextThreadGroup.parentOf(currentThreadGroup))
@@ -146,7 +146,7 @@ public final class AppletPlatform implements Platform {
         
         if (allContexts != null) {
             for (int i = 0; i < allContexts.size(); i++) {
-                AppletAppContext context = (AppletAppContext)allContexts.elementAt(i);
+                AppletAppContext context = (AppletAppContext)allContexts.get(i);
                 if (context.getApplet() == app) {
                     return context;
                 }
@@ -196,10 +196,10 @@ public final class AppletPlatform implements Platform {
         }
         else {
             if (allContexts == null) {
-                allContexts = new Vector();
-                allContexts.addElement(mainContext);
+                allContexts = new ArrayList();
+                allContexts.add(mainContext);
             }
-            allContexts.addElement(newContext);
+            allContexts.add(newContext);
         }
                
         if (wasEmpty) {
@@ -223,16 +223,16 @@ public final class AppletPlatform implements Platform {
         
         if (allContexts != null) { 
             for (int i = 0; i < allContexts.size(); i++) {
-                AppletAppContext context = (AppletAppContext)allContexts.elementAt(i);
+                AppletAppContext context = (AppletAppContext)allContexts.get(i);
                 if (context.getApplet() == app) {
                     context.destroy();
-                    allContexts.removeElementAt(i);
+                    allContexts.remove(i);
                     break;
                 }
             }
             
             if (mainContext == null) {
-                mainContext = (AppletAppContext)allContexts.elementAt(0);
+                mainContext = (AppletAppContext)allContexts.get(0);
             }
             
             if (allContexts.size() == 1) {
@@ -408,28 +408,14 @@ public final class AppletPlatform implements Platform {
             return soundEngine;
         }
         
-        if (CoreSystem.isJava13orNewer()) {
-            try {
-                Class.forName("javax.sound.sampled.AudioSystem");
-                soundEngine = new JavaSound();
-                CoreSystem.setTalkBackField("pulpcore.platform.sound", "javax.sound");
-            }
-            catch (Exception ex) {
-                // ignore
-            }
+        try {
+            soundEngine = new JavaSound();
+            CoreSystem.setTalkBackField("pulpcore.platform.sound", "javax.sound");
         }
-        
-        if (soundEngine == null) {
-            try {
-                Class.forName("sun.audio.AudioPlayer");
-                soundEngine = new SunAudio();
-                CoreSystem.setTalkBackField("pulpcore.platform.sound", "sun.audio");
-            }
-            catch (Exception ex) {
-                // ignore
-            }
+        catch (Exception ex) {
+            // Ignore
         }
-        
+       
         if (soundEngine == null) {
             CoreSystem.setTalkBackField("pulpcore.sound", "none");
         }
