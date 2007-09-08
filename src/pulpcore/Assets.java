@@ -32,9 +32,11 @@ package pulpcore;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import pulpcore.util.ByteArray;
@@ -48,8 +50,8 @@ public class Assets {
     // Lock for multiple app contexts running simultaneously.
     private static final Object LOCK = new Object();
                      
-    private static final Hashtable CATALOGS = new Hashtable();
-    private static final Hashtable ASSETS = new Hashtable();
+    private static final Map CATALOGS = new HashMap();
+    private static final Map ASSETS = new HashMap();
     
     
     // Prevent instantiation
@@ -92,8 +94,8 @@ public class Assets {
             return false;
         }
         
-        Vector assetNames = new Vector();
-        Vector assetData = new Vector();
+        List assetNames = new ArrayList();
+        List assetData = new ArrayList();
         
         // Read zip file
         try {
@@ -122,8 +124,8 @@ public class Assets {
                         }
                     }
                     
-                    assetNames.addElement(name);
-                    assetData.addElement(entryData);
+                    assetNames.add(name);
+                    assetData.add(entryData);
                 }
                 else {
                     if (Build.DEBUG) CoreSystem.print("Problem loading asset: " + name);
@@ -148,8 +150,8 @@ public class Assets {
             
             // Add assets
             for (int i = 0; i < assetNames.size(); i++) {
-                String name = (String)assetNames.elementAt(i);
-                byte[] data = (byte[])assetData.elementAt(i);
+                String name = (String)assetNames.get(i);
+                byte[] data = (byte[])assetData.get(i);
                 
                 // Remove any asset of the same name from a different catalog
                 removeAsset(name);
@@ -168,9 +170,11 @@ public class Assets {
     /**
         Gets an enumeration of catalog names (zip files) stored in memory.
     */
-    public static Enumeration getCatalogs() {
+    public static Iterator getCatalogs() {
         // NOTE: this method used by PulpCorePlayer via reflection
-        return CATALOGS.keys();
+        synchronized (LOCK) {
+            return CATALOGS.keySet().iterator();
+        }
     }
 
 
@@ -178,7 +182,9 @@ public class Assets {
         Checks if the specified catalog name (zip file) is stored in memory.
     */
     public static boolean containsCatalog(String catalogName) {
-        return (CATALOGS.get(catalogName) != null);
+        synchronized (LOCK) {
+            return (CATALOGS.get(catalogName) != null);
+        }
     }
     
     
@@ -188,11 +194,11 @@ public class Assets {
     public static void removeCatalog(String catalogName) {
         
         synchronized (LOCK) {
-            Vector assetList = (Vector)CATALOGS.get(catalogName);
+            List assetList = (List)CATALOGS.get(catalogName);
             
             if (assetList != null) {
                 for (int i = 0; i < assetList.size(); i++) {
-                    ASSETS.remove(assetList.elementAt(i));
+                    ASSETS.remove(assetList.get(i));
                 }
             }
             
@@ -209,7 +215,9 @@ public class Assets {
             assetName = assetName.substring(1);
         }
         
-        return (ASSETS.get(assetName) != null);
+        synchronized (LOCK) {
+            return (ASSETS.get(assetName) != null);
+        }
     }
     
     
@@ -221,13 +229,13 @@ public class Assets {
             ASSETS.remove(assetName);
         
             // Remove it from the catalog list
-            Enumeration e = CATALOGS.elements();
-            while (e.hasMoreElements()) {
-                Vector list = (Vector)e.nextElement();
-                for (int i = 0; i < list.size(); i++) {
-                    if (assetName.equals(list.elementAt(i))) {
-                        list.removeElementAt(i);
-                        i--;
+            Iterator i = CATALOGS.values().iterator();
+            while (i.hasNext()) {
+                List list = (List)i.next();
+                for (int j = 0; j < list.size(); j++) {
+                    if (assetName.equals(list.get(j))) {
+                        list.remove(j);
+                        j--;
                     }
                 }
             }
@@ -252,9 +260,11 @@ public class Assets {
         }
         
         // Check loaded zip file(s)
-        byte[] assetData = (byte[])ASSETS.get(assetName);
-        if (assetData != null) {
-            return new ByteArray(assetData);
+        synchronized (LOCK) {
+            byte[] assetData = (byte[])ASSETS.get(assetName);
+            if (assetData != null) {
+                return new ByteArray(assetData);
+            }
         }
         
         // Check the jar file, then the server

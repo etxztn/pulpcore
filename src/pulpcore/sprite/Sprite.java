@@ -601,9 +601,9 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        Checks if the mouse is currently over this Sprite.
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse is currently over this sprite.
+        Checks if the mouse is currently within the bounds of this Sprite.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the mouse is currently within the bounds of this Sprite.
     */
     public boolean isMouseOver() {
         return contains(Input.getMouseX(), Input.getMouseY());
@@ -611,10 +611,11 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        Checks if the mouse is currently over this Sprite and the primary mouse
+        Checks if the mouse is within the bounds of this Sprite and the primary mouse
         button is not pressed down.
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse is not pressed and is currently over this sprite.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the mouse is currently within the bounds of this Sprite and 
+        the primary mouse button is not pressed down.
     */
     public boolean isMouseHover() {
         return !Input.isMouseDown() && 
@@ -623,8 +624,11 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse is pressed and is currently over this sprite.
+        Checks if the mouse is currently within the bounds of this Sprite and the primary mouse
+        button is pressed down.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the mouse is currently within the bounds of this Sprite and 
+        the primary mouse button is pressed down.
     */
     public boolean isMouseDown() {
         return Input.isMouseDown() && 
@@ -633,9 +637,11 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse was pressed over this sprite since the last 
-        rendering frame.
+        Checks if the primary mouse button was pressed since the last update and the press 
+        occurred within this Sprite's bounds.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the primary mouse button was pressed since the last update and the press 
+        occurred within this Sprite's bounds.
     */
     public boolean isMousePressed() {
         return Input.isMousePressed() && 
@@ -644,9 +650,11 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse was relased over this sprite since the last 
-        rendering frame.
+        Checks if the primary mouse button was released since the last update and the release 
+        occurred within this Sprite's bounds.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the primary mouse button was released since the last update and the release 
+        occurred within this Sprite's bounds.
     */
     public boolean isMouseReleased() {
         return Input.isMouseReleased() && 
@@ -655,9 +663,11 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse was double clicked over this sprite since the  
-        last rendering frame.
+        Checks if the primary mouse button was double-clicked since the last update and the
+        double-click occurred within this Sprite's bounds.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the primary mouse button was double-clicked since the last update and the 
+        double-click occurred within this Sprite's bounds.
     */
     public boolean isMouseDoubleClicked() {
         return Input.isPressed(Input.KEY_DOUBLE_MOUSE_BUTTON_1) && 
@@ -666,13 +676,26 @@ public abstract class Sprite implements PropertyListener {
     
     
     /**
-        For a typical button UI button behavior, use {@link Button}.
-        @return true if the mouse was triple clicked over this sprite since the  
-        last rendering frame.
+        Checks if the primary mouse button was triple-clicked since the last update and the
+        triple-click occurred within this Sprite's bounds.
+        <p>For a typical button UI button behavior, use {@link Button}.
+        @return true if the primary mouse button was triple-clicked since the last update and the 
+        triple-click occurred within this Sprite's bounds.
     */
     public boolean isMouseTripleClicked() {
         return Input.isPressed(Input.KEY_TRIPLE_MOUSE_BUTTON_1) && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
+    }
+    
+    
+    /**
+        Checks if the mouse wheel was rotated over this Sprite.
+        @return true if the mouse wheel was rotated over this sprite since the  
+        last rendering frame.
+    */
+    public boolean isMouseWheelRotated() {
+        return Input.getMouseWheelRotation() != 0 && 
+            contains(Input.getMouseWheelX(), Input.getMouseWheelY());
     }
     
     

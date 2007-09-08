@@ -31,7 +31,7 @@ package pulpcore.math;
 
 import java.text.ParseException;
 import java.util.StringTokenizer;
-import java.util.Vector;
+import java.util.ArrayList;
 import pulpcore.animation.Animation;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
@@ -129,7 +129,7 @@ public class Path {
     */
     public Path(String svgPathData) throws IllegalArgumentException {
         svgPathData = svgPathData.trim();
-        Vector commands = new Vector();
+        ArrayList commands = new ArrayList();
         StringTokenizer tokenizer = new StringTokenizer(svgPathData, "MLC", true);
         
         while (tokenizer.hasMoreTokens()) {
@@ -152,7 +152,7 @@ public class Path {
             }
             
             parseSVGNumbers(tokenizer.nextToken(), command);
-            commands.addElement(command);
+            commands.add(command);
         }
         
         int[][] points = toLineSegments(commands);
@@ -570,7 +570,7 @@ public class Path {
     //
     
     
-    private static int[][] toLineSegments(Vector drawCommands) {
+    private static int[][] toLineSegments(ArrayList drawCommands) {
         
         int numDrawCommands = drawCommands.size();
         int[][][] allPoints = new int[numDrawCommands][2][];
@@ -579,7 +579,7 @@ public class Path {
         float y = 0;
         
         for (int i = 0; i < numDrawCommands; i++) {
-            float[] drawCommand = (float[])drawCommands.elementAt(i);
+            float[] drawCommand = (float[])drawCommands.get(i);
             switch ((int)drawCommand[0]) {
                 
                 case MOVE_TO: case LINE_TO:

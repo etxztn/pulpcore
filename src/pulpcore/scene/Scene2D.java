@@ -29,7 +29,8 @@
 
 package pulpcore.scene;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.Iterator;
 import pulpcore.animation.event.TimelineEvent;
 import pulpcore.animation.Timeline;
 import pulpcore.Build;
@@ -78,7 +79,7 @@ public class Scene2D extends Scene {
     
     // Timelines
     
-    private Vector timelines = new Vector();
+    private ArrayList timelines = new ArrayList();
     
     // Dirty Rectangles
     
@@ -92,10 +93,11 @@ public class Scene2D extends Scene {
     private Rect unionRect = new Rect();
     private Rect intersectionRect = new Rect();
     
-    // Options automatically restored on showNotify()
+    // Saved state: options automatically restored on showNotify()
     
-    private boolean wasHidden;
+    private boolean stateSaved = false;
     private int desiredFPS;
+    private int cursor;
     private boolean isTextInputMode;
     
     
@@ -112,7 +114,6 @@ public class Scene2D extends Scene {
         subRects = new RectList(NUM_DIRTY_RECTANGLES);
         
         addLayer(new Group()); 
-        layers.commitChanges();
     }
     
     
@@ -207,7 +208,7 @@ public class Scene2D extends Scene {
     */
     public void addTimeline(Timeline timeline) {
         if (!timelines.contains(timeline)) {
-            timelines.addElement(timeline);
+            timelines.add(timeline);
         }
     }
     
@@ -225,7 +226,7 @@ public class Scene2D extends Scene {
         if (gracefully) {
             timeline.fastForward();
         }
-        timelines.removeElement(timeline);
+        timelines.remove(timeline);
     }
     
     
@@ -237,11 +238,11 @@ public class Scene2D extends Scene {
     public void removeAllTimelines(boolean gracefully) {
         if (gracefully) {
             for (int i = 0; i < timelines.size(); i++) {
-                Timeline t = (Timeline)timelines.elementAt(i);
+                Timeline t = (Timeline)timelines.get(i);
                 t.fastForward();
             }
         }
-        timelines.removeAllElements();
+        timelines.clear();
     }
     
     
@@ -463,10 +464,11 @@ public class Scene2D extends Scene {
     
     
     public final void showNotify() {
-        if (wasHidden) {
+        if (stateSaved) {
             Stage.setFrameRate(desiredFPS);
             Input.setTextInputMode(isTextInputMode);
-            wasHidden = false;
+            Input.setCursor(cursor);
+            stateSaved = false;
         }
         redrawNotify();
     }
@@ -475,7 +477,8 @@ public class Scene2D extends Scene {
     public final void hideNotify() {
         desiredFPS = Stage.getFrameRate();
         isTextInputMode = Input.isTextInputMode();
-        wasHidden = true;
+        cursor = Input.getCursor();
+        stateSaved = true;
     }
     
     
@@ -508,10 +511,10 @@ public class Scene2D extends Scene {
         // Update timelines, layers, and sprites
         if (!paused) {
             for (int i = 0; i < timelines.size(); i++) {
-                Timeline timeline = (Timeline)timelines.elementAt(i);
+                Timeline timeline = (Timeline)timelines.get(i);
                 timeline.update(elapsedTime);
                 if (timeline.isFinished()) {
-                    timelines.removeElementAt(i);
+                    timelines.remove(i);
                     i--;
                 }
             }
@@ -529,14 +532,12 @@ public class Scene2D extends Scene {
         }
         
         Transform transform = Stage.getDefaultTransform();
-        layers.commitChanges(this);
         layers.prepareToDraw(transform, needsFullRedraw);
         
         if (!dirtyRectanglesEnabled) {
             setDirty(layers, false);
         }
         else {
-         
             // Add dirty rectangles
             addDirtyRectangles(layers, needsFullRedraw);
             layers.setDirty(false);
@@ -599,6 +600,11 @@ public class Scene2D extends Scene {
         
         parentDirty |= group.isDirty();
         
+        Iterator e = group.getRemovedSprites();
+        while (e != null && e.hasNext()) {
+            notifyRemovedSprite((Sprite)e.next());
+        }
+        
         for (int i = 0; i < group.size(); i++) {
             Sprite sprite = group.get(i);
             if (sprite instanceof Group) {
@@ -626,7 +632,7 @@ public class Scene2D extends Scene {
         Internal callback method for dirty rectangles. Most implementations will
         not need to call this method.
     */
-    public final void notifyRemovedSprite(Sprite sprite) {
+    private final void notifyRemovedSprite(Sprite sprite) {
         if (dirtyRectangles.isOverflowed()) {
             return;
         }

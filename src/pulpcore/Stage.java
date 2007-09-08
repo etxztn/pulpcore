@@ -29,7 +29,7 @@
 
 package pulpcore;
 
-import java.util.Stack;
+import java.util.LinkedList;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -84,6 +84,12 @@ public class Stage implements Runnable {
     */
     public static final int AUTO_FIT = 3;
     
+    private static final int NO_NEXT_SCENE = 0;
+    private static final int PUSH_SCENE = 1;
+    private static final int POP_SCENE = 2;
+    private static final int SET_SCENE = 3;
+    private static final int REPLACE_SCENE = 4;
+    
     private AppContext appContext;
     private Input input;
     
@@ -101,9 +107,8 @@ public class Stage implements Runnable {
     // Scene management
     private Scene currentScene;
     private Scene nextScene;
-    private Scene interruptScene;
-    private int gotoInterruptedScene;
-    private Stack interruptedScenes = new Stack();
+    private int nextSceneType = NO_NEXT_SCENE;
+    private LinkedList sceneStack = new LinkedList();
     
     // Auto scaling
     private int naturalWidth = 1;
@@ -281,21 +286,6 @@ public class Stage implements Runnable {
     
     
     /**
-        Sets the next scene to display. This scene won't be displayed until
-        after the current frame is displayed and the current scene is unloaded.
-        <p>Multiple calls to this method within a single frame will cause the 
-        first calls to be ignored - only the last call to this method during
-        a single frame is recognized. Any interrupted scenes are unloaded
-        when this scene is set as the current scene.
-        @see #interruptScene(Scene)
-    */
-    public static void setScene(Scene scene) {
-        Stage instance = getThisStage();
-        instance.nextScene = scene;
-    }
-    
-    
-    /**
         Gets the current active Scene.
     */
     public static Scene getScene() {
@@ -304,55 +294,91 @@ public class Stage implements Runnable {
     
     
     /**
-        Returns true if the current Scene interrupted another Scene.
+        Returns true if the there are Scenes on the scene stack.
     */
-    public static boolean isInterrupted() {
+    public static boolean canPopScene() {
         Stage instance = getThisStage();
-        return (instance.interruptScene != null || !instance.interruptedScenes.empty());
+        return (!instance.sceneStack.isEmpty());
+    }
+
+
+    /**
+        Unloads the current scene, empties the scene stack, and
+        sets the next scene to display.
+        <p>
+        Any scenes on the scene stack are unloaded and the scene stack is emptied.
+        <p>
+        The new scene isn't activated until the next frame. Multiple calls to the
+        {@link #setScene(Scene)}, {@link #replaceScene(Scene)}, {@link #pushScene(Scene)},
+        and {@link #popScene()} 
+        methods within a single frame will cause the 
+        first calls to be ignored - only the last call during
+        a single frame is recognized. 
+    */
+    public static void setScene(Scene scene) {
+        Stage instance = getThisStage();
+        instance.nextScene = scene;
+        instance.nextSceneType = SET_SCENE;
     }
     
     
     /**
-        Notifies the engine to temproarily interrupt the current scene to
-        show the specified scene instead. The interrupted scene is shown again 
-        when {@link #gotoInterruptedScene()} is invoked. 
-        <p>Multiple calls to this method within a single frame will cause the 
-        first calls to be ignored - only the last call to this method during
-        a single frame is recognized.
-        <p>Once the interrupt takes place, the previous Scene is added
-        to a stack, and the current scene can itself be interrupted.
+        Unloads the current scene and sets the next scene to display.
+        <p>
+        The scene stack is left untouched.
+        <p>
+        The new scene isn't activated until the next frame. Multiple calls to the
+        {@link #setScene(Scene)}, {@link #replaceScene(Scene)}, {@link #pushScene(Scene)},
+        and {@link #popScene()} 
+        methods within a single frame will cause the 
+        first calls to be ignored - only the last call during
+        a single frame is recognized. 
     */
-    public static void interruptScene(Scene scene) {
+    public static void replaceScene(Scene scene) {
         Stage instance = getThisStage();
-        instance.interruptScene = scene;
+        instance.nextScene = scene;
+        instance.nextSceneType = REPLACE_SCENE;
     }
     
     
     /**
-        Sets the current scene to the previously interrupted scene. If
-        there are no interrupted scenes, this method does nothing. This method
-        can be called multiple times to travrse farther up the interrupted scene 
-        stack.
+        Pushes the current scene onto the scene stack and sets the current scene.
+        The pushed scene is activated again when {@link #popScene()} is invoked. 
+        <p>
+        The new scene isn't activated until the next frame. Multiple calls to the
+        {@link #setScene(Scene)}, {@link #replaceScene(Scene)}, {@link #pushScene(Scene)},
+        and {@link #popScene()} 
+        methods within a single frame will cause the 
+        first calls to be ignored - only the last call during
+        a single frame is recognized. 
     */
-    public static void gotoInterruptedScene() {
+    public static void pushScene(Scene scene) {
         Stage instance = getThisStage();
-        instance.gotoInterruptedScene++;
+        instance.nextScene = scene;
+        instance.nextSceneType = PUSH_SCENE;
     }
     
     
     /**
-        Removes all interrupted scenes from the stack. The unload() method is
-        immediately invoked on all interrupted scenes.
+        Sets the current scene to the scene at the top of the scene stack. If
+        the scene stack is empty, this method does nothing. 
+        <p>
+        The popped scene isn't activated until the next frame. Multiple calls to the
+        {@link #setScene(Scene)}, {@link #replaceScene(Scene)}, {@link #pushScene(Scene)},
+        and {@link #popScene()} 
+        methods within a single frame will cause the 
+        first calls to be ignored - only the last call during
+        a single frame is recognized. 
     */
-    public static void clearInterruptedScenes() {
+    public static void popScene() {
         Stage instance = getThisStage();
-        while (!instance.interruptedScenes.empty()) {
-            Scene scene = (Scene)instance.interruptedScenes.pop();
-            scene.unload();
+        if (!instance.sceneStack.isEmpty()) {
+            instance.nextScene = null;
+            instance.nextSceneType = POP_SCENE;
         }
     }
-
-
+    
+    
     /**
         Gets a screenshot of the current appearance of the stage.
         @return a new image that contains the screenshot.
@@ -409,7 +435,6 @@ public class Stage implements Runnable {
     public synchronized void destroy() {
         stop();
         
-        
         final Scene scene = currentScene;
         if (scene != null) {
             currentScene = null;
@@ -417,6 +442,7 @@ public class Stage implements Runnable {
             appContext.invokeAndWait("PulpCore-Stage-Destroy", 1000, new Runnable() {
                 public void run() {
                     scene.unload();
+                    clearSceneStack();
                 }
             });
         }
@@ -443,9 +469,8 @@ public class Stage implements Runnable {
                 // Reboot if not ThreadDeath
                 currentScene = null;
                 nextScene = null;
-                interruptScene = null;
-                gotoInterruptedScene = 0;
-                interruptedScenes = new Stack();
+                nextSceneType = NO_NEXT_SCENE;
+                sceneStack = new LinkedList();
                 
                 if (t instanceof ThreadDeath) {
                     // Don't reboot 
@@ -509,12 +534,12 @@ public class Stage implements Runnable {
                 if (input.isControlDown() && input.isPressed(Input.KEY_C) && 
                     !(currentScene instanceof ConsoleScene)) 
                 {
-                    interruptScene(new ConsoleScene());
+                    pushScene(new ConsoleScene());
                 }
                 if (input.isControlDown() && input.isPressed(Input.KEY_X) && 
                     !(currentScene instanceof SceneSelector)) 
                 {
-                    interruptScene(new SceneSelector());
+                    pushScene(new SceneSelector());
                 }
             }
             if (hasNewScene()) {
@@ -583,18 +608,10 @@ public class Stage implements Runnable {
                 currentScene.drawScene(g);
             }
             catch (ArrayIndexOutOfBoundsException ex) {
-                // I had some anecdotal evidence (not proof) that the CoreGraphics system
-                // can still throw some ArrayIndexOutOfBoundsExceptions in some cases.
-                // If true, it is probably rare and difficult to track down.
-                // So, for release mode, just ignore it - the user may see some visual artifacts
-                // or they may not. In debug mode, show the error.
-                if (Build.DEBUG) {
-                    throw ex;
-                }
-                else {
-                    // Release mode. Add it to the talkback and ignore.
-                    appContext.setTalkBackField("pulpcore.platform.graphics.error", ex);
-                }
+                // The CoreGraphics system can still throw some ArrayIndexOutOfBoundsExceptions 
+                // in some rare cases. It may be from scaling a sprite to 
+                // have a width and height < 1.
+                appContext.setTalkBackField("pulpcore.platform.graphics.error", ex);
             }                
                 
             
@@ -673,10 +690,20 @@ public class Stage implements Runnable {
         }
     }
     
+    /**
+        Removes and unloads all scenes from the stack. 
+    */
+    private void clearSceneStack() {
+        while (!sceneStack.isEmpty()) {
+            Scene scene = (Scene)sceneStack.removeLast();
+            scene.unload();
+        }
+    }
+    
     
     private boolean hasNewScene() {
         
-        boolean returnFromInterrupt = false;
+        boolean nextSceneLoaded = false;
         
         if (currentScene == null) {
             currentScene = CoreSystem.getThisAppContext().createFirstScene();
@@ -690,51 +717,40 @@ public class Stage implements Runnable {
                 }
             }
         }
-        else if (gotoInterruptedScene > 0) {
-            
+        else if (nextSceneType == NO_NEXT_SCENE) {
+            return false;
+        }
+        else if (nextSceneType == PUSH_SCENE) {
             currentScene.hideNotify();
-            
-            if (gotoInterruptedScene > interruptedScenes.size()) {
-                currentScene.unload();
+            sceneStack.addLast(currentScene);
+            currentScene = nextScene;
+        }
+        else if (nextSceneType == POP_SCENE) {
+            currentScene.hideNotify();
+            currentScene.unload();
+            if (sceneStack.isEmpty()) {
                 currentScene = null;
             }
             else {
-                for (int i = 0; i < gotoInterruptedScene; i++) {
-                    currentScene.unload();
-                    currentScene = (Scene)interruptedScenes.pop();
-                }
-                returnFromInterrupt = true;
+                currentScene = (Scene)sceneStack.removeLast();
             }
-            gotoInterruptedScene = 0;
-            if (interruptScene != null) {
-                interruptedScenes.push(currentScene);
-                currentScene = interruptScene;
-                interruptScene = null;
-                returnFromInterrupt = false;
-            }
+            nextSceneLoaded = true;
         }
-        else if (nextScene != null) {
+        else if (nextSceneType == SET_SCENE) {
             currentScene.hideNotify();
             currentScene.unload();
-            
-            clearInterruptedScenes();
-            
+            clearSceneStack();
             currentScene = nextScene;
-            nextScene = null;
         }
-        else if (interruptScene != null) {
-            interruptedScenes.push(currentScene);
+        else if (nextSceneType == REPLACE_SCENE) {
             currentScene.hideNotify();
-            
-            currentScene = interruptScene;
-            interruptScene = null;
-        }
-        else {
-            gotoInterruptedScene = 0;
-            return false;
+            currentScene.unload();
+            currentScene = nextScene;
         }
         
         // Set defaults
+        nextScene = null;
+        nextSceneType = NO_NEXT_SCENE;
         setFrameRate(DEFAULT_FPS);
         input.setCursor(Input.CURSOR_DEFAULT);
         input.setTextInputMode(false);
@@ -750,7 +766,7 @@ public class Stage implements Runnable {
                 String sceneName = currentScene.getClass().getName();
                 CoreSystem.printMemory("Stage: scene set to " + sceneName); 
             }
-            if (!returnFromInterrupt) {
+            if (!nextSceneLoaded) {
                 currentScene.load();
             }
             currentScene.showNotify();

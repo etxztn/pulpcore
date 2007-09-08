@@ -39,7 +39,7 @@ import pulpcore.scene.Scene;
 public class SceneChangeEvent extends TimelineEvent {
  
     private Scene nextScene;
-    private boolean isInterrupt;
+    private boolean push;
     
     
     public SceneChangeEvent(Scene nextScene, int delay) {
@@ -47,16 +47,16 @@ public class SceneChangeEvent extends TimelineEvent {
     }
     
     
-    public SceneChangeEvent(Scene nextScene, int delay, boolean isInterrupt) {
+    public SceneChangeEvent(Scene nextScene, int delay, boolean push) {
         super(delay);
         this.nextScene = nextScene;
-        this.isInterrupt = isInterrupt;
+        this.push = push;
     }
     
     
     public void trigger() {
-        if (isInterrupt) {
-            Stage.interruptScene(nextScene);
+        if (push) {
+            Stage.pushScene(nextScene);
         }
         else {
             Stage.setScene(nextScene);

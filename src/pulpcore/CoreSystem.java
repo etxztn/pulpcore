@@ -30,7 +30,6 @@
 package pulpcore;
 
 import java.net.URL;
-import java.util.Vector;
 import pulpcore.net.Upload;
 import pulpcore.platform.AppContext;
 import pulpcore.platform.Platform;
@@ -258,11 +257,6 @@ public class CoreSystem {
     }
     
     
-    public static Vector getLogLines() {
-        return getThisAppContext().getLogLines();
-    }
-
-
     public static void clearLog() {
         getThisAppContext().clearLog();
     }

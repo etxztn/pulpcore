@@ -88,10 +88,6 @@ public abstract class Input {
     
     
     public static final int CURSOR_DEFAULT   = 0;
-    /** 
-        Note: For Java applets, CURSOR_OFF has no effect, and the cursor appears 
-        as CURSOR_DEFAULT. 
-    */
     public static final int CURSOR_OFF       = 1;
     public static final int CURSOR_CUSTOM    = 2;
     public static final int CURSOR_CROSSHAIR = 3;
@@ -361,6 +357,9 @@ public abstract class Input {
     protected int mousePressY;
     protected int mouseReleaseX;
     protected int mouseReleaseY;
+    protected int mouseWheelX;
+    protected int mouseWheelY;
+    protected int mouseWheel;
     protected boolean hasKeyboardFocus;
               
     protected boolean textInputMode;
@@ -588,7 +587,7 @@ public abstract class Input {
         is currently down.
     */
     public static boolean isControlDown() {
-        return isDown(KEY_LEFT_CONTROL) | isDown(KEY_RIGHT_CONTROL);
+        return isDown(KEY_LEFT_CONTROL) || isDown(KEY_RIGHT_CONTROL);
     }
     
     
@@ -597,7 +596,7 @@ public abstract class Input {
         is currently down.
     */
     public static boolean isShiftDown() {
-        return isDown(KEY_LEFT_SHIFT) | isDown(KEY_RIGHT_SHIFT);
+        return isDown(KEY_LEFT_SHIFT) || isDown(KEY_RIGHT_SHIFT);
     }
     
     
@@ -606,7 +605,7 @@ public abstract class Input {
         is currently down.
     */
     public static boolean isAltDown() {
-        return isDown(KEY_LEFT_ALT) | isDown(KEY_RIGHT_ALT);
+        return isDown(KEY_LEFT_ALT) || isDown(KEY_RIGHT_ALT);
     }
     
     
@@ -615,20 +614,29 @@ public abstract class Input {
         is currently down. The meta key is the Command key on Mac OS X.
     */
     public static boolean isMetaDown() {
-        return isDown(KEY_LEFT_META) | isDown(KEY_RIGHT_META);
+        return isDown(KEY_LEFT_META) || isDown(KEY_RIGHT_META);
     }
     
     
+    /**
+        Returns true if the primary mouse button is pressed. 
+    */
     public static boolean isMousePressed() {
         return isPressed(KEY_MOUSE_BUTTON_1);
     }
     
     
+    /**
+        Returns true if the primary mouse button is released. 
+    */
     public static boolean isMouseReleased() {
         return isReleased(KEY_MOUSE_BUTTON_1);
     }
     
     
+    /**
+        Returns true if the primary mouse button is down. 
+    */
     public static boolean isMouseDown() {
         return isDown(KEY_MOUSE_BUTTON_1);
     }
@@ -679,6 +687,37 @@ public abstract class Input {
     */
     public static int getMouseReleaseY() {
         return getThisInputSystem().mouseReleaseY;
+    }
+    
+    
+    /**
+        @return the x location of the last mouse wheel rotation.
+    */
+    public static int getMouseWheelX() {
+        return getThisInputSystem().mouseWheelX;
+    }
+    
+    
+    /**
+        @return the y location of the last mouse wheel rotation.
+    */
+    public static int getMouseWheelY() {
+        return getThisInputSystem().mouseWheelY;
+    }
+    
+    
+    /**
+        Returns the number of clicks the mouse wheel was rotated since the last poll.
+        <p>
+        For applets, mouse wheel input may not work all situations. For
+        example, the applet must first have focus, and some browsers (notably, Safari 
+        on Mac OS X) will not allow mouse wheel input at all.
+        
+        @return negative values if the mouse wheel was rotated up (away from the user), and 
+        positive values if the mouse wheel was rotated down (toward the user).
+    */
+    public static int getMouseWheelRotation() {
+        return getThisInputSystem().mouseWheel;
     }
     
     

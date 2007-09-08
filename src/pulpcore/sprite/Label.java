@@ -252,6 +252,9 @@ public class Label extends Sprite {
     
     private void format() {
         displayText = StringUtil.format(formatText, formatArgs);
+        if (displayText == null) {
+            displayText = "null";
+        }
         stringWidth = font.getStringWidth(displayText);
         numDisplayChars.set(displayText.length());
         setDirty(true);

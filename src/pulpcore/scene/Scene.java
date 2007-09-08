@@ -43,9 +43,10 @@ import pulpcore.image.CoreGraphics;
     Scene's methods and other Scene management.
     
     @see pulpcore.Stage#setScene(Scene)
-    @see pulpcore.Stage#interruptScene(Scene)
-    @see pulpcore.Stage#gotoInterruptedScene()
-    @see pulpcore.Stage#clearInterruptedScenes()
+    @see pulpcore.Stage#replaceScene(Scene)
+    @see pulpcore.Stage#pushScene(Scene)
+    @see pulpcore.Stage#popScene()
+    
 */
 public abstract class Scene {
 

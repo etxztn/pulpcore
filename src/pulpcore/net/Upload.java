@@ -36,9 +36,10 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.util.ByteArray;
@@ -54,7 +55,7 @@ public class Upload implements Runnable {
     private static final String NEW_LINE = "\r\n";
 
     private URL url;
-    private Vector fields;
+    private List fields;
     private String formBoundary;
     private String response;
     private boolean completed;
@@ -66,7 +67,7 @@ public class Upload implements Runnable {
     */
     public Upload(URL url) {
         this.url = url;
-        fields = new Vector();
+        fields = new ArrayList();
         formBoundary = "PulpCore-Upload:" + System.currentTimeMillis();
     }
 
@@ -74,10 +75,10 @@ public class Upload implements Runnable {
     /**
         Adds plain text form fields to this form. 
     */
-    public void addFields(Hashtable fields) {
-        Enumeration keys = fields.keys();
-        while (keys.hasMoreElements()) {
-            String name = keys.nextElement().toString();
+    public void addFields(Map fields) {
+        Iterator keys = fields.keySet().iterator();
+        while (keys.hasNext()) {
+            String name = keys.next().toString();
             addField(name, fields.get(name).toString());
         }
     }
@@ -93,7 +94,7 @@ public class Upload implements Runnable {
             "name=\"" + name + "\"" + NEW_LINE + NEW_LINE +
             value + NEW_LINE;
 
-        fields.addElement(getBytes(field));
+        fields.add(getBytes(field));
     }
 
     
@@ -115,7 +116,7 @@ public class Upload implements Runnable {
         // is this newline needed?
         out.write(getBytes(NEW_LINE));
         
-        fields.addElement(out.getData());
+        fields.add(out.getData());
     }
     
     
@@ -169,7 +170,7 @@ public class Upload implements Runnable {
         // Send form data
         OutputStream out = connection.getOutputStream();
         for (int i = 0; i < fields.size(); i++) {
-            out.write((byte[])fields.elementAt(i));
+            out.write((byte[])fields.get(i));
         }
         
         out.write(getBytes("--" + formBoundary + "--"));

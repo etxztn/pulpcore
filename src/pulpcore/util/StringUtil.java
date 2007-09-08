@@ -29,7 +29,8 @@
 
 package pulpcore.util;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 import pulpcore.animation.Fixed;
 import pulpcore.animation.Int;
 import pulpcore.image.CoreFont;
@@ -248,7 +249,7 @@ public final class StringUtil {
         if (font == null) {
             font = CoreFont.getSystemFont();
         }
-        Vector splitText = new Vector();
+        List splitText = new ArrayList();
         int startIndex = 0;
         int lastGoodIndex = -1;
         
@@ -258,7 +259,7 @@ public final class StringUtil {
                 lastGoodIndex = i;
             }
             else if (ch == '\n') {
-                splitText.addElement(text.substring(startIndex, i));
+                splitText.add(text.substring(startIndex, i));
                 startIndex = i + 1;
                 lastGoodIndex = -1;
             }
@@ -274,7 +275,7 @@ public final class StringUtil {
                 else { // if (startIndex == i)
                     // this 1 character doesn't fit on the line... add it anyway
                 }
-                splitText.addElement(text.substring(startIndex, i + 1));
+                splitText.add(text.substring(startIndex, i + 1));
                 startIndex = i + 1;
                 lastGoodIndex = -1;
             }
@@ -282,12 +283,12 @@ public final class StringUtil {
         
         // add remaining chars
         if (startIndex < text.length()) {
-            splitText.addElement(text.substring(startIndex));
+            splitText.add(text.substring(startIndex));
         }
         
         // convert to String array
         String[] retVal = new String[splitText.size()];
-        splitText.copyInto(retVal);
+        splitText.toArray(retVal);
         return retVal;
     }
     

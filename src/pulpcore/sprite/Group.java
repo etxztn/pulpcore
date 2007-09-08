@@ -29,7 +29,9 @@
 
 package pulpcore.sprite;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import pulpcore.image.CoreGraphics;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
@@ -38,21 +40,21 @@ import pulpcore.scene.Scene2D;
 
 /**
     A container of Sprites.
-    <p>Adding and removing sprites doesn't occur until {@link #commitChanges() } is invoked,
-    which is invoked by Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     <p>Adding the same Sprite instance to multiple groups is unsupported and
     may yield undesireable results.
 */
 public class Group extends Sprite {
-
-    private static final Object COMMAND_ADD = new Integer(0);
-    private static final Object COMMAND_REMOVE = new Integer(1);
-    private static final Object COMMAND_REMOVE_ALL = new Integer(2);
     
-    private Group parent;
-    private Vector sprites = new Vector();
-    private Vector commandsTypes;
-    private Vector commandsSprites;
+    private static final int MOD_NONE = 0;
+    private static final int MOD_ADDED = 1;
+    private static final int MOD_REMOVED = 2;
+
+    private ArrayList sprites = new ArrayList();
+    private ArrayList previousSprites = null;
+    private int modCount = 0;
+    // Modification actions since the last call to getRemovedSprites()
+    private int modActions = MOD_NONE;
+    
     protected int fNaturalWidth;
     protected int fNaturalHeight;
     private int fInnerX;
@@ -108,7 +110,7 @@ public class Group extends Sprite {
         if (index < 0 || index >= size()) {
             return null;
         }
-        return (Sprite)sprites.elementAt(index);
+        return (Sprite)sprites.get(index);
     }
     
     
@@ -117,6 +119,9 @@ public class Group extends Sprite {
     }
     
     
+    /**
+        Returns the number of sprites in this group and all child groups.
+    */
     public int getNumSprites() {
         int count = 0;
         for (int i = 0; i < size(); i++) {
@@ -132,6 +137,9 @@ public class Group extends Sprite {
     }
     
     
+    /**
+        Returns the number of visible sprites in this group and all child groups.
+    */
     public int getNumVisibleSprites() {
         if (visible.get() == false || alpha.get() == 0) {
             return 0;
@@ -156,133 +164,94 @@ public class Group extends Sprite {
     //
     
     
-    private void addCommand(Object command, Object sprite) {
-        if (commandsTypes == null) {
-            commandsTypes = new Vector();
-            commandsSprites = new Vector();
-        }
-        
-        commandsTypes.addElement(command);
-        commandsSprites.addElement(sprite);
-    }
-    
-    
     /**
         Adds a Sprite to this Group.
-        <p>The add doesn't occur until {@link #commitChanges() } is invoked, which is invoked by
-        Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     */
     public void add(Sprite sprite) {
-        if (sprite != null) {
-            addCommand(COMMAND_ADD, sprite);
+        if (sprite != null && !sprites.contains(sprite)) {
+            modActions |= MOD_ADDED;
+            modCount++;
+            sprite.setDirty(true);
+            sprite.clearDirtyRect();
+            sprites.add(sprite);
         }
     }
     
     
     /**
         Removes a Sprite from this Group.
-        <p>The remove doesn't occur until {@link #commitChanges() } is invoked, which is invoked by
-        Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     */
     public void remove(Sprite sprite) {
         if (sprite != null) {
-            addCommand(COMMAND_REMOVE, sprite);
+            boolean wasContained = sprites.remove(sprite);
+            if (wasContained) {
+                modActions |= MOD_REMOVED;
+                modCount++;
+            }
         }
     }
     
     
     /**
         Removes all Sprites from this Group.
-        <p>The remove doesn't occur until {@link #commitChanges() } is invoked, which is invoked by
-        Scene2D after every call to {@link pulpcore.scene.Scene2D#update(int) }.
     */
     public void removeAll() {
-        addCommand(COMMAND_REMOVE_ALL, COMMAND_REMOVE_ALL);
+        if (sprites.size() > 0) {
+            modActions |= MOD_REMOVED;
+            modCount++;
+            sprites.clear();
+        }
     }
 
 
     /**
-        Commits the changes made by the {@link #add(Sprite) } and {@link #remove(Sprite)} methods.
+        Gets an iterator of all of the Sprites in this Group that were
+        removed since the last call to this method. 
+        This method is used by Scene2D to implement dirty rectangles.
     */
-    public void commitChanges() {
-        commitChanges(null);
-    }
-    
-    
-    /**
-        Commits the changes made by the {@link #add(Sprite) } and {@link #remove(Sprite)} methods, 
-        and notifies the specified {@link pulpcore.scene.Scene2D } of sprites removed since 
-        the last call to this method.
-    */
-    public void commitChanges(Scene2D scene) {
+    public Iterator getRemovedSprites() {
         
-        if (commandsTypes != null) {
-            for (int i = 0; i < commandsTypes.size(); i++) {
-                // Ideally this would be more object-oriented (a Command class for every command
-                // type), but that would increase the jar size without much benefit.
-                Object command = commandsTypes.elementAt(i);
-                if (command == COMMAND_ADD) {
-                    Sprite sprite = (Sprite)commandsSprites.elementAt(i);
-                    if (!sprites.contains(sprite)) {
-                        sprite.setDirty(true);
-                        sprite.clearDirtyRect();
-                        if (sprite instanceof Group) {
-                            Group group = (Group)sprite;
-                            group.parent = this;
-                        }
-                        sprites.addElement(sprite);
-                    }
-                }
-                else if (command == COMMAND_REMOVE) {
-                    Sprite sprite = (Sprite)commandsSprites.elementAt(i);
-                    if (sprites.contains(sprite)) {
-                        if (sprite instanceof Group) {
-                            Group group = (Group)sprite;
-                            group.parent = null;
-                        }
-                        if (scene != null) {
-                            scene.notifyRemovedSprite(sprite);
-                        }
-                        sprites.removeElement(sprite);
-                    }
-                }
-                else if (command == COMMAND_REMOVE_ALL) {
-                    for (int j = 0; j < sprites.size(); j++) {
-                        Sprite sprite = get(j);
-                        if (sprite instanceof Group) {
-                            Group group = (Group)sprite;
-                            group.parent = null;
-                        }
-                        if (scene != null) {
-                            scene.notifyRemovedSprite(sprite);
-                        }
-                    }
-                    sprites = new Vector();
-                }
-            }
-            
-            commandsTypes = null;
-            commandsSprites = null;
+        if (modActions == MOD_NONE) {
+            return null;
         }
-             
-        for (int i = 0; i < size(); i++) {
-            Sprite sprite = get(i);
-            if (sprite instanceof Group) {
-                Group group = (Group)sprite;
-                group.commitChanges(scene);
+        else if (previousSprites == null) {
+            // First call from Scene2D - no remove notifications needed
+            previousSprites = new ArrayList(sprites);
+            modActions = MOD_NONE;
+            return null;
+        }
+        else if ((modActions & MOD_REMOVED) == 0) {
+            // There were modifications, but nothing was removed
+            previousSprites.clear();
+            previousSprites.addAll(sprites);
+            modActions = MOD_NONE;
+            return null;
+        }
+        else {
+            // There were removed sprites
+            // NOTE: we make the list here, rather than in remove(), because if the list was
+            // creating in remove() and this method was never called (non-Scene2D implementation)
+            // the removedSprites list would continue to grow, resulting in a memory leak.
+            ArrayList removedSprites = new ArrayList();
+            
+            for (int i = 0; i < previousSprites.size(); i++) {
+                Sprite sprite = (Sprite)previousSprites.get(i);
+                if (!sprites.contains(sprite)) {
+                    removedSprites.add(sprite);
+                }
             }
+            previousSprites.clear();
+            previousSprites.addAll(sprites);
+            modActions = MOD_NONE;
+            return removedSprites.iterator();
         }
     }
     
     
     /**
-        Packs this group so that its dimensions match the area covered by its children. The
-        {@link #commitChanges() } is invoked before packing. 
+        Packs this group so that its dimensions match the area covered by its children. 
     */
     public void pack() {
-        
-        commitChanges();
-        
         if (size() > 0) {
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
@@ -354,13 +323,24 @@ public class Group extends Sprite {
             return height.getAsFixed();
         }
     }
+    
+    // Listed here as a seperate method for HotSpot.
+    // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103956
+    private void throwModificationException() {
+        throw new ConcurrentModificationException(
+            "Sprite modified the structure of its parent Group");
+    }
         
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         
+        int lastModCount = modCount;
         for (int i = 0; i < size(); i++) {
             get(i).update(elapsedTime);
+            if (lastModCount != modCount) {
+                throwModificationException();
+            }
         }
     }
     
@@ -381,15 +361,23 @@ public class Group extends Sprite {
             }
         }
         
+        int lastModCount = modCount;
         for (int i = 0; i < size(); i++) {
             get(i).prepareToDraw(transformForChildren, parentDirty);
+            if (lastModCount != modCount) {
+                throwModificationException();
+            }
         }
     }
     
         
     protected void drawSprite(CoreGraphics g) {
+        int lastModCount = modCount;
         for (int i = 0; i < size(); i++) {
             get(i).draw(g);
+            if (lastModCount != modCount) {
+                throwModificationException();
+            }
         }
     }
 }

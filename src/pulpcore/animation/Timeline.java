@@ -29,14 +29,14 @@
 
 package pulpcore.animation;
 
-import java.util.Vector;
+import java.util.ArrayList;
 import pulpcore.animation.event.SceneChangeEvent;
 import pulpcore.animation.event.SoundEvent;
 import pulpcore.animation.event.TimelineEvent;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene;
-import pulpcore.sprite.Sprite;
 import pulpcore.sound.SoundClip;
+import pulpcore.sprite.Sprite;
 
 
 /**
@@ -48,8 +48,8 @@ public final class Timeline extends Animation {
     private Timeline parent;
     
     // Parallel arrays
-    private Vector animationList;
-    private Vector propertyList;
+    private ArrayList animationList;
+    private ArrayList propertyList;
     
     private boolean playing;
     private double playSpeed = 1;
@@ -73,8 +73,8 @@ public final class Timeline extends Animation {
     public Timeline(Easing easing, int startDelay) {
         super(0, 0, 0, easing, startDelay);
         
-        animationList = new Vector();
-        propertyList = new Vector();
+        animationList = new ArrayList();
+        propertyList = new ArrayList();
         playing = true;
     }
     
@@ -89,7 +89,7 @@ public final class Timeline extends Animation {
         
         duration = 0;
         for (int i = 0; i < animationList.size(); i++) {
-            Animation anim = (Animation)animationList.elementAt(i);
+            Animation anim = (Animation)animationList.get(i);
             int childDuration = anim.getTotalDuration();
             if (childDuration == -1) {
                 duration = -1;
@@ -175,12 +175,12 @@ public final class Timeline extends Animation {
         
         // First, update those animations that were previously active
         for (int i = 0; i < animationList.size(); i++) {
-            Animation anim = (Animation)animationList.elementAt(i);
+            Animation anim = (Animation)animationList.get(i);
             
             if (anim.getAnimState(anim.getAnimTime(lastAnimTime)) == STATE_ACTIVE) {
                 boolean isActive = anim.setTime(animTime);
                 if (isActive) {
-                    Property property = (Property)propertyList.elementAt(i);
+                    Property property = (Property)propertyList.get(i);
                     property.setValue(anim.getValue());
                 }
             }
@@ -188,12 +188,12 @@ public final class Timeline extends Animation {
         
         // Next, update all other animations
         for (int i = 0; i < animationList.size(); i++) {
-            Animation anim = (Animation)animationList.elementAt(i);
+            Animation anim = (Animation)animationList.get(i);
             
             if (anim.getAnimState(anim.getAnimTime(lastAnimTime)) != STATE_ACTIVE) {
                 boolean isActive = anim.setTime(animTime);
                 if (isActive) {
-                    Property property = (Property)propertyList.elementAt(i);
+                    Property property = (Property)propertyList.get(i);
                     property.setValue(anim.getValue());
                 }
             }
@@ -209,8 +209,8 @@ public final class Timeline extends Animation {
     
     
     public void addEvent(TimelineEvent event) {
-        animationList.addElement(event);
-        propertyList.addElement(new Int());
+        animationList.add(event);
+        propertyList.add(new Int());
         calcDuration();
     }
     
@@ -218,8 +218,8 @@ public final class Timeline extends Animation {
         if (anim instanceof Timeline) {
             ((Timeline)anim).setParent(this);
         }
-        animationList.addElement(anim);
-        propertyList.addElement(property);
+        animationList.add(anim);
+        propertyList.add(property);
         calcDuration();
     }
     
