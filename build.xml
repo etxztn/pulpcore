@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
-<project name="PulpCore 0.9" default="build" basedir=".">
+<project name="PulpCore 0.10" default="build" basedir=".">
 
-    <property name="version" value="0.9" />
+    <property name="version" value="0.10" />
     
     <property file="build.properties" />
     
@@ -125,7 +125,7 @@
         
         <mkdir dir="${build}/temp2" />
         
-        <!-- Compile Java 1.1 code -->
+        <!-- Compile Java 1.4 code -->
         <javac srcdir="${src}"
                 destdir="${build}/temp2"
                 extdirs="${lib}"
@@ -291,7 +291,7 @@
                 <exclude name="pulpcore/platform/**" />
             </packageset>
             
-            <doctitle><![CDATA[<h1>PulpCore ${version} (build ${build.number})</h1>]]></doctitle>
+            <doctitle><![CDATA[<h1>PulpCore ${version}.${build.number}</h1>]]></doctitle>
             <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore</a>]]></header>
             <bottom>Copyright &amp;copy; 2007 Interactive Pulp, LLC.</bottom>
             <!-- 
@@ -413,9 +413,11 @@
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Scenes/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Starfield/build.xml"/></antcall>            
+        <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Widgets/build.xml"/></antcall>
                
-        <zip destfile="${build}/pulpcore-${version}-(${build.number}).zip" basedir="${dist.temp}" />
+        <zip destfile="${build}/pulpcore-${version}.${build.number}.zip" basedir="${dist.temp}" />
             
         <delete dir="${dist.temp}" /> 
     </target>
