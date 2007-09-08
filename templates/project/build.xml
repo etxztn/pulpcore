@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="PulpCore 0.9 Project" default="build-and-run" basedir=".">
+<project name="PulpCore 0.10 Project" default="build-and-run" basedir=".">
 
     <property file="build.properties" />
     
@@ -30,7 +30,7 @@
         pulpcore.path         The path to the directory containing the PulpCore jars.
         proguard.path         The path to the Proguard jar (Proguard 3.6 or newer).
         library.path          The path to the jar or zip for the Java runtime. Required for Proguard. 
-                              Proguard runs faster if you use the Java 1.1 classes. Otherwise:
+                              To ensure maximum compatibility, use the Java 1.4 classes. Otherwise:
                               For Windows, use "${java.home}/lib/rt.jar".
                               For Max OS X, use "${java.home}/../Classes/classes.jar"
     -->
@@ -38,8 +38,8 @@
     <property name="project.jar" value="HelloWorld.jar" />
     <property name="project.assets.zip" value="HelloWorld.zip" />
     <property name="project.scene" value="HelloWorld" />
-    <property name="project.width" value="550" />
-    <property name="project.height" value="400" />
+    <property name="project.width" value="640" />
+    <property name="project.height" value="480" />
     <property name="project.params" value="" />
     <property name="project.version" value="1.0" />    
     <property name="pulpcore.build" value="debug" />
@@ -53,7 +53,7 @@
     -->
     
     
-    <property name="pulpcore.version" value="0.9" />
+    <property name="pulpcore.version" value="0.10" />
     <property name="pulpcore.platform" value="applet" />
     <property name="autoload.assets.zip" value="" />
     
