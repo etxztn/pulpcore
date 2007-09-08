@@ -56,8 +56,8 @@ public class AppletHTMLTask extends Task {
     private static final String DEFAULT_SCENE = null;
     private static final String DEFAULT_ASSETS = "";
     private static final String DEFAULT_PARAMS = null;
-    private static final int DEFAULT_WIDTH = 550;
-    private static final int DEFAULT_HEIGHT = 400;
+    private static final int DEFAULT_WIDTH = 640;
+    private static final int DEFAULT_HEIGHT = 480;
     
     private File destDir;
     private File template = null;

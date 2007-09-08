@@ -102,7 +102,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         Note: running from the command-line has only been tested with the html generated
         by Eclipse. NetBeans can use the Ant file's "run" task.
         
-        <applet archive="archive.jar" width="550" height="400">
+        <applet archive="archive.jar" width="640" height="480">
         <param name="name1" value="value1">
         <param name="name2" value="value2">
         <param name="name3" value="value3">
@@ -132,8 +132,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         // Default values
         String documentURL = file.getAbsolutePath();
         String archive = null;
-        int width = 550;
-        int height = 400;
+        int width = 640;
+        int height = 480;
         Map<String, String> params = new HashMap<String, String>();
         
         // Prepare applet tag regex
@@ -506,10 +506,10 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 
                 // Call Assets.getCatalogs()
                 Method getCatalogs = classLoader.loadClass("pulpcore.Assets").getMethod("getCatalogs");
-                Enumeration<String> e = (Enumeration<String>)getCatalogs.invoke(null, new Object[0]);
+                Iterator<String> i = (Iterator<String>)getCatalogs.invoke(null, new Object[0]);
                 List<String> assets = new ArrayList<String>();
-                while (e.hasMoreElements()) {
-                    assets.add(e.nextElement());
+                while (i.hasNext()) {
+                    assets.add(i.next());
                 }
                 
                 // Store the data

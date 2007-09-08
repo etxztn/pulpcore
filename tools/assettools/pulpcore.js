@@ -1,4 +1,4 @@
-// PulpCore 0.9
+// PulpCore 0.10
 
 // Global methods accessed via LiveConnect
 
@@ -90,8 +90,8 @@ function PulpCoreObject() {
 	
 	var appletHTML = "";
 	var code    = (window.pulpcore_class === undefined) ? "pulpcore.platform.applet.CoreApplet.class" : window.pulpcore_class;
-	var width   = (window.pulpcore_width === undefined) ? 550 : window.pulpcore_width;
-	var height  = (window.pulpcore_height === undefined) ? 400 : window.pulpcore_height;
+	var width   = (window.pulpcore_width === undefined) ? 640 : window.pulpcore_width;
+	var height  = (window.pulpcore_height === undefined) ? 480 : window.pulpcore_height;
 	var splash  = (window.pulpcore_splash === undefined) ? "splash.gif" : window.pulpcore_splash;
 	var archive = (window.pulpcore_archive === undefined) ? "project.jar" : window.pulpcore_archive;
 	var bgcolor = (window.pulpcore_bgcolor === undefined) ? "#000000" : window.pulpcore_bgcolor;
