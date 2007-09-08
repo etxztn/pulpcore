@@ -37,7 +37,7 @@ public class Scenes extends Scene2D {
         public void update(int elapsedTime) {
             if (button.isClicked()) {
                 button.enabled.set(false);
-                button.moveTo(550, 340, 200);
+                button.moveTo(640, 340, 200);
                 addEvent(new SceneChangeEvent(new RedScene(), 200));
             }
         }
@@ -57,7 +57,7 @@ public class Scenes extends Scene2D {
         
         public void update(int elapsedTime) {
             if (button.isClicked()) {
-                Stage.interruptScene(new PurpleScene());
+                Stage.pushScene(new PurpleScene());
             }
         }
     }
@@ -75,7 +75,7 @@ public class Scenes extends Scene2D {
         
         public void update(int elapsedTime) {
             if (button.isClicked()) {
-                Stage.gotoInterruptedScene();
+                Stage.popScene();
             }
         }
     }

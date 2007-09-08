@@ -22,32 +22,32 @@ public class Widgets extends Scene2D {
         
         CoreFont font = CoreFont.getSystemFont();
         
-        Label label = new Label("Name: ", 275, 140);
+        Label label = new Label("Name: ", 320, 160);
         label.setAnchor(Sprite.EAST);
         
-        textField = new TextField(280, 140, 150, font.getHeight());
+        textField = new TextField(325, 160, 150, font.getHeight());
         textField.setAnchor(Sprite.WEST);
         textField.setFocus(true);
         
-        Label label2 = new Label("Secret Password: ", 275, 180);
+        Label label2 = new Label("Secret Password: ", 320, 200);
         label2.setAnchor(Sprite.EAST);
         
-        passwordField = new TextField(280, 180, 150, font.getHeight());
+        passwordField = new TextField(325, 200, 150, font.getHeight());
         passwordField.setPasswordMode(true);
         passwordField.setAnchor(Sprite.WEST);
         
         CoreImage buttonImage = CoreImage.load("button.png");
-        okButton = new Button(buttonImage.split(3), 275, 260);
+        okButton = new Button(buttonImage.split(3), 320, 280);
         okButton.setAnchor(Sprite.NORTH);
         okButton.setKeyBinding(Input.KEY_ENTER);
         
         CoreImage checkboxImage = CoreImage.load("checkbox.png");
         checkbox = Button.createLabeledToggleButton(checkboxImage.split(3,2), font, 
-            "Rotate", 280, 220, 30, 12, Sprite.WEST, false);
+            "Rotate", 325, 240, 30, 12, Sprite.WEST, false);
         checkbox.setCursor(Input.CURSOR_DEFAULT);
         checkbox.setAnchor(Sprite.WEST);
         
-        answer = new Label("", 275, 350);
+        answer = new Label("", 320, 370);
         answer.setAnchor(Sprite.CENTER);
         
         add(new FilledSprite(0x9999ff));
@@ -81,7 +81,7 @@ public class Widgets extends Scene2D {
             double newAngle = checkbox.isSelected() ? Math.PI / 16 : 0;
             Group layer = getMainLayer();
             for (int i = 1; i < layer.size(); i++) {
-                layer.get(i).angle.animateTo(newAngle, 500);
+                layer.get(i).angle.animateTo(newAngle, 300);
             }
         }
         

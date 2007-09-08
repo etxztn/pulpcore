@@ -45,9 +45,9 @@ public class AnimationEasing extends Scene2D {
     
     public void load() {
         CoreFont font = CoreFont.getSystemFont().tint(CoreGraphics.WHITE);
-        icon = new ImageSprite("earth.png", 100, 200);
+        icon = new ImageSprite("earth.png", 140, 240);
         icon.setAnchor(Sprite.HCENTER | Sprite.VCENTER);
-        label = new Label(font, "", 275, 20);
+        label = new Label(font, "", 320, 20);
         label.setAnchor(Sprite.HCENTER | Sprite.TOP);
         
         add(new ImageSprite("background.png", 0, 0));
@@ -67,8 +67,8 @@ public class AnimationEasing extends Scene2D {
             time = timeline.getTime();
         }
         timeline = new Timeline();
-        timeline.move(icon, 100, 200, 450, 200, 1000, easing, 500);
-        timeline.move(icon, 450, 200, 100, 200, 1000, easing, 2000);
+        timeline.move(icon, 140, 240, 500, 240, 1000, easing, 500);
+        timeline.move(icon, 500, 240, 140, 240, 1000, easing, 2000);
         timeline.loopForever();
         timeline.setTime(time);
     }

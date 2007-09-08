@@ -18,23 +18,23 @@ public class ImagesAndFonts extends Scene2D {
     public void load() {
         add(new ImageSprite("background.png", 0, 0));
         
-        add(new Label(CoreFont.load("simple.font.png"), "Fonts & Animated Images", 160, 14));
-        add(new Label(CoreFont.load("complex.font.png"), "PulpCore.", 180, 200));
+        add(new Label(CoreFont.load("simple.font.png"), "Fonts & Animated Images", 205, 14));
+        add(new Label(CoreFont.load("complex.font.png"), "PulpCore.", 225, 200));
                 
-        cursor = new ImageSprite("cursor.png", 0, 0);
-        add(cursor);
-        
         personRight = CoreImage.load("player-right.png");
         personLeft = personRight.mirror();
         personUp = CoreImage.load("player-up.png");
         personDown = CoreImage.load("player-down.png");
         person = new ImageSprite(personLeft, 320, 180);
         add(person);
+        
+        Input.setCursor(Input.CURSOR_OFF);
+        cursor = new ImageSprite("cursor.png", 0, 0);
+        add(cursor);
     }
     
     public void update(int elapsedTime) {
         cursor.setLocation(Input.getMouseX(), Input.getMouseY());
-        cursor.visible.set(true);
         
         float dx = 0;
         float dy = 0;
@@ -56,7 +56,6 @@ public class ImagesAndFonts extends Scene2D {
             newImage = personLeft;
         }
         if (newImage == null) {
-            cursor.visible.set(false);
             newImage = personDown;
         }
 
