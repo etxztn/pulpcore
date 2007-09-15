@@ -45,8 +45,12 @@ import org.apache.tools.ant.taskdefs.Copy;
 public class ConvertSoundTask extends Task {
     
     // PulpCore reads in little-endian WAV format and plays back big-endian samples
-    private static final AudioFormat WAV_FORMAT =
+    
+    private static final AudioFormat WAV_FORMAT_MONO =
         new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000, 16, 1, 2, 8000, false);
+        
+    private static final AudioFormat WAV_FORMAT_STEREO =
+        new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000, 16, 2, 4, 8000, false);
     
     private File srcFile;
     private File destFile;
@@ -96,10 +100,12 @@ public class ConvertSoundTask extends Task {
         }
         else {
             // Try to convert
+            AudioFormat goalFormat = 
+                (format.getChannels() >= 2) ? WAV_FORMAT_STEREO : WAV_FORMAT_MONO;
             AudioInputStream sourceStream = AudioSystem.getAudioInputStream(srcFile);
             AudioInputStream convertedStream = null;
             try {
-                convertedStream = AudioSystem.getAudioInputStream(WAV_FORMAT, sourceStream);
+                convertedStream = AudioSystem.getAudioInputStream(goalFormat, sourceStream);
                 AudioSystem.write(convertedStream, AudioFileFormat.Type.WAVE, destFile);
                 log("Converting " + srcFile);
             }
@@ -117,7 +123,7 @@ public class ConvertSoundTask extends Task {
     
     
     private boolean isValid(AudioFormat format) {
-        if (format.getChannels() != 1) {
+        if (format.getChannels() < 1 || format.getChannels() > 2) {
             return false;
         }
         else if (format.getSampleRate() < 8000 || format.getSampleRate() > 8100) {
