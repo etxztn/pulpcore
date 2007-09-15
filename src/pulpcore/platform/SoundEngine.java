@@ -35,11 +35,13 @@ import pulpcore.sound.Sound;
 
 public interface SoundEngine {
     
-    public void play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop);
-    
     public int getNumSoundsPlaying();
     
+    public int[] getSupportedSampleRates();
+    
     public int getMaxSimultaneousSounds();
+    
+    public void play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop);
     
     public void poll();
     

@@ -54,67 +54,106 @@ public class JavaSound implements SoundEngine {
         
     private static final int MAX_SIMULTANEOUS_SOUNDS = 32;
     
-    private static final int FRAME_RATE = 8000;
+    private static final int[] SAMPLE_RATES = { 8000, 11025, 22050, 44100 };
     private static final int CHANNELS = 2;
     private static final int FRAME_SIZE = 2 * CHANNELS;
-    private static final AudioFormat PLAYBACK_FORMAT = new AudioFormat(
-        AudioFormat.Encoding.PCM_SIGNED, FRAME_RATE, 16, 
-        CHANNELS, FRAME_SIZE, FRAME_RATE, true);
     
-    private static byte[] workBuffer = new byte[8000];
+    // The buffer size (Must be divisible by FRAME_SIZE).
+    // 16K is the minimum needed to prevent popping in Mac OS X?
+    private static final int BUFFER_SIZE = 24*1024;
+    
+    private static byte[] workBuffer = new byte[BUFFER_SIZE/4];
+    
+    
+    private static AudioFormat getFormat(int sampleRate) {
+        return new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 
+            sampleRate, 16, CHANNELS, FRAME_SIZE, sampleRate, true);
+    }
+    
+    private static int indexOf(int[] array, int value) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
     private DataLinePlayer[] players = new DataLinePlayer[0];
-    private int bufferSize;
-    private static SoundClip silence;
-    
-    
-    /**
-        Gets the maximum number of simultaneous sounds with the
-        specified AudioFormat that the default mixer can play.
-    */
-    private static int calcMaxSimultaneousSounds() {
-        
-        int maxLines = 0;
-        
-        try {
-            DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, PLAYBACK_FORMAT);
-            Mixer mixer = AudioSystem.getMixer(null);
-            maxLines =  mixer.getMaxLines(lineInfo);
-        }
-        catch (Exception ex) {
-            if (Build.DEBUG) CoreSystem.print("calcMaxSimultaneousSounds()", ex);
-        }
-            
-        if (maxLines == AudioSystem.NOT_SPECIFIED || maxLines > MAX_SIMULTANEOUS_SOUNDS) {
-            return MAX_SIMULTANEOUS_SOUNDS;
-        }
-        else {
-            return maxLines;
-        }
-    }    
+    private int[] maxSoundsForSampleRate = new int[SAMPLE_RATES.length];
+    private int[] sampleRates;
     
     
     public JavaSound() {
-        int maxSounds = calcMaxSimultaneousSounds();
         
-        if (maxSounds != 0) {
+        // Calculate the max number of simultaneous sounds for each sample rate
+        int numSampleRates = 0;
+        int maxSounds = 0;
+        for (int i = 0; i < SAMPLE_RATES.length; i++) {
+            maxSoundsForSampleRate[i] = getMaxSimultaneousSounds(SAMPLE_RATES[i]);
+            if (maxSoundsForSampleRate[i] > 0) {
+                numSampleRates++;
+                maxSounds += maxSoundsForSampleRate[i];
+            }
+        }
+        
+        // Create the list of supported sample rates
+        sampleRates = new int[numSampleRates];
+        int index = 0;
+        for (int i = 0; i < SAMPLE_RATES.length && index < numSampleRates; i++) {
+            if (maxSoundsForSampleRate[i] > 0) {
+                sampleRates[index++] = SAMPLE_RATES[i];
+            }
+        }
+        
+        // Create the players
+        maxSounds = Math.min(maxSounds, MAX_SIMULTANEOUS_SOUNDS);
+        if (maxSounds > 0) {
             players = new DataLinePlayer[maxSounds];
-
             for (int i = 0; i < players.length; i++) {
-                players[i] = new DataLinePlayer();
-                int bSize = players[i].open();
-                if (bSize != -1) {
-                    bufferSize = bSize;
-                }
+                players[i] = new DataLinePlayer(sampleRates, i % sampleRates.length);
             }
         }
         else {
             players = new DataLinePlayer[0];
         }
         
-        silence = new SoundClip(new byte[bufferSize], true);
+        // Play a buffer's worth of silence to helps remove popping
+        if (players.length > 0) {
+            SoundClip noSound = new SoundClip(new byte[0], players[0].getSampleRate(), true);
+            play(null, noSound, new Fixed(1), new Fixed(0), false);
+        }
+    }
+    
+    
+    /**
+        Gets the maximum number of simultaneous sounds with the
+        specified AudioFormat that the default mixer can play.
+    */
+    private int getMaxSimultaneousSounds(int sampleRate) {
         
-        // Play a buffer's worth of silence - Helps remove popping
-        play(null, silence, new Fixed(1.0), new Fixed(0), false);
+        AudioFormat format = getFormat(sampleRate);
+        
+        try {
+            DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, format);
+            Mixer mixer = AudioSystem.getMixer(null);
+            int maxLines = mixer.getMaxLines(lineInfo);
+            if (maxLines == AudioSystem.NOT_SPECIFIED || maxLines > MAX_SIMULTANEOUS_SOUNDS) {
+                return MAX_SIMULTANEOUS_SOUNDS;
+            }
+            else {
+                return maxLines;
+            }
+        }
+        catch (Exception ex) {
+            if (Build.DEBUG) CoreSystem.print("getMaxSimultaneousSounds()", ex);
+            return 0;
+        }
+    }    
+    
+    
+    public int[] getSupportedSampleRates() {
+        return sampleRates;
     }
     
     
@@ -126,8 +165,54 @@ public class JavaSound implements SoundEngine {
     
     
     public synchronized void poll() {
+        // Poll the players
         for (int i = 0; i < players.length; i++) {
             players[i].poll();
+        }
+        
+        // Determine if all sample rates are available and ready
+        int[] availableSampleRates = new int[sampleRates.length];
+        int numStoppedLines = 0;
+        for (int i = 0; i < players.length; i++) {
+            if (!players[i].isPlaying()) {
+                numStoppedLines++;
+                
+                int index = indexOf(sampleRates, players[i].getSampleRate());
+                if (index != -1) {
+                    availableSampleRates[index]++;
+                }
+            }
+        }
+        
+        // Make sure at least 1 line of each sample rate is open and ready
+        if (numStoppedLines >= sampleRates.length) {
+            boolean modified = false;
+            for (int i = 0; i < players.length; i++) {
+                if (!players[i].isPlaying()) {
+                    int playerSampleRate = players[i].getSampleRate();
+                    for (int j = 0; j < availableSampleRates.length; j++) {
+                        if (availableSampleRates[j] == 0) {
+                            boolean success = players[i].reopen(sampleRates[j]);
+                            if (success) {
+                                modified = true;
+                                availableSampleRates[j] = 1;
+                                
+                                int index = indexOf(sampleRates, playerSampleRate);
+                                if (index != -1) {
+                                    availableSampleRates[index]--;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (modified) {
+                //if (Build.DEBUG) {
+                //    printStatus();
+                //}
+            }
         }
     }
     
@@ -135,11 +220,59 @@ public class JavaSound implements SoundEngine {
     public synchronized void play(AppContext context, Sound sound, Fixed level, Fixed pan,
         boolean loop) 
     {
+        boolean played = false;
+        int numOpenLines = 0;
+        
+        // First, try to play an open line
         for (int i = 0; i < players.length; i++) {
             if (!players[i].isPlaying() && players[i].isOpen()) {
-                players[i].play(context, sound, level, pan, loop);
-                return;
+                if (!played && players[i].getSampleRate() == sound.getSampleRate()) {
+                    players[i].play(context, sound, level, pan, loop);
+                    played = true;
+                }
+                else {
+                    numOpenLines++;
+                }
             }
+        }
+        
+        // Next, open a line at the sound's sample rate and play
+        if (!played) {
+            if (numOpenLines == 0) {
+                if (Build.DEBUG) CoreSystem.print("Couldn't play sound: no available lines.");
+            }
+            else {
+                for (int i = 0; i < players.length; i++) {
+                    if (!players[i].isPlaying()) {
+                        boolean success = players[i].reopen(sound.getSampleRate());
+                        if (success) {
+                            players[i].play(context, sound, level, pan, loop);
+                            played = true;
+                            numOpenLines--;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!played) {
+                    if (Build.DEBUG) CoreSystem.print("Couldn't play " + sound.getSampleRate() +
+                        "Hz sound.");
+                }
+            }
+        }
+        
+        //if (Build.DEBUG) {
+        //    printStatus();
+        //}
+    }
+    
+    
+    private void printStatus() {
+        CoreSystem.print("Sound lines: (" + players.length + "):");
+        for (int i = 0; i < players.length; i++) {
+            DataLinePlayer p = players[i];
+            CoreSystem.print("  " + i + ": " + p.getSampleRate() + "Hz, open=" + p.isOpen() +
+                ", playing=" + p.isPlaying());
         }
     }
     
@@ -160,11 +293,55 @@ public class JavaSound implements SoundEngine {
     }
     
     
+    static class SilentSound extends Sound {
+        
+        private int numFrames;
+        
+        public SilentSound(int sampleRate, int numFrames) {
+            super(sampleRate);
+            this.numFrames = numFrames;
+        }
+        
+        
+        public int getNumFrames() {
+            return numFrames;
+        }
+        
+        
+        public void getSamples(byte[] dest, int destOffset, int destChannels,
+            int srcFrame, int numFrames)
+        {
+            int frameSize = getSampleSize() * destChannels;
+            int length = numFrames * frameSize;
+            for (int i = 0; i < length; i++) {
+                dest[destOffset++] = 0;
+            }
+        }
+    }
+    
+    
     static class DataLinePlayer {
         
         private SoundStream stream;
         private SourceDataLine line;
         private boolean lastMute;
+        private int sampleRate;
+        
+        
+        public DataLinePlayer(int[] sampleRates, int firstAttempt) {
+            for (int i = 0; i < sampleRates.length; i++) {
+                this.sampleRate = sampleRates[(i + firstAttempt) % sampleRates.length];
+                open();
+                if (isOpen()) {
+                    return;
+                }
+            }
+        }
+        
+        
+        public int getSampleRate() {
+            return sampleRate;
+        }
 
         
         public synchronized boolean isOpen() {
@@ -172,28 +349,38 @@ public class JavaSound implements SoundEngine {
         }
         
         
-        public synchronized int open() {
+        public synchronized void open() {
+            if (!isOpen()) {
+                AudioFormat format = getFormat(sampleRate);
+                
+                try {
+                    DataLine.Info lineInfo =
+                        new DataLine.Info(SourceDataLine.class, format, BUFFER_SIZE);
+                    line = (SourceDataLine)AudioSystem.getLine(lineInfo);
+                    line.open(format, BUFFER_SIZE);
+                }
+                catch (Exception ex) {
+                    line = null;
+                }
+            }
+        }
+        
+        
+        public synchronized boolean reopen(int sampleRate) {
+            int oldSampleRate = this.sampleRate;
+            close();
+            this.sampleRate = sampleRate;
+            open();
+            
             if (isOpen()) {
-                return line.getBufferSize();
+                return true;
             }
-            
-            try {
-                // On some systems, a 1-second buffer eliminates pops that otherwise occur when
-                // a smaller buffer is used.
-                int byteRate = Math.round(PLAYBACK_FORMAT.getFrameRate()) * 
-                    PLAYBACK_FORMAT.getFrameSize();
-                int bufferSize = byteRate;                
-                DataLine.Info lineInfo =
-                    new DataLine.Info(SourceDataLine.class, PLAYBACK_FORMAT, bufferSize);
-                line = (SourceDataLine)AudioSystem.getLine(lineInfo);
-                line.open(PLAYBACK_FORMAT, bufferSize);
-                return line.getBufferSize();
+            else {
+                // Try to open the old format
+                this.sampleRate = oldSampleRate;
+                open();
+                return false;
             }
-            catch (Exception ex) {
-                line = null;
-            }
-            
-            return -1;
         }
         
         
@@ -223,6 +410,8 @@ public class JavaSound implements SoundEngine {
         {
             int loopFrame = 0;
             int numLoopFrames = loop ? clip.getNumFrames() : 0;
+            int silenceFrames = line.getBufferSize() / line.getFormat().getFrameSize();
+            Sound silence = new SilentSound(clip.getSampleRate(), silenceFrames);
             clip = new SoundSequence(new Sound[] { clip, silence });
             stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames, 0);
             lastMute = stream.isMute();
@@ -268,6 +457,9 @@ public class JavaSound implements SoundEngine {
                 else {
                     while (available > 0) {
                         int numBytes = Math.min(available, workBuffer.length);
+                        // Make sure numBytes is divisible by FRAME_SIZE
+                        numBytes -= (numBytes % FRAME_SIZE);
+                        
                         stream.render(workBuffer, 0, CHANNELS, numBytes / FRAME_SIZE);
                         line.write(workBuffer, 0, numBytes);
                         available -= numBytes;

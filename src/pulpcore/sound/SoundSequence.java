@@ -31,12 +31,16 @@ package pulpcore.sound;
 
 import java.util.ArrayList;
 import java.util.List;
+import pulpcore.Build;
+import pulpcore.CoreSystem;
 
 
 /**
     A SoundSequence is a immutable sequence of sampled sounds that can be played together
     smoothly with no skips or breaks between sounds. The sounds can be a mix of mono and
-    stereo SoundClips, or other SoundSequences.
+    stereo SoundClips, or other SoundSequences. 
+    <p>
+    All sounds in a sequence must have the sample sample rate.
 */
 public final class SoundSequence extends Sound {
     
@@ -49,8 +53,21 @@ public final class SoundSequence extends Sound {
     }
     
     
+    /**
+        @throws IllegalArgumentException if not all sounds in the sequence have the same 
+        sample rate.
+    */
     public SoundSequence(Sound[] sounds) {
+        super(sounds[0].getSampleRate());
         for (int i = 0; i < sounds.length; i++) {
+            if (sounds[i].getSampleRate() != getSampleRate()) {
+                if (Build.DEBUG) {
+                    CoreSystem.print("The first sound (sound[0]) in SoundSequence is " + 
+                        getSampleRate() + "Hz, but sound[" + i + "] is " + 
+                        sounds[i].getSampleRate() + "Hz.");
+                }
+                throw new IllegalArgumentException();
+            }
             if (sounds[i] instanceof SoundSequence) {
                 children.addAll(((SoundSequence)sounds[i]).children);
             }

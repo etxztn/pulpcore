@@ -42,13 +42,21 @@ import pulpcore.platform.SoundEngine;
 */
 public abstract class Sound {
     
-    private final int sampleRate = 8000;
     private final int sampleSize = 2;
+    private final int sampleRate;
     
     
     /**
+        Creates a new Sound with the specified sample rate.
+        @param sampleRate the sample rate (samples per second, per channel). 
+    */
+    public Sound(int sampleRate) {
+        this.sampleRate = sampleRate;
+    }
+        
+    
+    /**
         Returns the sample rate - the number of samples played per second, per channel. 
-        This method always returns 8000.
     */
     public final int getSampleRate() {
         return sampleRate;
@@ -82,12 +90,13 @@ public abstract class Sound {
     
     
     /**
-        Copies a sequence of samples from this Sound to a byte array.
-        @param dest the destination buffer
-        @param destOffset the offset in the destination buffer
-        @param destChannels The number of channels of the destination (1 or 2)
-        @param srcFrame the frame position to start copying from
-        @param numFrames the number of frames to copy
+        Copies a sequence of samples from this Sound to a byte array as 
+        signed, big endian, 16-bit PCM format.
+        @param dest the destination buffer.
+        @param destOffset the offset, in bytes, in the destination buffer.
+        @param destChannels The number of channels of the destination (1 or 2).
+        @param srcFrame the frame position to start copying from.
+        @param numFrames the number of frames to copy.
     */
     public abstract void getSamples(byte[] dest, int destOffset, int destChannels,
         int srcFrame, int numFrames);

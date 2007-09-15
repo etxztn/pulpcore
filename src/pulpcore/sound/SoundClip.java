@@ -30,6 +30,7 @@
 package pulpcore.sound;
 
 import java.io.EOFException;
+import java.lang.reflect.Method;
 import pulpcore.Assets;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -41,7 +42,7 @@ import pulpcore.util.ByteArray;
 */
 public final class SoundClip extends Sound {
     
-    private static final SoundClip NO_SOUND = new SoundClip(new byte[0]);
+    private static final SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
     
     // For u-law conversion. 132 * ((1 << i) - 1)
     private static final int[] EXP_TABLE = { 
@@ -56,19 +57,11 @@ public final class SoundClip extends Sound {
     
     
     /**
-        Creates a mono 8000Hz clip with the specified samples 
-        (signed, big endian, 16-bit PCM format). 
-    */
-    public SoundClip(byte[] data) {
-        this(data, false);
-    }
-    
-    
-    /**
         Creates an 8000Hz clip with the specified samples 
         (signed, big endian, 16-bit PCM format). 
     */
-    public SoundClip(byte[] data, boolean stereo) {
+    public SoundClip(byte[] data, int sampleRate, boolean stereo) {
+        super(sampleRate);
         this.data = data;
         this.numChannels = stereo ? 2 : 1;
         this.frameSize = getSampleSize() * getNumChannels();
@@ -176,6 +169,9 @@ public final class SoundClip extends Sound {
             else if (soundAsset.toLowerCase().endsWith(".wav")) {
                 return loadWAV(in, soundAsset);
             }
+            else if (soundAsset.toLowerCase().endsWith(".ogg")) {
+                return loadOGG(in, soundAsset);
+            }
             else {
                 if (Build.DEBUG) CoreSystem.print("Unknown audio file: " + soundAsset);
                 return NO_SOUND;
@@ -202,12 +198,21 @@ public final class SoundClip extends Sound {
         int numChannels = in.readInt();
         boolean stereo = (numChannels == 2);
         
-        if (encoding != 1 || sampleRate < 8000 || sampleRate > 8100 || 
-            numChannels < 1 || numChannels > 2) 
-        {
+        // Sometimes 8012Hz is used
+        if (sampleRate >= 8000 && sampleRate <= 8100) {
+            sampleRate = 8000;
+        }
+        
+        // Check basic format
+        if (encoding != 1 || numChannels < 1 || numChannels > 2) { 
             if (Build.DEBUG) {
-                CoreSystem.print("Not an 8-bit u-law, 8000Hz file: " + soundAsset);
+                CoreSystem.print("Not an 8-bit u-law mono or stereo file: " + soundAsset);
             }
+            return NO_SOUND;
+        }
+        
+        // Check sample rate
+        if (!isSupportedSampleRate(soundAsset, sampleRate)) {
             return NO_SOUND;
         }
         
@@ -223,7 +228,7 @@ public final class SoundClip extends Sound {
             samples[index++] = (byte)(linear & 0xff);
         }
     
-        return new SoundClip(samples, stereo);
+        return new SoundClip(samples, sampleRate, stereo);
     }
     
     
@@ -240,14 +245,15 @@ public final class SoundClip extends Sound {
         int magic1 = in.readInt();
         in.readInt();
         int magic2 = in.readInt();
-        boolean stereo = false;
-        
         if (magic1 != RIFF || magic2 != WAVE) {
             if (Build.DEBUG) CoreSystem.print("Not a WAV file: " + soundAsset);
             return NO_SOUND;
         }
         
         in.setByteOrder(ByteArray.LITTLE_ENDIAN);
+        
+        int sampleRate = -1;
+        boolean stereo = false;
         
         // Read each chunk. Only process the FMT and DATA chunks; ignore others.
         // Return once the data chunk is found.
@@ -258,30 +264,46 @@ public final class SoundClip extends Sound {
             if (chunkID == FMT) {
                 int format = in.readShort();
                 int numChannels = in.readShort();
-                int frameRate = in.readInt();
+                sampleRate = in.readInt();
                 int avgByteRate = in.readInt();
                 int blockAlign = in.readShort();
                 int bitsPerSample = in.readShort();
                 stereo = (numChannels == 2);
                 
+                // Sometimes 8012Hz is used
+                if (sampleRate >= 8000 && sampleRate <= 8100) {
+                    sampleRate = 8000;
+                }
+                
+                // Check basic format
                 if (format != 1 || bitsPerSample != 16 || 
-                    frameRate < 8000 || frameRate > 8100 || 
                     numChannels < 1 || numChannels > 2) 
                 {
                     if (Build.DEBUG) {
-                        CoreSystem.print("Not an 16-bit PCM, 8000Hz file: " + soundAsset);
+                        CoreSystem.print("Not an 16-bit PCM mono or stereo file: " + soundAsset);
                     }
+                    return NO_SOUND;
+                }
+                
+                // Check sample rate
+                if (!isSupportedSampleRate(soundAsset, sampleRate)) {
                     return NO_SOUND;
                 }
             }
             else if (chunkID == DATA) {
+                if (sampleRate == -1) {
+                    if (Build.DEBUG) {
+                        CoreSystem.print("Bad WAV file: " + soundAsset);
+                    }
+                    return NO_SOUND;
+                }
                 byte[] samples = new byte[chunkSize];
                 for (int i = 0; i < samples.length; i+=2) {
                     // Convert to big endian (Java endian style)
                     samples[i + 1] = in.readByte();
                     samples[i] = in.readByte();
                 }
-                return new SoundClip(samples, stereo);
+                return new SoundClip(samples, sampleRate, stereo);
             }
             else {
                 // Skip this unknown chunk
@@ -289,6 +311,61 @@ public final class SoundClip extends Sound {
             }
         }
     }
+    
+    
+    private static SoundClip loadOGG(ByteArray in, String soundAsset) throws EOFException {
+        /*
+            JOrbis is LGPL and PulpCore is BSD, so we're keeping everything nice and
+            separate. Assume:
+            1. PulpCore wasn't compiled with the JOrbis jars
+            2. PulpCore wasn't compiled with pulpcore.sound.JOrbisAdapter
+            3. The JOrbis jars might be available at runtime.
+        */
+        Class jOrbisAdapterClass;
+        try {
+            jOrbisAdapterClass = Class.forName("pulpcore.sound.JOrbisAdapter");
+        }
+        catch (Exception ex) {
+            if (Build.DEBUG) {
+                CoreSystem.print("JOrbisAdapter, the jorbis jar, and/or " + 
+                    "the jogg jar is not available: " + soundAsset);
+            }
+            return NO_SOUND;
+        }
+        
+        // Meh.. this will work for now
+        try {
+            Method method = jOrbisAdapterClass.getMethod("decode", new Class[] {
+                ByteArray.class, String.class });
+            SoundClip clip = (SoundClip)method.invoke(null, new Object[] { in, soundAsset } );
+            if (clip == null) {
+                clip = NO_SOUND;
+            }
+            return clip;
+        }
+        catch (Exception ex) {
+            if (Build.DEBUG) {
+                CoreSystem.print("Error loading: " + soundAsset, ex);
+            }
+            return NO_SOUND;
+        }
+    }
+    
+    
+    private static boolean isSupportedSampleRate(String soundAsset, int sampleRate) {
+        int[] sampleRates = CoreSystem.getPlatform().getSoundEngine().getSupportedSampleRates();
+        for (int i = 0; i < sampleRates.length; i++) {
+            if (sampleRate == sampleRates[i]) {
+                return true;
+            }
+        }
+        
+        if (Build.DEBUG) {
+            CoreSystem.print("Unsupported sample rate (" + sampleRate + "Hz): " + soundAsset);
+        }
+        return false;
+    }
+    
     
     //
     // For u-law conversion
