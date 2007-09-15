@@ -1,3 +1,11 @@
+0.10.2 (September 14, 2007)
+  * Examples: Added SoundEffects example
+  * Tools: New audio formats: mono and stereo, 8000Hz, 11025Hz, 22050Hz, 44100Hz. WAV and AU
+    file formats are supported. OGG is also supported if you have the jars (see the Wiki for info)
+  * API: Added SoundSequence to play a sequence of sounds togther.
+  * API: Both SoundClip and SoundSequence now extend the Sound base class. 
+  * API: Added Sound.play(level, pan) to pan a sound clip.
+
 0.10.1 (September 8, 2007)
   * Examples: Added Starfield example to demo mouse wheel rotation
   * Examples: All examples now have the default dimensions of 640x480.
@@ -18,7 +26,7 @@
   * Applet platform: Added "Get Java" message for Java 1.3 or older.
   * Applet platform: Removed Java 1.1 classes ImageProducerScene, SunAudio, CoreAppletBeanInfo,  
     CoreApplet$COMClassObject.
-  * Core: Now using the Java Collecions framework (instead of Vector, Stack, Hashtable, and 
+  * Core: Now using the Java Collections framework (instead of Vector, Stack, Hashtable, and 
     Enumeration).
   * Core: Default font now has monospace numerals
   * Core: Changed version number to 0.10
