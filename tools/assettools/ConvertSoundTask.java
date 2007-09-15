@@ -44,14 +44,6 @@ import org.apache.tools.ant.taskdefs.Copy;
 
 public class ConvertSoundTask extends Task {
     
-    // PulpCore reads in little-endian WAV format and plays back big-endian samples
-    
-    private static final AudioFormat WAV_FORMAT_MONO =
-        new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000, 16, 1, 2, 8000, false);
-        
-    private static final AudioFormat WAV_FORMAT_STEREO =
-        new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000, 16, 2, 4, 8000, false);
-    
     private File srcFile;
     private File destFile;
     
@@ -78,7 +70,6 @@ public class ConvertSoundTask extends Task {
             convert();
         }
         catch (UnsupportedAudioFileException ex) {
-            //log("Invalid sound format: " + WAV_FORMAT);
             throw new BuildException("Not a valid sound file: " + srcFile);
         }
         catch (IOException ex) {
@@ -100,8 +91,10 @@ public class ConvertSoundTask extends Task {
         }
         else {
             // Try to convert
-            AudioFormat goalFormat = 
-                (format.getChannels() >= 2) ? WAV_FORMAT_STEREO : WAV_FORMAT_MONO;
+            int channels = (format.getChannels() >= 2) ? 2 : 1;
+            AudioFormat goalFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
+                format.getSampleRate(), 16, channels, 2*channels, format.getSampleRate(), false);
+                
             AudioInputStream sourceStream = AudioSystem.getAudioInputStream(srcFile);
             AudioInputStream convertedStream = null;
             try {
@@ -123,10 +116,17 @@ public class ConvertSoundTask extends Task {
     
     
     private boolean isValid(AudioFormat format) {
+        float sampleRate = format.getSampleRate();
+        if (sampleRate >= 8000 && sampleRate <= 8100) {
+            sampleRate = 8000;
+        }
+        
         if (format.getChannels() < 1 || format.getChannels() > 2) {
             return false;
         }
-        else if (format.getSampleRate() < 8000 || format.getSampleRate() > 8100) {
+        else if (sampleRate != 8000 && sampleRate != 11025 && 
+            sampleRate != 22050 && sampleRate != 44100) 
+        {
             return false;
         }        
         else if (format.getEncoding() == AudioFormat.Encoding.ULAW) {
