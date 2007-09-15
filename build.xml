@@ -413,6 +413,8 @@
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Scenes/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/SoundEffects/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Starfield/build.xml"/></antcall>            
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Widgets/build.xml"/></antcall>
