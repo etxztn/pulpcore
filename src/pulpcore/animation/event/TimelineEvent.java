@@ -36,6 +36,17 @@ import pulpcore.animation.Animation;
     after a specific delay. TimelineEvents are added to and executed by a 
     {@link pulpcore.animation.Timeline}. Subclasses implement the {@link #trigger } 
     method.
+    <p>
+    An anonymous inner class can be used in a Scene2D to create a code block 
+    that is executed after a delay:
+    <pre>
+    int delay = 1000;
+    addEvent(new TimelineEvent(delay) {
+        public void trigger() {
+            // Code to execute after the delay
+        }
+    });  
+    </pre>
 */
 public abstract class TimelineEvent extends Animation {
 
