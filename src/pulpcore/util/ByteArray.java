@@ -317,18 +317,31 @@ public class ByteArray {
     }
     
     
-    public void read(byte[] buffer) throws EOFException {
-        read(buffer, 0, buffer.length);
+    /**
+        Reads bytes from the current position in this ByteArray into a buffer.
+        @throws EOFException if there aren't enough remaining bytes in this ByteArray to 
+        fill the buffer
+        @return the number of bytes read (always returns the length of the byte array)
+    */
+    public int read(byte[] buffer) throws EOFException {
+        return read(buffer, 0, buffer.length);
     }
     
     
-    public void read(byte[] buffer, int offset, int length) throws EOFException {
+    /**
+        Reads bytes from the current position in this ByteArray into a buffer.
+        @throws EOFException if there aren't enough remaining bytes in this ByteArray to 
+        read the specified number of bytes.
+        @return the number of bytes read (always returns the specified length)
+    */
+    public int read(byte[] buffer, int offset, int length) throws EOFException {
         if (length == 0) {
-            return;
+            return 0;
         }
         checkAvailable(length);
         System.arraycopy(data, position, buffer, offset, length);
         position += length;
+        return length;
     }
     
     
