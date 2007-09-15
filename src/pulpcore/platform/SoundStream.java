@@ -31,7 +31,7 @@ package pulpcore.platform;
 
 import pulpcore.animation.Fixed;
 import pulpcore.math.CoreMath;
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 
 
 public class SoundStream {
@@ -39,42 +39,34 @@ public class SoundStream {
     // The number of milliseconds to fade from a mute/unmute
     private static final int MUTE_TIME = 50;
     
-    private static byte[] silentBuffer;
-    
     private final AppContext context;
-    private final SoundClip clip;
-    private final int length;
-    private final int clipStartPosition;
-    private boolean loop;
+    private final Sound sound;
+    private final int loopFrame;
+    private final int numLoopFrames;
     
     private final Fixed level;
+    private final Fixed pan;
     private final Fixed outputLevel = new Fixed();
     
-    private int position;
-    private int animationPosition;
+    private int frame;
+    private int animationFrame;
     private boolean lastMute;
-    
-    public static void setSilentBuffer(byte[] silentBuffer) {
-        SoundStream.silentBuffer = silentBuffer;
-    }
-    
-    public SoundStream(AppContext context, SoundClip clip, Fixed level, boolean loop) {
-        this(context, clip, level, loop, 0, 0);
-    }
+    private boolean loop;
     
     
-    public SoundStream(AppContext context, SoundClip clip, Fixed level, boolean loop, 
-        int preClipSilenceLength, int postClipSilenceLength)
+    public SoundStream(AppContext context, Sound sound, Fixed level, Fixed pan, 
+        int loopFrame, int numLoopFrames, int animationFrameDelay)
     {
         this.context = context;
-        this.clip = clip;
+        this.sound = sound;
         this.level = level;
-        this.loop = loop;
-        this.length = clip.length() + preClipSilenceLength + postClipSilenceLength;
-        this.clipStartPosition = preClipSilenceLength;
+        this.pan = pan;
+        this.loopFrame = loopFrame;
+        this.numLoopFrames = numLoopFrames;
         
-        this.position = 0;
-        this.animationPosition = -clipStartPosition;
+        this.loop = (numLoopFrames > 0);
+        this.frame = 0;
+        this.animationFrame = -animationFrameDelay;
         
         this.lastMute = isMute();
         this.outputLevel.set(lastMute?0:1);
@@ -87,56 +79,45 @@ public class SoundStream {
 
     
     public boolean isFinished() {
-        return (position >= length);
+        return (frame >= sound.getNumFrames());
     }
     
     
-    public int skip(int n) {
+    public void skip(int numFrames) {
         int oldAnimationTime = getAnimationTime();
-        int oldPosition = position;
-        int newPosition = position + n;
-        animationPosition += n;
+        int oldFrame = frame;
+        int newFrame = frame + numFrames;
+        animationFrame += numFrames;
         
-        // Don't skip back to the pre-clip silence if it's already played
-        if (position >= clipStartPosition && newPosition < clipStartPosition) {
-            if (loop) {
-                position = clipStartPosition + 
-                    ((clip.length() + newPosition - clipStartPosition) % clip.length());
-            }
-            else {
-                position = clipStartPosition;
-                animationPosition = 0;
-            }
+        if (inLoop()) {
+            frame = loopFrame + ((newFrame - loopFrame) % numLoopFrames);
         }
-        else if (newPosition < 0) {
-            position = 0;
-            animationPosition = -clipStartPosition;
-        }
-        else if (loop && newPosition >= clipStartPosition + clip.length()) {
-            position = clipStartPosition + 
-                ((newPosition - clipStartPosition) % clip.length());
-        }
-        else if (newPosition > length) {
-            position = length;
+        else if (newFrame > sound.getNumFrames()) {
+            frame = sound.getNumFrames();
         }
         else {
-            position = newPosition;
+            frame = newFrame;
         }
         
         int elapsedTime = getAnimationTime() - oldAnimationTime;
         level.update(elapsedTime);
+        pan.update(elapsedTime);
         outputLevel.update(elapsedTime);
-        
-        return position - oldPosition;
     }
     
     
     private int getAnimationTime() {
-        return 1000 * animationPosition / clip.getByteRate();
+        return 1000 * animationFrame / sound.getSampleRate();
     }
     
     
-    public void render(byte[] buffer, int bufferOffset, int numBytes) {
+    private boolean inLoop() {
+        return (loop && frame >= loopFrame && frame < loopFrame + numLoopFrames);
+    }
+    
+    
+    public void render(byte[] dest, int destOffset, int destChannels, int numFrames) {
+        
         // Gradually mute/unmute over time to reduce popping
         boolean mute = isMute();
         if (lastMute != mute) {
@@ -147,62 +128,135 @@ public class SoundStream {
             lastMute = mute;
         }
         
-        while (numBytes > 0) {
+        int destFrameSize = destChannels * 2;
+        
+        while (numFrames > 0) {
             
-            boolean isAnimating = level.isAnimating() || outputLevel.isAnimating();
+            boolean isAnimating = level.isAnimating() || outputLevel.isAnimating() || 
+                pan.isAnimating();
             int currLevel = level.getAsFixed();
-            if (currLevel < 0) {
-                loop = false;
+            int currPan = pan.getAsFixed();
+            
+            if (frame >= sound.getNumFrames()) {
                 currLevel = 0;
+            }
+            
+            if (currLevel <= 0) {
+                currLevel = 0;
+                isAnimating = false;
+                loop = false;
             }
             else {
                 currLevel = CoreMath.mul(currLevel, outputLevel.getAsFixed());
             }
-            
-            int byteLength = Math.min(buffer.length - bufferOffset, numBytes);
-            
-            if (position < clipStartPosition) {
-                // Pre-clip silence
-                byteLength = Math.min(clipStartPosition - position, byteLength);
-                byteLength = Math.min(silentBuffer.length, byteLength);
-                System.arraycopy(silentBuffer, 0, buffer, bufferOffset, byteLength);
+            if (currPan < -CoreMath.ONE) {
+                currPan = -CoreMath.ONE;
             }
-            else if ((!isAnimating && currLevel <= 0) ||
-                position >= clipStartPosition + clip.length()) 
-            {
-                // Mute or post-clip silence
-                byteLength = Math.min(silentBuffer.length, byteLength);
-                System.arraycopy(silentBuffer, 0, buffer, bufferOffset, byteLength);
-            }
-            else if (!isAnimating && currLevel == CoreMath.ONE) {
-                // Simple case - no rendering
-                int clipOffset = position - clipStartPosition;
-                byteLength = Math.min(clip.length() - clipOffset, byteLength);
-                System.arraycopy(clip.getData(), clipOffset, buffer, bufferOffset, byteLength);
-            }
-            else {
-                // Complex case - rendering
-                // Note: rendered sample is not clipped.
-                int clipOffset = position - clipStartPosition;
-                byteLength = Math.min(clip.length() - clipOffset, byteLength);
-                if (isAnimating) {
-                    // Only render 64 samples, then recalcuate animation parameters
-                    byteLength = Math.min(128, byteLength);
-                }
-                
-                for (int i = 0; i < byteLength; i+=2) {
-                    int sample = (clip.getSample(clipOffset + i) * currLevel) >> 
-                        CoreMath.FRACTION_BITS;
-                    buffer[bufferOffset+i] = (byte)((sample >> 8) & 0xff);
-                    buffer[bufferOffset+i+1] = (byte)(sample & 0xff);
-                }
+            else if (currPan > CoreMath.ONE) {
+                currPan = CoreMath.ONE;
             }
             
-            bufferOffset += byteLength;
-            numBytes -= byteLength;
-            skip(byteLength);
+            int framesToRender = numFrames;
+            if (isAnimating) {
+                // Only render 64 frames, then recalcuate animation parameters
+                framesToRender = Math.min(64, framesToRender);
+            }
+            if (inLoop()) {
+                // Don't render past loop boundary
+                framesToRender = Math.min(framesToRender, loopFrame + numLoopFrames - frame); 
+            }
+            
+            if (currLevel > 0) {
+                sound.getSamples(dest, destOffset, destChannels, frame, framesToRender);
+            }
+            render(dest, destOffset, destChannels, framesToRender, currLevel, currPan);
+            
+            numFrames -= framesToRender;
+            destOffset += framesToRender * destFrameSize;
+            skip(framesToRender);
         }
     }
+    
+    
+    private static void render(byte[] data, int offset, int channels,
+        int numFrames, int level, int pan)
+    {
+        int frameSize = channels * 2;
+        
+        if (level <= 0) {
+            // Mute
+            int length = numFrames * frameSize;
+            for (int i = 0; i < length; i++) {
+                data[offset++] = 0;
+            }
+        }
+        else if (channels == 1 || pan == 0) {
+            if (level != CoreMath.ONE) {
+                // Adjusted level, but no panning (both stereo and mono rendering)
+                int numSamples = numFrames*channels;
+                for (int i = 0; i < numSamples; i++) {
+                    int input = getSample(data, offset); 
+                    int output = (input * level) >> CoreMath.FRACTION_BITS;
+                    setSample(data, offset, output);
+                    
+                    offset += 2;
+                }
+            }
+        }
+        else {
+            // Stereo sound with panning
+            int leftLevel4LeftInput;
+            int leftLevel4RightInput;
+            int rightLevel4LeftInput;
+            int rightLevel4RightInput;
+            if (pan < 0) {
+                leftLevel4LeftInput = CoreMath.ONE + pan / 2;
+                leftLevel4RightInput = -pan / 2;
+                rightLevel4LeftInput = 0;
+                rightLevel4RightInput = CoreMath.ONE + pan;
+            }
+            else {
+                leftLevel4LeftInput = CoreMath.ONE - pan;
+                leftLevel4RightInput = 0;
+                rightLevel4LeftInput = pan / 2;
+                rightLevel4RightInput = CoreMath.ONE - pan / 2;
+            }
+            if (level != CoreMath.ONE) {
+                leftLevel4LeftInput = CoreMath.mul(level, leftLevel4LeftInput);
+                leftLevel4RightInput = CoreMath.mul(level, leftLevel4RightInput);
+                rightLevel4LeftInput = CoreMath.mul(level, rightLevel4LeftInput);
+                rightLevel4RightInput = CoreMath.mul(level, rightLevel4RightInput);
+            }
+            
+            for (int i = 0; i < numFrames; i++) {
+                int leftInput = getSample(data, offset);
+                int rightInput = getSample(data, offset + 2);
+                int leftOutput = 
+                    (leftInput * leftLevel4LeftInput + rightInput * leftLevel4RightInput) >>
+                    CoreMath.FRACTION_BITS;
+                int rightOutput = 
+                    (leftInput * rightLevel4LeftInput + rightInput * rightLevel4RightInput) >>
+                    CoreMath.FRACTION_BITS;                        
+                setSample(data, offset, leftOutput);
+                setSample(data, offset + 2, rightOutput);
+                
+                offset += 4;
+            }
+        }
+    }
+    
+    
+    private static int getSample(byte[] data, int offset) {
+        // Signed big endian
+        return (data[offset] << 8) | (data[offset + 1] & 0xff); 
+    }
+    
+    
+    private static void setSample(byte[] data, int offset, int sample) {
+        // Signed big endian
+        data[offset] = (byte)((sample >> 8) & 0xff);
+        data[offset + 1] = (byte)(sample & 0xff);
+    }    
 }
 
 

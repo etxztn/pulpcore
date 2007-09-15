@@ -40,9 +40,11 @@ import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.math.CoreMath;
 import pulpcore.platform.AppContext;
-import pulpcore.platform.SoundStream;
 import pulpcore.platform.SoundEngine;
+import pulpcore.platform.SoundStream;
+import pulpcore.sound.Sound;
 import pulpcore.sound.SoundClip;
+import pulpcore.sound.SoundSequence;
 
 /**
     The JavaSound class is a {@link pulpcore.platform.SoundEngine } implementation that 
@@ -52,12 +54,17 @@ public class JavaSound implements SoundEngine {
         
     private static final int MAX_SIMULTANEOUS_SOUNDS = 32;
     
+    private static final int FRAME_RATE = 8000;
+    private static final int CHANNELS = 2;
+    private static final int FRAME_SIZE = 2 * CHANNELS;
     private static final AudioFormat PLAYBACK_FORMAT = new AudioFormat(
-        AudioFormat.Encoding.PCM_SIGNED, 8000, 16, 1, 2, 8000, true);
+        AudioFormat.Encoding.PCM_SIGNED, FRAME_RATE, 16, 
+        CHANNELS, FRAME_SIZE, FRAME_RATE, true);
     
     private static byte[] workBuffer = new byte[8000];
     private DataLinePlayer[] players = new DataLinePlayer[0];
     private int bufferSize;
+    private static SoundClip silence;
     
     
     /**
@@ -104,11 +111,10 @@ public class JavaSound implements SoundEngine {
             players = new DataLinePlayer[0];
         }
         
-        byte[] silence = new byte[bufferSize];
-        SoundStream.setSilentBuffer(silence);
+        silence = new SoundClip(new byte[bufferSize], true);
         
         // Play a buffer's worth of silence - Helps remove popping
-        play(null, new SoundClip(silence), new Fixed(1.0), false);
+        play(null, silence, new Fixed(1.0), new Fixed(0), false);
     }
     
     
@@ -126,12 +132,12 @@ public class JavaSound implements SoundEngine {
     }
     
     
-    public synchronized void play(AppContext context, SoundClip sound, Fixed level,
+    public synchronized void play(AppContext context, Sound sound, Fixed level, Fixed pan,
         boolean loop) 
     {
         for (int i = 0; i < players.length; i++) {
             if (!players[i].isPlaying() && players[i].isOpen()) {
-                players[i].play(context, sound, level, loop);
+                players[i].play(context, sound, level, pan, loop);
                 return;
             }
         }
@@ -212,10 +218,13 @@ public class JavaSound implements SoundEngine {
         /**
             Forces playback of the specified buffer, even if isPlaying() is true.
         */
-        public synchronized void play(AppContext context, SoundClip clip, Fixed level, 
+        public synchronized void play(AppContext context, Sound clip, Fixed level, Fixed pan,
             boolean loop) 
         {
-            stream = new SoundStream(context, clip, level, loop, 0, line.getBufferSize());
+            int loopFrame = 0;
+            int numLoopFrames = loop ? clip.getNumFrames() : 0;
+            clip = new SoundSequence(new Sound[] { clip, silence });
+            stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames, 0);
             lastMute = stream.isMute();
         }
         
@@ -259,7 +268,7 @@ public class JavaSound implements SoundEngine {
                 else {
                     while (available > 0) {
                         int numBytes = Math.min(available, workBuffer.length);
-                        stream.render(workBuffer, 0, numBytes);
+                        stream.render(workBuffer, 0, CHANNELS, numBytes / FRAME_SIZE);
                         line.write(workBuffer, 0, numBytes);
                         available -= numBytes;
                     }

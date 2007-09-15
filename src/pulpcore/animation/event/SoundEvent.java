@@ -29,7 +29,7 @@
 
 package pulpcore.animation.event;
 
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 
 /**
     A SoundEvent is a {@link TimelineEvent} that plays a sound after a specific 
@@ -37,10 +37,10 @@ import pulpcore.sound.SoundClip;
 */
 public class SoundEvent extends TimelineEvent {
  
-    private SoundClip sound;
+    private Sound sound;
     
     
-    public SoundEvent(SoundClip sound, int delay) {
+    public SoundEvent(Sound sound, int delay) {
         super(delay);
         this.sound = sound;
     }

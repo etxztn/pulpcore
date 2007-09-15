@@ -30,19 +30,16 @@
 package pulpcore.sound;
 
 import java.io.EOFException;
-import pulpcore.animation.Fixed;
 import pulpcore.Assets;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
-import pulpcore.platform.AppContext;
-import pulpcore.platform.SoundEngine;
 import pulpcore.util.ByteArray;
 
 /**
     A SoundClip represents a sampled sound clip. 
     Samples are in signed, big endian, 16-bit PCM format.
 */
-public class SoundClip extends ByteArray {
+public final class SoundClip extends Sound {
     
     private static final SoundClip NO_SOUND = new SoundClip(new byte[0]);
     
@@ -51,60 +48,102 @@ public class SoundClip extends ByteArray {
         0, 132, 396, 924, 1980, 4092, 8316, 16764
     };
     
-    private final int sampleRate;
+
+    private final byte[] data;
     private final int numChannels;
+    private final int frameSize;
+    private final int numFrames;
     
     
     /**
-        Creates an 8000Hz mono clip with the specified 16-bit big endian samples. 
+        Creates a mono 8000Hz clip with the specified samples 
+        (signed, big endian, 16-bit PCM format). 
     */
-    public SoundClip(byte[] samples) {
-        this(samples, 8000, false);
+    public SoundClip(byte[] data) {
+        this(data, false);
     }
     
     
-    public SoundClip(byte[] samples, int sampleRate, boolean stereo) {
-        super(samples);
-        this.sampleRate = sampleRate;
+    /**
+        Creates an 8000Hz clip with the specified samples 
+        (signed, big endian, 16-bit PCM format). 
+    */
+    public SoundClip(byte[] data, boolean stereo) {
+        this.data = data;
         this.numChannels = stereo ? 2 : 1;
-    }
-    
-    
-    public int getSampleRate() {
-        return sampleRate;
-    }
-    
-    
-    public boolean isStereo() {
-        return (numChannels == 2);
-    }
-    
-    
-    public int getByteRate() {
-        return sampleRate * numChannels * 2;
+        this.frameSize = getSampleSize() * getNumChannels();
+        if ((data.length % frameSize) != 0) {
+            throw new IllegalArgumentException();
+        }
+        this.numFrames = data.length / frameSize;
     }
     
     
     /**
-        Gets the duration of this clip in milliseconds.
-        @return the duration of this clip in milliseconds.
+        Returns the number of channels of this sound: 1 for mono or 2 for stereo.
     */
-    public long getDuration() {
-        return 1000L * length() / getByteRate();
+    public int getNumChannels() {
+        return numChannels;
     }
+    
+    
+    public int getNumFrames() {
+        return numFrames;
+    }
+    
+    
+    public void getSamples(byte[] dest, int destOffset, int destChannels,
+        int srcFrame, int numFrames)
+    {
+        if (srcFrame + numFrames > this.numFrames) {
+            throw new IllegalArgumentException();
+        }
+        
+        int srcOffset = srcFrame * frameSize;
+        
+        if (getNumChannels() == destChannels) {
+            // Mono-to-mono or stereo-to-stereo
+            int length = numFrames * frameSize;
+            System.arraycopy(data, srcOffset, dest, destOffset, length);
+        }
+        else if (getNumChannels() == 1 && destChannels == 2) {
+            // Mono-to-stereo
+            for (int i = 0; i < numFrames; i++) {
+                byte hi = data[srcOffset++];
+                byte lo = data[srcOffset++];
+                dest[destOffset++] = hi;
+                dest[destOffset++] = lo;
+                dest[destOffset++] = hi;
+                dest[destOffset++] = lo;
+            }
+        }
+        else {
+            // Stereo-to-mono
+            for (int i = 0; i < numFrames; i++) {
+                int left = getSample(srcOffset);
+                int right = getSample(srcOffset + 2);
+                int sample = (left + right) >> 1;
+                dest[destOffset++] = (byte)((sample >> 8) & 0xff);
+                dest[destOffset++] = (byte)(sample & 0xff);
+                srcOffset += frameSize;
+            }
+        }
+    }
+    
+    
+    private int getSample(int offset) {
+        // Signed big endian
+        return (data[offset] << 8) | (data[offset + 1] & 0xff); 
+    }
+    
+    
+    private void setSample(int offset, int sample) {
+        // Signed big endian
+        data[offset] = (byte)((sample >> 8) & 0xff);
+        data[offset + 1] = (byte)(sample & 0xff);
+    }    
     
 
-    public int getNumSamples() {
-        return length() / 2;
-    }
-    
-    
-    public int getSample(int bytePosition) {
-        // Signed big endian
-        return (data[bytePosition] << 8) | (data[bytePosition + 1] & 0xff); 
-    }
-    
-    
     //
     // Loading
     //
@@ -112,8 +151,8 @@ public class SoundClip extends ByteArray {
     
     /**
         Loads a sound from the specified sound asset. 
-        The sound can either be a .au file (8-bit u-law, 8000Hz, mono) or 
-        a .wav file (16-bit, signed, 8000Hz, mono).
+        The sound can either be a .au file (8-bit u-law, 8000Hz) or 
+        a .wav file (16-bit, signed, 8000Hz). Both mono and stereo is supported.
         <p>
         This method never returns null. If the sound asset cannot be loaded, or there is no
         sound engine available, a zero-length SoundClip is returned.
@@ -161,10 +200,13 @@ public class SoundClip extends ByteArray {
         int encoding = in.readInt();
         int sampleRate = in.readInt();
         int numChannels = in.readInt();
+        boolean stereo = (numChannels == 2);
         
-        if (encoding != 1 || sampleRate < 8000 || sampleRate > 8100 || numChannels != 1) {
+        if (encoding != 1 || sampleRate < 8000 || sampleRate > 8100 || 
+            numChannels < 1 || numChannels > 2) 
+        {
             if (Build.DEBUG) {
-                CoreSystem.print("Not an 8-bit u-law, 8000Hz mono file: " + soundAsset);
+                CoreSystem.print("Not an 8-bit u-law, 8000Hz file: " + soundAsset);
             }
             return NO_SOUND;
         }
@@ -181,7 +223,7 @@ public class SoundClip extends ByteArray {
             samples[index++] = (byte)(linear & 0xff);
         }
     
-        return new SoundClip(samples);
+        return new SoundClip(samples, stereo);
     }
     
     
@@ -198,6 +240,7 @@ public class SoundClip extends ByteArray {
         int magic1 = in.readInt();
         in.readInt();
         int magic2 = in.readInt();
+        boolean stereo = false;
         
         if (magic1 != RIFF || magic2 != WAVE) {
             if (Build.DEBUG) CoreSystem.print("Not a WAV file: " + soundAsset);
@@ -215,16 +258,18 @@ public class SoundClip extends ByteArray {
             if (chunkID == FMT) {
                 int format = in.readShort();
                 int numChannels = in.readShort();
-                int sampleRate = in.readInt();
+                int frameRate = in.readInt();
                 int avgByteRate = in.readInt();
                 int blockAlign = in.readShort();
                 int bitsPerSample = in.readShort();
+                stereo = (numChannels == 2);
                 
                 if (format != 1 || bitsPerSample != 16 || 
-                    sampleRate < 8000 || sampleRate > 8100 || numChannels != 1) 
+                    frameRate < 8000 || frameRate > 8100 || 
+                    numChannels < 1 || numChannels > 2) 
                 {
                     if (Build.DEBUG) {
-                        CoreSystem.print("Not an 16-bit PCM, 8000Hz mono file: " + soundAsset);
+                        CoreSystem.print("Not an 16-bit PCM, 8000Hz file: " + soundAsset);
                     }
                     return NO_SOUND;
                 }
@@ -236,7 +281,7 @@ public class SoundClip extends ByteArray {
                     samples[i + 1] = in.readByte();
                     samples[i] = in.readByte();
                 }
-                return new SoundClip(samples);
+                return new SoundClip(samples, stereo);
             }
             else {
                 // Skip this unknown chunk
@@ -267,49 +312,5 @@ public class SoundClip extends ByteArray {
         else 
             return sample;
     }        
-    
-    
-    //
-    // Play methods
-    //
-    
-    
-    /**
-        Plays this sound clip.
-    */
-    public void play() {
-        play(new Fixed(1.0), false);
-    }
-    
-        
-    /**
-        Plays this sound clip using the spcified {@link pulpcore.animation.Fixed } as the sound
-        level. The level may change over time.
-    */
-    public void play(Fixed level) {
-        play(level, false);
-    }
-    
-    
-    /**
-        Plays this sound clip using the spcified {@link pulpcore.animation.Fixed } as the sound
-        level, and optionally looping. The level may change over time.
-    */
-    public void play(Fixed level, boolean loop) {
 
-        AppContext context = CoreSystem.getThisAppContext();
-        SoundEngine soundEngine = CoreSystem.getPlatform().getSoundEngine();
-        
-        if (soundEngine == null || context.isMute() || this.length() == 0) {
-            return;
-        }
-        
-        try {
-            soundEngine.play(context, this, level, loop);
-        }
-        catch (Exception ex) {
-            if (Build.DEBUG) CoreSystem.print("Sound play", ex);
-            context.setMute(true);
-        }
-    }    
 }

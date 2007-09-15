@@ -31,11 +31,11 @@ package pulpcore.platform;
 
 import pulpcore.animation.Fixed;
 import pulpcore.platform.AppContext;
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 
 public interface SoundEngine {
     
-    public void play(AppContext context, SoundClip clip, Fixed level, boolean loop);
+    public void play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop);
     
     public int getNumSoundsPlaying();
     
