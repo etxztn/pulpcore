@@ -217,6 +217,7 @@
             <injar name="${build}/in.jar" />
             <outjar name="${build}/${project.jar}" />
             
+            <keep name="pulpcore.sound.JOrbisAdapter"><method name="decode" /></keep>
             <keep name="pulpcore.platform.applet.CoreApplet*" />
             <keep name="${project.scene}" />
         </proguard>
