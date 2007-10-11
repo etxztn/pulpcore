@@ -54,7 +54,7 @@ public class SceneChangeEvent extends TimelineEvent {
     }
     
     
-    public void trigger() {
+    public void run() {
         if (push) {
             Stage.pushScene(nextScene);
         }

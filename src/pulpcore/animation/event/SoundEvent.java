@@ -46,7 +46,7 @@ public class SoundEvent extends TimelineEvent {
     }
     
     
-    public void trigger() {
+    public void run() {
         sound.play();
     }
 }

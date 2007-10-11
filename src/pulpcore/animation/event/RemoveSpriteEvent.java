@@ -50,7 +50,7 @@ public class RemoveSpriteEvent extends TimelineEvent {
     }
     
     
-    public void trigger() {
+    public void run() {
         group.remove(sprite);
     }
 }

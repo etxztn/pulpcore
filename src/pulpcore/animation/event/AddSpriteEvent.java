@@ -49,7 +49,7 @@ public class AddSpriteEvent extends TimelineEvent {
     }
     
     
-    public void trigger() {
+    public void run() {
         group.add(sprite);
     }
 }
