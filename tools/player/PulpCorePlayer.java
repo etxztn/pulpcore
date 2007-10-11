@@ -50,6 +50,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Constructor;
@@ -81,7 +82,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.UIManager;
-
+import pulpcore.Build;
 
 /**
     PulpCorePlayer is an applet viewer for PulpCore applets. 
@@ -114,23 +115,40 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             return;
         }
         
-        // Read text
         String html;
-        File file = new File(args[0]);
-        if (!file.exists() || !file.isFile()) {
-            showUsage();
-            return;
+        String documentURL;
+        
+        if (args[0].startsWith("http://") || 
+            args[0].startsWith("https://") ||
+            args[0].startsWith("ftp://"))
+        {
+            // Read text (file on the Internet)
+            documentURL = args[0];
+            try {
+                URL url = new URL(args[0]);
+                html = readTextFile(new InputStreamReader(url.openStream()));
+            }
+            catch (IOException ex) {
+                System.out.println("Couldn't read remote file: " + args[0]);
+                System.out.println(ex.getMessage());
+                return;
+            }
         }
-        try {
-            html = readTextFile(new FileReader(file));
-        }
-        catch (IOException ex) {
-            System.out.println("Couldn't read file: " + args[0]);
-            return;
+        else {
+            // Read text (local file)
+            File file = new File(args[0]);
+            documentURL = file.getAbsolutePath();
+            try {
+                html = readTextFile(new FileReader(file));
+            }
+            catch (IOException ex) {
+                System.out.println("Couldn't read local file: " + args[0]);
+                System.out.println(ex.getMessage());
+                return;
+            }
         }
         
         // Default values
-        String documentURL = file.getAbsolutePath();
         String archive = null;
         int width = 640;
         int height = 480;
@@ -173,7 +191,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
         
         if (params.get("scene") == null) {
-            showUsage();
+            System.out.println("Couldn't find 'scene' parameter in file: " + args[0]);
             return;
         }
         
@@ -191,9 +209,10 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     private static void showUsage() {
         System.out.println("PulpCorePlayer is an applet viewer for PulpCore applets.");
-        System.out.println("Usage: java pulpcore.player.PulpCorePlayer file");
-        System.out.println("Where 'file' is an HTML file containing an applet tag.");
-        System.out.println("The applet tag must contain a 'scene' parameter.");
+        System.out.println();
+        System.out.println("Usage: java -jar pulpcore-player-" + Build.VERSION + ".jar file");
+        System.out.println("Where 'file' is a path or URL pointing to an HTML file containing an");
+        System.out.println("applet tag. The applet tag must contain a 'scene' parameter.");
         System.out.println();
         System.out.println("Note, PulpCorePlayer does not install a SecurityManager.");
         System.out.println("Always be sure to test applets in web browsers.");
