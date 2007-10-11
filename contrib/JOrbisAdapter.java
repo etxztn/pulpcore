@@ -159,7 +159,7 @@ public class JOrbisAdapter {
                                     boolean clipflag = false;
                                     int bout = (samples < convsize ? samples : convsize);
  
-                                    // Convert to signed, big endian, 16-bit PCM format.
+                                    // Convert to signed, little endian, 16-bit PCM format.
                                     for (i = 0; i < vi.channels; i++) {
                                         int ptr = i * 2;
                                         int ptrInc = 2 * (vi.channels);
@@ -174,8 +174,8 @@ public class JOrbisAdapter {
                                                 sample = -32768;
                                             }
 
-                                            convbuffer[ptr] = (byte)((sample >> 8) & 0xff);
-                                            convbuffer[ptr + 1] = (byte)(sample & 0xff);
+                                            convbuffer[ptr] = (byte)sample;
+                                            convbuffer[ptr + 1] = (byte)(sample >> 8);
                                             ptr += ptrInc;
                                         }
                                     }
