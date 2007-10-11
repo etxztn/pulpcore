@@ -401,6 +401,22 @@ public class Stage implements Runnable {
     }
     
     
+    /**
+        Returns true if the current thread is the animation thread.
+    */
+    public static boolean isAnimationThread() {
+        // This method can be called from any thread, even after an app has quit
+        AppContext context = CoreSystem.getThisAppContext();
+        if (context != null) {
+            Stage instance = context.getStage();
+            if (instance != null) {
+                return (instance.animationThread == Thread.currentThread());
+            }
+        }
+        return false;
+    }
+    
+    
     //
     // Methods called from the main platform class
     //
@@ -654,7 +670,8 @@ public class Stage implements Runnable {
             if (CoreSystem.getPlatform().isSoundEngineCreated()) {
                 SoundEngine soundEngine = CoreSystem.getPlatform().getSoundEngine();
                 if (soundEngine != null) {
-                    soundEngine.poll();
+                    int estimatedTimeUntilNextUpdate = Math.max(elapsedTime, 1000 / desiredFPS);
+                    soundEngine.update(estimatedTimeUntilNextUpdate);
                 }
             }
             
