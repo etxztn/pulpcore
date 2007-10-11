@@ -73,7 +73,7 @@ public class SceneSelector extends Scene2D {
         
         cancel = Button.createLabeledButton("<< Back", x, y);
         add(cancel);
-        y += cancel.height.get() + 2;
+        y += cancel.height.get() + 5;
         
         buttons = new Button[scenes.size()];
         for (int i = 0; i < scenes.size(); i++) {
@@ -81,7 +81,7 @@ public class SceneSelector extends Scene2D {
             buttons[i] = Button.createLabeledButton("Switch to " + c.getName(), x, y);
             add(buttons[i]);
             
-            y += buttons[i].height.get() + 2;
+            y += buttons[i].height.get() + 5;
         }
     }
     
