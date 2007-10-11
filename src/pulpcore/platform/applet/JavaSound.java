@@ -31,44 +31,60 @@ package pulpcore.platform.applet;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
 import pulpcore.animation.Fixed;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
-import pulpcore.math.CoreMath;
 import pulpcore.platform.AppContext;
 import pulpcore.platform.SoundEngine;
 import pulpcore.platform.SoundStream;
 import pulpcore.sound.Sound;
-import pulpcore.sound.SoundClip;
 import pulpcore.sound.SoundSequence;
 
 /**
     The JavaSound class is a {@link pulpcore.platform.SoundEngine } implementation that 
     uses the Java Sound API to play sound.
+    <p>
+    The goal of the player is to have 32 lines open and ready so that latency can be 
+    reduced to a minimum.
 */
 public class JavaSound implements SoundEngine {
-        
+    
+    // Max simultaneous sounds (if the underlying Java Sound implementation doesn't have a limit). 
     private static final int MAX_SIMULTANEOUS_SOUNDS = 32;
     
+    // The playback formats supported (mono is converted to stereo in SoundStream)
     private static final int[] SAMPLE_RATES = { 8000, 11025, 22050, 44100 };
-    private static final int CHANNELS = 2;
-    private static final int FRAME_SIZE = 2 * CHANNELS;
+    private static final int NUM_CHANNELS = 2;
+    private static final int FRAME_SIZE = 2 * NUM_CHANNELS;
     
-    // The buffer size (Must be divisible by FRAME_SIZE).
-    // 16K is the minimum needed to prevent popping in Mac OS X?
-    private static final int BUFFER_SIZE = 24*1024;
+    // The amount of time (in milliseconds) before a clip is played, on Windows.
+    // The first 0-10ms sometimes plays at 100% volume, but the remainder is at 50%.
+    // This results in an audible click when the volume abruptly changes. This issue cannot
+    // be fixed using gain/colume controls, so delay the sound data by 10ms (1/100th of a second).
+    private static final int WINDOWS_CLIP_DELAY = 10;
     
-    private static byte[] workBuffer = new byte[BUFFER_SIZE/4];
+    // The amount of time (in milliseconds) to fade before and after the Mac OS X "glitch" 
+    private static final int MAC_FADE_TIME = 5;
+    
+    // Buffer size (in milliseconds)
+    // This implementation attempts to keep 250ms of sound data in the SourceDataLine's internal 
+    // buffer. Up to 1 second of sound data is kept in the internal buffer for slow frame rates.
+    // Based on tests, 250ms is required as a minimum on Mac OS X.
+    private static final int MIN_BUFFER_SIZE = 250;
+    private static final int MAX_BUFFER_SIZE = 1000;
+    
+    // Work buffer used during audio rendering.
+    private static final byte[] WORK_BUFFER = new byte[44100 * FRAME_SIZE * MAX_BUFFER_SIZE / 1000];
     
     
     private static AudioFormat getFormat(int sampleRate) {
         return new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 
-            sampleRate, 16, CHANNELS, FRAME_SIZE, sampleRate, true);
+            sampleRate, 16, NUM_CHANNELS, FRAME_SIZE, sampleRate, false);
     }
+    
     
     private static int indexOf(int[] array, int value) {
         for (int i = 0; i < array.length; i++) {
@@ -78,6 +94,7 @@ public class JavaSound implements SoundEngine {
         }
         return -1;
     }
+    
     
     private DataLinePlayer[] players = new DataLinePlayer[0];
     private int[] maxSoundsForSampleRate = new int[SAMPLE_RATES.length];
@@ -118,12 +135,40 @@ public class JavaSound implements SoundEngine {
             players = new DataLinePlayer[0];
         }
         
-        // Play a buffer's worth of silence to helps remove popping
-        if (players.length > 0) {
-            SoundClip noSound = new SoundClip(new byte[0], players[0].getSampleRate(), true);
+        // Play a buffer's worth of silence to warm up HotSpot (helps remove popping)
+        if (sampleRates.length > 0) {
+            Sound noSound = new SilentSound(sampleRates[0], 0);
             play(null, noSound, new Fixed(1), new Fixed(0), false);
+            
+            // Bizarre: The DirectX implementation of JavaSound (Windows, Java 5 or newer)
+            // works better if at least two threads write to a SourceDataLine. It doesn't matter
+            // if the 2nd thread stays active or not.
+            //
+            // Without this 2nd thread, a faint "Geiger-counter" noise is audible on top of
+            // sound playback (it is especially noticable when the sound is a pure waveform).
+            if (CoreSystem.isWindows() && CoreSystem.isJava15orNewer()) {
+                new Thread() {
+                    public void run() {
+                        try {
+                            AudioFormat format = getFormat(sampleRates[0]);
+                            DataLine.Info lineInfo =
+                                new DataLine.Info(SourceDataLine.class, format);
+                            SourceDataLine line = (SourceDataLine)AudioSystem.getLine(lineInfo);
+                            line.open(format);
+                            byte[] blank = new byte[line.getBufferSize()];
+                            line.start();
+                            line.write(blank, 0, blank.length);
+                            line.drain();
+                            line.close();
+                        }
+                        catch (Exception ex) {
+                            if (Build.DEBUG) CoreSystem.print("Blank sound in separate thread", ex);
+                        }
+                    }
+                }.start();
+            }
         }
-    }
+    }        
     
     
     /**
@@ -158,16 +203,24 @@ public class JavaSound implements SoundEngine {
     
     
     public synchronized void destroy() {
+        // This method is called from the AWT event thread.
+        // At this point update() won't be called again. 
+        // Call update() to mute, then close the lines.
         for (int i = 0; i < players.length; i++) {
-            players[i].close();
+            players[i].update(SoundStream.MUTE_TIME*2);
+        }
+        
+        for (int i = 0; i < players.length; i++) {
+            players[i].close(true);
         }
     }
     
     
-    public synchronized void poll() {
+    public synchronized void update(int timeUntilNextUpdate) {
+        
         // Poll the players
         for (int i = 0; i < players.length; i++) {
-            players[i].poll();
+            players[i].update(timeUntilNextUpdate);
         }
         
         // Determine if all sample rates are available and ready
@@ -236,8 +289,8 @@ public class JavaSound implements SoundEngine {
             }
         }
         
-        // Next, open a line at the sound's sample rate and play
         if (!played) {
+            // Next, open a line at the sound's sample rate and play
             if (numOpenLines == 0) {
                 if (Build.DEBUG) CoreSystem.print("Couldn't play sound: no available lines.");
             }
@@ -293,6 +346,9 @@ public class JavaSound implements SoundEngine {
     }
     
     
+    /**
+        A simple sound generator that creates silence.
+    */
     static class SilentSound extends Sound {
         
         private int numFrames;
@@ -324,9 +380,13 @@ public class JavaSound implements SoundEngine {
         
         private SoundStream stream;
         private SourceDataLine line;
-        private boolean lastMute;
         private int sampleRate;
+        private int framesWritten;
+        private int numWrites;
+        private int minBufferSize;
         
+        // For the JavaSound "glitch"
+        private int[] fadeGoal = new int[NUM_CHANNELS];
         
         public DataLinePlayer(int[] sampleRates, int firstAttempt) {
             for (int i = 0; i < sampleRates.length; i++) {
@@ -353,11 +413,17 @@ public class JavaSound implements SoundEngine {
             if (!isOpen()) {
                 AudioFormat format = getFormat(sampleRate);
                 
+                int bufferSize = sampleRate * FRAME_SIZE * MAX_BUFFER_SIZE / 1000;
+                int remainder = bufferSize % FRAME_SIZE;
+                if (remainder != 0) {
+                    bufferSize += FRAME_SIZE - remainder;
+                }
+                
                 try {
                     DataLine.Info lineInfo =
-                        new DataLine.Info(SourceDataLine.class, format, BUFFER_SIZE);
+                        new DataLine.Info(SourceDataLine.class, format, bufferSize);
                     line = (SourceDataLine)AudioSystem.getLine(lineInfo);
-                    line.open(format, BUFFER_SIZE);
+                    line.open(format, bufferSize);
                 }
                 catch (Exception ex) {
                     line = null;
@@ -368,7 +434,7 @@ public class JavaSound implements SoundEngine {
         
         public synchronized boolean reopen(int sampleRate) {
             int oldSampleRate = this.sampleRate;
-            close();
+            close(false);
             this.sampleRate = sampleRate;
             open();
             
@@ -384,12 +450,19 @@ public class JavaSound implements SoundEngine {
         }
         
         
-        public synchronized void close() {
-            
+        public synchronized void close(boolean drain) {
             stream = null;
-            
             if (line == null) {
                 return;
+            }
+            
+            if (drain) {
+                try {
+                    line.drain();
+                }
+                catch (Exception ex) { 
+                    if (Build.DEBUG) CoreSystem.print("DataLinePlayer.drain()", ex);
+                }
             }
             
             try {
@@ -410,11 +483,29 @@ public class JavaSound implements SoundEngine {
         {
             int loopFrame = 0;
             int numLoopFrames = loop ? clip.getNumFrames() : 0;
-            int silenceFrames = line.getBufferSize() / line.getFormat().getFrameSize();
-            Sound silence = new SilentSound(clip.getSampleRate(), silenceFrames);
-            clip = new SoundSequence(new Sound[] { clip, silence });
+            
+            // Create a full buffer of post-clip silence
+            // This fixes a problem with circular buffers.
+            int postSilenceFrames = line.getBufferSize() / line.getFormat().getFrameSize();
+            Sound postSilence = new SilentSound(clip.getSampleRate(), postSilenceFrames);
+            
+            if (CoreSystem.isWindows()) {
+                // Windows implementation needs a delay before playing the sound.
+                int preSilenceFrames = clip.getSampleRate() * WINDOWS_CLIP_DELAY / 1000;
+                Sound preSilence = new SilentSound(clip.getSampleRate(), preSilenceFrames);
+                clip = new SoundSequence(new Sound[] { preSilence, clip, postSilence });
+                loopFrame += preSilenceFrames;
+            }
+            else {
+                // Non-Windows OS
+                clip = new SoundSequence(new Sound[] { clip, postSilence });
+            }
+            
+            // Create sound stream
+            framesWritten = 0;
+            numWrites = 0;
+            minBufferSize = MIN_BUFFER_SIZE;
             stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames, 0);
-            lastMute = stream.isMute();
         }
         
 
@@ -423,54 +514,127 @@ public class JavaSound implements SoundEngine {
         }
         
        
-        public synchronized void poll() {
+        public synchronized void update(int timeUntilNextUpdate) {
             if (line == null || stream == null) {
                 return;
             }
             
             try {
-                boolean mute = stream.isMute();
-                if (!line.isRunning()) {
-                    line.start();
-                }
-                if (mute != lastMute) {
-                    // This causes pops on Mac OS X - instead, SoundStream does the muting
-                    /*
-                    try {
-                        ((BooleanControl)line.getControl(BooleanControl.Type.MUTE)).setValue(mute);
-                    }
-                    catch (Exception ex) {
-                        // Ignore
-                    }
-                    */
-                    lastMute = mute;
-                }
-                
-                int available = line.available();
                 if (stream.isFinished()) {
-                    if (available == line.getBufferSize()) {
+                    if (line.available() == line.getBufferSize()) {
                         // Close the line - ready for another Clip
-                        close();
+                        close(false);
                         open();
                     }
                 }
                 else {
-                    while (available > 0) {
-                        int numBytes = Math.min(available, workBuffer.length);
-                        // Make sure numBytes is divisible by FRAME_SIZE
-                        numBytes -= (numBytes % FRAME_SIZE);
+                    int bufferSizeThreshold = minBufferSize / 2;
+                    int bufferSize = minBufferSize;
+                    if (timeUntilNextUpdate > bufferSizeThreshold) {
+                        bufferSize = Math.min(MAX_BUFFER_SIZE, 
+                            bufferSize + timeUntilNextUpdate - bufferSizeThreshold);
+                        if (CoreSystem.isMacOSX()) {
+                            // On Mac OS X, once the bufferSize is increased, don't decrease it
+                            minBufferSize = Math.max(bufferSize, minBufferSize);
+                        }
+                    }
+                    int desiredSize = sampleRate * FRAME_SIZE * bufferSize / 1000;
+                    int actualSize;
+                    int available = line.available();
+                    
+                    if (CoreSystem.isMacOSX()) {
+                        actualSize = (framesWritten - line.getFramePosition()) * FRAME_SIZE;
+                    }
+                    else {
+                        // Windows
+                        actualSize = line.getBufferSize() - available;
+                    }
+                    available = Math.min(available, desiredSize - actualSize);
+                    if (available > 0) {
+                        // Make sure length is not bigger than the work buffer
+                        // and is divisible by FRAME_SIZE
+                        int length = available;
+                        length = Math.min(length, WORK_BUFFER.length);
+                        length -= (length % FRAME_SIZE);
                         
-                        stream.render(workBuffer, 0, CHANNELS, numBytes / FRAME_SIZE);
-                        line.write(workBuffer, 0, numBytes);
-                        available -= numBytes;
+                        stream.render(WORK_BUFFER, 0, NUM_CHANNELS, length / FRAME_SIZE);
+                        if (numWrites == 0) {
+                            line.start();
+                        }
+                        if (CoreSystem.isMacOSX() || !CoreSystem.isJava15orNewer()) {
+                            /*
+                                The JavaSound "glitch". Happens on Java 1.4 and all known
+                                Mac OS X versions.
+                                
+                                This is a workaround for a bug where 4 frames are repeated in the  
+                                audio output. Since the 4 frames are repeated at a predictable 
+                                position, fade out to minimize any audible click or pop.
+                                
+                                This bug was found on several different machines each with different 
+                                audio hardware, on Mac OS X and Windows machines with Java 1.4.
+                                This led me to believe it's a software problem with the 
+                                implementation of Java Sound, and not a hardware problem.
+                            */
+                            if (numWrites == 0) {
+                                fade(length - FRAME_SIZE, true);
+                            }
+                            else if (numWrites == 1) {
+                                fade(0, false);
+                            }
+                        }
+                        
+                        line.write(WORK_BUFFER, 0, length);
+                        framesWritten += length / FRAME_SIZE;
+                        numWrites++;
                     }
                 }
             }
             catch (Exception ex) {
                 if (Build.DEBUG) CoreSystem.print("Error playing sound", ex);
-                close();
+                close(false);
                 open();
             }
+        }
+        
+        private void fade(int position, boolean out) {
+            
+            if (out) {
+                for (int j = 0; j < NUM_CHANNELS; j++) {
+                    fadeGoal[j] = getSample(position + 2 * j);
+                }
+                
+                int numRepeatedFrames = 4;
+                for (int i = 0; i < numRepeatedFrames; i++) {
+                    for (int j = 0; j < NUM_CHANNELS; j++) {
+                        setSample(position + 2 * j, fadeGoal[j]);
+                    }
+                    position -= FRAME_SIZE;
+                }
+            }
+            
+            // Fade
+            int fadeFrames = sampleRate * MAC_FADE_TIME / 1000;
+            int positionInc = out ? -FRAME_SIZE : FRAME_SIZE;
+            for (int i = 0; i < fadeFrames; i++) {
+                for (int j = 0; j < NUM_CHANNELS; j++) {
+                    int p = position + 2 * j;
+                    int v1 = i + 1;
+                    int v2 = fadeFrames - v1;
+                    setSample(p, (getSample(p) * v1 + fadeGoal[j] * v2) / fadeFrames);
+                }
+                position += positionInc;
+            }
+        }
+        
+        // Shortcut methods
+        
+        private int getSample(int offset) {
+            return SoundStream.getSample(WORK_BUFFER, offset);
+        }
+        
+        
+        private void setSample(int offset, int sample) {
+            SoundStream.setSample(WORK_BUFFER, offset, sample);
         }
     }
 }
