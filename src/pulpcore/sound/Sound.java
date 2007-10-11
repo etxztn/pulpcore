@@ -91,7 +91,7 @@ public abstract class Sound {
     
     /**
         Copies a sequence of samples from this Sound to a byte array as 
-        signed, big endian, 16-bit PCM format.
+        signed, little endian, 16-bit PCM format.
         @param dest the destination buffer.
         @param destOffset the offset, in bytes, in the destination buffer.
         @param destChannels The number of channels of the destination (1 or 2).

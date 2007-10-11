@@ -34,11 +34,12 @@ import java.lang.reflect.Method;
 import pulpcore.Assets;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.platform.SoundStream;
 import pulpcore.util.ByteArray;
 
 /**
     A SoundClip represents a sampled sound clip. 
-    Samples are in signed, big endian, 16-bit PCM format.
+    Samples are in signed, little endian, 16-bit PCM format.
 */
 public final class SoundClip extends Sound {
     
@@ -57,8 +58,8 @@ public final class SoundClip extends Sound {
     
     
     /**
-        Creates an 8000Hz clip with the specified samples 
-        (signed, big endian, 16-bit PCM format). 
+        Creates an sound clip with the specified samples 
+        (signed, little endian, 16-bit PCM format). 
     */
     public SoundClip(byte[] data, int sampleRate, boolean stereo) {
         super(sampleRate);
@@ -102,12 +103,12 @@ public final class SoundClip extends Sound {
         else if (getNumChannels() == 1 && destChannels == 2) {
             // Mono-to-stereo
             for (int i = 0; i < numFrames; i++) {
-                byte hi = data[srcOffset++];
-                byte lo = data[srcOffset++];
-                dest[destOffset++] = hi;
-                dest[destOffset++] = lo;
-                dest[destOffset++] = hi;
-                dest[destOffset++] = lo;
+                byte a = data[srcOffset++];
+                byte b = data[srcOffset++];
+                dest[destOffset++] = a;
+                dest[destOffset++] = b;
+                dest[destOffset++] = a;
+                dest[destOffset++] = b;
             }
         }
         else {
@@ -116,8 +117,8 @@ public final class SoundClip extends Sound {
                 int left = getSample(srcOffset);
                 int right = getSample(srcOffset + 2);
                 int sample = (left + right) >> 1;
-                dest[destOffset++] = (byte)((sample >> 8) & 0xff);
-                dest[destOffset++] = (byte)(sample & 0xff);
+                SoundStream.setSample(dest, destOffset, sample);
+                destOffset += 2;
                 srcOffset += frameSize;
             }
         }
@@ -125,16 +126,13 @@ public final class SoundClip extends Sound {
     
     
     private int getSample(int offset) {
-        // Signed big endian
-        return (data[offset] << 8) | (data[offset + 1] & 0xff); 
+        return SoundStream.getSample(data, offset);
     }
     
     
     private void setSample(int offset, int sample) {
-        // Signed big endian
-        data[offset] = (byte)((sample >> 8) & 0xff);
-        data[offset + 1] = (byte)(sample & 0xff);
-    }    
+        SoundStream.setSample(data, offset, sample);
+    }
     
 
     //
@@ -144,8 +142,8 @@ public final class SoundClip extends Sound {
     
     /**
         Loads a sound from the specified sound asset. 
-        The sound can either be a .au file (8-bit u-law, 8000Hz) or 
-        a .wav file (16-bit, signed, 8000Hz). Both mono and stereo is supported.
+        The sound can either be a .au file (8-bit u-law) or 
+        a .wav file (16-bit, signed, PCM). Both mono and stereo is supported.
         <p>
         This method never returns null. If the sound asset cannot be loaded, or there is no
         sound engine available, a zero-length SoundClip is returned.
@@ -220,15 +218,15 @@ public final class SoundClip extends Sound {
         in.setPosition(offset);
         
         // Convert u-law to linear
-        byte[] samples = new byte[length*2];
-        int index = 0;
+        byte[] data = new byte[length*2];
+        offset = 0;
         for (int i = 0; i < length; i++) {
-            int linear = ulaw2linear(in.readByte());
-            samples[index++] = (byte)((linear >> 8) & 0xff);
-            samples[index++] = (byte)(linear & 0xff);
+            int sample = ulaw2linear(in.readByte());
+            SoundStream.setSample(data, offset, sample);
+            offset+=2;
         }
     
-        return new SoundClip(samples, sampleRate, stereo);
+        return new SoundClip(data, sampleRate, stereo);
     }
     
     
@@ -298,11 +296,12 @@ public final class SoundClip extends Sound {
                     return NO_SOUND;
                 }
                 byte[] samples = new byte[chunkSize];
-                for (int i = 0; i < samples.length; i+=2) {
-                    // Convert to big endian (Java endian style)
-                    samples[i + 1] = in.readByte();
-                    samples[i] = in.readByte();
-                }
+                in.read(samples);
+                //for (int i = 0; i < samples.length; i+=2) {
+                //    // Convert to big endian (Java endian style)
+                //    samples[i + 1] = in.readByte();
+                //    samples[i] = in.readByte();
+                //}
                 return new SoundClip(samples, sampleRate, stereo);
             }
             else {
@@ -384,10 +383,12 @@ public final class SoundClip extends Sound {
         int mantissa = ulaw & 0x0f;
         int sample = EXP_TABLE[exponent] + (mantissa << (exponent + 3));
 
-        if (sign != 0) 
+        if (sign != 0) {
             return -sample;
-        else 
+        }
+        else { 
             return sample;
+        }
     }        
 
 }
