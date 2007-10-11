@@ -10,8 +10,6 @@ There are two templates: Quick, and Project.
 
 To make your own Quick projects, put your Java source files, PNGs, JPEGs,
 and WAV files in /templates/quick/src/ and then run the Ant build file.
-    
-Note: WAV format must be 16-bit, signed, mono or stereo, with a 
-sample rate of 8000Hz, 11025Hz, 22050Hz, or 44100Hz. 
-Using OGG audio files is possible - see the Wiki for details.
+
+Using OGG Vorbis audio is possible - see the Wiki for details.
 

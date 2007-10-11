@@ -1,3 +1,28 @@
+0.10.3 (October 11, 2007)
+  * Fixed Bug: isolated and created a workarounds for JavaSound pop/click bugs on both Mac and
+    Windows. For Mac and Windows Java 1.4, the fix requires modifying the output sound, but it's 
+    not noticable for most sounds. Another Windows fix - which existed in 0.8 but was incorrectly  
+    removed from 0.9 - requires delaying a sound's playback by 10ms. A third fix exists only in
+    Windows Java 5 or newer.
+  * Applet Platform: sound is now muted gracefully when the app is exited.
+  * Core: sound level and pan changes are now interpolated for more natural audio changes.
+  * Core: updated default appearance of labeled buttons. See Button.createLabeledButton() and
+    Button.createLabeledToggleButton().
+  * Tools: PulpCorePlayer is more command-line friendly (setting Main-Class attribute in jar
+    manifest) and it can now load PulpCore apps from the internet (only if the <applet> tag is 
+    used - it can't load apps that use pulpcore.js)
+  * API: TimelineEvent is now a Runnable, so the API is more familiar to Swing/AWT developers.
+    Custom TimelineEvents will need to implement run() instead of trigger().
+  * API: Added TimelineEvent.hasExecuted()
+  * API: Added Scene2D.invokeLater(), invokeAndWait(), and addEventAndWait().
+  * API: SoundClip data is now stored in little-endian byte order instead of big-endian. 
+    (This only matters to developers doing sound synthesis or using Ogg Vorbis - be sure to get the 
+    latest JOrbisAdapter.java in SVN).
+  * API: Added TextField constructor: TextField(String text, int x, int y) which automatically 
+    chooses a width and height.
+  * API: Added Assets.getAssetNames()
+  * Examples: Added MultiThreaded example
+  
 0.10.2 (September 14, 2007)
   * Examples: Added SoundEffects example
   * Tools: New audio formats: mono and stereo, 8000Hz, 11025Hz, 22050Hz, 44100Hz. WAV and AU
