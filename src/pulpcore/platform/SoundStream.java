@@ -37,7 +37,11 @@ import pulpcore.sound.Sound;
 public class SoundStream {
     
     // The number of milliseconds to fade from a mute/unmute
-    private static final int MUTE_TIME = 50;
+    public static final int MUTE_TIME = 5;
+    
+    // Number of frames to render while animating. Should represent at least 1 ms at 44100Hz
+    // (that is, greater than 44 frames)
+    private static final int MAX_FRAMES_TO_RENDER_WHILE_ANIMATING = 64;
     
     private final AppContext context;
     private final Sound sound;
@@ -107,7 +111,12 @@ public class SoundStream {
     
     
     private int getAnimationTime() {
-        return 1000 * animationFrame / sound.getSampleRate();
+        if (animationFrame < loopFrame) {
+            return 0;
+        }
+        else {
+            return 1000 * (animationFrame - loopFrame) / sound.getSampleRate();
+        }
     }
     
     
@@ -117,9 +126,14 @@ public class SoundStream {
     
     
     public void render(byte[] dest, int destOffset, int destChannels, int numFrames) {
+        boolean mute = isMute();
+        if (context != null && context.getStage() == null) {
+            // Destroyed!
+            mute = true;
+            loop = false;
+        }
         
         // Gradually mute/unmute over time to reduce popping
-        boolean mute = isMute();
         if (lastMute != mute) {
             int currLevel = outputLevel.getAsFixed();
             int goalLevel = mute?0:CoreMath.ONE;
@@ -134,100 +148,154 @@ public class SoundStream {
             
             boolean isAnimating = level.isAnimating() || outputLevel.isAnimating() || 
                 pan.isAnimating();
-            int currLevel = level.getAsFixed();
-            int currPan = pan.getAsFixed();
-            
-            if (frame >= sound.getNumFrames()) {
-                currLevel = 0;
-            }
-            
-            if (currLevel <= 0) {
-                currLevel = 0;
-                isAnimating = false;
-                loop = false;
-            }
-            else {
-                currLevel = CoreMath.mul(currLevel, outputLevel.getAsFixed());
-            }
-            if (currPan < -CoreMath.ONE) {
-                currPan = -CoreMath.ONE;
-            }
-            else if (currPan > CoreMath.ONE) {
-                currPan = CoreMath.ONE;
-            }
+            int currLevel = getCurrLevel();
+            int currPan = getCurrPan();
             
             int framesToRender = numFrames;
             if (isAnimating) {
-                // Only render 64 frames, then recalcuate animation parameters
-                framesToRender = Math.min(64, framesToRender);
+                // Only render a few frames, then recalcuate animation parameters
+                framesToRender = Math.min(MAX_FRAMES_TO_RENDER_WHILE_ANIMATING, framesToRender);
             }
             if (inLoop()) {
                 // Don't render past loop boundary
                 framesToRender = Math.min(framesToRender, loopFrame + numLoopFrames - frame); 
             }
             
-            if (currLevel > 0) {
-                sound.getSamples(dest, destOffset, destChannels, frame, framesToRender);
-            }
-            render(dest, destOffset, destChannels, framesToRender, currLevel, currPan);
+            // Figure out the next level and pan (for interpolation)
+            int startFrame = frame;
+            skip(framesToRender);
+            int nextLevel = getCurrLevel();
+            int nextPan = getCurrPan();
             
+            // Render
+            if (currLevel > 0 || nextLevel > 0) {
+                sound.getSamples(dest, destOffset, destChannels, startFrame, framesToRender);
+            }
+            render(dest, destOffset, destChannels, framesToRender, 
+                currLevel, nextLevel, currPan, nextPan);
+            
+            // Inc offsets
             numFrames -= framesToRender;
             destOffset += framesToRender * destFrameSize;
-            skip(framesToRender);
         }
     }
     
     
+    private int getCurrLevel() {
+        int currLevel = level.getAsFixed();
+        if (frame >= sound.getNumFrames()) {
+            currLevel = 0;
+        }
+        if (currLevel <= 0) {
+            currLevel = 0;
+            loop = false;
+        }
+        else {
+            currLevel = CoreMath.mul(currLevel, outputLevel.getAsFixed());
+        }
+        return currLevel;
+    }
+    
+    
+    private int getCurrPan() {
+        int currPan = pan.getAsFixed();
+        if (currPan < -CoreMath.ONE) {
+            currPan = -CoreMath.ONE;
+        }
+        else if (currPan > CoreMath.ONE) {
+            currPan = CoreMath.ONE;
+        }
+        return currPan;
+    }
+    
+    
     private static void render(byte[] data, int offset, int channels,
-        int numFrames, int level, int pan)
+        int numFrames, int startLevel, int endLevel, int startPan, int endPan)
     {
         int frameSize = channels * 2;
         
-        if (level <= 0) {
+        if (startLevel <= 0 && endLevel <= 0) {
             // Mute
             int length = numFrames * frameSize;
             for (int i = 0; i < length; i++) {
                 data[offset++] = 0;
             }
         }
-        else if (channels == 1 || pan == 0) {
-            if (level != CoreMath.ONE) {
-                // Adjusted level, but no panning (both stereo and mono rendering)
+        else if (channels == 1 || (startPan == 0 && endPan == 0)) {
+            // No panning (both stereo and mono rendering)
+            if (startLevel != CoreMath.ONE || endLevel != CoreMath.ONE) {
                 int numSamples = numFrames*channels;
+                int level = startLevel;
+                int levelInc = (endLevel - startLevel) / numSamples;
                 for (int i = 0; i < numSamples; i++) {
                     int input = getSample(data, offset); 
                     int output = (input * level) >> CoreMath.FRACTION_BITS;
                     setSample(data, offset, output);
                     
                     offset += 2;
+                    level += levelInc;
                 }
             }
         }
         else {
             // Stereo sound with panning
-            int leftLevel4LeftInput;
-            int leftLevel4RightInput;
-            int rightLevel4LeftInput;
-            int rightLevel4RightInput;
-            if (pan < 0) {
-                leftLevel4LeftInput = CoreMath.ONE + pan / 2;
-                leftLevel4RightInput = -pan / 2;
-                rightLevel4LeftInput = 0;
-                rightLevel4RightInput = CoreMath.ONE + pan;
+            int startLeftLevel4LeftInput;
+            int startLeftLevel4RightInput;
+            int startRightLevel4LeftInput;
+            int startRightLevel4RightInput;
+            int endLeftLevel4LeftInput;
+            int endLeftLevel4RightInput;
+            int endRightLevel4LeftInput;
+            int endRightLevel4RightInput;
+            if (startPan < 0) {
+                startLeftLevel4LeftInput = CoreMath.ONE + startPan / 2;
+                startLeftLevel4RightInput = -startPan / 2;
+                startRightLevel4LeftInput = 0;
+                startRightLevel4RightInput = CoreMath.ONE + startPan;
             }
             else {
-                leftLevel4LeftInput = CoreMath.ONE - pan;
-                leftLevel4RightInput = 0;
-                rightLevel4LeftInput = pan / 2;
-                rightLevel4RightInput = CoreMath.ONE - pan / 2;
+                startLeftLevel4LeftInput = CoreMath.ONE - startPan;
+                startLeftLevel4RightInput = 0;
+                startRightLevel4LeftInput = startPan / 2;
+                startRightLevel4RightInput = CoreMath.ONE - startPan / 2;
             }
-            if (level != CoreMath.ONE) {
-                leftLevel4LeftInput = CoreMath.mul(level, leftLevel4LeftInput);
-                leftLevel4RightInput = CoreMath.mul(level, leftLevel4RightInput);
-                rightLevel4LeftInput = CoreMath.mul(level, rightLevel4LeftInput);
-                rightLevel4RightInput = CoreMath.mul(level, rightLevel4RightInput);
+            if (endPan < 0) {
+                endLeftLevel4LeftInput = CoreMath.ONE + endPan / 2;
+                endLeftLevel4RightInput = -endPan / 2;
+                endRightLevel4LeftInput = 0;
+                endRightLevel4RightInput = CoreMath.ONE + endPan;
+            }
+            else {
+                endLeftLevel4LeftInput = CoreMath.ONE - endPan;
+                endLeftLevel4RightInput = 0;
+                endRightLevel4LeftInput = endPan / 2;
+                endRightLevel4RightInput = CoreMath.ONE - endPan / 2;
+            }
+            if (startLevel != CoreMath.ONE) {
+                startLeftLevel4LeftInput = CoreMath.mul(startLevel, startLeftLevel4LeftInput);
+                startLeftLevel4RightInput = CoreMath.mul(startLevel, startLeftLevel4RightInput);
+                startRightLevel4LeftInput = CoreMath.mul(startLevel, startRightLevel4LeftInput);
+                startRightLevel4RightInput = CoreMath.mul(startLevel, startRightLevel4RightInput);
+            }
+            if (endLevel != CoreMath.ONE) {
+                endLeftLevel4LeftInput = CoreMath.mul(endLevel, endLeftLevel4LeftInput);
+                endLeftLevel4RightInput = CoreMath.mul(endLevel, endLeftLevel4RightInput);
+                endRightLevel4LeftInput = CoreMath.mul(endLevel, endRightLevel4LeftInput);
+                endRightLevel4RightInput = CoreMath.mul(endLevel, endRightLevel4RightInput);
             }
             
+            int leftLevel4LeftInput = startLeftLevel4LeftInput;
+            int leftLevel4RightInput = startLeftLevel4RightInput;
+            int rightLevel4LeftInput = startRightLevel4LeftInput;
+            int rightLevel4RightInput = startRightLevel4RightInput;
+            int leftLevel4LeftInputInc = 
+                (endLeftLevel4LeftInput - startLeftLevel4LeftInput) / numFrames;
+            int leftLevel4RightInputInc = 
+                (endLeftLevel4RightInput - startLeftLevel4RightInput) / numFrames;
+            int rightLevel4LeftInputInc = 
+                (endRightLevel4LeftInput - startRightLevel4LeftInput) / numFrames;
+            int rightLevel4RightInputInc = 
+                (endRightLevel4RightInput - startRightLevel4RightInput) / numFrames;
             for (int i = 0; i < numFrames; i++) {
                 int leftInput = getSample(data, offset);
                 int rightInput = getSample(data, offset + 2);
@@ -241,21 +309,25 @@ public class SoundStream {
                 setSample(data, offset + 2, rightOutput);
                 
                 offset += 4;
+                leftLevel4LeftInput += leftLevel4LeftInputInc;
+                leftLevel4RightInput += leftLevel4RightInputInc;
+                rightLevel4LeftInput += rightLevel4LeftInputInc;
+                rightLevel4RightInput += rightLevel4RightInputInc;
             }
         }
     }
     
     
-    private static int getSample(byte[] data, int offset) {
-        // Signed big endian
-        return (data[offset] << 8) | (data[offset + 1] & 0xff); 
+    public static int getSample(byte[] data, int offset) {
+        // Signed little endian
+        return (data[offset + 1] << 8) | (data[offset] & 0xff);
     }
     
     
-    private static void setSample(byte[] data, int offset, int sample) {
-        // Signed big endian
-        data[offset] = (byte)((sample >> 8) & 0xff);
-        data[offset + 1] = (byte)(sample & 0xff);
+    public static void setSample(byte[] data, int offset, int sample) {
+        // Signed little endian
+        data[offset] = (byte)sample;
+        data[offset + 1] = (byte)(sample >> 8);
     }    
 }
 
