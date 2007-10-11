@@ -207,12 +207,12 @@ public class Animation {
     }
     
     
+    /**
+        Returns true if this animation has not yet finished. 
+    */
     public final boolean isAnimating() {
         int totalDuration = getTotalDuration();
-        if (totalDuration < 0) {
-            return true;
-        }
-        return (elapsedTime < totalDuration);
+        return (totalDuration < 0 || elapsedTime < totalDuration);
     }
     
     
