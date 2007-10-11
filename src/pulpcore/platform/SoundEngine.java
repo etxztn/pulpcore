@@ -43,7 +43,7 @@ public interface SoundEngine {
     
     public void play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop);
     
-    public void poll();
+    public void update(int timeUntilNextUpdate);
     
     public void destroy();
     
