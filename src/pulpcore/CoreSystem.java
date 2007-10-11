@@ -43,8 +43,7 @@ public class CoreSystem {
 
     static {
         System.out.println(
-            "PulpCore " + Build.VERSION + " " +
-            "(build " + Build.BUILD_NUMBER + ") " +
+            "PulpCore " + Build.VERSION + "." + Build.BUILD_NUMBER + " " +
             "by Interactive Pulp, LLC.");
         
         String osName = getJavaProperty("os.name");
@@ -67,12 +66,14 @@ public class CoreSystem {
             IS_JAVA_1_4 = (javaVersion.compareTo("1.4") >= 0);
             IS_JAVA_1_5 = (javaVersion.compareTo("1.5") >= 0);
             IS_JAVA_1_6 = (javaVersion.compareTo("1.6") >= 0);
+            IS_JAVA_1_7 = (javaVersion.compareTo("1.7") >= 0);
         }
         else {
             IS_JAVA_1_3 = false;
             IS_JAVA_1_4 = false;
             IS_JAVA_1_5 = false;
             IS_JAVA_1_6 = false;
+            IS_JAVA_1_7 = false;
         }
     }
 
@@ -80,6 +81,7 @@ public class CoreSystem {
     private static final boolean IS_JAVA_1_4;
     private static final boolean IS_JAVA_1_5;
     private static final boolean IS_JAVA_1_6;
+    private static final boolean IS_JAVA_1_7;
     private static final boolean IS_MAC_OS_X;
     private static final boolean IS_WINDOWS;
     private static final boolean IS_WINDOWS_XP;
@@ -157,6 +159,14 @@ public class CoreSystem {
     */
     public static final boolean isJava16orNewer() {
         return IS_JAVA_1_6;
+    }
+    
+    
+    /**
+        Returns true if Java 1.7 or newer is in use.
+    */
+    public static final boolean isJava17orNewer() {
+        return IS_JAVA_1_7;
     }
     
     
@@ -537,6 +547,5 @@ public class CoreSystem {
         else {
             return soundEngine.getMaxSimultaneousSounds();
         }
-    }    
-    
+    }
 }
