@@ -168,7 +168,7 @@ public class Assets {
     
     
     /**
-        Gets an enumeration of catalog names (zip files) stored in memory.
+        Gets an iterator of catalog names (zip files) stored in memory.
     */
     public static Iterator getCatalogs() {
         // NOTE: this method used by PulpCorePlayer via reflection
@@ -203,6 +203,17 @@ public class Assets {
             }
             
             CATALOGS.remove(catalogName);
+        }
+    }
+    
+    
+    /**
+        Gets an iterator of the names of all assets from all zip files stored in memory. 
+        Does not include assets in the jar file.
+    */
+    public static Iterator getAssetNames() {
+        synchronized (LOCK) {
+            return ASSETS.keySet().iterator();
         }
     }
     
