@@ -192,32 +192,24 @@ public class Scene2D extends Scene {
     
     
     /**
-        Adds a TimelineEvent to this Scene2D. The TimelineEvent is automatically triggered
-        in the updateScene() method. The TimelineEvent is removed after triggering.
-    */
-    public void addEvent(TimelineEvent event) {
-        Timeline timeline = new Timeline();
-        timeline.addEvent(event);
-        addTimeline(timeline);
-    }
-    
-    
-    /**
         Adds a Timeline to this Scene2D. The Timeline is automatically updated in the updateScene()
         method. The Timeline is removed when is is finished animating.
+        <p>
+        This method is safe to call from any thread.
     */
     public void addTimeline(Timeline timeline) {
-        if (!timelines.contains(timeline)) {
-            timelines.add(timeline);
+        synchronized (timelines) {
+            if (!timelines.contains(timeline)) {
+                timelines.add(timeline);
+            }
         }
     }
     
     
     /**
         Removes a timeline from this Scene2D.
-        @param gracefully if true and the timeline is not 
-        looping, the timeline is 
-        fastforwarded to its end before it is removed.
+        @param gracefully if true and the timeline is not looping, the timeline is 
+        fast-forwarded to its end before it is removed.
     */
     public void removeTimeline(Timeline timeline, boolean gracefully) {
         if (timeline == null) {
@@ -226,7 +218,9 @@ public class Scene2D extends Scene {
         if (gracefully) {
             timeline.fastForward();
         }
-        timelines.remove(timeline);
+        synchronized (timelines) {
+            timelines.remove(timeline);
+        }
     }
     
     
@@ -236,13 +230,15 @@ public class Scene2D extends Scene {
         fastforwarded to their end before they are removed.
     */
     public void removeAllTimelines(boolean gracefully) {
-        if (gracefully) {
-            for (int i = 0; i < timelines.size(); i++) {
-                Timeline t = (Timeline)timelines.get(i);
-                t.fastForward();
+        synchronized (timelines) {
+            if (gracefully) {
+                for (int i = 0; i < timelines.size(); i++) {
+                    Timeline t = (Timeline)timelines.get(i);
+                    t.fastForward();
+                }
             }
+            timelines.clear();
         }
-        timelines.clear();
     }
     
     
@@ -251,6 +247,89 @@ public class Scene2D extends Scene {
     */
     public int getNumTimelines() {
         return timelines.size();
+    }
+
+
+    //
+    // Events
+    //
+    
+
+    /**
+        Adds a TimelineEvent to this Scene2D. The TimelineEvent is automatically triggered
+        in the updateScene() method. The TimelineEvent is removed after triggering.
+        <p>
+        This method is safe to call from any thread.
+    */
+    public void addEvent(TimelineEvent event) {
+        Timeline timeline = new Timeline();
+        timeline.addEvent(event);
+        addTimeline(timeline);
+    }
+    
+    
+    
+    /**
+        Adds a TimelineEvent to this Scene2D and waits for it to execute.
+        @throws Error if the current thread is the animation thread.
+    */
+    public void addEventAndWait(TimelineEvent event) {
+        if (Stage.isAnimationThread()) {
+            throw new Error("Cannot call invokeAndWait from the animation thread");
+        }
+        
+        synchronized (event) {
+            addEvent(event);
+            while (!event.hasExecuted()) {
+                try {
+                    event.wait();
+                }
+                catch (InterruptedException ex) { }
+            }
+        }
+    }
+    
+    
+    /**
+        Causes a runnable to have it's run() method called in the animation thread. This method
+        is equivalent to:
+        <pre>
+        addEvent(new TimelineEvent(0) {
+            public void run() {
+                runnable.run();
+            }
+        });
+        </pre>
+        <p>
+        This method is safe to call from any thread.
+    */
+    public void invokeLater(final Runnable runnable) {
+        addEvent(new TimelineEvent(0) {
+            public void run() {
+                runnable.run();
+            }
+        });
+    }
+    
+    
+    /**
+        Causes a runnable to have it's run() method called in the animation thread, 
+        and waits for it to execute. This method is equivalent to:
+        <pre>
+        addEventAndWait(new TimelineEvent(0) {
+            public void run() {
+                runnable.run();
+            }
+        });
+        </pre>
+        @throws Error if the current thread is the animation thread.
+    */
+    public void invokeAndWait(final Runnable runnable) {
+        addEventAndWait(new TimelineEvent(0) {
+            public void run() {
+                runnable.run();
+            }
+        });
     }
     
     
@@ -463,6 +542,17 @@ public class Scene2D extends Scene {
     //
     
     
+    public void unload() {
+        // Make sure all invokeAndWait() calls return
+        synchronized (timelines) {
+            for (int i = 0; i < timelines.size(); i++) {
+                Timeline timeline = (Timeline)timelines.get(i);
+                timeline.update(1);
+            }
+        }
+    }
+    
+    
     public final void showNotify() {
         if (stateSaved) {
             Stage.setFrameRate(desiredFPS);
@@ -510,12 +600,14 @@ public class Scene2D extends Scene {
         
         // Update timelines, layers, and sprites
         if (!paused) {
-            for (int i = 0; i < timelines.size(); i++) {
-                Timeline timeline = (Timeline)timelines.get(i);
-                timeline.update(elapsedTime);
-                if (timeline.isFinished()) {
-                    timelines.remove(i);
-                    i--;
+            synchronized (timelines) {
+                for (int i = 0; i < timelines.size(); i++) {
+                    Timeline timeline = (Timeline)timelines.get(i);
+                    timeline.update(elapsedTime);
+                    if (timeline.isFinished()) {
+                        timelines.remove(i);
+                        i--;
+                    }
                 }
             }
             
