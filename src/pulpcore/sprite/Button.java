@@ -30,6 +30,7 @@
 package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
+import pulpcore.animation.ColorAnimation;
 import pulpcore.image.AnimatedImage;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
@@ -46,7 +47,7 @@ import pulpcore.math.Rect;
 public class Button extends ImageSprite {
     
     // For labeled button creation. See createLabeledButton(). 
-    private static final int MARGIN = 8;
+    private static final int MARGIN = 12;
     private static final int MIN_WIDTH = 72;
 
     public static final int NORMAL = 0;
@@ -331,6 +332,11 @@ public class Button extends ImageSprite {
     }
     
     
+    public static Button createLabeledToggleButton(String text, int x, int y) {
+        return createLabeledToggleButton(null, null, text, x, y);
+    }
+    
+    
     public static Button createLabeledButton(CoreImage[] images, CoreFont font, 
         String text, int x, int y)
     {
@@ -345,6 +351,8 @@ public class Button extends ImageSprite {
             textY = images[0].getHeight() / 2;
         }
         else {
+            font = font.tint(0xffffff);
+            
             int textWidth = font.getStringWidth(text);
             int textHeight = font.getHeight();
             int buttonWidth = Math.max(MIN_WIDTH, textWidth + MARGIN*2);
@@ -382,6 +390,8 @@ public class Button extends ImageSprite {
             textY = images[0].getHeight() / 2;
         }
         else {
+            font = font.tint(0xffffff);
+            
             int textWidth = font.getStringWidth(text);
             int textHeight = font.getHeight();
             int buttonWidth = Math.max(MIN_WIDTH, textWidth + MARGIN*2);
@@ -393,7 +403,7 @@ public class Button extends ImageSprite {
         
         return createLabeledButton(images, font, text, x, y, 
             textX, textY,
-            Sprite.HCENTER | Sprite.VCENTER, true, true);
+            Sprite.CENTER, true, true);
     }
     
     
@@ -436,41 +446,14 @@ public class Button extends ImageSprite {
         
         // Create button image, if needed
         if (images == null) {
+            font = font.tint(0xffffff);
             images = new CoreImage[isToggleButton?6:3];
             
             int buttonWidth = Math.max(MIN_WIDTH, textWidth + MARGIN*2);
             int buttonHeight = textHeight + MARGIN;
         
-            // Normal
-            images[0] = new CoreImage(buttonWidth, buttonHeight);
-            CoreGraphics g = images[0].createGraphics();
-            g.setColor(CoreGraphics.WHITE);
-            g.fill();
-            g.setColor(CoreGraphics.LIGHTGRAY);
-            g.drawRect(0, 0, buttonWidth, buttonHeight);
-            
-            // Hover
-            images[1] = new CoreImage(buttonWidth, buttonHeight);
-            g = images[1].createGraphics();
-            g.setColor(CoreGraphics.WHITE);
-            g.fill();
-            g.setColor(CoreGraphics.DARKGRAY);
-            g.drawRect(0, 0, buttonWidth, buttonHeight);
-            g.setColor(CoreGraphics.LIGHTGRAY);
-            g.drawRect(1, 1, buttonWidth-2, buttonHeight-2);
-            
-            // Pressed
-            images[2] = new CoreImage(buttonWidth, buttonHeight);
-            g = images[2].createGraphics();
-            g.setColor(CoreGraphics.LIGHTGRAY);
-            g.fill();
-            g.setColor(CoreGraphics.DARKGRAY);
-            g.drawRect(0, 0, buttonWidth, buttonHeight);
-            
-            if (isToggleButton) {
-                images[4] = images[0];
-                images[5] = images[1];
-                images[6] = images[2];
+            for (int i = 0; i < images.length; i++) {
+                images[i] = createButtonImage(buttonWidth, buttonHeight, i);
             }
         }
         
@@ -508,6 +491,66 @@ public class Button extends ImageSprite {
         }
     
         return new Button(textImages, x, y, isToggleButton);
+    }
+    
+    
+    private static CoreImage createButtonImage(int buttonWidth, int buttonHeight, int type) {
+        
+        // Create the button image at 2x the dimensions, then scale down.
+        // This way the corners look anti-aliased.
+        int w = buttonWidth * 2;
+        int h = buttonHeight * 2;
+        int cornerSize = 3;
+        CoreImage image = new CoreImage(w, h);
+        CoreGraphics g = image.createGraphics();
+        ColorAnimation topGradient, bottomGradient;
+        
+        // Web 2.0-style gradients
+        if (type == 0 || type == 1) {
+            // Normal, Hover
+            topGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x626365, 0x484848, h/2);
+            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x030303, 0x2e2e2e, h/2);
+        }
+        else if (type == 2) {
+            // Pressed
+            topGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x2e2e2e, 0x484848, h/2);
+            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x030303, 0x2e2e2e, h/2);
+        }
+        else if (type == 3 || type == 4) {
+            // Selected
+            topGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x3d4a8a, 0x3d4a8a, h/2);
+            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x11194f, 0x3d4a8a, h/2);
+        }
+        else {
+            // Selected & pressed
+            topGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x273271, 0x3d4a8a, h/2);
+            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
+                0x11194f, 0x3d4a8a, h/2);
+        }
+        
+        for (int i = 0; i < h/2; i++) {
+            int lineWidth = Math.min(w, w + (i - cornerSize) * 2);
+            int x = (w - lineWidth) / 2;
+            int y1 = i;
+            int y2 = h - 1 - i;
+            
+            topGradient.setTime(i);
+            g.setColor(topGradient.getValue());
+            g.fillRect(x, y1, lineWidth, 1);
+            
+            bottomGradient.setTime(i);
+            g.setColor(bottomGradient.getValue());
+            g.fillRect(x, y2, lineWidth, 1);
+        }
+        
+        return image.halfSize();
     }
     
 }
