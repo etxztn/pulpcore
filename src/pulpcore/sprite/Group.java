@@ -327,8 +327,7 @@ public class Group extends Sprite {
     // Listed here as a seperate method for HotSpot.
     // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103956
     private void throwModificationException() {
-        throw new ConcurrentModificationException(
-            "Sprite modified the structure of its parent Group");
+        throw new ConcurrentModificationException("Group modified during iteration.");
     }
         
     
