@@ -128,6 +128,11 @@ public class TextField extends Sprite {
     }
     
     
+    public TextField(String text, int x, int y) {
+        this(null, null, text, x, y, -1, -1);
+    }
+    
+    
     /**
         If height < 0, the height is automatically set to fit the font
         height.
@@ -137,12 +142,22 @@ public class TextField extends Sprite {
     }
     
     
+    public TextField(String text, double x, double y) {
+        this(null, null, text, x, y, -1, -1);
+    }
+    
+    
     /**
         If height < 0, the height is automatically set to fit the font
         height.
     */
     public TextField(String text, double x, double y, double w, double h) {
         this(null, null, text, x, y, w, h);
+    }
+    
+    
+    public TextField(CoreFont font, CoreFont selectionFont, String text, int x, int y) {
+        this(font, selectionFont, text, x, y, -1, -1);
     }
     
     
@@ -156,7 +171,12 @@ public class TextField extends Sprite {
     {
         super(x, y, w, h);
         this.text = text;
-        init(font, selectionFont, h < 0);
+        init(font, selectionFont, w < 0, h < 0);
+    }
+    
+    
+    public TextField(CoreFont font, CoreFont selectionFont, String text, double x, double y) {
+        this(font, selectionFont, text, x, y, -1, -1);
     }
     
     
@@ -169,11 +189,13 @@ public class TextField extends Sprite {
     {
         super(x, y, w, h);
         this.text = text;
-        init(font, selectionFont, h < 0);
+        init(font, selectionFont, w < 0, h < 0);
     }
     
     
-    private void init(CoreFont font, CoreFont selectionFont, boolean autoHeight) {
+    private void init(CoreFont font, CoreFont selectionFont, 
+        boolean autoWidth, boolean autoHeight) 
+    {
         if (font == null) {
             this.font = CoreFont.getSystemFont();
         }
@@ -194,6 +216,11 @@ public class TextField extends Sprite {
         }
         else {
             this.selectionFont = selectionFont;
+        }
+        
+        if (autoWidth) {
+            // Set the width to the width of the text plus an em-space.
+            width.set(this.font.getStringWidth(this.text + "M"));
         }
         
         if (autoHeight) {
