@@ -235,6 +235,9 @@
         <jar destfile="${build}/${player.jar.file}">
             <fileset dir="${build.temp}/player" includes="**/*.class"/>
             <fileset dir="${tools.src}/player" excludes="**/*.java"/>
+            <manifest>
+                <attribute name="Main-Class" value="pulpcore.player.PulpCorePlayer"/>
+            </manifest>
         </jar>
 
         <!-- clean up-->
@@ -408,6 +411,8 @@
             value="${dist.temp}/examples/BubbleMark/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/ImagesAndFonts/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/MultiThreaded/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Particles/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
