@@ -630,6 +630,10 @@ public class TextField extends Sprite {
             return;
         }
         
+        if (text.length() == 0) {
+            return;
+        }
+        
         if (position < 0) {
             position = 0;
         }
