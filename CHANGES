@@ -1,3 +1,12 @@
+0.10.4 (October 20, 2007)
+  * Fixed Bug: double-clicking an empty TextField caused an ArrayIndexOutOfBoundsException
+    (tulsidas).
+  * Tools: pulpcore_codebase can be defined for using a different codebase than the default.
+    See the "project" template for an example.
+  * Tools: pulpcore.js no longer allows Java 1.3 JREs to run PulpCore apps (Firefox issue).
+  * Tools: pulpcore.js provides a better Java installation on Firefox.
+  * Examples: templates now compile with source and target set to 1.4
+  
 0.10.3 (October 11, 2007)
   * Fixed Bug: isolated and created a workarounds for JavaSound pop/click bugs on both Mac and
     Windows. For Mac and Windows Java 1.4, the fix requires modifying the output sound, but it's 
