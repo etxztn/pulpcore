@@ -55,6 +55,7 @@ public class AppletHTMLTask extends Task {
     private static final String DEFAULT_FGCOLOR = "#aaaaaa";
     private static final String DEFAULT_SCENE = null;
     private static final String DEFAULT_ASSETS = "";
+    private static final String DEFAULT_CODEBASE = null;
     private static final String DEFAULT_PARAMS = null;
     private static final int DEFAULT_WIDTH = 640;
     private static final int DEFAULT_HEIGHT = 480;
@@ -71,6 +72,7 @@ public class AppletHTMLTask extends Task {
     private String scene = DEFAULT_SCENE;
     private String assets = DEFAULT_ASSETS;
     private String params = DEFAULT_PARAMS;
+    private String codebase = DEFAULT_CODEBASE;
     private int width = DEFAULT_WIDTH;
     private int height = DEFAULT_HEIGHT;
     
@@ -107,6 +109,11 @@ public class AppletHTMLTask extends Task {
     
     public void setParams(String params) {
         this.params = params;
+    }
+    
+    
+    public void setCodebase(String codebase) {
+        this.codebase = codebase;
     }
     
     
@@ -200,6 +207,9 @@ public class AppletHTMLTask extends Task {
         }
         if (params != null && params.length() > 0) {
             appletParams += "pulpcore_params = { " + params + " };\n";
+        }
+        if (codebase != null && codebase.length() > 0) {
+            appletParams += "pulpcore_codebase = \"" + codebase + "\";\n";
         }
         // Strip last newline
         appletParams = appletParams.trim();
