@@ -44,15 +44,13 @@ import pulpcore.scene.LoadingScene;
 import pulpcore.scene.Scene;
 
 /**
-    CoreApplet is a Java 1.1 compatible Platform implementation for web
-    games.
+    CoreApplet is a Java 1.4-compatible Platform implementation.
 */
 // CoreApplet is final so that developers don't override CoreApplet constructor, and call Stage or 
 // some other class that isn't ready until after init()
 public final class CoreApplet extends Applet {
     
     private AppletAppContext context;
-    private boolean oldJava = false;
 
     
     public final void init() {
@@ -65,35 +63,10 @@ public final class CoreApplet extends Applet {
             catch (NumberFormatException ex) { }
         }
         
-        String javaVersion = "1.1";
-        try {
-            javaVersion = System.getProperty("java.version");
+        if (context != null) {
+            context.stop();
         }
-        catch (SecurityException ex) { }
-        
-        if (javaVersion.compareTo("1.4") < 0) {
-            oldJava = true;
-            
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            
-            final Applet applet = this;
-            addMouseListener(new MouseAdapter() {
-                public void mouseClicked(MouseEvent e) {
-                    try {
-                        applet.getAppletContext().showDocument(
-                            new URL("http://www.java.com/"), "_blank");
-                    }
-                    catch (MalformedURLException ex) { }
-                }
-            });
-        }
-        else {
-            oldJava = false;
-            if (context != null) {
-                context.stop();
-            }
-            context = (AppletAppContext)AppletPlatform.getInstance().registerApp(this);
-        }
+        context = (AppletAppContext)AppletPlatform.getInstance().registerApp(this);
     }
     
     
@@ -126,23 +99,12 @@ public final class CoreApplet extends Applet {
     
     
     public final void paint(Graphics g) {
-        if (oldJava) {
-            drawUpgradeMessage(g);
-        }
-        else if (context == null) {
+        if (context == null) {
             drawBlank(g);
         }
         else {
             drawSurface(g);
         }
-    }
-    
-    
-    private final void drawUpgradeMessage(Graphics g) {
-        g.setColor(Color.white);
-        g.fillRect(0, 0, getSize().width, getSize().height);
-        g.setColor(Color.blue);
-        g.drawString("Get Java at www.java.com", 5, 25);
     }
     
     
