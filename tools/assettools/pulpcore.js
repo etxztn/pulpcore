@@ -108,7 +108,7 @@ var pulpCoreObject = {
 	getJavaCAB: "http://java.sun.com/update/1.6.0/jinstall-6-windows-i586.cab",
 	
 	// The URL of the XPI of the latest JRE (for Windows+Firefox)
-	// Currently using the unsigned version (-jc) since the signed version in 6u3 is fucked up
+	// Currently using the unsigned version (-jc) since the signed version in 6u3 is broken
 	getJavaXPI: "http://java.sun.com/update/1.6.0/jre-6-windows-i586-jc.xpi",
 	//getJavaXPI: "http://java.sun.com/update/1.6.0/jre-6-windows-i586.xpi",
 	//getJavaXPI: "http://java.com/jre-install.xpi",
@@ -294,7 +294,7 @@ var pulpCoreObject = {
 				pulpCoreObject.appletHTML =
 				'<object id="pulpcore_object"\n' + 
 				'  classid="java:' + code + '"\n' +
-				'  type="application/x-java-applet;version="' + pulpCoreObject.requiredJRE + '\n' + 
+				'  type="application/x-java-applet;version=' + pulpCoreObject.requiredJRE + '"\n' + 
 				'  width="' + width + '" height="' + height + '">\n' + 
 				objectParams +
 				'</object>';
