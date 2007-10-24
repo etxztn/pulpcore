@@ -50,6 +50,13 @@ import pulpcore.scene.Scene;
 // some other class that isn't ready until after init()
 public final class CoreApplet extends Applet {
     
+    static {
+        // Send a message to the Java Console
+        System.out.println(
+            "PulpCore " + Build.VERSION + " (build " + Build.BUILD_NUMBER + ") " +
+            "by Interactive Pulp, LLC.");
+    }
+    
     private AppletAppContext context;
 
     
@@ -100,29 +107,18 @@ public final class CoreApplet extends Applet {
     
     public final void paint(Graphics g) {
         if (context == null) {
-            drawBlank(g);
+            g.setColor(getBackground());
+            g.fillRect(0, 0, getSize().width, getSize().height);
         }
         else {
-            drawSurface(g);
+            Surface surface = context.getSurface();
+            if (surface instanceof BufferedImageSurface) {
+                ((BufferedImageSurface)surface).draw(g);
+            }
+            else {
+                surface.notifyOSRepaint();
+            }
         }
-    }
-    
-    
-    private final void drawSurface(Graphics g) {
-        Surface surface = context.getSurface();
-        
-        if (surface instanceof BufferedImageSurface) {
-            ((BufferedImageSurface)surface).draw(g);
-        }
-        else {
-            surface.notifyOSRepaint();
-        }
-    }
-    
-    
-    private final void drawBlank(Graphics g) {
-        g.setColor(getBackground());
-        g.fillRect(0, 0, getSize().width, getSize().height);
     }
     
     

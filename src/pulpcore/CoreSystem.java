@@ -42,10 +42,6 @@ import pulpcore.platform.SoundEngine;
 public class CoreSystem {
 
     static {
-        System.out.println(
-            "PulpCore " + Build.VERSION + "." + Build.BUILD_NUMBER + " " +
-            "by Interactive Pulp, LLC.");
-        
         String osName = getJavaProperty("os.name");
         String osVersion = getJavaProperty("os.version");
         if (osName == null) {
