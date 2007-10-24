@@ -1,0 +1,6 @@
+version.major=0
+version.minor=10
+version.revision=5
+
+version=${version.major}.${version.minor}
+version.full=${version}.${version.revision}
