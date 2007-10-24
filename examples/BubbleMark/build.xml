@@ -197,8 +197,14 @@
             <injar name="${build}/in.jar" />
             <outjar name="${build}/${project.jar}" />
             
-            <keep name="pulpcore.platform.applet.CoreApplet*" />
-            <keep name="${project.scene}" />
+            <keep name="pulpcore.platform.applet.CoreApplet">
+                <!-- Keep the special method that can be accessed via JavaScript -->
+                <method name="getCurrentScene" />
+            </keep>
+            <keep name="${project.scene}">
+                <!-- Special case for BubbleMark: keep these methods available for JavaScript -->
+                <method access="public" />
+            </keep>
         </proguard>
         
         <delete file="${build}/in.jar" />
