@@ -216,6 +216,13 @@ public class Label extends Sprite {
         }
     }
     
+    /**
+        @return this Label's font.
+    */
+    public CoreFont getFont() {
+        return font;
+    }
+    
     
     /**
         @return the formatted display text.
@@ -270,13 +277,17 @@ public class Label extends Sprite {
         }
 
         String currDisplayText = displayText;
-        
         if (numDisplayChars.get() != displayText.length()) {
             currDisplayText = displayText.substring(0, numDisplayChars.get());
         }
         
-        g.setFont(font);
-        g.drawString(currDisplayText);
+        drawText(g, currDisplayText);
+    }
+    
+    
+    protected void drawText(CoreGraphics g, String text) {
+        g.setFont(getFont());
+        g.drawString(text);
     }
     
 }
