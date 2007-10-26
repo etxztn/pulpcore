@@ -115,7 +115,9 @@ public class Assets {
                     while (bytesToRead > 0) {
                         int bytesRead = in.read(entryData, size - bytesToRead, bytesToRead);
                         if (bytesRead == -1) {
-                            if (Build.DEBUG) CoreSystem.print("Problem loading asset: " + name);
+                            if (Build.DEBUG) {
+                                CoreSystem.print("Couldn't add asset (EOF reached): " + name);
+                            }
                             in.close();
                             return false;
                         }
@@ -128,7 +130,7 @@ public class Assets {
                     assetData.add(entryData);
                 }
                 else {
-                    if (Build.DEBUG) CoreSystem.print("Problem loading asset: " + name);
+                    if (Build.DEBUG) CoreSystem.print("Couldn't add asset (no size): " + name);
                     in.close();
                     return false;
                 }
@@ -136,7 +138,7 @@ public class Assets {
             in.close();
         }
         catch (IOException ex) {
-            if (Build.DEBUG) CoreSystem.print("Problem loading asset catalog: " + catalogName, ex);
+            if (Build.DEBUG) CoreSystem.print("Couldn't add asset catalog: " + catalogName, ex);
             return false;
         }
         
