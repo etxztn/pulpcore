@@ -145,6 +145,9 @@ public class Scene2D extends Scene {
         if (this.dirtyRectanglesEnabled != dirtyRectanglesEnabled) {
             this.dirtyRectanglesEnabled = dirtyRectanglesEnabled;
             needsFullRedraw = true;
+            if (!this.dirtyRectanglesEnabled) {
+                clearDirtyRects(layers);
+            }
         }
     }
     
@@ -679,6 +682,20 @@ public class Scene2D extends Scene {
             }
             else {
                 sprite.setDirty(dirty);
+            }
+        }
+    }
+    
+    
+    private void clearDirtyRects(Group group) {
+        group.clearDirtyRect();
+        for (int i = 0; i < group.size(); i++) {
+            Sprite sprite = group.get(i);
+            if (sprite instanceof Group) {
+                clearDirtyRects((Group)sprite);
+            }
+            else {
+                sprite.clearDirtyRect();
             }
         }
     }
