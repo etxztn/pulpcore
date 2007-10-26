@@ -94,7 +94,7 @@ public class TileMapScene extends Scene2D {
         // Create the tile map
         int mapWidth = map[0].length();
         int mapHeight = map.length;
-        int[][] tileIndex = new int[mapWidth][mapHeight];
+        CoreImage[][] tileMap = new CoreImage[mapWidth][mapHeight];
         for (int i = 0; i < mapWidth; i++) {
             for (int j = 0; j < mapHeight; j++) {
                 
@@ -108,9 +108,9 @@ public class TileMapScene extends Scene2D {
                         break;
                     }
                 }
-                tileIndex[i][j] = index; 
+                tileMap[i][j] = tileImages[index]; 
             }
         }
-        return new TileMap(tileImages, tileIndex, tileWidth, tileHeight);
+        return new TileMap(tileMap, tileWidth, tileHeight);
     }
 }

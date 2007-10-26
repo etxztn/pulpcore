@@ -6,6 +6,11 @@ import pulpcore.math.Transform;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
 
+/**
+    A simple tile map.
+    Limitation: the maximum width and height of a TileMap 
+    (i.e. tileWidth*numTilesAcross and tileHeight*numTilesDown) should be less than 32768.
+*/
 public class TileMap extends Sprite {
     
     private CoreImage[][] tileMap;
@@ -17,24 +22,16 @@ public class TileMap extends Sprite {
     public final Fixed viewX = new Fixed(this);
     public final Fixed viewY = new Fixed(this);
     
-    public TileMap(CoreImage[] tiles, int[][] map, int tileWidth, int tileHeight) {
+    public TileMap(CoreImage[][] tileMap, int tileWidth, int tileHeight) {
         super(0, 0, Stage.getWidth(), Stage.getHeight());
+        this.tileMap = tileMap;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
+        numTilesAcross = tileMap.length;
+        numTilesDown = tileMap[0].length;
         
         // Turn on pixel snapping so we don't see lines between tiles
         pixelSnapping.set(true);
-        
-        // Create the tile map
-        numTilesAcross = map.length;
-        numTilesDown = map[0].length;
-        tileMap = new CoreImage[numTilesAcross][numTilesDown];
-        for (int i = 0; i < numTilesAcross; i++) {
-            for (int j = 0; j < numTilesDown; j++) {
-                int tileIndex = map[i][j];
-                tileMap[i][j] = tiles[tileIndex];
-            }
-        }
     }
     
     public int getMapWidth() {
