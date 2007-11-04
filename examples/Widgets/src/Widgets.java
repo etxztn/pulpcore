@@ -1,3 +1,7 @@
+// Widgets
+// Shows various buttons and form fields.
+// Note, all widgets work when transformed!
+import pulpcore.animation.Easing;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -17,49 +21,56 @@ public class Widgets extends Scene2D {
     TextField passwordField;
     Button okButton;
     Button checkbox;
+    Group form;
     
     public void load() {
-        
         CoreFont font = CoreFont.getSystemFont();
         
-        Label label = new Label("Name: ", 320, 160);
+        // Create the form fields
+        Label label = new Label("Name: ", 0, 0);
         label.setAnchor(Sprite.EAST);
         
-        textField = new TextField(325, 160, 150, font.getHeight());
+        textField = new TextField("Suzy", 5, 0, 150, font.getHeight());
         textField.setAnchor(Sprite.WEST);
         textField.setFocus(true);
         
-        Label label2 = new Label("Secret Password: ", 320, 200);
+        Label label2 = new Label("Secret Password: ", 0, 40);
         label2.setAnchor(Sprite.EAST);
         
-        passwordField = new TextField(325, 200, 150, font.getHeight());
+        passwordField = new TextField(5, 40, 150, font.getHeight());
         passwordField.setPasswordMode(true);
         passwordField.setAnchor(Sprite.WEST);
         
         CoreImage buttonImage = CoreImage.load("button.png");
-        okButton = new Button(buttonImage.split(3), 320, 280);
+        okButton = new Button(buttonImage.split(3), 0, 120);
         okButton.setAnchor(Sprite.NORTH);
         okButton.setKeyBinding(Input.KEY_ENTER);
         
         CoreImage checkboxImage = CoreImage.load("checkbox.png");
-        checkbox = Button.createLabeledToggleButton(checkboxImage.split(3,2), font, 
-            "Rotate", 325, 240, 30, 12, Sprite.WEST, false);
+        checkbox = Button.createLabeledToggleButton(checkboxImage.split(3,2), font,
+            "I'm feeling slanted", 0, 80, 30, 12, Sprite.WEST, false);
         checkbox.setCursor(Input.CURSOR_DEFAULT);
         checkbox.setAnchor(Sprite.WEST);
         
-        answer = new Label("", 320, 370);
-        answer.setAnchor(Sprite.CENTER);
+        // Add the form fields to a group
+        form = new Group(Stage.getWidth() / 2, Stage.getHeight() / 2);
+        form.setAnchor(Sprite.CENTER);
+        form.add(label);
+        form.add(label2);
+        form.add(createBackground(textField));
+        form.add(textField);
+        form.add(createBackground(passwordField));
+        form.add(passwordField);
+        form.add(okButton);
+        form.add(checkbox);
+        form.pack();
         
-        add(new FilledSprite(0x9999ff));
-        add(label);
-        add(label2);
-        add(createBackground(textField));
-        add(textField);
-        add(createBackground(passwordField));
-        add(passwordField);
-        add(okButton);
-        add(checkbox);
+        // Add background, answer message, and form to the scene
+        answer = new Label("", 320, 400);
+        answer.setAnchor(Sprite.CENTER);
+        add(new FilledSprite(0xffffff));
         add(answer);
+        addLayer(form);
     }
     
     public Sprite createBackground(TextField field) {
@@ -73,16 +84,12 @@ public class Widgets extends Scene2D {
     }
     
     public void update(int elapsedTime) {
-        if (okButton.isClicked()) {
-            answer.setText("Hello \"" + textField.getText() + "\"! " + 
-                (checkbox.isSelected() ? "Look, widgets work when transformed!" : ""));
-            
-            // Rotate all sprites except the background
+        if (checkbox.isClicked()) {
             double newAngle = checkbox.isSelected() ? Math.PI / 16 : 0;
-            Group layer = getMainLayer();
-            for (int i = 1; i < layer.size(); i++) {
-                layer.get(i).angle.animateTo(newAngle, 300);
-            }
+            form.angle.animateTo(newAngle, 500, Easing.ELASTIC_OUT);
+        }
+        if (okButton.isClicked()) {
+            answer.setText("Hello, " + textField.getText() + "!");
         }
         
         if (Input.isPressed(Input.KEY_TAB)) {
