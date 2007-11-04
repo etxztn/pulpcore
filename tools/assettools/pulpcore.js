@@ -328,7 +328,7 @@ var pulpCoreObject = {
 		Returns true if the installed JRE is Java 1.4 or newer. 
 	*/
 	isAcceptableJRE: function() {
-		var s, i, version;
+		var version;
 		
 		if (pulpCoreObject.browserName == "Explorer") {
 			// IE can install via the CAB
@@ -341,8 +341,8 @@ var pulpCoreObject = {
 		else if (pulpCoreObject.browserName == "Safari" && 
 			navigator.plugins && navigator.plugins.length) 
 		{
-			for (i = 0; i < navigator.plugins.length; i++) {
-				s = navigator.plugins[i].description;
+			for (var i = 0; i < navigator.plugins.length; i++) {
+				var s = navigator.plugins[i].description;
 				// Based on code from the Deployment Toolkit
 				if (s.search(/^Java Switchable Plug-in/) != -1) {
 					return true;
@@ -364,22 +364,28 @@ var pulpCoreObject = {
 			if (pulpcore_getCookie("javaRecentlyInstalled") == "true") {
 				return true;
 			}
-			var mimeType = "application/x-java-applet;version=";
-			for (i = 0; i < navigator.mimeTypes.length; i++) {
-				s = navigator.mimeTypes[i].type;
-				if (s.substr(0, mimeType.length) == mimeType) {
-					version = s.substr(mimeType.length);
-					if (pulpCoreObject.isAcceptableJREVersion(version)) {
-						return true;
-					}
-				}
-			}
-			return false;
+			version = pulpCoreObject.getHighestInstalledJavaViaMimeTypes();
+			return pulpCoreObject.isAcceptableJREVersion(version);
 		}
 		else {
 			// Couldn't detect - let the browser handle it
 			return true;
 		}
+	},
+	
+	getHighestInstalledJavaViaMimeTypes: function() {
+		var version = "0.0";
+		var mimeType = "application/x-java-applet;version=";
+		for (var i = 0; i < navigator.mimeTypes.length; i++) {
+			var s = navigator.mimeTypes[i].type;
+			if (s.substr(0, mimeType.length) == mimeType) {
+				var testVersion = s.substr(mimeType.length);
+				if (pulpCoreObject.compareVersions(testVersion, version) == 1) {
+					version = testVersion;
+				}
+			}
+		}
+		return version;
 	},
 	
 	isAcceptableJREVersion: function(version) {
@@ -431,7 +437,7 @@ var pulpCoreObject = {
 		if (pulpCoreObject.shouldInstallXPI()) {
 			extraAttributes = ' onclick="pulpCoreObject.installXPI();return false;"';
 		}
-		return '<p style="text-align: center">To play, ' +
+		return '<p id="pulpcore_install" style="text-align: center">To play, ' +
 			'<a href="' + pulpCoreObject.getJavaURL + '"' + extraAttributes + '>' +
 			'install Java now</a>.</p>\n';
 	},
@@ -451,9 +457,21 @@ var pulpCoreObject = {
 		var success = (result === 0);
 		if (success) {
 			// Set a session-only cookie (since Firefox doesn't refresh mime types)
-			// and reload the page.
 			document.cookie = "javaRecentlyInstalled=true; path=/";
-			location.href = document.location;
+			
+			var version = pulpCoreObject.getHighestInstalledJavaViaMimeTypes().split('.');
+			if (version[0] == "1" && version[1] == "3") {
+				// If Java 1.3 is previously installed, ask them to restart their browser.
+				// Java 1.3 seems to "take over" and not allow the browser to use Java 6 until
+				// Firefox is restarted. NOTE: re-evaluate if JRE 1.5 is defined as the minimum.
+				var install = document.getElementById('pulpcore_install');
+				install.innerHTML = "Java installed! To play, you may need to restart your browser.";
+			}
+			else {
+				// If no Java previously installed, automagically start the game 
+				// (by reloading the page)
+				location.href = document.location;
+			}
 		}
 	},
 	
