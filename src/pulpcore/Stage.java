@@ -96,6 +96,7 @@ public class Stage implements Runnable {
     // Dirty rectangles
     private Rect[] dirtyRectangles;
     private int numDirtyRectangles;
+    private boolean renderingErrorOccurred = false;
     
     // Stage info
     private int desiredFPS = DEFAULT_FPS;
@@ -575,12 +576,12 @@ public class Stage implements Runnable {
             
             // Redraw if the focus changed
             boolean focusedChanged = input.hasKeyboardFocus() != oldFocus;
-            boolean needsRedraw = focusedChanged;
+            boolean needsFullRedraw = focusedChanged | renderingErrorOccurred;
             
             if (Build.DEBUG) {
                 if (input.isControlDown() && input.isPressed(Input.KEY_I)) {
                     showInfoOverlay = !showInfoOverlay;
-                    needsRedraw = true;
+                    needsFullRedraw = true;
                 }
                 
                 if (input.isControlDown() && input.isPressed(Input.KEY_1)) {
@@ -604,7 +605,7 @@ public class Stage implements Runnable {
             if (surface.contentsLost()) {
                 setTransform();
             }
-            if (needsRedraw || surface.contentsLost()) {
+            if (needsFullRedraw || surface.contentsLost()) {
                 currentScene.redrawNotify();
             }
             
@@ -622,12 +623,14 @@ public class Stage implements Runnable {
             
             try {
                 currentScene.drawScene(g);
+                renderingErrorOccurred = false;
             }
             catch (ArrayIndexOutOfBoundsException ex) {
                 // The CoreGraphics system can still throw some ArrayIndexOutOfBoundsExceptions 
                 // in some rare cases. It may be from scaling a sprite to 
                 // have a width and height < 1.
                 appContext.setTalkBackField("pulpcore.platform.graphics.error", ex);
+                renderingErrorOccurred = true;
             }                
                 
             
