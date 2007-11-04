@@ -1,3 +1,18 @@
+0.10.5 (November 4, 2007)
+  * Examples: Added TileMap example
+  * Examples: Updated Starfield and Widgets examples
+  * Core: provided a workaround for Java 5 on Mac OS X Leopard that dropped every other frame when 
+    running at 60fps (Forcing a max of 58fps in this situation).
+  * Core: fixed possible ArrayIndexOutOfBoundsException when scaling down and using fractional
+    metrics. (Most users won't notice because this bug was rare and the renderer automatically 
+    recovers from errors - PulpCore never stops because of a graphics error).
+  * Tools: pulpcore.js now asks the user to restart Firefox if Java 1.3 is installed and the user 
+    just installed Java 6 via the XPI.
+  * Fixed Bug: Fixed access from JavaScript (LiveConnect) when jars are obfuscated 
+    (see BubbleMark example)
+  * Fixed Bug: Scene2D rendering error when dirty rectangles is disabled.
+  * Fixed Bug: typo in pulpcore.js
+  
 0.10.4 (October 20, 2007)
   * Fixed Bug: double-clicking an empty TextField caused an ArrayIndexOutOfBoundsException
     (tulsidas).

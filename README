@@ -11,5 +11,9 @@ There are two templates: Quick, and Project.
 To make your own Quick projects, put your Java source files, PNGs, JPEGs,
 and WAV files in /templates/quick/src/ and then run the Ant build file.
 
-Using OGG Vorbis audio is possible - see the Wiki for details.
+Using OGG Vorbis audio is possible. For details, see:
+http://code.google.com/p/pulpcore/wiki/OggHowTo
 
+To set up PulpCore for your IDE (NetBeans, Eclipse, or jEdit), and more 
+information, see the Wiki: 
+http://code.google.com/p/pulpcore/wiki/
