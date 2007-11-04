@@ -216,19 +216,24 @@ public final class AppletAppContext extends AppContext {
         
         Component inputComponent = app;
         surface = null;
+        boolean useBufferStrategy = false;
         
-        // Try to use BufferStrategy on Mac OS X.
-        // On the Mac OS X implmentation of Java, repainting is only allowed once very 17ms 
-        // (or 58.8 fps). 
-        // If an app tries to flush sooner than 17 ms from the last flush, the frame
-        // is ignored. So apps running at 60fps sometimes show only half the frames (30 fps).
-        // A workaround is to use BufferStategy. Note, this still occationally has dropped frames.
-        if (surface == null && CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
+        // Use BufferStrategy on:
+        // * Mac OS X Java 1.5 or newer 
+        // * All others on Java 1.6 or newer
+        if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
+            useBufferStrategy = true;
+        }
+        else if (CoreSystem.isJava16orNewer()) {
+            useBufferStrategy = true;
+        }
+        
+        if (surface == null && useBufferStrategy) {
             try {
                 Class.forName("java.awt.image.BufferStrategy");
                 surface = new BufferStrategySurface(app);
                 inputComponent = ((BufferStrategySurface)surface).getCanvas();
-                setTalkBackField("pulpcore.platform.surface", "BufferStrategy");
+                setTalkBackField("pulpcore.platform.surface", surface.toString());
             }
             catch (Exception ex) {
                 // ignore
@@ -241,7 +246,7 @@ public final class AppletAppContext extends AppContext {
         if (surface == null) {
             try {
                 surface = new BufferedImageSurface(app);
-                setTalkBackField("pulpcore.platform.surface", "BufferedImage");
+                setTalkBackField("pulpcore.platform.surface", surface.toString());
             }
             catch (Exception ex) {
                 // ignore
