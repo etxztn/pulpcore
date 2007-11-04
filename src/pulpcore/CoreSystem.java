@@ -44,43 +44,39 @@ public class CoreSystem {
     static {
         String osName = getJavaProperty("os.name");
         String osVersion = getJavaProperty("os.version");
+        String javaVersion = getJavaProperty("java.version");
         if (osName == null) {
             osName = "";
         }
         if (osVersion == null) {
             osVersion = "";
         }
+        if (javaVersion == null) {
+            javaVersion = "1.0";
+        }
         
         IS_MAC_OS_X = osName.equals("Mac OS X");
+        IS_MAC_OS_X_LEOPARD = osName.equals("Mac OS X") && (osVersion.compareTo("10.5") >= 0);
+        
         IS_WINDOWS = osName.startsWith("Windows");
         IS_WINDOWS_XP = osName.startsWith("Windows") && (osVersion.compareTo("5.1") >= 0);
-        
-        String javaVersion = getJavaProperty("java.version");
 
-        if (javaVersion != null) {
-            IS_JAVA_1_3 = (javaVersion.compareTo("1.3") >= 0);
-            IS_JAVA_1_4 = (javaVersion.compareTo("1.4") >= 0);
-            IS_JAVA_1_5 = (javaVersion.compareTo("1.5") >= 0);
-            IS_JAVA_1_6 = (javaVersion.compareTo("1.6") >= 0);
-            IS_JAVA_1_7 = (javaVersion.compareTo("1.7") >= 0);
-        }
-        else {
-            IS_JAVA_1_3 = false;
-            IS_JAVA_1_4 = false;
-            IS_JAVA_1_5 = false;
-            IS_JAVA_1_6 = false;
-            IS_JAVA_1_7 = false;
-        }
+        IS_JAVA_1_3 = (javaVersion.compareTo("1.3") >= 0);
+        IS_JAVA_1_4 = (javaVersion.compareTo("1.4") >= 0);
+        IS_JAVA_1_5 = (javaVersion.compareTo("1.5") >= 0);
+        IS_JAVA_1_6 = (javaVersion.compareTo("1.6") >= 0);
+        IS_JAVA_1_7 = (javaVersion.compareTo("1.7") >= 0);
     }
 
+    private static final boolean IS_MAC_OS_X;
+    private static final boolean IS_MAC_OS_X_LEOPARD;
+    private static final boolean IS_WINDOWS;
+    private static final boolean IS_WINDOWS_XP;
     private static final boolean IS_JAVA_1_3;
     private static final boolean IS_JAVA_1_4;
     private static final boolean IS_JAVA_1_5;
     private static final boolean IS_JAVA_1_6;
     private static final boolean IS_JAVA_1_7;
-    private static final boolean IS_MAC_OS_X;
-    private static final boolean IS_WINDOWS;
-    private static final boolean IS_WINDOWS_XP;
 
     private static Platform platform;
     
@@ -173,6 +169,13 @@ public class CoreSystem {
         return IS_MAC_OS_X;
     }
     
+    /**
+        Returns true if the current operating system is Mac OS X Leopard (10.5) or newer.
+    */
+    public static final boolean isMacOSXLeopardOrNewer() {
+        return IS_MAC_OS_X_LEOPARD;
+    }
+    
     
     /**
         Returns true if the current operating system is any version of Windows.
@@ -183,7 +186,7 @@ public class CoreSystem {
     
     
     /**
-        Returns true if the current operating system is any Windows XP (5.1) or newer.
+        Returns true if the current operating system is Windows XP (5.1) or newer.
     */
     public static final boolean isWindowsXPorNewer() {
         return IS_WINDOWS_XP;
