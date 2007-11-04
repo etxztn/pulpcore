@@ -109,7 +109,7 @@ public class BufferedImageSurface extends Surface {
     }
     
     
-    public void show(Rect[] dirtyRectangles, int numDirtyRectangles) {
+    public long show(Rect[] dirtyRectangles, int numDirtyRectangles) {
         
         this.dirtyRectangles = dirtyRectangles;
         this.numDirtyRectangles = numDirtyRectangles;
@@ -118,7 +118,7 @@ public class BufferedImageSurface extends Surface {
             repaintBounds.setBounds(0, 0, getWidth(), getHeight());
         }
         else if (numDirtyRectangles == 0) {
-            return;
+            return 0;
         }
         else {
             repaintBounds.setBounds(dirtyRectangles[0]);
@@ -128,7 +128,7 @@ public class BufferedImageSurface extends Surface {
         }
         
         if (repaintBounds.width <= 0 || repaintBounds.height <= 0) {
-            return;
+            return 0;
         }
         
         synchronized (paintLock) {
@@ -142,6 +142,7 @@ public class BufferedImageSurface extends Surface {
                 // ignore
             }
         }
+        return 0;
     }
     
     
@@ -177,6 +178,11 @@ public class BufferedImageSurface extends Surface {
         }
         
         contentsLost = false;
+    }
+    
+    
+    public String toString() {
+        return "BufferedImage";
     }
     
 }

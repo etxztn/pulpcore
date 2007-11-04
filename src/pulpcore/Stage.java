@@ -655,16 +655,6 @@ public class Stage implements Runnable {
             }
             doInfoSample();
                 
-            // Show surface (blocks until surface is updated)
-            if (surface.contentsLost() || numDirtyRectangles < 0) {
-                surface.show();
-            }
-            else {
-                surface.show(dirtyRectangles, numDirtyRectangles);
-            }
-            
-            appContext.notifyFrameComplete();
-            
             // Send pending sound data to sound system
             // (Don't create the sound engine if it's not already created)
             if (CoreSystem.getPlatform().isSoundEngineCreated()) {
@@ -674,6 +664,17 @@ public class Stage implements Runnable {
                     soundEngine.update(estimatedTimeUntilNextUpdate);
                 }
             }
+            
+            // Show surface (blocks until surface is updated)
+            long surfaceSleepTimeMicros;
+            if (surface.contentsLost() || numDirtyRectangles < 0) {
+                surfaceSleepTimeMicros = surface.show();
+            }
+            else {
+                surfaceSleepTimeMicros = surface.show(dirtyRectangles, numDirtyRectangles);
+            }
+            
+            appContext.notifyFrameComplete();
             
             // Sleep to create correct frame rate
             long currTimeMicros;
@@ -687,7 +688,8 @@ public class Stage implements Runnable {
                 currTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(goalTimeMicros);
                 
                 if (Build.DEBUG) {
-                    overlaySleepTime += (currTimeMicros - priorToSleepTime) / 1000;
+                    long sleepTimeMicros = currTimeMicros - priorToSleepTime;
+                    overlaySleepTime += (surfaceSleepTimeMicros + sleepTimeMicros) / 1000;
                 }
             }
             

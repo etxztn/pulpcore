@@ -106,8 +106,13 @@ public abstract class Surface {
     }
     
     
-    public final void show() {
-        show(null, -1);
+    /**
+        @return the number of microseconds slept before the frame was shown, if possible.
+        For example, a Surface  may return the number of microseconds waiting for the 
+        vertical blank interval. Returns zero if the surface did not sleep.
+    */
+    public final long show() {
+        return show(null, -1);
     }
     
     
@@ -122,8 +127,11 @@ public abstract class Surface {
         @param dirtyRectangles list of dirty rectangles
         @param numDirtyRectangles If -1, the entire surface needs to be drawn. If 0, none of the
         surface needs to be drawn.
+        @return the number of microseconds slept before the frame was shown, if possible.
+        For example, a Surface  may return the number of microseconds waiting for the 
+        vertical blank interval. Returns zero if the surface did not sleep.
     */
-    public abstract void show(Rect[] dirtyRectangles, int numDirtyRectangles);
+    public abstract long show(Rect[] dirtyRectangles, int numDirtyRectangles);
     
     
     public void getScreenshot(CoreImage image, int x, int y) {
