@@ -2,35 +2,43 @@
 // Scroll the mouse wheel or press the arrow keys to travel through the cosmos
 
 import pulpcore.CoreSystem;
+import pulpcore.image.CoreGraphics;
+import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene2D;
-import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
+import pulpcore.sprite.ImageSprite;
 import pulpcore.Stage;
 
 public class Starfield extends Scene2D {
     
+    int numStarImages = 3;
+    int numStars = 50;
     int zoomTimeRemaining;
     int zoomX;
     int zoomY;
     double zoomSpeed;
 
     public void load() {
-        add(new FilledSprite(0x000000));
-        for (int i = 0; i < 50; i++) {
-            add(new Star());
+        add(new ImageSprite("bg.jpg", 0, 0));
+        
+        CoreImage[] starImages = new CoreImage[numStarImages];
+        for (int i = 0; i < numStarImages; i++) {
+            starImages[i] = CoreImage.load("star" + i + ".png");
+        }
+        for (int i = 0; i < numStars; i++) {
+            int r = CoreMath.rand(0, numStarImages - 1);
+            add(new Star(starImages[r]));
         }
     }
     
     public void update(int elapsedTime) {
-        if (Input.getMouseWheelRotation() != 0) {
-            if (Input.getMouseWheelRotation() > 0) {
-                zoom(Input.getMouseWheelX(), Input.getMouseWheelY(), -.01);
-            }
-            else {
-                zoom(Input.getMouseWheelX(), Input.getMouseWheelY(), 1);
-            }
+        if (Input.getMouseWheelRotation() > 0) {
+            zoom(Input.getMouseWheelX(), Input.getMouseWheelY(), -.01);
+        }
+        else if (Input.getMouseWheelRotation() < 0) {
+            zoom(Input.getMouseWheelX(), Input.getMouseWheelY(), 1);
         }
         
         if (Input.isDown(Input.KEY_UP)) {
@@ -50,15 +58,14 @@ public class Starfield extends Scene2D {
         zoomTimeRemaining = 200;
     }
     
-    class Star extends FilledSprite {
+    class Star extends ImageSprite {
         
         double z;
         
-        public Star() {
-            super(CoreMath.rand(0, Stage.getWidth()), CoreMath.rand(0, Stage.getHeight()),
-                3, 3, 0xffffff);
-            angle.set(Math.PI / 4);
-            setZ(CoreMath.rand(1.0,5.0));
+        public Star(CoreImage image) {
+            super(image, CoreMath.rand(0, Stage.getWidth()), CoreMath.rand(0, Stage.getHeight()));
+            setZ(CoreMath.rand(1.0, 4.0));
+            setComposite(CoreGraphics.COMPOSITE_ADD);
         }
         
         public void update(int elapsedTime) {
@@ -68,8 +75,7 @@ public class Starfield extends Scene2D {
                 double speed = zoomSpeed * z * z / 3000;
                 double dx = (x.get() - zoomX) * elapsedTime * speed;
                 double dy = (y.get() - zoomY) * elapsedTime * speed;
-                z += elapsedTime * speed;
-                setSize(z, z);
+                setZ(z + elapsedTime * speed);
                 setLocation(x.get() + dx, y.get() + dy);
                 
                 if (x.get() < 0 || x.get() >= Stage.getWidth() ||
@@ -85,7 +91,8 @@ public class Starfield extends Scene2D {
         
         void setZ(double z) {
             this.z = z;
-            setSize(z, z);
+            setSize(z * 5, z * 5);
+            alpha.set(z >= 2 ? 255 : (int)(255 * (z-1)));
         }
     }
     
