@@ -4,7 +4,7 @@
     This template is designed for trying out PulpCore quickly without creating 
     a directory structure for a full project.
 -->
-<project name="PulpCore 0.10 Quick Project" default="build-and-run" basedir=".">
+<project name="PulpCore Quick Project" default="build-and-run" basedir=".">
 
     <property file="build.properties" />
     
