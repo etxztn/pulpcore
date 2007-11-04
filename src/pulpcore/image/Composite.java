@@ -72,9 +72,6 @@ abstract class Composite {
         // is needed - return the color.
         int ffracX = (fx & 0xff00) >> 8;
         int ffracY = (fy & 0xff00) >> 8;
-        if (ffracX == 0 && ffracY == 0) {
-            return imageData[offsetTop + (fx >> 16)];
-        }
         
         // Find left and right location
         int x = fx >> 16;
@@ -95,6 +92,10 @@ abstract class Composite {
         else {
             left = x;
             right = x + 1;
+        }
+        
+        if (ffracX == 0 && ffracY == 0) {
+            return imageData[offsetTop + left];
         }
         
         // Get the four colors
