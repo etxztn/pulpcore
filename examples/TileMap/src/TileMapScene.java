@@ -1,16 +1,21 @@
 // TileMapScene
 // Shows a scrolling tile-map with click-to-move.
 // Pixel-snapping is used to improve rendering speed of the map.
-// Images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
+// Rendering speed can be further improved by using opaque tiles.
+// Tile images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
 
 import pulpcore.animation.Easing;
+import pulpcore.animation.Fixed;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
+import pulpcore.math.CoreMath;
+import pulpcore.math.Transform;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
+import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
 
 public class TileMapScene extends Scene2D {
@@ -112,5 +117,77 @@ public class TileMapScene extends Scene2D {
             }
         }
         return new TileMap(tileMap, tileWidth, tileHeight);
+    }
+    
+    /**
+        A simple tile map.
+        Limitation: the maximum width and height of a TileMap 
+        (i.e. tileWidth*numTilesAcross and tileHeight*numTilesDown) should be less than 32768.
+    */
+    static class TileMap extends Sprite {
+        
+        private CoreImage[][] tileMap;
+        private int tileWidth;
+        private int tileHeight;
+        private int numTilesAcross;
+        private int numTilesDown;
+        
+        public final Fixed viewX = new Fixed(this);
+        public final Fixed viewY = new Fixed(this);
+        
+        public TileMap(CoreImage[][] tileMap, int tileWidth, int tileHeight) {
+            super(0, 0, Stage.getWidth(), Stage.getHeight());
+            this.tileMap = tileMap;
+            this.tileWidth = tileWidth;
+            this.tileHeight = tileHeight;
+            numTilesAcross = tileMap.length;
+            numTilesDown = tileMap[0].length;
+            
+            // Turn on pixel snapping for speed
+            pixelSnapping.set(true);
+        }
+        
+        public int getMapWidth() {
+            return tileWidth * numTilesAcross;
+        }
+        
+        public int getMapHeight() {
+            return tileHeight * numTilesDown;
+        }
+        
+        public boolean isScrolling() {
+            return viewX.isAnimating() || viewY.isAnimating();
+        }
+        
+        public void update(int elapsedTime) {
+            super.update(elapsedTime);
+            viewX.update(elapsedTime);
+            viewY.update(elapsedTime);
+        }
+        
+        protected void drawSprite(CoreGraphics g) {
+            // Sprite drawing: keep everything in fixed-point
+            int fViewX = viewX.getAsFixed();
+            int fViewY = viewY.getAsFixed();
+            int fTileWidth = CoreMath.toFixed(tileWidth);
+            int fTileHeight = CoreMath.toFixed(tileHeight);
+            
+            if (pixelSnapping.get()) {
+                fViewX = CoreMath.intPart(fViewX);
+                fViewY = CoreMath.intPart(fViewY);
+            }
+            
+            Transform t = g.getTransform();
+            g.pushTransform();
+            t.translate(fViewX, fViewY);
+            for (int j = 0; j < numTilesDown; j++) {
+                for (int i = 0; i < numTilesAcross; i++) {
+                    g.drawImage(tileMap[i][j]);
+                    t.translate(fTileWidth, 0);
+                }
+                t.translate(-numTilesAcross*fTileWidth, fTileHeight);
+            }
+            g.popTransform();
+        }
     }
 }
