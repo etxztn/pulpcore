@@ -73,16 +73,19 @@ public class BufferStrategySurface extends Surface {
     private boolean osRepaint;
     private boolean useDirtyRects;
     
-    // For Mac OS X synching
-    // All times in microseconds
-    private static final long MAC_MIN_DURATION = 1000000 / 58;
+    // For Mac OS X workaround
+    // All times in milliseconds
+    private static final long MAC_MIN_DURATION = 17;
     private boolean doAppleWorkaroundSync;
-    private long bufferSwapDuration = 0;
     private long lastPaintTime = 0;
     
     public BufferStrategySurface(Container container) {
         this.container = container;
         this.canvas = new Canvas();
+        
+        container.setIgnoreRepaint(true);
+        canvas.setIgnoreRepaint(true);
+        
         container.removeAll();
         container.setLayout(null);
         canvas.setSize(1, 1);
@@ -206,19 +209,18 @@ public class BufferStrategySurface extends Surface {
                         break;
                     }
                 }
+                
                 if (doAppleWorkaroundSync) {
                     sleepTime += sync();
                 }
-                long startTime = CoreSystem.getTimeMicros();
                 bufferStrategy.show();
-                bufferSwapDuration = CoreSystem.getTimeMicros() - startTime;
                 
                 if (bufferStrategy.contentsLost()) {
                     contentsLost = true;
                 }
                 else {
                     contentsLost = false;
-                    lastPaintTime = CoreSystem.getTimeMicros();
+                    lastPaintTime = System.currentTimeMillis();
                     break;
                 }
             }
@@ -237,7 +239,6 @@ public class BufferStrategySurface extends Surface {
     
     private void createBufferStrategy() {
         // First, try Copied method (double buffering)
-        // Removed because of 
         //try {
         //    canvas.createBufferStrategy(2, new BufferCapabilities(
         //        new ImageCapabilities(true),
@@ -257,14 +258,14 @@ public class BufferStrategySurface extends Surface {
     private long sync() {
         long startTime = CoreSystem.getTimeMicros();
         while (true) {
-            long currTime = CoreSystem.getTimeMicros();
+            long currTime = System.currentTimeMillis();
             if (currTime < lastPaintTime) {
                 // Clock changed? just break
                 break;
             }
-            if (currTime < lastPaintTime + MAC_MIN_DURATION - bufferSwapDuration) {
+            if (currTime < lastPaintTime + MAC_MIN_DURATION) {
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep(0);
                 }
                 catch (InterruptedException ex) { }
             }
