@@ -82,10 +82,6 @@ public class BufferStrategySurface extends Surface {
     public BufferStrategySurface(Container container) {
         this.container = container;
         this.canvas = new Canvas();
-        
-        container.setIgnoreRepaint(true);
-        canvas.setIgnoreRepaint(true);
-        
         container.removeAll();
         container.setLayout(null);
         canvas.setSize(1, 1);
@@ -121,7 +117,6 @@ public class BufferStrategySurface extends Surface {
     
     
     public boolean isReady() {
-        
         Dimension size = container.getSize();
         if (size.width <= 0 || size.height <= 0) {
             return false;
