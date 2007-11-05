@@ -66,6 +66,8 @@ public class ConvertSoundTask extends Task {
             throw new BuildException("The destFile is not specified.");
         }
         
+        log("Converting: " + srcFile, Project.MSG_VERBOSE);
+        
         try {
             convert();
         }

@@ -91,6 +91,8 @@ public class ConvertImageTask extends Task {
                 optimizationLevel + ".");
         }
         
+        log("Converting: " + srcFile, Project.MSG_VERBOSE);
+        
         try {
             convert();
         }
