@@ -57,9 +57,9 @@ public class Widgets extends Scene2D {
         form.setAnchor(Sprite.CENTER);
         form.add(label);
         form.add(label2);
-        form.add(createBackground(textField));
+        form.add(createTextFieldBackground(textField));
         form.add(textField);
-        form.add(createBackground(passwordField));
+        form.add(createTextFieldBackground(passwordField));
         form.add(passwordField);
         form.add(okButton);
         form.add(checkbox);
@@ -73,25 +73,24 @@ public class Widgets extends Scene2D {
         addLayer(form);
     }
     
-    public Sprite createBackground(TextField field) {
+    public Sprite createTextFieldBackground(TextField field) {
         FilledSprite background = new FilledSprite(
-            field.x.getAsInt() - 4, field.y.getAsInt(), 
-            field.width.getAsInt() + 8, field.height.getAsInt() + 8, 0xffffff);
+            field.x.get() - 4, field.y.get(), 
+            field.width.get() + 8, field.height.get() + 8, 0xffffff);
         background.setBorderSize(1);
         background.setBorderColor(0x000000);
-        background.setAnchor(Sprite.VCENTER | Sprite.LEFT);
+        background.setAnchor(Sprite.WEST);
         return background;
     }
     
     public void update(int elapsedTime) {
         if (checkbox.isClicked()) {
-            double newAngle = checkbox.isSelected() ? Math.PI / 16 : 0;
+            double newAngle = checkbox.isSelected() ? Math.PI/16 : 0;
             form.angle.animateTo(newAngle, 500, Easing.ELASTIC_OUT);
         }
         if (okButton.isClicked()) {
             answer.setText("Hello, " + textField.getText() + "!");
         }
-        
         if (Input.isPressed(Input.KEY_TAB)) {
             if (textField.hasFocus()) {
                 textField.setFocus(false);
@@ -103,5 +102,4 @@ public class Widgets extends Scene2D {
             }
         }
     }
- 
 }
