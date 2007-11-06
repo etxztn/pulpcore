@@ -1,4 +1,5 @@
 // Plays sounds with level and pan animation.
+// Try clicking near the ear and far from the ear.
 import pulpcore.animation.Fixed;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
