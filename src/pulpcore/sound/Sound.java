@@ -108,7 +108,9 @@ public abstract class Sound {
     
     
     /**
-        Plays this sound clip.
+        Plays this sound clip. The Sound is played at full volume with no panning.
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
     */
     public final void play() {
         play(new Fixed(1.0), new Fixed(0), false);
@@ -116,8 +118,10 @@ public abstract class Sound {
     
         
     /**
-        Plays this sound clip with the specified level (0.0 to 1.0). The level may have a property
-        animation attached. 
+        Plays this sound clip with the specified colume level (0.0 to 1.0). 
+        The level may have a property animation attached.
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
     */
     public final void play(Fixed level) {
         play(level, new Fixed(0), false);
@@ -127,6 +131,8 @@ public abstract class Sound {
     /**
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0).
         The level and pan may have a property animation attached. 
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
     */
     public final void play(Fixed level, Fixed pan) {
         play(level, pan, false);
@@ -135,7 +141,9 @@ public abstract class Sound {
     
     /**
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0),
-        optionally looping. The level and pan may have a property animation attached. 
+        optionally looping. The level and pan may have a property animation attached.
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
     */
     public final void play(Fixed level, Fixed pan, boolean loop) {
 

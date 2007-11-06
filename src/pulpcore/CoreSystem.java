@@ -490,9 +490,12 @@ public class CoreSystem {
     
     
     /**
-        Sets the audio mute setting for this application. There may be a slight delay before
-        the new setting takes affect.
-        @param mute true if the application is muted (silent), false otherwise
+        Sets the audio mute setting for this application. This setting takes effect immediately 
+        for all calls to {@link pulpcore.sound.Sound#play()}.
+        <p>
+        Due to buffering, if any sounds are playing when this setting is changed, there may be a 
+        slight delay before the new setting takes affect on those playing sounds. 
+        @param mute true to mute the application, false otherwise
     */
     public static void setMute(boolean mute) {
         getThisAppContext().setMute(mute);
