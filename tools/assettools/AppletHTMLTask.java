@@ -217,6 +217,10 @@ public class AppletHTMLTask extends Task {
         String src = "";
         if (displaySource != null && displaySource.exists()) {
             src = readTextFile(new FileInputStream(displaySource));
+            src = src.replace("&", "&amp;");
+            src = src.replace("\"", "&quot;");
+            src = src.replace("<", "&lt;");
+            src = src.replace(">", "&gt;");
         }
         
         String appletHTML;
