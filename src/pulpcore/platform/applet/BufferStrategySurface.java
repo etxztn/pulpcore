@@ -75,9 +75,9 @@ public class BufferStrategySurface extends Surface {
     
     // For Mac OS X workaround
     // All times in milliseconds
-    private static final long MAC_MIN_DURATION = 17;
+    private static final int MAC_MIN_DURATION = 18;
     private boolean doAppleWorkaroundSync;
-    private long lastPaintTime = 0;
+    private long nextSyncTime = 0;
     
     public BufferStrategySurface(Container container) {
         this.container = container;
@@ -94,7 +94,17 @@ public class BufferStrategySurface extends Surface {
     
 
     public int getRefreshRate() {
-        return -1;
+        if (doAppleWorkaroundSync) {
+            if (MAC_MIN_DURATION > 0) {
+                return 1000 / MAC_MIN_DURATION;
+            }
+            else {
+                return 32768;
+            }
+        }
+        else {
+            return -1;
+        }
     }
     
     
@@ -171,8 +181,17 @@ public class BufferStrategySurface extends Surface {
     
     public long show(Rect[] dirtyRectangles, int numDirtyRectangles) {
         
-        if (bufferStrategy == null || image == null || numDirtyRectangles == 0) {
+        if (bufferStrategy == null || image == null) {
             return 0;
+        }
+        
+        if (numDirtyRectangles == 0) {
+            if (doAppleWorkaroundSync) {
+                return sync();
+            }
+            else {
+                return 0;
+            }
         }
         
         long sleepTime = 0;
@@ -206,16 +225,22 @@ public class BufferStrategySurface extends Surface {
                 }
                 
                 if (doAppleWorkaroundSync) {
-                    sleepTime += sync();
+                    // Call show() both before and after the sync
+                    bufferStrategy.show();
+                    if (System.currentTimeMillis() < nextSyncTime) {
+                        sleepTime += sync();
+                        bufferStrategy.show();
+                    }
                 }
-                bufferStrategy.show();
+                else {
+                    bufferStrategy.show();
+                }
                 
                 if (bufferStrategy.contentsLost()) {
                     contentsLost = true;
                 }
                 else {
                     contentsLost = false;
-                    lastPaintTime = System.currentTimeMillis();
                     break;
                 }
             }
@@ -254,18 +279,19 @@ public class BufferStrategySurface extends Surface {
         long startTime = CoreSystem.getTimeMicros();
         while (true) {
             long currTime = System.currentTimeMillis();
-            if (currTime < lastPaintTime) {
-                // Clock changed? just break
+            if (currTime >= nextSyncTime || currTime < nextSyncTime - MAC_MIN_DURATION) {
+                nextSyncTime = currTime + MAC_MIN_DURATION;
                 break;
-            }
-            if (currTime < lastPaintTime + MAC_MIN_DURATION) {
-                try {
-                    Thread.sleep(0);
-                }
-                catch (InterruptedException ex) { }
             }
             else {
-                break;
+                int sleepTime = 1;
+                if (currTime == nextSyncTime - 1) {
+                    sleepTime = 0;
+                }
+                try {
+                    Thread.sleep(sleepTime);
+                }
+                catch (InterruptedException ex) { }
             }
         }
         return CoreSystem.getTimeMicros() - startTime;
