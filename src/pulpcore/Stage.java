@@ -684,6 +684,10 @@ public class Stage implements Runnable {
             if (desiredFPS == MAX_FPS || surface.getRefreshRate() > 0) {
                 Thread.yield();
                 currTimeMicros = CoreSystem.getTimeMicros();
+                
+                if (Build.DEBUG) {
+                    overlaySleepTime += surfaceSleepTimeMicros / 1000;
+                }
             }
             else {
                 long goalTimeMicros = lastTimeMicros + 1000000L / desiredFPS;
