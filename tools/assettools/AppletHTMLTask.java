@@ -234,7 +234,10 @@ public class AppletHTMLTask extends Task {
         appletHTML = appletHTML.replace("@BGCOLOR@", bgcolor);
         appletHTML = appletHTML.replace("@FGCOLOR@", fgcolor);
         appletHTML = appletHTML.replace("@APPLET_PARAMS@", appletParams);
-        appletHTML = appletHTML.replace("@SRC@", src);        
+        appletHTML = appletHTML.replace("@SRC@", src);
+        if (scene != null) {
+            appletHTML = appletHTML.replace("@SCENE@", scene);
+        }
         
         // Write to dest directory: index.html, pulpcore.js, splash.gif
         writeTextFile(new File(destDir, "index.html"), appletHTML);
