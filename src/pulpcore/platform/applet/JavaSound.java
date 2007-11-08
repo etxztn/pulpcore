@@ -564,7 +564,7 @@ public class JavaSound implements SoundEngine {
                         if (CoreSystem.isMacOSX() || !CoreSystem.isJava15orNewer()) {
                             /*
                                 The JavaSound "glitch". Happens on Java 1.4 and all known
-                                Mac OS X versions.
+                                Mac OS X versions (tested up to Java 1.5 on Leopard).
                                 
                                 This is a workaround for a bug where 4 frames are repeated in the  
                                 audio output. Since the 4 frames are repeated at a predictable 

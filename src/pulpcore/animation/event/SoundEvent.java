@@ -40,6 +40,11 @@ public class SoundEvent extends TimelineEvent {
     private Sound sound;
     
     
+    /**
+        Creates a sound event
+        @param sound the sound to play
+        @param delay the delay, in milliseconds, before playing the sound.
+    */
     public SoundEvent(Sound sound, int delay) {
         super(delay);
         this.sound = sound;
