@@ -620,6 +620,8 @@ public abstract class Input {
     
     /**
         Returns true if the primary mouse button is pressed. 
+        @see #getMousePressX()
+        @see #getMousePressY()
     */
     public static boolean isMousePressed() {
         return isPressed(KEY_MOUSE_BUTTON_1);
@@ -627,7 +629,9 @@ public abstract class Input {
     
     
     /**
-        Returns true if the primary mouse button is released. 
+        Returns true if the primary mouse button is released.
+        @see #getMouseReleaseX()
+        @see #getMouseReleaseY()
     */
     public static boolean isMouseReleased() {
         return isReleased(KEY_MOUSE_BUTTON_1);
@@ -636,6 +640,8 @@ public abstract class Input {
     
     /**
         Returns true if the primary mouse button is down. 
+        @see #getMouseX()
+        @see #getMouseY()
     */
     public static boolean isMouseDown() {
         return isDown(KEY_MOUSE_BUTTON_1);
@@ -659,6 +665,8 @@ public abstract class Input {
     
     
     /**
+        Gets the x location of the last mouse press. To check if the mouse was just pressed, use 
+        {@link #isMousePressed()}. 
         @return the x location of the last mouse press.
     */
     public static int getMousePressX() {
@@ -667,6 +675,8 @@ public abstract class Input {
     
     
     /**
+        Gets the y location of the last mouse press. To check if the mouse was just pressed, use 
+        {@link #isMousePressed()}. 
         @return the y location of the last mouse press.
     */
     public static int getMousePressY() {
@@ -675,6 +685,8 @@ public abstract class Input {
     
     
     /**
+        Gets the x location of the last mouse release. To check if the mouse was just relesaed, use 
+        {@link #isMouseReleased()}. 
         @return the x location of the last mouse release.
     */
     public static int getMouseReleaseX() {
@@ -683,6 +695,8 @@ public abstract class Input {
     
     
     /**
+        Gets the y location of the last mouse release. To check if the mouse was just relesaed, use 
+        {@link #isMouseReleased()}. 
         @return the y location of the last mouse release.
     */
     public static int getMouseReleaseY() {
@@ -691,6 +705,8 @@ public abstract class Input {
     
     
     /**
+        Gets the x location of the last mouse wheel rotation. To check if the mouse wheel was just
+        rotated, use {@link #getMouseWheelRotation()}. 
         @return the x location of the last mouse wheel rotation.
     */
     public static int getMouseWheelX() {
@@ -699,6 +715,8 @@ public abstract class Input {
     
     
     /**
+        Gets the y location of the last mouse wheel rotation. To check if the mouse wheel was just
+        rotated, use {@link #getMouseWheelRotation()}. 
         @return the y location of the last mouse wheel rotation.
     */
     public static int getMouseWheelY() {
@@ -715,6 +733,8 @@ public abstract class Input {
         
         @return negative values if the mouse wheel was rotated up (away from the user), and 
         positive values if the mouse wheel was rotated down (toward the user).
+        @see #getMouseWheelX()
+        @see #getMouseWheelY()
     */
     public static int getMouseWheelRotation() {
         return getThisInputSystem().mouseWheel;
