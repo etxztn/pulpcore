@@ -75,7 +75,7 @@ public class BufferStrategySurface extends Surface {
     
     // For Mac OS X workaround
     // All times in milliseconds
-    private static final int MAC_MIN_DURATION = 18;
+    private static final int MAC_MIN_DURATION = 18; // Delay can be from 17 to 17.99999... ms
     private boolean doAppleWorkaroundSync;
     private long nextSyncTime = 0;
     
@@ -225,10 +225,11 @@ public class BufferStrategySurface extends Surface {
                 }
                 
                 if (doAppleWorkaroundSync) {
-                    // Call show() both before and after the sync
+                    // Call show(), sync, and if there is enough time, call show() again
                     bufferStrategy.show();
-                    if (System.currentTimeMillis() < nextSyncTime) {
-                        sleepTime += sync();
+                    boolean showAgain = (System.currentTimeMillis() < nextSyncTime);
+                    sleepTime += sync();
+                    if (showAgain) {
                         bufferStrategy.show();
                     }
                 }
