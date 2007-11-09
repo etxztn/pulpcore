@@ -235,9 +235,7 @@ public class AppletHTMLTask extends Task {
         appletHTML = appletHTML.replace("@FGCOLOR@", fgcolor);
         appletHTML = appletHTML.replace("@APPLET_PARAMS@", appletParams);
         appletHTML = appletHTML.replace("@SRC@", src);
-        if (scene != null) {
-            appletHTML = appletHTML.replace("@SCENE@", scene);
-        }
+        appletHTML = appletHTML.replace("@TITLE@", getProjectTitle());
         
         // Write to dest directory: index.html, pulpcore.js, splash.gif
         writeTextFile(new File(destDir, "index.html"), appletHTML);
@@ -245,6 +243,21 @@ public class AppletHTMLTask extends Task {
             readTextFile(getClass().getResourceAsStream("/pulpcore.js")));
         writeBinaryFile(new File(destDir, "splash.gif"),
             readBinaryFile(getClass().getResourceAsStream("/splash.gif")));        
+    }
+    
+    
+    private String getProjectTitle() {
+        String title = "Project";
+        // The project title is displayed in the HTML title.
+        // Since there is no mechanism to specify the title, use the archive name.
+        // There's no plans to create such mechanism since people can create their own
+        // HTML template.
+        if (archive.toLowerCase().endsWith(".jar")) {
+            title = archive.substring(0, archive.length() - 4);
+        }
+        // Replace dashes with spaces, so "HelloWorld-1.0" becomes "HelloWorld 1.0".
+        title = title.replace("-", " ");
+        return title;
     }
     
     
