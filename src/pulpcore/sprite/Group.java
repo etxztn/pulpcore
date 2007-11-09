@@ -32,11 +32,14 @@ package pulpcore.sprite;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import pulpcore.Build;
+import pulpcore.CoreSystem;
 import pulpcore.image.CoreGraphics;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
 import pulpcore.scene.Scene2D;
+import pulpcore.Stage;
 
 /**
     A container of Sprites.
@@ -48,6 +51,8 @@ public class Group extends Sprite {
     private static final int MOD_NONE = 0;
     private static final int MOD_ADDED = 1;
     private static final int MOD_REMOVED = 2;
+    
+    private static boolean threadDebug = false;
 
     private ArrayList sprites = new ArrayList();
     private ArrayList previousSprites = null;
@@ -60,6 +65,36 @@ public class Group extends Sprite {
     private int fInnerX;
     private int fInnerY;
     private Transform transformForChildren = new Transform();
+    
+    
+    /**
+        Enables or disables thread debugging on the "debug" build of PulpCore. 
+        <p>
+        PulpCore is a single-threaded architecture, but some apps (notably, networked apps) may 
+        run in multiple threads. If your app is getting ConcurrentModificationExceptions, enabling 
+        thread debugging will help track down the root of the problem in your app's thread code.
+        <p>
+        If thread debugging is enabled, any Group's add(), remove(), and removeAll() methods will 
+        print an error to the console if they are invoked from any thread other than the animation 
+        thread.
+        <p>
+        Thread debugging is disabled by default.
+        <p>
+         Thread debugging cannot be enabled in the "release" build of PulpCore.
+         @see #getThreadDebug
+    */
+    public static void setThreadDebug(boolean threadDebug) {
+        Group.threadDebug = threadDebug;
+    }
+    
+    
+    /**
+        @return true if thread debugging is enabled.
+        @see #setThreadDebug(boolean)
+    */
+    public static boolean getThreadDebug() {
+        return Build.DEBUG & Group.threadDebug;
+    }
     
     
     public Group() {
@@ -164,10 +199,21 @@ public class Group extends Sprite {
     //
     
     
+    private void checkThread() {
+        if (Build.DEBUG && threadDebug) {
+            if (!Stage.isAnimationThread()) {
+                CoreSystem.print("Thread issue (ignoring)", 
+                    new IllegalStateException("Group modified outside the animation thread."));
+            }
+        }
+    }
+    
+    
     /**
         Adds a Sprite to this Group.
     */
     public void add(Sprite sprite) {
+        checkThread();
         if (sprite != null && !sprites.contains(sprite)) {
             modActions |= MOD_ADDED;
             modCount++;
@@ -182,6 +228,7 @@ public class Group extends Sprite {
         Removes a Sprite from this Group.
     */
     public void remove(Sprite sprite) {
+        checkThread();
         if (sprite != null) {
             boolean wasContained = sprites.remove(sprite);
             if (wasContained) {
@@ -196,6 +243,7 @@ public class Group extends Sprite {
         Removes all Sprites from this Group.
     */
     public void removeAll() {
+        checkThread();
         if (sprites.size() > 0) {
             modActions |= MOD_REMOVED;
             modCount++;
