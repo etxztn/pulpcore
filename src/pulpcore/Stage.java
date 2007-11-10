@@ -456,7 +456,7 @@ public class Stage implements Runnable {
         if (scene != null) {
             currentScene = null;
             // Scene destruction needs to occur in the app context for this stage
-            appContext.invokeAndWait("PulpCore-Stage-Destroy", 1000, new Runnable() {
+            appContext.invokeAndWait("PulpCore-StageDestroy", 1000, new Runnable() {
                 public void run() {
                     scene.unload();
                     clearSceneStack();

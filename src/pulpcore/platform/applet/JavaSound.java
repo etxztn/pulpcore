@@ -147,7 +147,7 @@ public class JavaSound implements SoundEngine {
             // Without this 2nd thread, a faint "Geiger-counter" noise is audible on top of
             // sound playback (it is especially noticable when the sound is a pure waveform).
             if (CoreSystem.isWindows() && CoreSystem.isJava15orNewer()) {
-                new Thread() {
+                new Thread("PulpCore-Win32SoundInit") {
                     public void run() {
                         try {
                             AudioFormat format = getFormat(sampleRates[0]);
