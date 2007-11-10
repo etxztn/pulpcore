@@ -189,7 +189,7 @@ public abstract class Input {
     public static final int KEY_M               = 0x4d;
     public static final int KEY_N               = 0x4e;
     public static final int KEY_O               = 0x4f;
-    public static final int KEY_P               = 0x40;
+    public static final int KEY_P               = 0x50;
     public static final int KEY_Q               = 0x51;
     public static final int KEY_R               = 0x52;
     public static final int KEY_S               = 0x53;
