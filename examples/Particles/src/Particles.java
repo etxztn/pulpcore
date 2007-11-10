@@ -64,7 +64,7 @@ public class Particles extends Scene2D {
             
             CoreImage image = images[CoreMath.rand(0, images.length - 1)];
             Sprite sprite = new ImageSprite(image, startX, startY);
-            sprite.setAnchor(Sprite.HCENTER | Sprite.VCENTER);
+            sprite.setAnchor(Sprite.CENTER);
             sprite.setSize(size, size);
             particleLayer.add(sprite);
             

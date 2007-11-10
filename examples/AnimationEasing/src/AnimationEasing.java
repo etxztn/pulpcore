@@ -46,9 +46,9 @@ public class AnimationEasing extends Scene2D {
     public void load() {
         CoreFont font = CoreFont.getSystemFont().tint(CoreGraphics.WHITE);
         icon = new ImageSprite("earth.png", 140, 240);
-        icon.setAnchor(Sprite.HCENTER | Sprite.VCENTER);
+        icon.setAnchor(Sprite.CENTER);
         label = new Label(font, "", 320, 20);
-        label.setAnchor(Sprite.HCENTER | Sprite.TOP);
+        label.setAnchor(Sprite.NORTH);
         
         add(new ImageSprite("background.png", 0, 0));
         add(icon);
