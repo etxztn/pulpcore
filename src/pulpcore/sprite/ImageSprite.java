@@ -224,7 +224,6 @@ public class ImageSprite extends Sprite {
     protected int getAnchorY() {
         if (image != null && getAnchor() == DEFAULT) {
             return CoreMath.toFixed(image.getHotspotY());
-            //return image.getHotspotY();
         }
         else {
             return super.getAnchorY();
