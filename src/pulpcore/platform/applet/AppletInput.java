@@ -73,6 +73,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     private int appletMouseWheelY = -1;
     private int appletMouseWheel = 0;
     private boolean appletHasKeyboardFocus;
+    private boolean appletIsMouseInside;
     private int focusCountdown;
     
     private StringBuffer textInputSinceLastPoll = new StringBuffer();
@@ -170,6 +171,9 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         super.mouseWheelY = appletMouseWheelY;
         super.mouseWheel = appletMouseWheel;
         super.hasKeyboardFocus = appletHasKeyboardFocus;
+        super.isMouseInside = appletIsMouseInside && 
+            appletMouseX >= 0 && appletMouseY >= 0 && 
+            appletMouseX < comp.getWidth() && appletMouseY < comp.getHeight();
         
         appletMouseWheel = 0;
         
@@ -512,6 +516,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             appletMouseY = e.getY();
             appletMousePressX = appletMouseX;
             appletMousePressY = appletMouseY;
+            appletIsMouseInside = true;
         }
     }
 
@@ -522,6 +527,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             
             appletMouseReleaseX = e.getX();
             appletMouseReleaseY = e.getY();
+            appletIsMouseInside = true;
         } 
         
         // Attempt to fix mouse cursor bug. In Scared, the crosshair cursor was reverting to 
@@ -565,6 +571,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             
             appletMouseReleaseX = e.getX();
             appletMouseReleaseY = e.getY();
+            appletIsMouseInside = true;
         }
     }
 
@@ -576,6 +583,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
 
     public void mouseExited(MouseEvent e) {
         mouseMoved(e);
+        appletIsMouseInside = false;
     }
 
 
@@ -593,6 +601,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         synchronized (this) {
             appletMouseX = e.getX();
             appletMouseY = e.getY();
+            appletIsMouseInside = true;
             /*
             boolean mouseInside = comp.contains(mouseX, mouseY);
             if (!mouseInside) {
@@ -620,6 +629,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             
             int rotation = e.getWheelRotation();
             appletMouseWheel += (rotation < 0) ? -1 : (rotation > 0) ? 1 : 0;
+            appletIsMouseInside = true;
         }
     }
 

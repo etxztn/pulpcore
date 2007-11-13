@@ -361,6 +361,7 @@ public abstract class Input {
     protected int mouseWheelY;
     protected int mouseWheel;
     protected boolean hasKeyboardFocus;
+    protected boolean isMouseInside;
               
     protected boolean textInputMode;
     protected String textInput = "";
@@ -615,6 +616,14 @@ public abstract class Input {
     */
     public static boolean isMetaDown() {
         return isDown(KEY_LEFT_META) || isDown(KEY_RIGHT_META);
+    }
+    
+    
+    /**
+        Returns true if the mouse is inside the Stage.
+    */
+    public static boolean isMouseInside() {
+        return getThisInputSystem().isMouseInside;
     }
     
     
