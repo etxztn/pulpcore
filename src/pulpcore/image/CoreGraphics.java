@@ -89,8 +89,13 @@ public class CoreGraphics {
     */
     public static final int COMPOSITE_ADD = 2;
     
+    /** 
+        @see #setComposite(int) 
+    */
+    public static final int COMPOSITE_MULT = 3;
+    
     private static final Composite[] COMPOSITES = {
-        new CompositeSrcOver(), new CompositeSrc(), new CompositeAdd()
+        new CompositeSrcOver(), new CompositeSrc(), new CompositeAdd(), new CompositeMult(), 
     };
     
     
@@ -506,7 +511,7 @@ public class CoreGraphics {
     //
    
     
-    /**
+    /*
         Draws a line using the current color. This method draws
         lines at integer coordinates. The transform scale and rotation is 
         ignored.
@@ -515,9 +520,10 @@ public class CoreGraphics {
         no anti-aliasing and lines may appear distorted when clipped. 
         This method is only provided for debugging purposes. 
     */
-    public void drawLine(int x1, int y1, int x2, int y2) {
+    /*
+    public void drawLineOld(int x1, int y1, int x2, int y2) {
         
-        if (alpha == 0) {
+        if (srcAlphaPremultiplied == 0) {
             return;
         }
         
@@ -664,13 +670,323 @@ public class CoreGraphics {
             }
         }
     }
+    */
+    
+    
+    /**
+        Draws a line using the current color.
+    */
+    public void drawLine(int x1, int y1, int x2, int y2) {
+        drawLineFixedPoint(
+            CoreMath.toFixed(x1),
+            CoreMath.toFixed(y1),
+            CoreMath.toFixed(x2),
+            CoreMath.toFixed(y2), true);
+    }
+    
+    
+    /**
+        Draws a line using the current color.
+        @param drawLastPoint if false, the last point in the line is not drawn, which
+        is useful for drawing continuous lines made of several line segments (like beziers)
+    */
+    public void drawLine(int x1, int y1, int x2, int y2, boolean drawLastPoint) {
+        drawLineFixedPoint(
+            CoreMath.toFixed(x1),
+            CoreMath.toFixed(y1),
+            CoreMath.toFixed(x2),
+            CoreMath.toFixed(y2), drawLastPoint);
+    }
+    
+    
+    /**
+        Draws a line using the current color.
+    */
+    public void drawLine(double x1, double y1, double x2, double y2) {
+        drawLineFixedPoint(
+            CoreMath.toFixed(x1),
+            CoreMath.toFixed(y1),
+            CoreMath.toFixed(x2),
+            CoreMath.toFixed(y2), true);
+    }
+    
+    
+    /**
+        Draws a line using the current color.
+        @param drawLastPoint if false, the last point in the line is not drawn, which
+        is useful for drawing continuous lines made of several line segments (like beziers).
+    */
+    public void drawLine(double x1, double y1, double x2, double y2, boolean drawLastPoint) {
+        drawLineFixedPoint(
+            CoreMath.toFixed(x1),
+            CoreMath.toFixed(y1),
+            CoreMath.toFixed(x2),
+            CoreMath.toFixed(y2), drawLastPoint);
+    }
+    
+    
+    /**
+        Draws a line (at fixed-point coordinates) using the current color.
+    */
+    public void drawLineFixedPoint(int x1, int y1, int x2, int y2) {
+        drawLineFixedPoint(x1, y1, x2, y2, true);
+    }
+    
+    
+    /**
+        Draws a line (at fixed-point coordinates) using the current color.
+        @param drawLastPoint if false, the last point in the line is not drawn, which
+        is useful for drawing continuous lines made of several line segments (like beziers).
+    */
+    public void drawLineFixedPoint(int x1, int y1, int x2, int y2, boolean drawLastPoint) {
+        if (srcAlphaPremultiplied == 0) {
+            return;
+        }
+        
+        pushTransform();
+        transform.translate(x1, y1);
+        drawLineToFixedPoint(x2 - x1, y2 - y1, drawLastPoint);
+        popTransform();
+    }
+    
+    
+    ///**
+    //    Draws a line from the current transform's origin to the origin plus (dx, dy)
+    //    using the current color. This method is useful for drawing a series of line segments,
+    //    like a bezier curve.
+    //*/
+    //public void drawLineTo(int dx, int dy) {
+    //    drawLineToFixedPoint(CoreMath.toFixed(dx), CoreMath.toFixed(dy), false);
+    //}
+    //
+    //
+    ///**
+    //    Draws a line from the current transform's origin to the origin plus (dx, dy)
+    //    using the current color. This method is useful for drawing a series of line segments,
+    //    like a bezier curve.
+    //*/
+    //public void drawLineTo(double dx, double dy) {
+    //    drawLineToFixedPoint(CoreMath.toFixed(dx), CoreMath.toFixed(dy), false);
+    //}
+    //
+    //
+    ///**
+    //    Draws a line from the current transform's origin to the origin plus (dx, dy)
+    //    (at fixed-point coordinates) using the current color. This method is useful for drawing a 
+    //    series of line segments,
+    //    like a bezier curve.
+    //*/
+    //public void drawLineToFixedPoint(int dx, int dy) {
+    //    drawLineToFixedPoint(dx, dy, false);
+    //}
+        
+    
+    /**
+        Draws a line (at fixed-point coordinates) using the current color.
+    */
+    private void drawLineToFixedPoint(int dx, int dy, boolean drawLastPixel) {
+        if (srcAlphaPremultiplied == 0) {
+            return;
+        }
+        
+        int x1 = transform.getTranslateX();
+        int y1 = transform.getTranslateY();
+        
+        pushTransform();
+        transform.translate(dx, dy);
+        int x2 = transform.getTranslateX();
+        int y2 = transform.getTranslateY();
+            
+        // Get ready to draw
+        transform.clear();
+        
+        if (!fractionalMetrics) {
+            x1 = CoreMath.intPart(x1);
+            y1 = CoreMath.intPart(y1);
+            x2 = CoreMath.intPart(x2);
+            y2 = CoreMath.intPart(y2);
+        }
+        
+        // Clip - Sutherland-Cohen algorithm
+        int xmin = CoreMath.toFixed(clipX);
+        int xmax = xmin + CoreMath.toFixed(clipWidth);
+        int ymin = CoreMath.toFixed(clipY);
+        int ymax = ymin + CoreMath.toFixed(clipHeight);
+       
+        int clipCode1 = 
+            (x1 < xmin ? CLIP_CODE_LEFT : 0) | 
+            (x1 > xmax ? CLIP_CODE_RIGHT : 0) | 
+            (y1 < ymin ? CLIP_CODE_ABOVE : 0) | 
+            (y1 > ymax ? CLIP_CODE_BELOW : 0);
+        int clipCode2 = 
+            (x2 < xmin ? CLIP_CODE_LEFT : 0) | 
+            (x2 > xmax ? CLIP_CODE_RIGHT : 0) | 
+            (y2 < ymin ? CLIP_CODE_ABOVE : 0) | 
+            (y2 > ymax ? CLIP_CODE_BELOW : 0);
+
+        while ((clipCode1 | clipCode2) != 0) {
+           
+            if ((clipCode1 & clipCode2) != 0) {
+                // Completely outside the clip bounds - do nothing 
+                popTransform();
+                return;
+            }
+            
+            dx = x2 - x1; 
+            dy = y2 - y1;
+            if (clipCode1 != 0) {
+                if ((clipCode1 & CLIP_CODE_LEFT) != 0) {
+                    y1 += CoreMath.mulDiv(xmin-x1, dy, dx); 
+                    x1 = xmin;
+                }  
+                else if ((clipCode1 & CLIP_CODE_RIGHT) != 0) {
+                    y1 += CoreMath.mulDiv(xmax-x1, dy, dx); 
+                    x1 = xmax;
+                }  
+                else if ((clipCode1 & CLIP_CODE_ABOVE) != 0) {
+                    x1 += CoreMath.mulDiv(ymin-y1, dx, dy); 
+                    y1 = ymin;
+                }  
+                else if ((clipCode1 & CLIP_CODE_BELOW) != 0) {
+                    x1 += CoreMath.mulDiv(ymax-y1, dx, dy); 
+                    y1 = ymax;
+                }  
+                clipCode1 = 
+                    (x1 < xmin ? CLIP_CODE_LEFT : 0) | 
+                    (x1 > xmax ? CLIP_CODE_RIGHT : 0) | 
+                    (y1 < ymin ? CLIP_CODE_ABOVE : 0) | 
+                    (y1 > ymax ? CLIP_CODE_BELOW : 0);
+            }  
+            else if (clipCode2 != 0) {
+                if ((clipCode2 & CLIP_CODE_LEFT) != 0) {
+                    y2 += CoreMath.mulDiv(xmin-x2, dy, dx); 
+                    x2 = xmin;
+                }  
+                else if ((clipCode2 & CLIP_CODE_RIGHT) != 0) {
+                    y2 += CoreMath.mulDiv(xmax-x2, dy, dx); 
+                    x2 = xmax;
+                }  
+                else if ((clipCode2 & CLIP_CODE_ABOVE) != 0) {
+                    x2 += CoreMath.mulDiv(ymin-y2, dx, dy); 
+                    y2 = ymin;
+                }  
+                else if ((clipCode2 & CLIP_CODE_BELOW) != 0) {
+                    x2 += CoreMath.mulDiv(ymax-y2, dx, dy); 
+                    y2 = ymax;
+                }  
+                clipCode2 = 
+                    (x2 < xmin ? CLIP_CODE_LEFT : 0) | 
+                    (x2 > xmax ? CLIP_CODE_RIGHT : 0) | 
+                    (y2 < ymin ? CLIP_CODE_ABOVE : 0) | 
+                    (y2 > ymax ? CLIP_CODE_BELOW : 0);
+            }  
+        }
+        
+        dx = x2 - x1; 
+        dy = y2 - y1;
+        int dxabs = CoreMath.abs(dx);
+        int dyabs = CoreMath.abs(dy);
+        int sdx = (dx > 0) ? CoreMath.ONE : ((dx < 0) ? -CoreMath.ONE : 0);
+        int sdy = (dy > 0) ? CoreMath.ONE : ((dy < 0) ? -CoreMath.ONE : 0);
+        
+        if (dx == 0 && dy == 0) {
+            // Single point
+            transform.translate(x1, y1);
+            internalFillRectFixedPoint(CoreMath.ONE, CoreMath.ONE);
+        }
+        else if (dy == 0) {
+            // Horizontal line
+            if (dx < 0) {
+                transform.translate(x2, y2);
+            }
+            else {
+                transform.translate(x1, y1);
+            }
+            if (drawLastPixel) {
+                dxabs += CoreMath.ONE;
+            }
+            internalFillRectFixedPoint(dxabs, CoreMath.ONE);
+        }
+        else if (dx == 0) {
+            // Vertical line
+            if (dy < 0) {
+                transform.translate(x2, y2);
+            }
+            else {
+                transform.translate(x1, y1);
+            }
+            if (drawLastPixel) {
+                dyabs += CoreMath.ONE;
+            }
+            internalFillRectFixedPoint(CoreMath.ONE, dyabs);
+        }
+        else if (dx == dy) {
+            // Diagonal
+            int iterations = CoreMath.intDivCeil(dxabs, CoreMath.ONE);
+            transform.translate(x1, y1);
+            if (drawLastPixel) {
+                iterations++;
+            }
+            while (iterations-- > 0) {
+                internalFillRectFixedPoint(CoreMath.ONE, CoreMath.ONE);
+                transform.translate(sdx, sdy);
+            }
+        }
+        else {
+            transform.translate(x1, y1);
+            
+            // Naive line drawing.
+            // Not as pretty as it could be, and not as fast as it could be,
+            // Also it looks bad with COMPOSITE_ADD because it draws some pixels multiple
+            // times.
+            internalFillRectFixedPoint(CoreMath.ONE, CoreMath.ONE);
+            int ldx, ldy, limit;
+            
+            if (dxabs > dyabs) {
+                // Line is more horizontal than vertical
+                ldx = sdx;
+                ldy = CoreMath.div(dy, dxabs);
+                limit = dxabs;
+            }
+            else {
+                // Line is more vertical than horizontal
+                ldx = CoreMath.div(dx, dyabs);
+                ldy = sdy;
+                limit = dyabs;
+            }
+            if (!drawLastPixel) {
+                limit -= CoreMath.ONE;
+            }
+            for (int i = 0; i <= limit; i+=CoreMath.ONE) {
+                transform.translate(ldx, ldy);
+                internalFillRectFixedPoint(CoreMath.ONE, CoreMath.ONE);
+            }
+            
+            /*
+            int d = (int)CoreMath.sqrt(CoreMath.mul(dx, dx) + CoreMath.mul(dy, dy));
+            if (d >= CoreMath.ONE) {
+                int dxp = CoreMath.div(dx, d);
+                int dyp = CoreMath.div(dy, d);
+                int iterations = CoreMath.toIntCeil(d);
+                for (int i = 0; i < iterations; i++) {
+                    internalFillRectFixedPoint(CoreMath.ONE, CoreMath.ONE);
+                    transform.translate(dxp, dyp);
+                }
+            }
+            else {
+                internalFillRectFixedPoint(CoreMath.ONE, CoreMath.ONE);
+            }
+            */
+        }
+        
+        popTransform();
+    }
     
     
     /**
         Draws a rectangle using the current color. This method draws
-        rectangles at integer coordinates. The transform rotation is 
-        ignored.
-        
+        rectangles at integer coordinates. 
+        <p>
         Note, this method is different from
         java.awt.Graphics.drawRect() which draws a rectangle with 
         a width of (w+1) and a height of (h+1).
@@ -693,56 +1009,58 @@ public class CoreGraphics {
     
     
     /**
-        Fills a rectangle with the current color. This method draws
-        filled rectangles at integer coordinates. The transform rotation is 
-        ignored.
+        Fills a rectangle with the current color. 
     */
     public void fillRect(int x, int y, int w, int h) {
-        
-        if (alpha == 0) {
+        fillRectFixedPoint(CoreMath.toFixed(x), CoreMath.toFixed(y),
+            CoreMath.toFixed(w), CoreMath.toFixed(h));
+    }
+    
+    
+    /**
+        Fills a rectangle with the current color. 
+    */
+    public void fillRect(double x, double y, double w, double h) {
+        fillRectFixedPoint(CoreMath.toFixed(x), CoreMath.toFixed(y),
+            CoreMath.toFixed(w), CoreMath.toFixed(h));
+    }
+    
+    
+    /**
+        Fills a rectangle (at fixed-point coordinates) with the current color. 
+    */
+    public void fillRectFixedPoint(int fx, int fy, int fw, int fh) {
+        if (srcAlphaPremultiplied == 0 || fw == 0 || fh == 0) {
             return;
         }
         
         pushTransform();
+        transform.translate(fx, fy);
         
-        transform.translate(CoreMath.toFixed(x), CoreMath.toFixed(y));
-        
-        if ((transform.getType() & Transform.TYPE_ROTATE) != 0) {
-            internalDrawRotatedRect(w, h);
-            popTransform();
-            return;
+        int type = transform.getType();
+        if ((type & Transform.TYPE_ROTATE) != 0) {
+            internalFillRotatedRect(fw, fh);
         }
-        else if ((transform.getType() & Transform.TYPE_SCALE) != 0) {
-            w = CoreMath.toIntCeil(transform.getScaleX() * w);
-            h = CoreMath.toIntCeil(transform.getScaleY() * h);
-        }
-        
-        x = CoreMath.toInt(transform.getTranslateX());
-        y = CoreMath.toInt(transform.getTranslateY());
-        
-        clipObject(x, y, w, h);
-        if (objectWidth <= 0 || objectHeight <= 0) {
-            popTransform();
-            return;
-        }
-        
-        int offset = objectX + objectY * surfaceWidth;
-        for (int j = 0; j < objectHeight; j++) {
-            if (compositeIndex == COMPOSITE_SRC || srcAlphaPremultiplied == 0xff) {
-                for (int i=0; i<objectWidth; i++) {
-                    surfaceData[offset + i] = srcColorPremultiplied;
-                }
+        else {
+            int x = transform.getTranslateX();
+            int y = transform.getTranslateY();
+            int w = CoreMath.mul(transform.getScaleX(), fw);
+            int h = CoreMath.mul(transform.getScaleY(), fh);
+            if (fractionalMetrics && (
+                CoreMath.fracPart(x) != 0 || 
+                CoreMath.fracPart(y) != 0 || 
+                CoreMath.fracPart(x) != 0 || 
+                CoreMath.fracPart(y) != 0))
+            {
+                internalFillRectFixedPoint(fw, fh);
             }
             else {
-                for (int i=0; i<objectWidth; i++) {
-                    composite.blend(surfaceData, offset + i, srcColor, srcAlphaPremultiplied);
-                }
+                internalFillRect(fw, fh);
             }
-            offset+=surfaceWidth;
         }
         
         popTransform();
-    }    
+    }
     
     
     /**
@@ -1575,10 +1893,108 @@ public class CoreGraphics {
     }
     
     
-    private void internalDrawRotatedRect(int width, int height) { 
-        if (srcAlphaPremultiplied == 0 || width == 0 || height == 0) {
+    //
+    // Rectangle filling
+    //
+    
+    
+    private void internalFillRect(int fw, int fh) {
+        if (srcAlphaPremultiplied == 0 || fw == 0 || fh == 0) {
             return;
         }
+        
+        int x = CoreMath.toInt(transform.getTranslateX());
+        int y = CoreMath.toInt(transform.getTranslateY());
+        int w = CoreMath.toIntCeil(CoreMath.mul(transform.getScaleX(), fw));
+        int h = CoreMath.toIntCeil(CoreMath.mul(transform.getScaleY(), fh));
+        
+        clipObject(x, y, w, h);
+        if (objectWidth <= 0 || objectHeight <= 0) {
+            return;
+        }
+        
+        int offset = objectX + objectY * surfaceWidth;
+        for (int j = 0; j < objectHeight; j++) {
+            if (compositeIndex == COMPOSITE_SRC || 
+                (compositeIndex == COMPOSITE_SRC_OVER && srcAlphaPremultiplied == 0xff)) 
+            {
+                for (int i = 0; i < objectWidth; i++) {
+                    surfaceData[offset + i] = srcColorPremultiplied;
+                }
+            }
+            else {
+                for (int i = 0; i < objectWidth; i++) {
+                    composite.blend(surfaceData, offset + i, srcColor, srcAlphaPremultiplied);
+                }
+            }
+            offset+=surfaceWidth;
+        }
+    }
+    
+    
+    // Only called when fractionalMetrics is true or translations is guaranteed to be
+    // an integer
+    private void internalFillRectFixedPoint(int fw, int fh) {
+        
+        // Find the bounding rectangle
+        int x1 = transform.getTranslateX();
+        int y1 = transform.getTranslateY();
+        int x2 = x1 + CoreMath.mul(transform.getScaleX(), fw);
+        int y2 = y1 + CoreMath.mul(transform.getScaleY(), fh);
+        
+        int boundsX1 = Math.min(x1, x2);
+        int boundsY1 = Math.min(y1, y2);
+        int boundsX2 = Math.max(x1, x2);
+        int boundsY2 = Math.max(y1, y2);
+        
+        int boundsX = CoreMath.toIntFloor(boundsX1);
+        int boundsY = CoreMath.toIntFloor(boundsY1);
+        int boundsW = CoreMath.toIntCeil(boundsX2) - boundsX;
+        int boundsH = CoreMath.toIntCeil(boundsY2) - boundsY;
+        
+        // Clip
+        clipObject(boundsX, boundsY, boundsW, boundsH);
+        if (objectWidth <= 0 || objectHeight <= 0) {
+            return;
+        }
+        
+        // Start Render
+        int rectColor = srcColorPremultiplied & 0x00ffffff;
+        int rectAlpha = srcColorPremultiplied >>> 24;
+        int surfaceOffset = objectX + objectY * surfaceWidth;
+        int lowerLimit = bilinear ? -0xff00 : 0;
+        int wLimit = fw - CoreMath.ONE;
+        int hLimit = fh - CoreMath.ONE;
+        int v = CoreMath.toFixed(objectY) - boundsY1;
+        
+        for (int j = 0; j < objectHeight; j++) {
+            int u = CoreMath.toFixed(objectX) - boundsX1;
+            for (int i = 0; i < objectWidth; i++) {
+                int currAlpha = rectAlpha;
+                if (u < 0) {
+                    currAlpha = (currAlpha * ((u >> 8) & 0xff)) >> 8;
+                }
+                else if (u > wLimit) {
+                    currAlpha = (currAlpha * (((wLimit-u) >> 8) & 0xff)) >> 8;
+                }
+                if (v < 0) {
+                    currAlpha = (currAlpha * ((v >> 8) & 0xff)) >> 8;
+                }
+                else if (v > hLimit) {
+                    currAlpha = (currAlpha * (((hLimit-v) >> 8) & 0xff)) >> 8;
+                }
+                
+                composite.blend(surfaceData, surfaceOffset + i, rectColor, currAlpha);
+                
+                u += CoreMath.ONE;
+            }
+            surfaceOffset += surfaceWidth;
+            v += CoreMath.ONE;
+        }
+    }
+    
+    
+    private void internalFillRotatedRect(int fw, int fh) { 
         
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
@@ -1586,14 +2002,16 @@ public class CoreGraphics {
         if (!fractionalMetrics) {
             x1 = CoreMath.intPart(x1);
             y1 = CoreMath.intPart(y1);
+            fw = CoreMath.intPart(fw);
+            fh = CoreMath.intPart(fh);
         }
         
         // Find the bounding rectangle
         
-        int x2 = transform.getScaleX() * width;
-        int y2 = transform.getShearY() * width;
-        int x3 = transform.getShearX() * height;
-        int y3 = transform.getScaleY() * height;
+        int x2 = CoreMath.mul(transform.getScaleX(), fw);
+        int y2 = CoreMath.mul(transform.getShearY(), fw);
+        int x3 = CoreMath.mul(transform.getShearX(), fh);
+        int y3 = CoreMath.mul(transform.getScaleY(), fh);
         
         int x4 = x1 + x2 + x3;
         int y4 = y1 + y2 + y3;
@@ -1686,8 +2104,6 @@ public class CoreGraphics {
         int rectColor = srcColorPremultiplied & 0x00ffffff;
         int rectAlpha = srcColorPremultiplied >>> 24;
         int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
-        int fSrcWidth = CoreMath.toFixed(width);
-        int fSrcHeight = CoreMath.toFixed(height);
         int lowerLimit = bilinear ? -0xff00 : 0;
         
         for (int j = 0; j < objectHeight; j++) {
@@ -1715,12 +2131,12 @@ public class CoreGraphics {
                     v += n * dvX;
                 }
             }
-            else if (u > fSrcWidth - 1) {
+            else if (u > fw - 1) {
                 if (duX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcWidth - 1) - u, duX);
+                    int n = CoreMath.intDivCeil((fw - 1) - u, duX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
@@ -1738,12 +2154,12 @@ public class CoreGraphics {
                     v += n * dvX;
                 }
             }
-            else if (v > fSrcHeight - 1) {
+            else if (v > fh - 1) {
                 if (dvX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcHeight - 1) - v, dvX);
+                    int n = CoreMath.intDivCeil((fh - 1) - v, dvX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
@@ -1761,12 +2177,12 @@ public class CoreGraphics {
                     endX += n;
                 }
             }
-            else if (u2 > fSrcWidth - 1) {
+            else if (u2 > fw - 1) {
                 if (duX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcWidth - 1) - u2, duX);
+                    int n = CoreMath.intDivCeil((fw - 1) - u2, duX);
                     endX += n;
                 }
             }
@@ -1781,19 +2197,19 @@ public class CoreGraphics {
                     endX += n;
                 }
             }
-            else if (v2 > fSrcHeight - 1) {
+            else if (v2 > fh - 1) {
                 if (dvX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcHeight - 1) - v2, dvX);
+                    int n = CoreMath.intDivCeil((fh - 1) - v2, dvX);
                     endX += n;
                 }
             }
             
          
-            int wLimit = fSrcWidth - CoreMath.ONE;
-            int hLimit = fSrcHeight - CoreMath.ONE;
+            int wLimit = fw - CoreMath.ONE;
+            int hLimit = fh - CoreMath.ONE;
             for (int i = startX; i <= endX; i++) {
                 int currAlpha = rectAlpha;
                 if (u < 0) {

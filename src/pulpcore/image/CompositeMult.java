@@ -29,36 +29,28 @@
 
 package pulpcore.image;
 
-final class CompositeSrcOver extends Composite {
-
+final class CompositeMult extends Composite {
+    
     
     private void blendInternalOpaque(int[] destData, int destOffset, int srcRGB) {
-        destData[destOffset] = srcRGB;
-    }
-
-    
-    private void blendInternal(int[] destData, int destOffset, int srcRGB, int srcAlpha) {
-          
-        //dest = srcAlpha*src + dest*(1-srcAlpha)
         
-        // This was incorrect, causing a red-shift in some cases (overflow)
-        /*
         int destRGB = destData[destOffset];
-        int destR = destRGB & 0xff0000;
-        int destG = destRGB & 0x00ff00;
+        int destR = (destRGB & 0xff0000) >> 16;
+        int destG = (destRGB & 0x00ff00) >> 8;
         int destB = destRGB & 0x0000ff;
-        int srcR = srcRGB & 0xff0000;
-        int srcG = srcRGB & 0x00ff00;
+        int srcR = (srcRGB & 0xff0000) >> 16;
+        int srcG = (srcRGB & 0x00ff00) >> 8;
         int srcB = srcRGB & 0x0000ff;
         
-        destR += ((srcAlpha * (srcR - destR)) >> 8) & 0xff0000;
-        destG += ((srcAlpha * (srcG - destG)) >> 8) & 0x00ff00;
-        destB += ((srcAlpha * (srcB - destB)) >> 8) & 0x0000ff;
+        destR = ((destR * srcR + 0xff) << 8) & 0xff0000;
+        destG = (destG * srcG + 0xff) & 0xff00;
+        destB = (destB * srcB + 0xff) >> 8;
+        
         destData[destOffset] = 0xff000000 | destR | destG | destB;
-        */
-        
-        
-        // Correct solution (4 extra shifts, 3 less ands)
+    }
+    
+    
+    private void blendInternal(int[] destData, int destOffset, int srcRGB, int srcAlpha) {
         
         int destRGB = destData[destOffset];
         int destR = (destRGB >> 16) & 0xff;
@@ -68,13 +60,18 @@ final class CompositeSrcOver extends Composite {
         int srcG = (srcRGB >> 8) & 0xff;
         int srcB = srcRGB & 0xff;
         
-        destR += (srcAlpha * (srcR - destR)) >> 8;
-        destG += (srcAlpha * (srcG - destG)) >> 8;
-        destB += (srcAlpha * (srcB - destB)) >> 8;
+        // Premultply the alpha
+        srcR = (srcR * srcAlpha + 0xff) >> 8;
+        srcG = (srcG * srcAlpha + 0xff) >> 8;
+        srcB = (srcB * srcAlpha + 0xff) >> 8;
         
-        destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        //dest = srcAlpha*src*dest + (1-srcAlpha)*dest
+        destR = ((destR * (srcR + 0xff - srcAlpha) + 0xff) << 8) & 0xff0000;
+        destG = (destG * (srcG + 0xff - srcAlpha) + 0xff) & 0xff00;
+        destB = (destB * (srcB + 0xff - srcAlpha) + 0xff) >> 8;
         
-        
+        destData[destOffset] = 0xff000000 | destR | destG | destB;
+
     }
     
     
@@ -88,7 +85,7 @@ final class CompositeSrcOver extends Composite {
         The blend() code is cut-and-pasted in each subclass of Composite to get HotSpot to inline 
         calls to blendInternal()
     */
-    
+
     
     void blend(int[] destData, int destOffset, int srcRGB, int srcAlpha) {
         blendInternal(destData, destOffset, srcRGB, srcAlpha);

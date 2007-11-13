@@ -541,27 +541,29 @@ public class Path {
     
     
     /**
-        Draws the segments of this path. Since CoreGraphics doesn't support 
-        anti-aliased lines, this method may only be useful for debugging.
+        Draws the segments of this path using the current color.
+        @param drawJoints if true, draw rectangles at the joints between line segments
     */
-    public void draw(CoreGraphics g, boolean drawPoints) {
-        for (int i = 0; i < numPoints - 1; i++) {
-            int x1 = CoreMath.toInt(xPoints[i]);
-            int y1 = CoreMath.toInt(yPoints[i]);
-            int x2 = CoreMath.toInt(xPoints[i + 1]);
-            int y2 = CoreMath.toInt(yPoints[i + 1]);
-            
-            if (drawPoints) {
-                g.fillRect(x1-1, y1-1, 3, 3);
+    public void draw(CoreGraphics g, boolean drawJoints) {
+        int x1 = xPoints[0];
+        int y1 = yPoints[0];
+        for (int i = 1; i < numPoints; i++) {
+            if (drawJoints) {
+                g.fillRectFixedPoint(x1-CoreMath.ONE, y1-CoreMath.ONE, 
+                    CoreMath.toFixed(3), CoreMath.toFixed(3));
             }
-            g.drawLine(x1, y1, x2, y2);
+            int x2 = xPoints[i];
+            int y2 = yPoints[i];
+            g.drawLineFixedPoint(x1, y1, x2, y2, false);
+            x1 = x2;
+            y1 = y2;
         }
         
-        if (drawPoints) {
-            int x1 = CoreMath.toInt(xPoints[numPoints - 1]);
-            int y1 = CoreMath.toInt(xPoints[numPoints - 1]);
-            g.fillRect(x1-1, y1-1, 3, 3);
+        if (drawJoints) {
+            g.fillRectFixedPoint(x1-CoreMath.ONE, y1-CoreMath.ONE, 
+                CoreMath.toFixed(3), CoreMath.toFixed(3));
         }
+        
     }
         
     

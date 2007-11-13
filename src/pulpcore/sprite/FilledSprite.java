@@ -30,8 +30,9 @@
 package pulpcore.sprite;
 
 import pulpcore.animation.Int;
-import pulpcore.Stage;
 import pulpcore.image.CoreGraphics;
+import pulpcore.math.CoreMath;
+import pulpcore.Stage;
 
 /**
     Solid-colored rectangluar shaped sprite. Note, CoreGraphics cannot draw
@@ -43,6 +44,7 @@ public class FilledSprite extends Sprite {
     public final Int fillColor = new Int(this);
     public final Int borderColor = new Int(this);
     
+    // Fixed-point
     protected int borderTop;
     protected int borderLeft;
     protected int borderBottom;
@@ -140,10 +142,10 @@ public class FilledSprite extends Sprite {
     
     
     public void setBorderSize(int top, int left, int bottom, int right) {
-        top = Math.max(0, top);
-        left = Math.max(0, left);
-        bottom = Math.max(0, bottom);
-        right = Math.max(0, right);
+        top = CoreMath.toFixed(Math.max(0, top));
+        left = CoreMath.toFixed(Math.max(0, left));
+        bottom = CoreMath.toFixed(Math.max(0, bottom));
+        right = CoreMath.toFixed(Math.max(0, right));
         
         if (this.borderTop != top) {
             this.borderTop = top;
@@ -174,31 +176,31 @@ public class FilledSprite extends Sprite {
     
     protected void drawSprite(CoreGraphics g) {
         
-        int w = width.getAsInt();
-        int h = height.getAsInt();
+        int w = width.getAsFixed();
+        int h = height.getAsFixed();
         int innerWidth = w - (borderLeft + borderRight);
         int innerHeight = h - (borderTop + borderBottom);
         
         // Inner fill
         if ((fillColor.get() >>> 24) != 0) {
             g.setColor(fillColor.get(), true);
-            g.fillRect(borderLeft, borderTop, innerWidth, innerHeight);
+            g.fillRectFixedPoint(borderLeft, borderTop, innerWidth, innerHeight);
         }
         
         // Border fill
         if ((borderColor.get() >>> 24) != 0) {
             g.setColor(borderColor.get(), true);
             if (borderTop > 0) {
-                g.fillRect(0, 0, w, borderTop);
+                g.fillRectFixedPoint(0, 0, w, borderTop);
             }
             if (borderBottom > 0) {
-                g.fillRect(0, h - borderBottom, w, borderBottom);
+                g.fillRectFixedPoint(0, h - borderBottom, w, borderBottom);
             }
             if (borderLeft > 0) {
-                g.fillRect(0, borderTop, borderLeft, innerHeight);
+                g.fillRectFixedPoint(0, borderTop, borderLeft, innerHeight);
             }
             if (borderRight > 0) {
-                g.fillRect(w - borderRight, borderTop, borderRight, innerHeight);
+                g.fillRectFixedPoint(w - borderRight, borderTop, borderRight, innerHeight);
             }
         }
     }

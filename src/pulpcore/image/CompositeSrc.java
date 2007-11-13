@@ -42,7 +42,7 @@ final class CompositeSrc extends Composite {
     }
     
     
-/*
+    /*
         DO NOT EDIT BELOW HERE
         The blend() methods need to be identical in all subclasses of Composite. Ideally, the 
         blend() methods belong in the parent class Composite. However, if that were the case, 
