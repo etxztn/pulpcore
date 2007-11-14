@@ -41,7 +41,10 @@ import pulpcore.Stage;
 */
 public class FilledSprite extends Sprite {
     
+    /** Fill color in ARGB format */
     public final Int fillColor = new Int(this);
+    
+    /** Border color in ARGB format */
     public final Int borderColor = new Int(this);
     
     // Fixed-point
