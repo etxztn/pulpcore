@@ -1,4 +1,4 @@
-// AnimationEasing 
+// Easings 
 // Click to view various easings.
 
 import pulpcore.Input;
@@ -11,7 +11,7 @@ import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Sprite;
 
-public class AnimationEasing extends Scene2D {
+public class Easings extends Scene2D {
     
     // Ease t from 0 to 1.
     Easing customEasing = new Easing() {
