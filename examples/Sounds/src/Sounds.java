@@ -1,3 +1,4 @@
+// Sounds
 // Plays sounds with level and pan animation.
 // Try clicking near the ear and far from the ear.
 import pulpcore.animation.Fixed;
@@ -11,7 +12,7 @@ import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.Stage;
 
-public class SoundEffects extends Scene2D {
+public class Sounds extends Scene2D {
     
     SoundClip boopSound, wooshSound;
     ImageSprite ear;

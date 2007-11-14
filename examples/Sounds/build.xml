@@ -4,7 +4,7 @@
     This template is designed for trying out PulpCore quickly without creating 
     a directory structure for a full project.
 -->
-<project name="SoundEffects" default="build-and-run" basedir=".">
+<project name="Sounds" default="build-and-run" basedir=".">
 
     <property file="build.properties" />
     
@@ -39,7 +39,7 @@
                               For Max OS X, use "${java.home}/../Classes/classes.jar"
     -->
     <property name="pulpcore.player.wait" value="true" />
-    <property name="project.scene" value="SoundEffects" />
+    <property name="project.scene" value="Sounds" />
     <property name="project.jar" value="${project.scene}.jar" />
     <property name="project.assets.zip" value="${project.scene}.zip" />
     <property name="project.width" value="640" />
