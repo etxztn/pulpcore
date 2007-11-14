@@ -73,10 +73,7 @@ final class CompositeSrcOver extends Composite {
         destB += (srcAlpha * (srcB - destB)) >> 8;
         
         destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
-        
-        
     }
-    
     
     /*
         DO NOT EDIT BELOW HERE
@@ -89,6 +86,18 @@ final class CompositeSrcOver extends Composite {
         calls to blendInternal()
     */
     
+    void blendRow(int[] destData, int destOffset, int srcRGB, int srcAlpha, int numPixels) {
+        if (srcAlpha == 0xff) {
+            for (int i = 0; i < numPixels; i++) {
+                blendInternalOpaque(destData, destOffset++, srcRGB);
+            }
+        }
+        else {
+            for (int i = 0; i < numPixels; i++) {
+                blendInternal(destData, destOffset++, srcRGB, srcAlpha);
+            }
+        }
+    }
     
     void blend(int[] destData, int destOffset, int srcRGB, int srcAlpha) {
         blendInternal(destData, destOffset, srcRGB, srcAlpha);

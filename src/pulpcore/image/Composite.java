@@ -55,7 +55,18 @@ abstract class Composite {
         boolean rotation,
         boolean renderBilinear, int renderAlpha,
         int[] destData, int destScanSize, int destOffset, int numPixels, int numRows);
-
+    
+    
+    /**
+        The source is composited over the destination (Porter-Duff Source Over Destination rule).
+        The destination alpha is assumed to be 1.0.
+        
+        @param destColor The red, green, and blue components of the destination color. 
+        @param srcRGB The red, green, and blue components of the source color (not premultiplied).
+        @param srcAlpha The source alpha component.
+    */    
+    abstract void blendRow(int[] destData, int destOffset, 
+        int srcRGB, int srcAlpha, int numPixels);
     
     
     //

@@ -554,7 +554,7 @@ public class Path {
             }
             int x2 = xPoints[i];
             int y2 = yPoints[i];
-            g.drawLineFixedPoint(x1, y1, x2, y2, false);
+            g.drawLineFixedPoint(x1, y1, x2, y2);
             x1 = x2;
             y1 = y2;
         }

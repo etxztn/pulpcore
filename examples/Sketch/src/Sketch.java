@@ -72,7 +72,7 @@ public class Sketch extends Scene {
             nextFade = 75;
             g.setComposite(CoreGraphics.COMPOSITE_SRC_OVER);
             g.setColor(CoreGraphics.WHITE);
-            g.setAlpha(0x08);
+            g.setAlpha(0x06);
             g.fill();
         }
         // Delayed, slow fade (it will fade completely)
@@ -136,7 +136,7 @@ public class Sketch extends Scene {
         void draw(CoreGraphics g) {
             if (alive) {
                 g.setColor(0xeeeeee);
-                g.drawLine(lastX, lastY, x, y, false);
+                g.drawLine(lastX, lastY, x, y);
                 lastX = x;
                 lastY = y;
             }

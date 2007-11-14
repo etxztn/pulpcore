@@ -74,7 +74,6 @@ final class CompositeMult extends Composite {
 
     }
     
-    
     /*
         DO NOT EDIT BELOW HERE
         The blend() methods need to be identical in all subclasses of Composite. Ideally, the 
@@ -86,6 +85,18 @@ final class CompositeMult extends Composite {
         calls to blendInternal()
     */
 
+    void blendRow(int[] destData, int destOffset, int srcRGB, int srcAlpha, int numPixels) {
+        if (srcAlpha == 0xff) {
+            for (int i = 0; i < numPixels; i++) {
+                blendInternalOpaque(destData, destOffset++, srcRGB);
+            }
+        }
+        else {
+            for (int i = 0; i < numPixels; i++) {
+                blendInternal(destData, destOffset++, srcRGB, srcAlpha);
+            }
+        }
+    }
     
     void blend(int[] destData, int destOffset, int srcRGB, int srcAlpha) {
         blendInternal(destData, destOffset, srcRGB, srcAlpha);
