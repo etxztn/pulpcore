@@ -57,15 +57,18 @@ public class Button extends ImageSprite {
     
     private static final int NUM_VISIBLE_STATES = 3;
     
+    /**
+        The flag indicating whether this Button is enabled. An enabled button 
+        responds to user input. Buttons are enabled by default.
+    */
     public final Bool enabled = new Bool(this, true);
     
     private final CoreImage[] images;
     private final boolean isToggleButton;
     
-    private int state;
-    
     private int[] keyBinding;
     
+    private int state;
     private boolean isSelected;
     private boolean isClicked;
     
@@ -83,7 +86,7 @@ public class Button extends ImageSprite {
     
     /**
         @param images an array of three images: normal, hover, and pressed.
-        Use six image for toggle buttons (unselected and selected).
+        Use six images for toggle buttons (unselected and selected).
     */
     public Button(CoreImage[] images, int x, int y, boolean isToggleButton) {
         super(images[0], x, y);
@@ -104,7 +107,7 @@ public class Button extends ImageSprite {
     
     /**
         @param images an array of three images: normal, hover, and pressed.
-        Use six image for toggle buttons (unselected and selected).
+        Use six images for toggle buttons (unselected and selected).
     */
     public Button(CoreImage[] images, double x, double y, boolean isToggleButton) {
         super(images[0], x, y);
@@ -126,11 +129,23 @@ public class Button extends ImageSprite {
     }
     
     
+    /**
+        Sets the cursor for this button. By default, a button's cursor is 
+        {@link pulpcore.Input#CURSOR_HAND}.
+        @see pulpcore.Input
+        @see #getCursor()
+    */
     public void setCursor(int cursor) {
         this.cursor = cursor;
     }
     
     
+    /**
+        Gets the cursor for this button. By default, a button's cursor is 
+        {@link pulpcore.Input#CURSOR_HAND}.
+        @see pulpcore.Input
+        @see #setCursor(int)
+    */
     public int getCursor() {
         return cursor;
     }
@@ -144,33 +159,66 @@ public class Button extends ImageSprite {
     }
     
     
+    /**
+        Determines whether this component is enabled. An enabled component can respond to user input and generate events. Components are enabled initially by default. A component may be enabled or disabled by calling its setEnabled method.
+        @return true if this button is a toggle button, false otherwise
+    */
     public boolean isToggleButton() {
         return isToggleButton;
     }
     
     
+    /**
+        Gets the key bindings for this button. A button has no key bindings by default.
+        @return the key bindings for this button, or null if there are no key bindings.
+        @see #setKeyBinding(int)
+        @see #setKeyBinding(int[])
+        @see #clearKeyBinding()
+    */
     public int[] getKeyBinding() {
         return keyBinding;
     }
     
     
+    /**
+        Clears the key binding for this button.
+        @see #getKeyBinding()
+        @see #setKeyBinding(int)
+        @see #setKeyBinding(int[])
+    */
     public void clearKeyBinding() {
         keyBinding = null;
     }
     
     
+    /**
+        Sets the key binding for this button to the specified key code. The button is
+        considered "clicked" if that key is pressed and released.
+        @see #getKeyBinding()
+        @see #setKeyBinding(int[])
+        @see #clearKeyBinding()
+    */
     public void setKeyBinding(int keyCode) {
         setKeyBinding(new int[] { keyCode });
     }
     
     
+    /**
+        Sets the key binding for this button to the specified key codes. The button is
+        considered "clicked" if any of those keys are pressed and released.
+        @see #getKeyBinding()
+        @see #setKeyBinding(int)
+        @see #clearKeyBinding()
+    */
     public void setKeyBinding(int[] keyCodes) {
         keyBinding = keyCodes;
     }
     
     
+    /**
+        Sets whether this button is selected. For toggle buttons only.
+    */
     public void setSelected(boolean isSelected) {
-        
         if (this.isSelected != isSelected) {
             this.isSelected = isSelected;
             
@@ -181,12 +229,15 @@ public class Button extends ImageSprite {
     }
     
     
+    /**
+        Determines if this button is selected. For toggle buttons only.
+    */
     public boolean isSelected() {
         return isSelected;
     }
     
 
-    public void setState(int state) {
+    private void setState(int state) {
         this.state = state;
         
         int frame;
@@ -207,18 +258,22 @@ public class Button extends ImageSprite {
     }
     
     
-    public int getState() {
+    private int getState() {
         return state;
     }
     
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
-        
+        enabled.update(elapsedTime);
         isClicked = isClickedImpl();
     }
     
     
+    /**
+        Determines if this button was clicked since the last frame.
+        @return true if this button was clicked since the last frame.
+    */
     public boolean isClicked() {
         return isClicked;
     }
