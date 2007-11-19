@@ -162,7 +162,7 @@ public class Label extends Sprite {
     
     protected int getNaturalWidth() {
         int w = stringWidth;
-        if (numDisplayChars.get() != displayText.length()) {
+        if (numDisplayChars.get() < displayText.length()) {
             w = font.getStringWidth(displayText, 0, numDisplayChars.get());
         }
         return CoreMath.toFixed(w);
@@ -277,7 +277,7 @@ public class Label extends Sprite {
         }
 
         String currDisplayText = displayText;
-        if (numDisplayChars.get() != displayText.length()) {
+        if (numDisplayChars.get() < displayText.length()) {
             currDisplayText = displayText.substring(0, numDisplayChars.get());
         }
         
