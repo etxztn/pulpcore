@@ -29,11 +29,12 @@
 
 package pulpcore.sprite;
 
+import pulpcore.animation.Bool;
+import pulpcore.animation.Property;
 import pulpcore.CoreSystem;
-import pulpcore.Input;
-import pulpcore.Stage;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
+import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Transform;
 
@@ -86,6 +87,12 @@ public class TextField extends Sprite {
     
     private static CoreFont systemSelectionFont;
     
+    /**
+        The flag indicating whether this TextField is enabled. An enabled TextField 
+        responds to user input. TextFields are enabled by default.
+    */
+    public final Bool enabled = new Bool(this, true);
+
     private CoreFont font;
     private String text;
     private int timeUntilBlinkOff;
@@ -457,23 +464,37 @@ public class TextField extends Sprite {
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
+        enabled.update(elapsedTime);
         
-        if (hasFocus && !Input.isTextInputMode()) {
-            Input.setTextInputMode(true);
-        }
-        
-        handleInput(elapsedTime);
-        
-        timeUntilBlinkOff -= elapsedTime;
-        if (timeUntilBlinkOff < -BLINK_TIME * 2/3) {
-            timeUntilBlinkOff = BLINK_TIME;
-            if (hasFocus && selectionLength == 0) {
-                setDirty(true);
+        if (enabled.get()) {
+            if (hasFocus && !Input.isTextInputMode()) {
+                Input.setTextInputMode(true);
+            }
+            
+            handleInput(elapsedTime);
+            
+            timeUntilBlinkOff -= elapsedTime;
+            if (timeUntilBlinkOff < -BLINK_TIME * 2/3) {
+                timeUntilBlinkOff = BLINK_TIME;
+                if (hasFocus && selectionLength == 0) {
+                    setDirty(true);
+                }
+            }
+            else if (timeUntilBlinkOff <= 0 && timeUntilBlinkOff + elapsedTime > 0) {
+                if (hasFocus && selectionLength == 0) {
+                    setDirty(true);
+                }
             }
         }
-        else if (timeUntilBlinkOff <= 0 && timeUntilBlinkOff + elapsedTime > 0) {
-            if (hasFocus && selectionLength == 0) {
-                setDirty(true);
+    }
+    
+    
+    public void propertyChange(Property p) {
+        super.propertyChange(p);
+        if (p == enabled) {
+            timeUntilBlinkOff = BLINK_TIME;
+            if (enabled.get() == false && Input.isTextInputMode()) {
+                Input.setTextInputMode(false);
             }
         }
     }
@@ -846,7 +867,7 @@ public class TextField extends Sprite {
     
     protected void drawSprite(CoreGraphics g) {
 
-        boolean focusVisible = hasFocus && Input.hasKeyboardFocus();
+        boolean focusVisible = enabled.get() && hasFocus && Input.hasKeyboardFocus();
         
         String text = convertToDisplayText(this.text);
         String displayText = text;
