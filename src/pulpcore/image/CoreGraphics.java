@@ -92,6 +92,7 @@ public class CoreGraphics {
     */
     public static final int COMPOSITE_MULT = 3;
     
+    // For the software renderer
     private static final Composite[] COMPOSITES = {
         new CompositeSrcOver(), new CompositeSrc(), new CompositeAdd(), new CompositeMult(), 
     };
@@ -613,8 +614,8 @@ public class CoreGraphics {
             if (fractionalMetrics && (
                 CoreMath.fracPart(x) != 0 || 
                 CoreMath.fracPart(y) != 0 || 
-                CoreMath.fracPart(x) != 0 || 
-                CoreMath.fracPart(y) != 0))
+                CoreMath.fracPart(w) != 0 || 
+                CoreMath.fracPart(h) != 0))
             {
                 internalFillRectFixedPoint(fw, fh);
             }
@@ -1137,8 +1138,8 @@ public class CoreGraphics {
         int dv;
         
         if (!fractionalMetrics) {
-            fW = CoreMath.intPart(fW);
-            fH = CoreMath.intPart(fH);
+            fW = CoreMath.floor(fW);
+            fH = CoreMath.floor(fH);
             
             if (fW == 0 || fH == 0) {
                 return;
@@ -1171,8 +1172,8 @@ public class CoreGraphics {
         int fY = transform.getTranslateY();
         
         if (!fractionalMetrics) {
-            fX = CoreMath.intPart(fX);
-            fY = CoreMath.intPart(fY);
+            fX = CoreMath.floor(fX);
+            fY = CoreMath.floor(fY);
         }
         
         int x = CoreMath.toIntFloor(fX);
@@ -1227,8 +1228,8 @@ public class CoreGraphics {
         int y1 = transform.getTranslateY();
         
         if (!fractionalMetrics) {
-            x1 = CoreMath.intPart(x1);
-            y1 = CoreMath.intPart(y1);
+            x1 = CoreMath.floor(x1);
+            y1 = CoreMath.floor(y1);
         }
         
         // Find the bounding rectangle
@@ -1481,10 +1482,10 @@ public class CoreGraphics {
         }
         
         if (!fractionalMetrics) {
-            x1 = CoreMath.intPart(x1);
-            y1 = CoreMath.intPart(y1);
-            x2 = CoreMath.intPart(x2);
-            y2 = CoreMath.intPart(y2);
+            x1 = CoreMath.floor(x1);
+            y1 = CoreMath.floor(y1);
+            x2 = CoreMath.floor(x2);
+            y2 = CoreMath.floor(y2);
         }
         
         int dx = x2 - x1; 
@@ -1622,14 +1623,14 @@ public class CoreGraphics {
             if (dxabs >= dyabs) {
                 // Line is more horizontal than vertical
                 // Or a diagonal
-                if (dxabs < CoreMath.ONE && CoreMath.intPart(x1) == CoreMath.intPart(x2)) { 
+                if (dxabs < CoreMath.ONE && CoreMath.floor(x1) == CoreMath.floor(x2)) { 
                     // One pixel
                     currAlpha = dxabs >> 8;
                     currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                     drawWuPixelHorizontal(x1, y1, currAlpha);
                 }
                 else {
-                    // First pixel
+                    // First pixel and last pixel
                     if (fractionalMetrics) {
                         currAlpha = 0xff - ((x1 >> 8) & 0xff);
                         currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
@@ -1651,7 +1652,7 @@ public class CoreGraphics {
             }
             else {
                 // Line is more vertical than horizontal
-                if (dyabs < CoreMath.ONE && CoreMath.intPart(y1) == CoreMath.intPart(y2)) { 
+                if (dyabs < CoreMath.ONE && CoreMath.floor(y1) == CoreMath.floor(y2)) { 
                     // One pixel
                     currAlpha = dyabs >> 8;
                     currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
@@ -1817,8 +1818,10 @@ public class CoreGraphics {
         int v = CoreMath.toFixed(objectY) - boundsY1;
         for (int j = 0; j < objectHeight; j++) {
             int u = CoreMath.toFixed(objectX) - boundsX1;
-            // OPTIMIZE: currently a virtual call per pixel
-            for (int i = 0; i < objectWidth; i++) {
+            // OPTIMIZE: less virtual calls?
+            int lastAlpha = -1;
+            int runLength = 0;
+            for (int x = 0; x < objectWidth; x++) {
                 int rectAlpha = srcAlphaPremultiplied;
                 if (u < 0) {
                     rectAlpha = (rectAlpha * ((u >> 8) & 0xff)) >> 8;
@@ -1833,10 +1836,25 @@ public class CoreGraphics {
                     rectAlpha = (rectAlpha * (((hLimit-v) >> 8) & 0xff)) >> 8;
                 }
                 
-                composite.blend(surfaceData, surfaceOffset + i, srcColor, rectAlpha);
+                if (rectAlpha == lastAlpha) {
+                    runLength++;
+                }
+                else {
+                    if (runLength > 0) {
+                        composite.blendRow(surfaceData, surfaceOffset + x - runLength, 
+                            srcColor, lastAlpha, runLength);
+                    }
+                    lastAlpha = rectAlpha;
+                    runLength = 1;
+                }
                 
                 u += CoreMath.ONE;
             }
+            if (runLength > 0) {
+                composite.blendRow(surfaceData, surfaceOffset + objectWidth - runLength, 
+                    srcColor, lastAlpha, runLength);
+            }
+            
             surfaceOffset += surfaceWidth;
             v += CoreMath.ONE;
         }
@@ -1849,10 +1867,10 @@ public class CoreGraphics {
         int y1 = transform.getTranslateY();
         
         if (!fractionalMetrics) {
-            x1 = CoreMath.intPart(x1);
-            y1 = CoreMath.intPart(y1);
-            fw = CoreMath.intPart(fw);
-            fh = CoreMath.intPart(fh);
+            x1 = CoreMath.floor(x1);
+            y1 = CoreMath.floor(y1);
+            fw = CoreMath.floor(fw);
+            fh = CoreMath.floor(fh);
         }
         
         // Find the bounding rectangle
@@ -2057,8 +2075,10 @@ public class CoreGraphics {
          
             int wLimit = fw - CoreMath.ONE;
             int hLimit = fh - CoreMath.ONE;
-            // OPTIMIZE: currently a virtual call per pixel
-            for (int i = startX; i <= endX; i++) {
+            // OPTIMIZE: less virtual calls? less work per pixel?
+            int lastAlpha = -1;
+            int runLength = 0;
+            for (int x = startX; x <= endX; x++) {
                 int rectAlpha = srcAlphaPremultiplied;
                 if (u < 0) {
                     rectAlpha = (rectAlpha * ((u >> 8) & 0xff)) >> 8;
@@ -2073,13 +2093,33 @@ public class CoreGraphics {
                     rectAlpha = (rectAlpha * (((hLimit-v) >> 8) & 0xff)) >> 8;
                 }
                 
-                composite.blend(surfaceData, surfaceOffset + i, srcColor, rectAlpha);
+                if (rectAlpha == lastAlpha) {
+                    runLength++;
+                }
+                else {
+                    if (runLength > 0) {
+                        composite.blendRow(surfaceData, surfaceOffset + x - runLength, 
+                            srcColor, lastAlpha, runLength);
+                    }
+                    lastAlpha = rectAlpha;
+                    runLength = 1;
+                }
                 
                 u += duX;
                 v += dvX;
             }
+            
+            if (runLength > 0) {
+                composite.blendRow(surfaceData, surfaceOffset + endX + 1 - runLength, 
+                    srcColor, lastAlpha, runLength);
+            }
+            
+            // No anti-aliasing
+            //composite.blendRow(surfaceData, surfaceOffset + startX, srcColor, 
+            //    srcAlphaPremultiplied, endX - startX + 1);
         }
     }
+    
     
     //
     // Utility methods
