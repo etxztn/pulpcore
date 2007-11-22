@@ -32,10 +32,10 @@ package pulpcore.platform;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URL;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
@@ -44,6 +44,7 @@ import pulpcore.net.Upload;
 import pulpcore.scene.Scene;
 import pulpcore.Stage;
 import pulpcore.util.ByteArray;
+import pulpcore.util.StringUtil;
 
 public abstract class AppContext {
     
@@ -333,13 +334,11 @@ public abstract class AppContext {
         // Split statement by newlines
         while (true) {
             int index = statement.indexOf('\n');
-            if (index != -1) {
-                logLines.add(statement.substring(0, index));
-                statement = statement.substring(index + 1);
-            }
-            else {
+            if (index == -1) {
                 break;
             }
+            logLines.add(statement.substring(0, index));
+            statement = statement.substring(index + 1);
         }
         logLines.add(statement);
         
@@ -362,8 +361,15 @@ public abstract class AppContext {
     private String stackTraceToString(Throwable t) {
         StringWriter writer = new StringWriter();
         t.printStackTrace(new PrintWriter(writer));
-
-        return writer.getBuffer().toString();
+        
+        String s = writer.getBuffer().toString();
+        
+        // Convert line.separator to \n
+        String newLine = CoreSystem.getJavaProperty("line.separator");
+        if (newLine != null && !"\n".equals(newLine)) {
+            s = StringUtil.replace(s, newLine, "\n");
+        }
+        return s;
     }
 
 
