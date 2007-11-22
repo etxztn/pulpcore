@@ -57,30 +57,22 @@ public class Sketch extends Scene {
     public void drawScene(CoreGraphics g) {
         if (erase) {
             erase = false;
-            g.setColor(CoreGraphics.WHITE);
+            g.setColor(CoreGraphics.BLACK);
             g.fill();
         }
         
         // Draw particles to surface
-        g.setComposite(CoreGraphics.COMPOSITE_MULT);
+        g.setComposite(CoreGraphics.COMPOSITE_ADD);
         for (int i = 0; i < particles.length; i++) {
             particles[i].draw(g);
         }
         
-        // Initial fade (it won't fade completely due to rounding error)
+        // Slowly fade
         if (nextFade <= 0) { 
             nextFade = 75;
             g.setComposite(CoreGraphics.COMPOSITE_SRC_OVER);
-            g.setColor(CoreGraphics.WHITE);
+            g.setColor(CoreGraphics.BLACK);
             g.setAlpha(0x06);
-            g.fill();
-        }
-        // Delayed, slow fade (it will fade completely)
-        if (nextFade2 <= 0) {
-            nextFade2 = 250;
-            g.setComposite(CoreGraphics.COMPOSITE_ADD);
-            g.setColor(0x020202);
-            g.setAlpha(0xff);
             g.fill();
         }
     }
@@ -135,7 +127,7 @@ public class Sketch extends Scene {
         
         void draw(CoreGraphics g) {
             if (alive) {
-                g.setColor(0xeeeeee);
+                g.setColor(0x0f0f0f);
                 g.drawLine(lastX, lastY, x, y);
                 lastX = x;
                 lastY = y;
