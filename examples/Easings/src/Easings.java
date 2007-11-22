@@ -53,6 +53,7 @@ public class Easings extends Scene2D {
         add(new ImageSprite("background.png", 0, 0));
         add(icon);
         add(label);
+        Input.setCursor(Input.CURSOR_HAND);
         
         setEasing(0);
     }
