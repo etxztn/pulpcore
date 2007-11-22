@@ -1,3 +1,18 @@
+0.10.7 (November 21, 2007)
+  * Examples: Added Colors example, showing compositing modes.
+  * Examples: Added Sketch example, showing traditional graphics function calls (instead of
+    managed sprites).
+  * Fixed bug: Fixed possible StringIndexOutOfBoundsException if numDisplayChars > text length.
+  * Fixed bug: centered anchor was wrong for some fractional-width sprites.
+  * API: Added CoreMath.ceil(), renamed CoreMath.intPart() -> CoreMath.floor()
+  * API: Added Input.isMouseInside() to check if the mouse is inside the Stage.
+  * API: TextField now has a Bool enabled property (like Button).
+  * Graphics: optimized rotated rectangle rendering (there is still room for optimization)
+  * Graphics: added CoreGraphics.COMPOSITE_MULT.
+  * Graphics: drawLine() is now anti-aliased.
+  * Graphics: Updated FilledSprite and CoreGraphics to draw filled rectangles at fractional
+    locations (previously fractional rectangles were only enabled if the rectangle was rotated).
+
 0.10.6 (November 10, 2007)
   * Documentation: added various JavaDocs here and there.
   * Core: Provided a better Mac OS X Leopard fix (looks better, uses less processor).
