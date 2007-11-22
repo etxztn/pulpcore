@@ -1,6 +1,7 @@
 // Colors
 // Click to show different compositing modes.
 import pulpcore.animation.ColorAnimation;
+import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
@@ -15,7 +16,7 @@ import pulpcore.Stage;
 public class Colors extends Scene2D {
     
     String[] labels = { "Normal", "Add", "Multiply",
-        "Normal, alpha=50%", "Add, alpha=50%", "Multiply, alpha=50%"};
+        "Normal, 50% alpha", "Add, 50% alpha", "Multiply, 50% alpha"};
     int[] composites = { CoreGraphics.COMPOSITE_SRC_OVER, CoreGraphics.COMPOSITE_ADD, 
         CoreGraphics.COMPOSITE_MULT, CoreGraphics.COMPOSITE_SRC_OVER, 
         CoreGraphics.COMPOSITE_ADD, CoreGraphics.COMPOSITE_MULT};
@@ -34,7 +35,8 @@ public class Colors extends Scene2D {
         background = new FilledSprite(CoreGraphics.GRAY);
         add(background);
         
-        Timeline timeline = new Timeline();
+        Timeline timeline1 = new Timeline();
+        Timeline timeline2 = new Timeline();
         colorGroups = new Group[composites.length];
         for (int i = 0; i < composites.length; i++) {
             // Create the layer
@@ -50,12 +52,15 @@ public class Colors extends Scene2D {
                     color = ~color;
                 }
                 Sprite rect = new FilledSprite(Stage.getWidth() / 2, Stage.getHeight() / 2,
-                    400, 150, color);
+                    450, 150, color);
                 rect.setAnchor(Sprite.CENTER);
                 rect.angle.set(2 * Math.PI * j / 3);
                 rect.alpha.set(alphas[i]);
-                timeline.animateTo(rect.angle, rect.angle.get() + 2*Math.PI, 100000);
                 colorGroups[i].add(rect);
+                
+                timeline1.animate(rect.width, 450, 260, 10000, Easing.STRONG_IN_OUT);
+                timeline1.animate(rect.width, 260, 450, 10000, Easing.STRONG_IN_OUT, 10000);
+                timeline2.animateTo(rect.angle, rect.angle.get() + 2*Math.PI, 50000);
             }
             
             // Add the label
@@ -65,12 +70,13 @@ public class Colors extends Scene2D {
             colorGroups[i].add(label);
         }
         
-        // Loop the rectangle rotations
-        timeline.loopForever();
-        addTimeline(timeline);
-        
         // Start
+        timeline1.loopForever();
+        timeline2.loopForever();
+        addTimeline(timeline1);
+        addTimeline(timeline2);
         setGroup(0);
+        Input.setCursor(Input.CURSOR_HAND);
     }
     
     void setGroup(int index) {
