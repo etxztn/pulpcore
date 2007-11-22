@@ -229,11 +229,19 @@ public class CoreMath {
     
     
     /**
-        Returns the integer part of a fixed-point value (removes the
+        Returns the floor of a fixed-point value (removes the
         fractional part).
     */
-    public static final int intPart(int f) {
+    public static final int floor(int f) {
         return f & ~FRACTION_MASK;
+    }
+    
+    
+    /**
+        Returns the ceil of a fixed-point value.
+    */
+    public static final int ceil(int f) {
+        return -floor(-f);
     }
     
 
