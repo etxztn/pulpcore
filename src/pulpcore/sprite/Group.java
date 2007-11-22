@@ -283,6 +283,7 @@ public class Group extends Sprite {
                 if (sprite instanceof Group) {
                     ((Group)sprite).pack();
                 }
+                // TODO: this is wrong - use transform from prepareToDraw() instead?
                 int x = sprite.x.getAsFixed() - sprite.getAnchorX();
                 int y = sprite.y.getAsFixed() - sprite.getAnchorY();
                 minX = Math.min(minX, x);
@@ -290,11 +291,10 @@ public class Group extends Sprite {
                 minY = Math.min(minY, y);
                 maxY = Math.max(maxY, y + sprite.height.getAsFixed());
             }
-            
             fInnerX = -minX;
             fInnerY = -minY;
-            fNaturalWidth = maxX - minX;
-            fNaturalHeight = maxY - minY;
+            fNaturalWidth = CoreMath.ceil(maxX - minX);
+            fNaturalHeight = CoreMath.ceil(maxY - minY);
             width.setAsFixed(fNaturalWidth);
             height.setAsFixed(fNaturalHeight);
         }
@@ -373,7 +373,7 @@ public class Group extends Sprite {
         if (fInnerX != 0 || fInnerY != 0) {
             if (pixelSnapping.get()) {
                 transformForChildren.translate(
-                    CoreMath.intPart(fInnerX), CoreMath.intPart(fInnerY));
+                    CoreMath.floor(fInnerX), CoreMath.floor(fInnerY));
             }
             else {
                 transformForChildren.translate(fInnerX, fInnerY);

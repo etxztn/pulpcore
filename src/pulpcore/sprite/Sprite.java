@@ -303,7 +303,16 @@ public abstract class Sprite implements PropertyListener {
     */
     protected int getAnchorX() {
         if ((anchor & HCENTER) != 0) {
-            return getNaturalWidth() / 2;
+            int w = getNaturalWidth();
+            // Special case: centered sprites with an integer width on an integer x location
+            if (width.getAsFixed() == w && CoreMath.fracPart(w) == 0 && 
+                CoreMath.fracPart(x.getAsFixed()) == 0) 
+            {
+                return CoreMath.floor(w / 2);
+            }
+            else {
+                return w / 2;
+            }
         }
         else if ((anchor & RIGHT) != 0) {
             return getNaturalWidth() - CoreMath.ONE;
@@ -319,7 +328,16 @@ public abstract class Sprite implements PropertyListener {
     */
     protected int getAnchorY() {
         if ((anchor & VCENTER) != 0) {
-            return getNaturalHeight() / 2;
+            int h = getNaturalHeight();
+            // Special case: centered sprites with an integer height on an integer y location
+            if (height.getAsFixed() == h && CoreMath.fracPart(h) == 0 && 
+                CoreMath.fracPart(y.getAsFixed()) == 0) 
+            {
+                return CoreMath.floor(h / 2);
+            }
+            else {
+                return h / 2;
+            }
         }
         else if ((anchor & BOTTOM) != 0) {
             return getNaturalHeight() - CoreMath.ONE;
@@ -460,8 +478,8 @@ public abstract class Sprite implements PropertyListener {
         
         // Translate
         if (pixelSnapping.get()) {
-            drawTransform.translate(CoreMath.intPart(x.getAsFixed()), 
-                CoreMath.intPart(y.getAsFixed()));
+            drawTransform.translate(CoreMath.floor(x.getAsFixed()), 
+                CoreMath.floor(y.getAsFixed()));
         }
         else {
             drawTransform.translate(x.getAsFixed(), y.getAsFixed());
@@ -480,10 +498,12 @@ public abstract class Sprite implements PropertyListener {
         }
         
         // Adjust for anchor
-        // Only the integer part is taken into consideration so that centered sprites
-        // with an odd width or odd height are drawn on an integer boundary if its location is
-        // an integer.
-        drawTransform.translate(CoreMath.intPart(-getAnchorX()), CoreMath.intPart(-getAnchorY()));
+        if (pixelSnapping.get()) {
+            drawTransform.translate(CoreMath.floor(-getAnchorX()), CoreMath.floor(-getAnchorY()));
+        }
+        else {
+            drawTransform.translate(-getAnchorX(), -getAnchorY());
+        }
     }
     
     
