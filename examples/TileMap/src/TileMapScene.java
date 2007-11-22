@@ -76,7 +76,7 @@ public class TileMapScene extends Scene2D {
         
         // When scrolling, disable dirty rectangles and hide the cursor
         setDirtyRectanglesEnabled(!tileMap.isScrolling());
-        cursor.visible.set(!tileMap.isScrolling());
+        cursor.visible.set(Input.isMouseInside() && !tileMap.isScrolling());
 
         // Click-to-scroll
         if (Input.isMousePressed()) {
@@ -173,8 +173,8 @@ public class TileMapScene extends Scene2D {
             int fTileHeight = CoreMath.toFixed(tileHeight);
             
             if (pixelSnapping.get()) {
-                fViewX = CoreMath.intPart(fViewX);
-                fViewY = CoreMath.intPart(fViewY);
+                fViewX = CoreMath.floor(fViewX);
+                fViewY = CoreMath.floor(fViewY);
             }
             
             Transform t = g.getTransform();
