@@ -365,6 +365,9 @@
             <fileset dir="${build}" includes="pulpcore-*.zip"/>
         </delete>
         
+        <delete dir="${build}/www"/>
+        <mkdir dir="${build}/www" />
+        
         <property name="dist.temp" value="${build}/dist.temp" />
         <delete dir="${dist.temp}" failonerror="false" />
         <mkdir dir="${dist.temp}" />
@@ -406,9 +409,11 @@
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/templates/project/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/AnimationEasing/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/BubbleMark/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Colors/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Easings/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/ImagesAndFonts/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
@@ -418,7 +423,9 @@
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Scenes/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/SoundEffects/build.xml"/></antcall>
+            value="${dist.temp}/examples/Sketch/build.xml"/></antcall>
+        <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Sounds/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Starfield/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
@@ -427,6 +434,36 @@
             value="${dist.temp}/examples/Widgets/build.xml"/></antcall>
                
         <zip destfile="${build}/pulpcore-${version.full}.zip" basedir="${dist.temp}" />
+        
+        <!-- Create the www folder used at interactivepulp.com -->
+        <copy todir="${build}/www">
+            <fileset dir="${dist.temp}/doc"/>
+        </copy>
+        <copy todir="${build}/www/colors">
+            <fileset dir="${dist.temp}/examples/Colors/build"/>
+        </copy>
+        <copy todir="${build}/www/easing">
+            <fileset dir="${dist.temp}/examples/Easings/build"/>
+        </copy>
+        <copy todir="${build}/www/particles">
+            <fileset dir="${dist.temp}/examples/Particles/build"/>
+        </copy>
+        <copy todir="${build}/www/sketch">
+            <fileset dir="${dist.temp}/examples/Sketch/build"/>
+        </copy>
+        <copy todir="${build}/www/sound">
+            <fileset dir="${dist.temp}/examples/Sounds/build"/>
+        </copy>
+        <copy todir="${build}/www/starfield">
+            <fileset dir="${dist.temp}/examples/Starfield/build"/>
+        </copy>
+        <copy todir="${build}/www/tilemap">
+            <fileset dir="${dist.temp}/examples/TileMap/build"/>
+        </copy>
+        <copy todir="${build}/www/widgets">
+            <fileset dir="${dist.temp}/examples/Widgets/build"/>
+        </copy>
+        
             
         <delete dir="${dist.temp}" /> 
     </target>
