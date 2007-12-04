@@ -49,10 +49,10 @@ public class CoreFont {
     protected char lastChar;
     protected int[] charPositions;
     private boolean uppercaseOnly;
-    /** horizontal pixel space between chars */
+    /** Extra horizontal pixel space between chars. Can be negative. */
     private int tracking;
-    private int[] kerningLeft;
-    private int[] kerningRight;
+    private int[] bearingLeft;
+    private int[] bearingRight;
     
     
     public static CoreFont getSystemFont() {
@@ -90,8 +90,8 @@ public class CoreFont {
         this.firstChar = font.firstChar;
         this.lastChar = font.lastChar;
         this.charPositions = font.charPositions;
-        this.kerningLeft = font.kerningLeft;
-        this.kerningRight = font.kerningRight;
+        this.bearingLeft = font.bearingLeft;
+        this.bearingRight = font.bearingRight;
         this.uppercaseOnly = font.uppercaseOnly;
         this.tracking = font.tracking;
     }
@@ -111,21 +111,21 @@ public class CoreFont {
         firstChar = (char)in.readShort();
         lastChar = (char)in.readShort();
         tracking = in.readShort();
-        boolean hasKerning = in.readBoolean();
+        boolean hasBearing = in.readBoolean();
         
         int numChars = lastChar - firstChar + 1;
         charPositions = new int[numChars + 1];
-        kerningLeft = new int[numChars];
-        kerningRight = new int[numChars];
+        bearingLeft = new int[numChars];
+        bearingRight = new int[numChars];
         
         for (int i=0; i<charPositions.length; i++) {
             charPositions[i] = in.readShort() & 0xffff;
         }
         
-        if (hasKerning) {
-            for (int i = 0; i < kerningLeft.length; i++) {
-                kerningLeft[i] = in.readShort();
-                kerningRight[i] = in.readShort();
+        if (hasBearing) {
+            for (int i = 0; i < bearingLeft.length; i++) {
+                bearingLeft[i] = in.readShort();
+                bearingRight[i] = in.readShort();
             }
         }
             
@@ -163,8 +163,7 @@ public class CoreFont {
     
     /**
         Gets the total width of a range of characters in a string. Tracking 
-        and kerning between 
-        characters is included.
+        and kerning between characters is included.
         If a character isn't valid for this font, the last character in the set is used.
         @param beginIndex the beginning index, inclusive.
         @param endIndex the ending index, exclusive.
@@ -226,7 +225,14 @@ public class CoreFont {
     
     protected int getKerning(int leftIndex, int rightIndex) {
         // Future versions of this method might handle kerning pairs, like "WA" and "Yo"
-        return kerningRight[leftIndex] + tracking + kerningLeft[rightIndex];
+        if (tracking != 0 && (shouldIgnoreTracking(rightIndex) || 
+            shouldIgnoreTracking(leftIndex))) 
+        {
+            return bearingRight[leftIndex] + bearingLeft[rightIndex];
+        }
+        else {
+            return bearingRight[leftIndex] + tracking + bearingLeft[rightIndex];
+        }
     }
     
     
@@ -237,6 +243,15 @@ public class CoreFont {
     
     public CoreImage getImage() {
         return image;
+    }
+    
+    
+    private boolean shouldIgnoreTracking(int index) {
+        int width = (charPositions[index+1] - charPositions[index]);
+        int lsb = bearingLeft[index];
+        int rsb = bearingRight[index];
+        int advance = width + lsb + rsb;
+        return advance < width/2;
     }
     
     
@@ -305,19 +320,19 @@ public class CoreFont {
                 charPositions[i], 0, oldWidth, getHeight());
         }
         
-        // Scale the kerning
-        int[] scaledKerningLeft = new int[kerningLeft.length];
-        int[] scaledKerningRight = new int[kerningRight.length];
-        for (int i = 0; i < kerningLeft.length; i++) {
-            scaledKerningLeft[i] = (int)Math.round(kerningLeft[i] * scale);
-            scaledKerningRight[i] = (int)Math.round(kerningRight[i] * scale);
+        // Scale the bearing
+        int[] scaledBearingLeft = new int[bearingLeft.length];
+        int[] scaledBearingRight = new int[bearingRight.length];
+        for (int i = 0; i < bearingLeft.length; i++) {
+            scaledBearingLeft[i] = (int)Math.round(bearingLeft[i] * scale);
+            scaledBearingRight[i] = (int)Math.round(bearingRight[i] * scale);
         }
         
         // Create the new font
         CoreFont scaledFont = new CoreFont(this);
         scaledFont.charPositions = scaledCharPositions;
-        scaledFont.kerningLeft = scaledKerningLeft;
-        scaledFont.kerningRight = scaledKerningRight;
+        scaledFont.bearingLeft = scaledBearingLeft;
+        scaledFont.bearingRight = scaledBearingRight;
         scaledFont.image = scaledImage;
         scaledFont.tracking = (int)Math.round(tracking * scale);
         
