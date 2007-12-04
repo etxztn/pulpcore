@@ -29,17 +29,14 @@
 
 package pulpcore.assettools;
 
-import java.awt.AlphaComposite;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.font.FontRenderContext;
+import java.awt.font.GlyphMetrics;
 import java.awt.font.GlyphVector;
-import java.awt.font.LineMetrics;
 import java.awt.FontFormatException;
-import java.awt.FontMetrics;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
@@ -52,22 +49,18 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
-import java.awt.Toolkit;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import javax.imageio.ImageIO;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
@@ -125,9 +118,9 @@ public class ConvertFontTask extends Task {
     private int fontStyle;
     private int fontTracking;
     
-    private int[] fontKerningLeft;
-    private int[] fontKerningRight;
-    private boolean hasKerning;
+    private int[] fontBearingLeft;
+    private int[] fontBearingRight;
+    private boolean hasBearing;
     
     private Paint backgroundPaint;
     private Color fillColor1;
@@ -164,16 +157,16 @@ public class ConvertFontTask extends Task {
         CoreProperties props = new CoreProperties();
         props.load(new FileInputStream(file));
         
-        fontKerningLeft = new int[Character.MAX_VALUE];
-        fontKerningRight = new int[Character.MAX_VALUE];
-        hasKerning = false;
+        fontBearingLeft = new int[Character.MAX_VALUE];
+        fontBearingRight = new int[Character.MAX_VALUE];
+        hasBearing = false;
         
         List<Character> charList = new ArrayList<Character>();
         String[] charsets = props.getListProperty("chars");
         if (charsets == null || charsets.length == 0 || 
             charsets[0] == null || charsets[0].length() == 0)
         {
-            // Basic Latin
+            // Default: basic Latin
             for (char ch = ' '; ch <= '~' ; ch++) {
                 charList.add(ch);
             }
@@ -222,19 +215,37 @@ public class ConvertFontTask extends Task {
             fontStyle |= Font.ITALIC;
         }
         
-        // Find any kerning
+        // Find any bearing
         for (int i = 0; i < chars.length(); i++) {
             char ch = chars.charAt(i);
-            int kerningLeft = props.getIntProperty("kerning.left." + ch, 0);
-            if (kerningLeft != 0) {
-                hasKerning = true;
-                fontKerningLeft[ch] = kerningLeft;
+            int bearingLeft = 0;
+            int bearingRight = 0;
+            if (props.hasProperty("kerning.left." + ch)) {
+                log("The kerning.left.* property is deprecated. Use bearing.left.*",
+                    Project.MSG_WARN);
+                bearingLeft = props.getIntProperty("kerning.left." + ch, 0);
+            }
+            if (props.hasProperty("bearing.left." + ch)) {
+                bearingLeft = props.getIntProperty("bearing.left." + ch, 0);
             }
             
-            int kerningRight = props.getIntProperty("kerning.right." + ch, 0);
-            if (kerningRight != 0) {
-                hasKerning = true;
-                fontKerningRight[ch] = kerningRight;
+            if (props.hasProperty("kerning.right." + ch)) {
+                log("The kerning.right.* property is deprecated. Use bearing.right.*",
+                    Project.MSG_WARN);
+                bearingRight = props.getIntProperty("kerning.right." + ch, 0);
+            }
+            if (props.hasProperty("bearing.right." + ch)) {
+                bearingRight = props.getIntProperty("bearing.right." + ch, 0);
+            }
+            
+            if (bearingLeft != 0) {
+                hasBearing = true;
+                fontBearingLeft[ch] = bearingLeft;
+            }
+            
+            if (bearingRight != 0) {
+                hasBearing = true;
+                fontBearingRight[ch] = bearingRight;
             }
         }
         
@@ -330,10 +341,6 @@ public class ConvertFontTask extends Task {
             quantize.reduce(data, numColors);
         }
         
-        if (autoKern) {
-            fontTracking++;
-        }
-        
         // Write the font info
         ByteArrayOutputStream fontData = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(fontData);
@@ -341,17 +348,17 @@ public class ConvertFontTask extends Task {
         out.writeChar(firstChar);
         out.writeChar(lastChar);
         out.writeShort((short)fontTracking);
-        out.writeBoolean(hasKerning);
+        out.writeBoolean(hasBearing);
         int position = 0;
         for (int i=0; i<widths.length; i++) {
             out.writeShort((short)position);
             position+=widths[i];
         }
         out.writeShort((short)position);
-        if (hasKerning) {
+        if (hasBearing) {
             for (int i = firstChar; i <= lastChar; i++) {
-                out.writeShort(fontKerningLeft[i]);
-                out.writeShort(fontKerningRight[i]);
+                out.writeShort(fontBearingLeft[i]);
+                out.writeShort(fontBearingRight[i]);
             }
         }
         out.close();
@@ -414,21 +421,16 @@ public class ConvertFontTask extends Task {
         }
         
         // Calculate width of the whitespace characters
-        // Either half the 'M' size (if 'M' is available) or half the max char width
-        int spaceWidth;
-        if (monospace) {
-            spaceWidth = maxWidth;
-        }
-        else if (firstChar <= 'M' && lastChar >= 'M') {
-            spaceWidth = widths['M' - firstChar] / 2;
-        }
-        else {
-            spaceWidth = maxWidth / 2;
-        }
         for (int i = 0; i < legalChars.length(); i++) {
-            char ch = legalChars.charAt(i);
             if (bounds[i] == null) {
-                widths[ch - firstChar] = spaceWidth;
+                char ch = legalChars.charAt(i);
+                if (monospace) {
+                    widths[ch - firstChar] = maxWidth;
+                }
+                else {
+                    GlyphMetrics metrics = getMetrics(font, ch);
+                    widths[ch - firstChar] = Math.round(metrics.getAdvance());
+                }
             }
         }
         
@@ -481,15 +483,8 @@ public class ConvertFontTask extends Task {
             else if (monospaceNumerals && isNumeral) {
                 xOffset += (maxNumeralWidth - widths[ch - firstChar] + 1) / 2; 
                 widths[ch - firstChar] = maxNumeralWidth;
-                fontKerningLeft[ch] = 0;
-                if (autoKern) {
-                    hasKerning = true;
-                    // Correct for increased tracking for autokern fonts
-                    fontKerningRight[ch] = -1;
-                }
-                else {
-                    fontKerningRight[ch] = 0;
-                }
+                fontBearingLeft[ch] = 0;
+                fontBearingRight[ch] = 0;
             }
             
             if (bounds[i] != null) {
@@ -499,7 +494,7 @@ public class ConvertFontTask extends Task {
                     stroke, strokePaint, shadowPaint, shadowX, shadowY);
                 
                 if (autoKern && !monospace && !(monospaceNumerals && isNumeral)) {
-                    autoKern(ch, charImage, bounds[i].x, bounds[i].x + bounds[i].width - 1);
+                    autoKern(font, ch, charImage, bounds[i].x, bounds[i].x + bounds[i].width - 1);
                 }
                 
                 //if (backgroundPaint != null) {
@@ -515,66 +510,21 @@ public class ConvertFontTask extends Task {
     }
     
     
-    private void autoKern(char ch, BufferedImage image, int x1, int x2) {
+    private void autoKern(Font font, char ch, BufferedImage image, int x1, int x2) {
         
-        // If the alpha of a pixel is greater than this, the pixel is considered "solid"
-        final int solidThreshold = 0x80;
-        final int minSolidPixels = 2;
-        final int solidThresholdOnePixel = 0xe4;
-        int leftKern = 0;
-        int rightKern = 0;
-        
-        // Find left kern
-        for (int x = x1; x <= x2; x++) {
-            boolean found = false;
-            int numSolidPixels = 0;
-            for (int y = 0; y < image.getHeight(); y++) {
-                int alpha = image.getRGB(x, y) >>> 24;
-                if (alpha >= solidThreshold) {
-                    numSolidPixels++;
-                    if (alpha >= solidThresholdOnePixel || numSolidPixels >= minSolidPixels) {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-            if (found) {
-                break;
-            }
+        GlyphMetrics metrics = getMetrics(font, ch);
+        float w = (float)metrics.getBounds2D().getWidth();
+        if (w > 0) {
+            //System.out.println(ch + ": lsb=" + metrics.getLSB() + " rsb=" + metrics.getRSB());
+            int lsb = (int)metrics.getLSB();
+            float lsbDiff = metrics.getLSB() - lsb;
+            int rsb = Math.round(metrics.getRSB() + lsbDiff);
             
-            leftKern++;
-        }
-        
-        if (leftKern == x2 - x1 + 1) {
-            // Blank image - do nothing
-            return;
-        }
-        
-        // Find right kern
-        for (int x = x2; x >= x1; x--) {
-            boolean found = false;
-            int numSolidPixels = 0;
-            for (int y = 0; y < image.getHeight(); y++) {
-                int alpha = image.getRGB(x, y) >>> 24;
-                if (alpha >= solidThreshold) {
-                    numSolidPixels++;
-                    if (alpha >= solidThresholdOnePixel || numSolidPixels >= minSolidPixels) {
-                        found = true;
-                        break;
-                    }
-                }
+            if (lsb != 0 || rsb != 0) {
+                hasBearing = true;
+                fontBearingLeft[ch] += lsb;
+                fontBearingRight[ch] += rsb;
             }
-            if (found) {
-                break;
-            }
-            
-            rightKern++;
-        }
-        
-        if (leftKern > 0 || rightKern > 0) {
-            hasKerning = true;
-            fontKerningLeft[ch] -= leftKern;
-            fontKerningRight[ch] -= rightKern;
         }
     }
     
@@ -602,14 +552,12 @@ public class ConvertFontTask extends Task {
     }
     
     
-    
     private BufferedImage drawChar(Font font, char ch,
         Paint backgroundPaint, Paint fillPaint, Stroke stroke, Paint strokePaint,
         Paint shadowPaint, float shadowX, float shadowY)
     {
         // Get the bounds (make plently of room for the stroke, anti-aliasing, etc.)
         FontRenderContext context = new FontRenderContext(new AffineTransform(), true, true);
-        LineMetrics lm = font.getLineMetrics(Character.toString(ch), context);
         Rectangle2D bounds = font.getMaxCharBounds(context);
         int width = (int)Math.round(bounds.getWidth() * 3);
         int height = (int)Math.round(bounds.getHeight() * 3);
@@ -674,5 +622,10 @@ public class ConvertFontTask extends Task {
             RenderingHints.VALUE_STROKE_PURE);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
             RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+    }
+    
+    private GlyphMetrics getMetrics(Font font, char ch) {
+        FontRenderContext context = new FontRenderContext(new AffineTransform(), true, true);
+        return font.createGlyphVector(context, Character.toString(ch)).getGlyphMetrics(0);
     }
 }

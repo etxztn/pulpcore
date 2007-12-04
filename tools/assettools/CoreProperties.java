@@ -44,6 +44,11 @@ public class CoreProperties extends Properties {
     private Map<String, Boolean> requestedKeys = new HashMap<String, Boolean>();
     
     
+    public boolean hasProperty(String key) {
+        return getProperty(key) != null;
+    }
+    
+    
     public String getProperty(String key) {
         String value = super.getProperty(key);
         

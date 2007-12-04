@@ -140,10 +140,10 @@ public class AssetTask extends Task {
             return;
         }
         
-        String javaVersion = System.getProperty("java.version");
-        if (javaVersion.compareTo("1.6") < 0) {
-            log("Java 6 or newer is recommended for font creation.", Project.MSG_WARN);
-        }
+        //String javaVersion = System.getProperty("java.version");
+        //if (javaVersion.compareTo("1.6") < 0) {
+        //    log("Java 6 or newer is recommended for font creation.", Project.MSG_WARN);
+        //}
         
         try {
             traverseDirectory(srcDir, destDir, true);
