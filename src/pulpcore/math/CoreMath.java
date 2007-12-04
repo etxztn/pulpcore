@@ -882,6 +882,15 @@ public class CoreMath {
     // Random number generation and Noise functions
     //
     
+    
+    /**
+        Returns a random integer from 0 to max, inclusive
+    */
+    public static final int rand(int max) {
+        return rand(0, max);
+    }
+    
+    
     /**
         Returns a random integer from min to max, inclusive
     */
@@ -901,7 +910,14 @@ public class CoreMath {
         else {
             return value;
         }
-        //return (abs(rand.nextInt()) % (max-min)) + min;
+    }
+    
+    
+    /**
+        Returns a random double from 0 to max, inclusive
+    */
+    public static final double rand(double max) {
+        return rand(0, max);
     }
     
     
@@ -918,7 +934,6 @@ public class CoreMath {
     */
     public static final boolean rand() {
         return (rand(0, 1) == 0);
-        //return (rand.nextInt() & 1) != 0;
     }
     
     
@@ -926,7 +941,7 @@ public class CoreMath {
         Returns true if a random event occurs. 
         @param percent The probability of the event occuring, from 0 (never) to 100 (always).
     */
-    public static final boolean randomChance(int percent) {
+    public static final boolean randChance(int percent) {
         return (rand(1, 100) <= percent);
     }
     
