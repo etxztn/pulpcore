@@ -80,17 +80,9 @@ function pulpcore_deleteCookie(name, path, domain) {
 		"; expires=Thu, 01-Jan-70 00:00:01 GMT";
 }
 
-function pulpcore_getBrowserName() {
-	return pulpCoreObject.browserName;
-}
-
-function pulpcore_getBrowserVersion() {
-	return pulpCoreObject.browserVersion;
-}
-
 function pulpcore_appletLoaded() {
 	pulpCoreObject.hideSplash();
-	setTimeout(pulpCoreObject.showObject, 10);
+	setTimeout(pulpCoreObject.showObject, 50);
 }
 
 // Internal PulpCore code
@@ -153,6 +145,11 @@ var pulpCoreObject = {
 	},
 	
 	showObject: function() {
+		if (pulpCoreObject.browserIsMozillaFamily) {
+			var spacer = document.getElementById('pulpcore_spacer');
+			spacer.style.display = "none";
+			spacer.style.visibility = "hidden";
+		}
 		var gameContainer = document.getElementById('pulpcore_game');
 		gameContainer.style.display = "block";
 		gameContainer.style.visibility = "visible";
@@ -216,7 +213,9 @@ var pulpCoreObject = {
 			'  <param name="archive" value="' + archive + '" />\n' +
 			'  <param name="boxbgcolor" value="' + bgcolor + '" />\n' +
 			'  <param name="boxfgcolor" value="' + fgcolor + '" />\n' +
-			'  <param name="boxmessage" value="" />\n';
+			'  <param name="boxmessage" value="" />\n' +
+			'  <param name="browsername" value="' + pulpCoreObject.browserName + '" />\n' +
+			'  <param name="browservalue" value="' + pulpCoreObject.browserVersion + '" />\n';
 		if (codebase.length > 0) {
 			objectParams += '  <param name="codebase" value="' + codebase + '" />\n';
 		}
@@ -267,16 +266,17 @@ var pulpCoreObject = {
 				'    onload="pulpCoreObject.splashLoaded(this)"\n' + 
 				'    style="position: relative; top: -50%; left: -50%;" />\n' +
 				'  </div>\n' +
-				'</div><div id="pulpcore_game" style="position: relative; left: -2000px;"></div>\n';
+				'</div><div id="pulpcore_game" style="position: relative; left: -3000px;"></div>\n';
 		}
 		else {
 			if (pulpCoreObject.osName == "Windows" &&
 				pulpCoreObject.browserName == "Safari" && 
 				pulpCoreObject.compareVersions(pulpCoreObject.browserVersion, "522.11") >= 0)
 			{
-				// Known versions: 522.11, 522.12, 522.15
+				// Known versions: 522.11, 522.12, 522.15, 523.12
 				// Safari 3 beta on Windows doesn't recognize the archive param when
 				// the <object> tag is used. For now, use the <applet> tag.
+				// See http://joliclic.free.fr/html/object-tag/en/object-java.html
 				// LiveConnect also does not work.
 				pulpCoreObject.appletHTML =
 				'<applet id="pulpcore_object"\n' + 
@@ -290,7 +290,7 @@ var pulpCoreObject = {
 			}
 			else {
 				// Firefox, Safari, Opera, Mozilla, etc.
-				// Note: the minimum version string is ignored on Mozilla/Netscape/Firefox.
+				// Note: the minimum version string is ignored on the Mozilla family
 				pulpCoreObject.appletHTML =
 				'<object id="pulpcore_object"\n' + 
 				'  classid="java:' + code + '"\n' +
@@ -298,6 +298,11 @@ var pulpCoreObject = {
 				'  width="' + width + '" height="' + height + '">\n' + 
 				objectParams +
 				'</object>';
+			}
+			var spacer = "";
+			if (pulpCoreObject.browserIsMozillaFamily) {
+				// Prevents white flash on Firefox
+				spacer = '<div id="pulpcore_spacer" style="height: 100%">&nbsp;</div>\n';
 			}
 			splashHTML =
 				'<div id="pulpcore_splash"\n' + 
@@ -307,6 +312,7 @@ var pulpCoreObject = {
 				'  <img alt="Loading..." src="' + splash + '"\n' +
 				'  onload="pulpCoreObject.splashLoaded(this)" />\n' + 
 				'</div>\n' +
+				spacer +
 				'<div id="pulpcore_game" style="visibility: hidden"></div>\n';
 		}
 		
@@ -463,7 +469,9 @@ var pulpCoreObject = {
 			if (version[0] == "1" && version[1] == "3") {
 				// If Java 1.3 is previously installed, ask them to restart their browser.
 				// Java 1.3 seems to "take over" and not allow the browser to use Java 6 until
-				// Firefox is restarted. NOTE: re-evaluate if JRE 1.5 is defined as the minimum.
+				// Firefox is restarted. 
+				// TODO: re-evaluate if JRE 1.5 is defined as the minimum. Does JRE 1.4 also
+				// "take over"?
 				var install = document.getElementById('pulpcore_install');
 				install.innerHTML = "Java installed! To play, you may need to restart your browser.";
 			}
