@@ -1,3 +1,20 @@
+0.10.8 (December 4, 2007)
+  * Examples: Added Text example, showing text animation, word wrapping, accent chars, etc.
+  * Tools: Font creator now uses GlyphMetrics for each character's left-side bearing and right-side 
+    bearing. This means special accent chars are drawn correctly, and fonts looks better overall. 
+  * Tools: The font properties "kerning.left.*" and "kerning.right.*" are now named 
+    "bearing.left.*" and "bearing.right.*"
+  * Core: Font tracking is not applied to special zero-width characters.
+  * Core: More accurately hitting the requested frame rate on Windows (reduces, but not eliminates,
+    vertical tearing)
+  * Fixed bug: Fixed Firefox issue: white flash is no longer shown when the applet first appears.
+  * Fixed bug: Fixed timeline bug caused some properties to be incorrectly set when looping.
+  * Fixed bug: there was a bug that prevented a 2nd PulpCore applet from loading resources if both
+    applets were on a virtual name-based host on Firefox (Windows). This bug was fixed by disabling
+    LiveConnect in this situation. (Using LiveConnect created a glitch in the access permissions
+    system). Ironically, getAppletContext().showDocument(new URL("javascript: someMethod();"));
+    works fine in Firefox and doesn't cause the glitch.
+  
 0.10.7 (November 21, 2007)
   * Examples: Added Colors example, showing compositing modes.
   * Examples: Added Sketch example, showing traditional graphics function calls (instead of
