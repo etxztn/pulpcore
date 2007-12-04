@@ -262,7 +262,9 @@
             <param name="core.jar.file" value="${project.release.jar.file}" />
         </antcall>
         
-        <delete file="${build}/system.font.png" />
+        <delete>
+            <fileset dir="${build}" includes="*.font.png"/>
+        </delete>
         
     </target>
     
@@ -429,6 +431,8 @@
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Starfield/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
+            value="${dist.temp}/examples/Text/build.xml"/></antcall>            
+        <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/TileMap/build.xml"/></antcall>
         <antcall target="build-example"><param name="example.build.file" 
             value="${dist.temp}/examples/Widgets/build.xml"/></antcall>
@@ -456,6 +460,9 @@
         </copy>
         <copy todir="${build}/www/starfield">
             <fileset dir="${dist.temp}/examples/Starfield/build"/>
+        </copy>
+        <copy todir="${build}/www/text">
+            <fileset dir="${dist.temp}/examples/Text/build"/>
         </copy>
         <copy todir="${build}/www/tilemap">
             <fileset dir="${dist.temp}/examples/TileMap/build"/>
