@@ -15,7 +15,7 @@ public class HelloWorld extends Scene2D {
         
         CoreFont font = CoreFont.load("hello.font.png");
         label = new Label(font, "Hello World", 320, 240);
-        label.setAnchor(Sprite.HCENTER | Sprite.VCENTER);
+        label.setAnchor(Sprite.CENTER);
         add(label);
         
         SoundClip sound = SoundClip.load("sound.wav");
@@ -23,7 +23,7 @@ public class HelloWorld extends Scene2D {
     }
     
     public void update(int elapsedTime) {
-        double angle = 0.006 * (Input.getMouseX() - 275);
+        double angle = 0.006 * (Input.getMouseX() - 320);
         int duration = 100;
         label.angle.animateTo(angle, duration);
     }
