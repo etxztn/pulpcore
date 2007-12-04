@@ -289,47 +289,27 @@ public class Animation {
             return false;
         }
         
+        boolean valueUpdated = false;
         int animTime = getAnimTime(newTime);
         int animState = getAnimState(animTime);
-        boolean updateValue = (animState == STATE_ACTIVE);
-        
-        if (!updateValue) {
-            int prevAnimTime = getAnimTime(elapsedTime);
-            int prevAnimState = getAnimState(prevAnimTime);
-            updateValue = (prevAnimState != animState);
+        if (animState == STATE_ACTIVE) {
+            valueUpdated = true;
+            updateValue(animTime);
+        }
+        else {
+            int prevAnimState = getAnimState(getAnimTime(elapsedTime));
+            if (animState == STATE_LOOP_DELAY && prevAnimState != STATE_LOOP_DELAY) {
+                valueUpdated = true;
+                updateValue(duration);
+            }
+            else if (animState == STATE_START_DELAY && prevAnimState == STATE_ACTIVE) {
+                valueUpdated = true;
+                updateValue(duration);
+            }
         }
         
         elapsedTime = newTime;
-        
-        /*
-        if (reset) {
-            for (int i = 0; i < animationList.size(); i++) {
-                Animation anim = (Animation)animationList.elementAt(i);
-                boolean isActive = anim.fastForward();
-                if (isActive) {
-                    Property property = (Property)propertyList.elementAt(i);
-                    property.setValue(anim.getValue());
-                }
-                anim.setTime(0);
-            }
-        }        
-        
-        if (newTime >= elapsedTime) {
-            boolean wasActive = (elapsedTime >= startTime && elapsedTime < endTime);
-            boolean crossedActive = (elapsedTime < startTime && newTime == endTime);
-            setValue = wasActive || isActive || crossedActive;
-        }
-        else {
-            boolean crossedActive = (elapsedTime >= startTime && newTime < startTime);
-            setValue = isActive || crossedActive;
-        }
-        */
-        
-        if (updateValue) {
-            updateValue(animTime);
-            return true;
-        }
-        return false;
+        return valueUpdated;
     }
 
 
