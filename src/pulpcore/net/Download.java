@@ -63,7 +63,7 @@ public class Download implements Runnable {
     private long startTime;
     private int unsuccessfulAttempts;
     
-    protected URL url;
+    private URL url;
     private int size;
     
     private int startPosition;
@@ -253,6 +253,17 @@ public class Download implements Runnable {
             connection.setRequestProperty("Cache-Control", "no-transform");
             if (restartPosition > 0) {
                 connection.setRequestProperty("Range", "bytes=" + restartPosition + "-");
+            }
+            
+            // Connect
+            try {
+                connection.connect();
+            }
+            catch (Exception ex) {
+                // SocketPermission: access denied?
+                IOException ioex = new IOException("Connection Error");
+                ioex.initCause(ex);
+                throw ioex;
             }
         
             int responseCode = ((HttpURLConnection)connection).getResponseCode();
