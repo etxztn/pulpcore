@@ -40,6 +40,7 @@ import java.awt.Panel;
 import java.awt.Toolkit;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import pulpcore.Build;
@@ -64,21 +65,29 @@ public final class AppletAppContext extends AppContext {
     private URL talkbackURL;
     private Object jsObject;
     private boolean firstFrameDrawn = false;
+    private boolean enableLiveConnect;
     
     
     public AppletAppContext(CoreApplet app, SystemTimer timer) {
         this.applet = app;
+        this.enableLiveConnect = true;
+        
+        if (CoreSystem.isWindows() && isMozillaFamily() && isVirtualHost()) {
+            enableLiveConnect = false;
+        }
         
         // Create the JSObject for JavaScript functionality
-        try {
-            // JSObject jsObject = netscape.javascript.JSObject.getWindow(this);
-            Class c = Class.forName("netscape.javascript.JSObject");
-            Method getWindow = c.getMethod("getWindow", 
-                new Class[] { Class.forName("java.applet.Applet") } );
-            jsObject = getWindow.invoke(null, new Object[] { app });
-        }
-        catch (Throwable t) {
-            // Ignore
+        if (enableLiveConnect) {
+            try {
+                // JSObject jsObject = netscape.javascript.JSObject.getWindow(this);
+                Class c = Class.forName("netscape.javascript.JSObject");
+                Method getWindow = c.getMethod("getWindow", 
+                    new Class[] { Class.forName("java.applet.Applet") } );
+                jsObject = getWindow.invoke(null, new Object[] { app });
+            }
+            catch (Throwable t) {
+                // Ignore
+            }
         }
         
         boolean talkbackEnabled = "true".equals(app.getParameter("talkback"));
@@ -102,6 +111,34 @@ public final class AppletAppContext extends AppContext {
         
         createSurface(app);
         stage = new Stage(surface, this);
+    }
+    
+    
+    private boolean isMozillaFamily() {
+        String browserName = getAppProperty("browsername");
+        if (browserName == null) {
+            return false;
+        }
+        return (browserName.equals("Firefox") || 
+            browserName.equals("Mozilla") || 
+            browserName.equals("Netscape"));
+    }
+    
+    
+    private boolean isVirtualHost() {
+        String host = getBaseURL().getHost();
+        if (host == null) {
+            return false;
+        }
+        try {
+            byte[] ip = InetAddress.getByName(host).getAddress();
+            String realHost = InetAddress.getByAddress(ip).getHostName();
+            return !host.endsWith(realHost);
+        }
+        catch (Exception ex) {
+            if (Build.DEBUG) CoreSystem.print("Couldn't determine host", ex);
+        }
+        return false;
     }
     
     
@@ -207,7 +244,19 @@ public final class AppletAppContext extends AppContext {
     public void notifyFrameComplete() {
         if (!firstFrameDrawn) {
             firstFrameDrawn = true;
-            callJavaScript("pulpcore_appletLoaded");
+            if (enableLiveConnect) {
+                callJavaScript("pulpcore_appletLoaded");
+            }
+            else {
+                // This works fine in Firefox
+                try {
+                    applet.getAppletContext().showDocument(
+                        new URL("javascript: pulpcore_appletLoaded();"));
+                }
+                catch (Exception ex) {
+                    if (Build.DEBUG) CoreSystem.print("pulpcore_appletLoaded", ex);
+                }
+            }
         }
     }
     
