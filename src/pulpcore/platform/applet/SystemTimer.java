@@ -99,21 +99,27 @@ public class SystemTimer {
     }
     
     
-    public long sleepUntilTimeMicros(long timeMicros) {
+    public long sleepUntilTimeMicros(long goalTimeMicros) {
         if (CoreSystem.isWindowsXPorNewer()) {
             while (true) {
                 long currentTimeMicros = getTimeMicros();
-                if (currentTimeMicros >= timeMicros - 666) {
+                long diff = goalTimeMicros - currentTimeMicros;
+                if (diff <= 50) {
                     return currentTimeMicros;
                 }
-                try {
-                    Thread.sleep(1);
+                else if (diff <= 1500) {
+                    Thread.yield();
                 }
-                catch (InterruptedException ex) { }
+                else {
+                    try {
+                        Thread.sleep(1);
+                    }
+                    catch (InterruptedException ex) { }
+                }
             }
         }
         else {
-            long time = timeMicros - getTimeMicros();
+            long time = goalTimeMicros - getTimeMicros();
             if (time >= 500) {
                 try {
                     Thread.sleep((int)((time + 500) / 1000));

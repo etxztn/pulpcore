@@ -212,20 +212,22 @@ public class Stage implements Runnable {
         @see #getActualFrameRate()
     */
     public static void setFrameRate(int desiredFPS) {
-        Stage instance = getThisStage();
         if (DEFAULT_FPS == -1) {
             return;
         }
         
-        if (desiredFPS == instance.desiredFPS) {
-            return;
-        }
-        else if (desiredFPS < 1) {
+        if (desiredFPS < 1) {
             desiredFPS = MAX_FPS;
         }
         
+        Stage instance = getThisStage();
+        if (desiredFPS != instance.desiredFPS) {
+            instance.remainderMicros = 0;
+        }
         instance.desiredFPS = desiredFPS;
-        instance.remainderMicros = 0;
+        if (instance.surface.canChangeRefreshRate()) {
+            instance.surface.setRefreshRate(desiredFPS);
+        }
     }
     
     

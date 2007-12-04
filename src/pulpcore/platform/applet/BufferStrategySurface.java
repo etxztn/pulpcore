@@ -73,6 +73,8 @@ public class BufferStrategySurface extends Surface {
     private boolean osRepaint;
     private boolean useDirtyRects;
     
+    private int refreshRate;
+    
     // For Mac OS X workaround
     // All times in milliseconds
     private static final int MAC_MIN_DURATION = 18; // Delay can be from 17 to 17.99999... ms
@@ -82,6 +84,7 @@ public class BufferStrategySurface extends Surface {
     public BufferStrategySurface(Container container) {
         this.container = container;
         this.canvas = new Canvas();
+        this.refreshRate = -1;
         container.removeAll();
         container.setLayout(null);
         canvas.setSize(1, 1);
@@ -99,11 +102,26 @@ public class BufferStrategySurface extends Surface {
                 return 1000 / MAC_MIN_DURATION;
             }
             else {
-                return 32768;
+                return -1;
             }
         }
         else {
-            return -1;
+            return refreshRate;
+        }
+    }
+    
+    
+    public boolean canChangeRefreshRate() {
+        return !doAppleWorkaroundSync;
+    }
+    
+    
+    public void setRefreshRate(int refreshRate) {
+        if (this.refreshRate != refreshRate) {
+            this.refreshRate = refreshRate;
+            if (refreshRate > 0) {
+                this.nextSyncTime = CoreSystem.getTimeMicros() + 1000000 / refreshRate;
+            }
         }
     }
     
@@ -186,12 +204,7 @@ public class BufferStrategySurface extends Surface {
         }
         
         if (numDirtyRectangles == 0) {
-            if (doAppleWorkaroundSync) {
-                return sync();
-            }
-            else {
-                return 0;
-            }
+            return sync();
         }
         
         long sleepTime = 0;
@@ -228,12 +241,15 @@ public class BufferStrategySurface extends Surface {
                     // Call show(), sync, and if there is enough time, call show() again
                     bufferStrategy.show();
                     boolean showAgain = (System.currentTimeMillis() < nextSyncTime);
-                    sleepTime += sync();
+                    sleepTime += appleWorkaroundSync();
                     if (showAgain) {
                         bufferStrategy.show();
                     }
                 }
                 else {
+                    if (refreshRate > 0) {
+                        sleepTime += refreshRateSync();
+                    }
                     bufferStrategy.show();
                 }
                 
@@ -277,6 +293,33 @@ public class BufferStrategySurface extends Surface {
     
     
     private long sync() {
+        if (doAppleWorkaroundSync) {
+            return appleWorkaroundSync();
+        }
+        else if (refreshRate > 0) {
+            return refreshRateSync();
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    
+    private long refreshRateSync() {
+        int delay = 1000000 / refreshRate;
+        long startTimeMicros = CoreSystem.getTimeMicros();
+        long endTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(nextSyncTime);
+        nextSyncTime += delay;
+        if (endTimeMicros > nextSyncTime + delay) {
+            // Missed too many sync's
+            long x = (long)Math.ceil((double)(endTimeMicros - nextSyncTime) / delay);
+            nextSyncTime += x * delay;
+        }
+        return endTimeMicros - startTimeMicros;
+    }
+    
+    
+    private long appleWorkaroundSync() {
         long startTime = CoreSystem.getTimeMicros();
         while (true) {
             long currTime = System.currentTimeMillis();

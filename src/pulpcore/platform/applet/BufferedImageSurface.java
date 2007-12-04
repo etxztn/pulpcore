@@ -77,6 +77,16 @@ public class BufferedImageSurface extends Surface {
     }
     
     
+    public boolean canChangeRefreshRate() {
+        return false;
+    }
+    
+    
+    public void setRefreshRate(int refreshRate) {
+        // Ignore
+    }
+    
+    
     protected void notifyResized() {
         contentsLost = true;
         

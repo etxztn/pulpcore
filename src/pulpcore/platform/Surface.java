@@ -117,10 +117,16 @@ public abstract class Surface {
     
     
     /**
-        Returns the refresh rate of the surface (vertical retrace time) or -1 if the surface
-        has no refresh rate (not tied to the vertical retrace).
+        Returns the refresh rate of the surface  or -1 if the surface
+        has no refresh rate.
     */
     public abstract int getRefreshRate();
+    
+    
+    public abstract boolean canChangeRefreshRate();
+    
+    
+    public abstract void setRefreshRate(int refreshRate);
     
     
     /**
