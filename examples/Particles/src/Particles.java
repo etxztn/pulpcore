@@ -31,18 +31,20 @@ public class Particles extends Scene2D {
         add(background);
         addLayer(particleLayer);
         
-        makeParticles(320, 180, 0, 0, 50);
+        makeParticles(320, 240, 320, 240, 50);
+        
+        Input.setCursor(Input.CURSOR_OFF);
     }
     
     public void update(int elapsedTime) {
-        background.setSize(Stage.getWidth(), Stage.getHeight());
-        
-        int x = Input.getMouseX();
-        int y = Input.getMouseY();
-        int dist = (int)Math.sqrt((lastX - x) * (lastX - x) + (lastY - y) * (lastY - y)); 
-        makeParticles(lastX, lastY, x, y, 2 + dist / 8);
-        lastX = x;
-        lastY = y;
+        if (Input.isMouseInside()) {
+            int x = Input.getMouseX();
+            int y = Input.getMouseY();
+            int dist = (int)Math.sqrt((lastX - x) * (lastX - x) + (lastY - y) * (lastY - y)); 
+            makeParticles(lastX, lastY, x, y, 2 + dist / 8);
+            lastX = x;
+            lastY = y;
+        }
     }
     
     private void makeParticles(int x1, int y1, int x2, int y2, int numParticles) {
