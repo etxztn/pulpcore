@@ -68,8 +68,8 @@ public class Easings extends Scene2D {
             time = timeline.getTime();
         }
         timeline = new Timeline();
-        timeline.move(icon, 140, 240, 500, 240, 1000, easing, 500);
-        timeline.move(icon, 500, 240, 140, 240, 1000, easing, 2000);
+        timeline.move(icon, 140, 240, 500, 240, 750, easing, 500);
+        timeline.move(icon, 500, 240, 140, 240, 750, easing, 1750);
         timeline.loopForever();
         timeline.setTime(time);
     }
