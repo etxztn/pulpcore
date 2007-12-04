@@ -441,11 +441,7 @@ public final class AppletPlatform implements Platform {
     */
     public String getBrowserName() {
         AppletAppContext context = (AppletAppContext)getThisAppContext();
-        Object value = context.callJavaScript("pulpcore_getBrowserName");
-        if (value != null) {
-            return value.toString();
-        }
-        return null;
+        return context.getAppProperty("browsername");
     }
 
     
@@ -454,11 +450,7 @@ public final class AppletPlatform implements Platform {
     */
     public String getBrowserVersion() {
         AppletAppContext context = (AppletAppContext)getThisAppContext();
-        Object value = context.callJavaScript("pulpcore_getBrowserVersion");
-        if (value != null) {
-            return value.toString();
-        }
-        return null;
+        return context.getAppProperty("browserversion");
     }
    
 }
