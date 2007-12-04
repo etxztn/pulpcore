@@ -119,7 +119,9 @@ public class CoreImage {
 
     
     /**
-        Creates a new CoreGaphics context for drawing onto this image.
+        Creates a new CoreGaphics context for drawing onto this image. Note, the software 
+        renderer assumes the rendering surface is opaque. If the image is not opaque,
+        only {@link CoreGraphics#COMPOSITE_SRC} will yield correct results.
     */
     public CoreGraphics createGraphics() {
         return new CoreGraphics(this);

@@ -37,7 +37,9 @@ import pulpcore.math.Transform;
 
 /**
     Graphics rendering routines onto a CoreImage surface. 
-    The default composite is COMPOSITE_SRC_OVER and the surface is assumed to be opaque.
+    <p>
+    The default composite is {@link #COMPOSITE_SRC_OVER} and the surface is assumed to be opaque.
+    <p>
     The clip is in view-space - not affected by the Transform.
 */
 public class CoreGraphics {
