@@ -415,8 +415,10 @@ public class ConvertFontTask extends Task {
         int maxNumeralWidth = 0;
         if (!monospace && monospaceNumerals) {
             for (int ch = '0'; ch <= '9'; ch++) {
-                int w = widths[ch - firstChar];
-                maxNumeralWidth = Math.max(maxNumeralWidth, w);
+                if (legalChars.indexOf(ch) != -1) {
+                    int w = widths[ch - firstChar];
+                    maxNumeralWidth = Math.max(maxNumeralWidth, w);
+                }
             }
         }
         
