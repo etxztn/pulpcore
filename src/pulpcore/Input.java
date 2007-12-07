@@ -89,7 +89,8 @@ public abstract class Input {
     
     public static final int CURSOR_DEFAULT   = 0;
     public static final int CURSOR_OFF       = 1;
-    public static final int CURSOR_CUSTOM    = 2;
+    // Set to private since it's not used right now (it didn't work with dirty rects)
+    private static final int CURSOR_CUSTOM    = 2;
     public static final int CURSOR_CROSSHAIR = 3;
     public static final int CURSOR_HAND      = 4;
     public static final int CURSOR_MOVE      = 5;

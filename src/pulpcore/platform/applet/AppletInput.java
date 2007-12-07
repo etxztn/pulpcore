@@ -207,12 +207,12 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     protected void setCursorImpl(int cursorCode) {
         
         int awtCursorCode;
-        if (cursorCode == CURSOR_CUSTOM) {
-            awtCursorCode = Cursor.CUSTOM_CURSOR;
-        }
-        else {
+        //if (cursorCode == CURSOR_CUSTOM) {
+        //    awtCursorCode = Cursor.CUSTOM_CURSOR;
+        //}
+        //else {
             awtCursorCode = getAWTCursorCode(cursorCode);
-        }
+        //}
         
         if (awtCursorCode == Cursor.CUSTOM_CURSOR && invisibleCursor == null) {
             awtCursorCode = Cursor.DEFAULT_CURSOR;
