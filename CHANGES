@@ -1,3 +1,9 @@
+0.10.9 (In SVN)
+  * TODO: Fix dirty rectangle bug if a sprite is removed and immediately added.
+  * TODO: Group add moveToTop() moveToBottom() moveUp() moveDown()
+  * Fixed bug: Font creator had a ArrayIndexOutOfBoundsException if monospace.numerals was true but 
+    the font contained no numerals.
+    
 0.10.8 (December 4, 2007)
   * Examples: Added Text example, showing text animation, word wrapping, accent chars, etc.
   * Tools: Font creator now uses GlyphMetrics for each character's left-side bearing and right-side 
