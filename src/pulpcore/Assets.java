@@ -302,4 +302,38 @@ public class Assets {
             }
         }
     }
+    
+    
+    /**
+        Gets an asset as an {@link java.io.InputStream}.
+        <p>
+        This method first checks the downloaded asset catalogs, then the jar file. For some 
+        platforms (Applets), the originating server is also checked if the
+        asset is not in the zip file(s) or the jar file.
+        Returns null if the asset was not found.
+    */
+    public static InputStream getAsStream(String assetName) {
+        
+        if (assetName.startsWith("/")) {
+            assetName = assetName.substring(1);
+        }
+        
+        // Check loaded zip file(s)
+        synchronized (LOCK) {
+            byte[] assetData = (byte[])ASSETS.get(assetName);
+            if (assetData != null) {
+                return new ByteArrayInputStream(assetData);
+            }
+        }
+        
+        // Check the jar file, then the server
+        Class parentLoader = CoreSystem.getPlatform().getClass();
+        InputStream in = parentLoader.getResourceAsStream("/" + assetName);
+        
+        if (in == null) {
+            if (Build.DEBUG) CoreSystem.print("Asset not found: " + assetName);
+        }
+        
+        return in;
+    }
 }
