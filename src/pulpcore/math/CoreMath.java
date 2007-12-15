@@ -467,6 +467,14 @@ public class CoreMath {
     
     
     /**
+        Returns the sign of a number.
+    */
+    public static final int sign(double n) {
+        return (n > 0)?1:((n < 0)?-1:0);
+    }
+    
+    
+    /**
         Returns the absolute value of a number.
     */
     public static final int abs(int n) {
