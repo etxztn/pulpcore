@@ -49,6 +49,9 @@ public class AnimatedImage extends CoreImage {
     private int currentFrame;
     
     
+    /**
+        Creates a copy of the specified AnimatedImage. The internal raster data array is shared.
+    */
     public AnimatedImage(AnimatedImage image) {
         super(image);
         
@@ -60,10 +63,12 @@ public class AnimatedImage extends CoreImage {
         
         setFrame(0);
         playing = true;
-        
     }
     
     
+    /**
+        Creates an AnimatedImage by spliting a image into frames on a grid.
+    */
     public AnimatedImage(CoreImage image, int numFramesAcross, int numFramesDown) { 
      
         super.width = image.getWidth() / numFramesAcross;
