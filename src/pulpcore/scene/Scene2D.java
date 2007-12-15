@@ -52,6 +52,23 @@ import pulpcore.Stage;
     <p>
     Note the updateScene() method cannot be overridden,
     and subclasses should override the {@link #update(int) } method instead.
+    <p>
+    Scene2D (like most of PulpCore) is not thread-safe. For mult-threaded apps (for example, 
+    network-enabled apps), use the {@link #addEvent(TimelineEvent)}, 
+    {@link #addEventAndWait(TimelineEvent)}, {@link #invokeLater(Runnable)}, or
+    {@link #invokeAndWait(Runnable)} methods to ensure code runs in the 
+    animation thread. For example:
+    <pre>
+    // Called from the network thread.
+    public void receiveNetworkMessage(String message) {
+        // Run the code that modifies the scene in the animation thread.
+        scene.invokeLater(new Runnable() {
+            public void run() {
+                scene.addSprite(new Label(message, 0, 0));
+            }
+        });
+    }
+    </pre>
 */
 public class Scene2D extends Scene {
     
@@ -603,6 +620,8 @@ public class Scene2D extends Scene {
         
         // Update timelines, layers, and sprites
         if (!paused) {
+            layers.update(elapsedTime);
+            
             synchronized (timelines) {
                 for (int i = 0; i < timelines.size(); i++) {
                     Timeline timeline = (Timeline)timelines.get(i);
@@ -613,8 +632,6 @@ public class Scene2D extends Scene {
                     }
                 }
             }
-            
-            layers.update(elapsedTime);
         }
         // Allow subclasses to check input, change scenes, etc.
         update(elapsedTime);
