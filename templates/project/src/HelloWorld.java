@@ -11,6 +11,7 @@ public class HelloWorld extends Scene2D {
     
     Label label;
     
+    @Override
     public void load() {
         add(new ImageSprite("background.png", 0, 0));
         
@@ -25,6 +26,7 @@ public class HelloWorld extends Scene2D {
         sound.play();
     }
     
+    @Override
     public void update(int elapsedTime) {
         double angle = 0.006 * (Input.getMouseX() - 320);
         int duration = 100;
