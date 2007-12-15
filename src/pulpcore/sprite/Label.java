@@ -34,8 +34,8 @@ import pulpcore.animation.Property;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
-import pulpcore.image.AnimatedImage;
 import pulpcore.math.CoreMath;
+import pulpcore.sprite.Group;
 import pulpcore.util.StringUtil;
 
 
@@ -54,8 +54,6 @@ public class Label extends Sprite {
     private CoreFont font;
     private boolean autoWidth;
     private boolean autoHeight;
-    
-    private int lastImageFrame;
     
     public final Int numDisplayChars = new Int(this);
     
@@ -121,8 +119,6 @@ public class Label extends Sprite {
     
     
     private void init(CoreFont font, String text, boolean autoWidth, boolean autoHeight) {
-        lastImageFrame = -1;
-        
         if (font == null) {
             this.font = CoreFont.getSystemFont();
         }
@@ -181,13 +177,6 @@ public class Label extends Sprite {
         
         CoreImage fontImage = font.getImage();
         fontImage.update(elapsedTime);
-        
-        if (fontImage instanceof AnimatedImage) {
-            int frame = ((AnimatedImage)fontImage).getFrame();
-            if (frame != lastImageFrame) {
-                setDirty(true);
-            }
-        }
     }
     
     
@@ -272,9 +261,6 @@ public class Label extends Sprite {
     protected void drawSprite(CoreGraphics g) {
         
         CoreImage fontImage = font.getImage();
-        if (fontImage instanceof AnimatedImage) {
-            lastImageFrame = ((AnimatedImage)fontImage).getFrame();
-        }
 
         String currDisplayText = displayText;
         if (numDisplayChars.get() < displayText.length()) {
@@ -288,6 +274,101 @@ public class Label extends Sprite {
     protected void drawText(CoreGraphics g, String text) {
         g.setFont(getFont());
         g.drawString(text);
+    }
+    
+    
+    /**
+        Creates a Group of Labels with the system font. The newline ('\n') character can be used 
+        to specify explicit line breaks.
+    */
+    public static Group createMultilineLabel(String text, int x, int y) {
+        return createMultilineLabel(new Group(x, y), CoreFont.getSystemFont(),
+            StringUtil.split(text, '\n'));
+    }
+            
+    
+    /**
+        Creates a Group of Labels with the system font. Word-wrapping is used to confine the
+        text to the specified viewWidth. The newline ('\n') character can be used to specify 
+        explicit line breaks.
+    */
+    public static Group createMultilineLabel(String text, int x, int y, int viewWidth) {
+        return createMultilineLabel(new Group(x, y), CoreFont.getSystemFont(),
+            StringUtil.wordWrap(text, CoreFont.getSystemFont(), viewWidth));
+    }         
+    
+                                      
+    /**
+        Creates a Group of Labels with the system font. The newline ('\n') character can be used 
+        to specify explicit line breaks.
+    */
+    public static Group createMultilineLabel(String text, double x, double y) {
+        return createMultilineLabel(new Group(x, y), CoreFont.getSystemFont(),
+            StringUtil.split(text, '\n'));
+    }                                 
+                                      
+    
+    /**
+        Creates a Group of Labels with the system font. Word-wrapping is used to confine the
+        text to the specified viewWidth. The newline ('\n') character can be used to specify 
+        explicit line breaks.
+    */
+    public static Group createMultilineLabel(String text, double x, double y, int viewWidth) {
+        return createMultilineLabel(new Group(x, y), CoreFont.getSystemFont(),
+            StringUtil.wordWrap(text, CoreFont.getSystemFont(), viewWidth));
+    }
+    
+    
+    /**
+        Creates a Group of Labels with the specified Font. The newline ('\n') character can be used 
+        to specify explicit line breaks.
+    */
+    public static Group createMultilineLabel(CoreFont font, String text, int x, int y) {
+        return createMultilineLabel(new Group(x, y), font, StringUtil.split(text, '\n'));
+    }
+    
+    
+    /**
+        Creates a Group of Labels with the specified Font. Word-wrapping is used to confine the
+        text to the specified viewWidth. The newline ('\n') character can be used to specify 
+        explicit line breaks.
+    */
+    public static Group createMultilineLabel(CoreFont font, String text, int x, int y, 
+        int viewWidth) 
+    {
+        return createMultilineLabel(new Group(x, y), font,
+            StringUtil.wordWrap(text, font, viewWidth));
+    }
+    
+    
+    /**
+        Creates a Group of Labels with the specified Font. The newline ('\n') character can be used 
+        to specify explicit line breaks.
+    */
+    public static Group createMultilineLabel(CoreFont font, String text, double x, double y) {
+        return createMultilineLabel(new Group(x, y), font, StringUtil.split(text, '\n'));
+    }
+    
+    
+    /**
+        Creates a Group of Labels with the specified Font. Word-wrapping is used to confine the
+        text to the specified viewWidth. The newline ('\n') character can be used to specify 
+        explicit line breaks.
+    */
+    public static Group createMultilineLabel(CoreFont font, String text, double x, double y, 
+        int viewWidth) 
+    {
+        return createMultilineLabel(new Group(x, y), font,
+            StringUtil.wordWrap(text, font, viewWidth));
+    }
+    
+    
+    private static Group createMultilineLabel(Group group, CoreFont font, String[] lines) {
+        int lineSpacing = font.getHeight() + (font.getHeight() / 8);
+        for (int i = 0; i < lines.length; i++) {
+            group.add(new Label(font, lines[i], 0, i * lineSpacing));
+        }
+        return group;
     }
     
 }
