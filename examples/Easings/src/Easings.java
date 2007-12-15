@@ -15,6 +15,7 @@ public class Easings extends Scene2D {
     
     // Ease t from 0 to 1.
     Easing customEasing = new Easing() {
+        @Override
         protected float ease(float t) {
             return (float)Math.sin(t*2*Math.PI)/3+t;
         }   
@@ -43,6 +44,7 @@ public class Easings extends Scene2D {
     Timeline timeline;
     int easingIndex;
     
+    @Override
     public void load() {
         CoreFont font = CoreFont.getSystemFont().tint(CoreGraphics.WHITE);
         icon = new ImageSprite("earth.png", 140, 240);
@@ -74,6 +76,7 @@ public class Easings extends Scene2D {
         timeline.setTime(time);
     }
     
+    @Override
     public void update(int elapsedTime) {
         timeline.update(elapsedTime);
         

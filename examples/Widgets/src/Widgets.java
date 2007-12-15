@@ -1,6 +1,6 @@
 // Widgets
 // Shows various buttons and form fields.
-// Note, all widgets work when transformed!
+// All widgets work when transformed!
 import pulpcore.animation.Easing;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreImage;
@@ -23,6 +23,7 @@ public class Widgets extends Scene2D {
     Button checkbox;
     Group form;
     
+    @Override
     public void load() {
         CoreFont font = CoreFont.getSystemFont();
         
@@ -83,6 +84,7 @@ public class Widgets extends Scene2D {
         return background;
     }
     
+    @Override
     public void update(int elapsedTime) {
         if (checkbox.isClicked()) {
             double newAngle = checkbox.isSelected() ? Math.PI/16 : 0;

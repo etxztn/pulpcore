@@ -14,6 +14,7 @@ public class Sketch extends Scene {
     boolean erase;
     boolean wasMouseInside;
     
+    @Override
     public void load() {
         int numParticlesPerAttractor = 500;
         particles = new Particle[5000];
@@ -28,7 +29,7 @@ public class Sketch extends Scene {
         erase = true;
     }
     
-    
+    @Override
     public void updateScene(int elapsedTime) {
         if (Input.isMousePressed()) {
             load();
@@ -46,14 +47,15 @@ public class Sketch extends Scene {
         
             // Update particles
             elapsedTime = Math.min(elapsedTime, 100);
-            for (int i = 0; i < particles.length; i++) {
-                particles[i].update(elapsedTime);
+            for (Particle particle : particles) {
+                particle.update(elapsedTime);
             }
             nextFade -= elapsedTime;
             nextFade2 -= elapsedTime;
         }
     }
     
+    @Override
     public void drawScene(CoreGraphics g) {
         if (erase) {
             erase = false;
@@ -63,8 +65,8 @@ public class Sketch extends Scene {
         
         // Draw particles to surface
         g.setComposite(CoreGraphics.COMPOSITE_ADD);
-        for (int i = 0; i < particles.length; i++) {
-            particles[i].draw(g);
+        for (Particle particle : particles) {
+            particle.draw(g);
         }
         
         // Slowly fade

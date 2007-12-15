@@ -25,6 +25,7 @@ public class Text extends Scene2D {
         "malesuada. Aliquam erat volutpat. Pellentesque aliquet felis vulputate enim. " +
         "Morbi odio. Morbi nec massa a sapien aliquam semper. Phasellus eget tellus.";
     
+    @Override
     public void load() {
         add(new FilledSprite(0xffffff));
         
@@ -35,14 +36,14 @@ public class Text extends Scene2D {
         int maxWidth = Stage.getWidth() - x*2;
         CoreFont bgFont = CoreFont.load("serif.font.png").tint(0x808080);
         String[] textLines = StringUtil.wordWrap(backgroundText, bgFont, maxWidth);
-        for (int i = 0; i < textLines.length; i++) {
+        for (String line : textLines) {
             // Add the sprite
-            Label label = new Label(bgFont, textLines[i], x, y);
+            Label label = new Label(bgFont, line, x, y);
             add(label);
             y += label.height.get() + 5;
             
             // Animate (typing effect)
-            int numChars = textLines[i].length();
+            int numChars = line.length();
             label.numDisplayChars.set(0);
             label.numDisplayChars.animateTo(numChars, 30*numChars, Easing.NONE, startTime);
             startTime += 30*numChars + 100;
@@ -54,11 +55,11 @@ public class Text extends Scene2D {
         y = Stage.getHeight() / 2;
         startTime = 1000;
         CoreFont messageFont = CoreFont.load("complex.font.png");
-        for (int i = 0; i < messageText.length; i++) {
+        for (String line : messageText) {
             // Add the sprite
             int labelWidth = -1; // auto
             int labelHeight = 10;
-            Label label = new Label(messageFont, messageText[i], x, y, labelWidth, labelHeight);
+            Label label = new Label(messageFont, line, x, y, labelWidth, labelHeight);
             label.setAnchor(Sprite.CENTER);
             label.alpha.set(0);
             add(label);
@@ -66,7 +67,7 @@ public class Text extends Scene2D {
             // Animate (zoom)
             timeline.animate(label.alpha, 0, 255, 500, Easing.NONE, startTime);
             timeline.animate(label.alpha, 255, 0, 250, Easing.NONE, startTime + 1750);
-            timeline.animate(label.height, 10, 130, 1500, Easing.STRONG_OUT, startTime);
+            timeline.animate(label.height, 10, 102, 1500, Easing.STRONG_OUT, startTime);
             timeline.animate(label.angle, -0.1, 0.1, 2000, Easing.NONE, startTime);
             startTime += 2000;
         }

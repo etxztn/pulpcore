@@ -22,6 +22,7 @@ public class BubbleMark extends Scene2D {
     boolean capFrameRate = true;
     Fixed frameRate = new Fixed();
     
+    @Override
     public void load() {
         // Add background
         FilledSprite background = new FilledSprite(0xffffff);
@@ -48,6 +49,7 @@ public class BubbleMark extends Scene2D {
         setDirtyRectanglesEnabled(balls.length <= 16);
     }
     
+    @Override
     public void update(int elapsedTime) {
         // Reload if ball count has changed
         if (numBalls != balls.length) {
@@ -99,6 +101,7 @@ public class BubbleMark extends Scene2D {
             y.set(ball._y);
         }
         
+        @Override
         public void update(int elpasedTime) {
             if (running) {
                 ball.move();

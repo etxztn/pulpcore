@@ -20,6 +20,7 @@ public class Starfield extends Scene2D {
     int zoomY;
     double zoomSpeed;
 
+    @Override
     public void load() {
         add(new ImageSprite("bg.jpg", 0, 0));
         
@@ -28,11 +29,12 @@ public class Starfield extends Scene2D {
             starImages[i] = CoreImage.load("star" + i + ".png");
         }
         for (int i = 0; i < numStars; i++) {
-            int r = CoreMath.rand(0, numStarImages - 1);
+            int r = CoreMath.rand(numStarImages - 1);
             add(new Star(starImages[r]));
         }
     }
     
+    @Override
     public void update(int elapsedTime) {
         if (Input.getMouseWheelRotation() > 0) {
             zoom(Input.getMouseWheelX(), Input.getMouseWheelY(), -.01);
@@ -68,6 +70,7 @@ public class Starfield extends Scene2D {
             setComposite(CoreGraphics.COMPOSITE_ADD);
         }
         
+        @Override
         public void update(int elapsedTime) {
             super.update(elapsedTime);
             

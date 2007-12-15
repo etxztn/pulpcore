@@ -1,6 +1,5 @@
 // Particles
 // Move your mouse around to see a trail of particles
-
 import pulpcore.animation.Easing;
 import pulpcore.animation.event.RemoveSpriteEvent;
 import pulpcore.animation.Timeline;
@@ -21,7 +20,9 @@ public class Particles extends Scene2D {
     CoreImage[] images;
     Group particleLayer;
     int lastX, lastY;
+    boolean wasMouseInside;
     
+    @Override
     public void load() {
         background = new FilledSprite(CoreGraphics.BLACK);
         images = CoreImage.load("particles.png").split(6, 1);
@@ -36,14 +37,21 @@ public class Particles extends Scene2D {
         Input.setCursor(Input.CURSOR_OFF);
     }
     
+    @Override
     public void update(int elapsedTime) {
         if (Input.isMouseInside()) {
             int x = Input.getMouseX();
             int y = Input.getMouseY();
-            int dist = (int)Math.sqrt((lastX - x) * (lastX - x) + (lastY - y) * (lastY - y)); 
-            makeParticles(lastX, lastY, x, y, 2 + dist / 8);
+            if (wasMouseInside) {
+                int dist = (int)Math.sqrt((lastX - x) * (lastX - x) + (lastY - y) * (lastY - y)); 
+                makeParticles(lastX, lastY, x, y, 2 + dist / 8);
+            }
             lastX = x;
             lastY = y;
+            wasMouseInside = true;
+        }
+        else {
+            wasMouseInside = false;
         }
     }
     
@@ -64,7 +72,7 @@ public class Particles extends Scene2D {
             double startAngle = CoreMath.rand(0, 2*Math.PI);
             double endAngle = startAngle + CoreMath.rand(-2*Math.PI, 2*Math.PI);
             
-            CoreImage image = images[CoreMath.rand(0, images.length - 1)];
+            CoreImage image = images[CoreMath.rand(images.length - 1)];
             Sprite sprite = new ImageSprite(image, startX, startY);
             sprite.setAnchor(Sprite.CENTER);
             sprite.setSize(size, size);

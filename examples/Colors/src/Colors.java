@@ -30,6 +30,7 @@ public class Colors extends Scene2D {
     FilledSprite background;
     int index;
     
+    @Override
     public void load() {
         // Add the background
         background = new FilledSprite(CoreGraphics.GRAY);
@@ -83,11 +84,12 @@ public class Colors extends Scene2D {
         this.index = index;
         background.fillColor.animate(new ColorAnimation(ColorAnimation.RGB,
             background.fillColor.get(), backgrounds[index], 500));
-        for (int i = 0; i < colorGroups.length; i++) {
-            colorGroups[i].alpha.animateTo((i == index)?255:0, 500);
+        for (Group colorGroup : colorGroups) {
+            colorGroup.alpha.animateTo((colorGroup == colorGroups[index])?255:0, 500);
         }
     }
     
+    @Override
     public void update(int elapsedTime) {
         if (Input.isMousePressed()) {
             setGroup((index + 1) % composites.length);

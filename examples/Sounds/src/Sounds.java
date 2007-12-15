@@ -18,6 +18,7 @@ public class Sounds extends Scene2D {
     ImageSprite ear;
     Button muteButton;
     
+    @Override
     public void load() {
         ear = new ImageSprite("ear.png", 300, 180);
         muteButton = new Button(CoreImage.load("mute.png").split(3,2), 600, 440, true);
@@ -32,6 +33,7 @@ public class Sounds extends Scene2D {
         wooshSound.play();
     }
     
+    @Override
     public void update(int elapsedTime) {
         if (muteButton.isClicked()) {
             CoreSystem.setMute(!muteButton.isSelected());
