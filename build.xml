@@ -31,11 +31,11 @@
     </target>
     
     <target name="check-dependencies">
-        <condition property="ctags.task">
+        <condition property="do.ctags">
             <available file="${ctags.command}" />
         </condition>
         
-        <condition property="jslint.task">
+        <condition property="do.jslint">
             <available file="${rhino.path}" />
         </condition>
         
@@ -148,7 +148,7 @@
     </target>
     
     
-    <target name="ctags" if="ctags.task">
+    <target name="ctags" if="do.ctags">
         <exec dir="${src}" executable="${ctags.command}">
             <arg line="${ctags.args}"/>
         </exec>
@@ -170,7 +170,7 @@
         Use Douglas Crockford's JavaScript checker
         See http://jslint.com/
     -->
-    <target name="jslint" if="jslint.task" depends="check-dependencies">
+    <target name="jslint" if="do.jslint" depends="check-dependencies">
         <java classname="org.mozilla.javascript.tools.shell.Main">
             <classpath>
                 <pathelement location="${rhino.path}"/>
@@ -238,8 +238,11 @@
                 <attribute name="Main-Class" value="pulpcore.player.PulpCorePlayer"/>
             </manifest>
         </jar>
+        
+        <!-- Copy Retroweaver jar -->
+        <copy file="${retroweaver.path}" tofile="${build}/retroweaver-all.jar"/>
 
-        <!-- clean up-->
+        <!-- Clean up-->
         <delete dir="${build.temp}" />
     </target>
     
@@ -393,7 +396,7 @@
         
         <copy todir="${dist.temp}/build">
             <fileset dir="${build}">
-                <include name="pulpcore-*.jar" />
+                <include name="*.jar" />
             </fileset>
         </copy>
         
@@ -406,42 +409,29 @@
         <copy todir="${dist.temp}" file="CHANGES" />
         
         <!-- Compile templates and examples -->
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/templates/quick/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/templates/project/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/BubbleMark/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Colors/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Easings/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/ImagesAndFonts/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/MultiThreaded/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Particles/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Scenes/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Sketch/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Sounds/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Starfield/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Text/build.xml"/></antcall>            
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/TileMap/build.xml"/></antcall>
-        <antcall target="build-example"><param name="example.build.file" 
-            value="${dist.temp}/examples/Widgets/build.xml"/></antcall>
-               
+        <subant>
+            <property name="library.path" location="${library.path}"/>
+            <property name="proguard.path" location="${proguard.path}"/>
+            <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="do.obfuscate" value="true"/>
+            <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
+            <fileset dir="${dist.temp}/templates" includes="*/build.xml"/>
+            <target name="build"/>
+            <target name="clean-temp"/>
+        </subant>
+        
         <zip destfile="${build}/pulpcore-${version.full}.zip" basedir="${dist.temp}" />
         
-        <!-- Create the www folder used at interactivepulp.com -->
-        <copy todir="${build}/www">
-            <fileset dir="${dist.temp}/doc"/>
+        <!-- 
+            Create the www folder used at interactivepulp.com
+            
+            Ignoring BubbleMark and ImagesAndFonts. Renaming the Easings example. 
+            
+            NOTE: explore using subant once Mac OS X has Java 6 (So the uppercase dir names can be
+            converted to lowercase using a scriptmapper)
+        -->
+        <copy todir="${build}/www/api">
+            <fileset dir="${dist.temp}/doc/api"/>
         </copy>
         <copy todir="${build}/www/colors">
             <fileset dir="${dist.temp}/examples/Colors/build"/>
@@ -451,6 +441,9 @@
         </copy>
         <copy todir="${build}/www/particles">
             <fileset dir="${dist.temp}/examples/Particles/build"/>
+        </copy>
+        <copy todir="${build}/www/scenegraph">
+            <fileset dir="${dist.temp}/examples/SceneGraph/build"/>
         </copy>
         <copy todir="${build}/www/sketch">
             <fileset dir="${dist.temp}/examples/Sketch/build"/>
@@ -470,19 +463,46 @@
         <copy todir="${build}/www/widgets">
             <fileset dir="${dist.temp}/examples/Widgets/build"/>
         </copy>
-        
             
         <delete dir="${dist.temp}" /> 
     </target>
     
-    <target name="build-example">
-        <ant inheritAll="false" antfile="${example.build.file}" target="build">
-            <property name="library.path" value="${library.path}"/>
-            <property name="proguard.path" value="${proguard.path}"/>
-            <property name="obfuscate.task" value="true"/>
-        </ant>
-        <ant inheritAll="false" antfile="${example.build.file}" target="clean-temp" />
+    <!-- Use this task to keep the example build files up to date -->
+    <target name="update-example-build-files" 
+        description="Updates the example build files from the 'quick' template">
+        <subant target="copy-template" genericantfile="build.xml">
+            <property name="template.file" location="templates/quick/build.xml" />
+            <dirset dir="examples" includes="*"/>
+        </subant>
+        
+        <!-- Special cases (hacks) for BubbleMark -->
+        <replace file="examples/BubbleMark/build.xml">
+            <replacefilter token="640" value="500" />
+            <replacefilter token="480" value="300" />
+        </replace>
+        <replace file="examples/BubbleMark/build.xml">
+            <replacetoken><![CDATA[<keep name="${project.scene}" />]]></replacetoken>
+            <replacevalue><![CDATA[<keep name="${project.scene}">
+                <!-- Special case for BubbleMark: keep these methods available for JavaScript -->
+                <method access="public" />
+            </keep>]]></replacevalue>
+        </replace>
+        <replace file="examples/BubbleMark/build.xml">
+            <replacetoken><![CDATA[<pulpcore-applet]]></replacetoken>
+            <replacevalue><![CDATA[<pulpcore-applet template="template.html"]]></replacevalue>
+        </replace>
     </target>
     
+    <!-- Called from update-example-build-files -->
+    <target name="copy-template">
+        <path id="example.path" path="${basedir}"/>
+        <pathconvert property="example.name" refid="example.path">
+            <flattenmapper/>
+        </pathconvert>
+        
+        <copy file="${template.file}" overwrite="true" tofile="build.xml" />
+        <replace file="build.xml" token="HelloWorld" value="${example.name}" />
+    </target>
+
 </project>
 
