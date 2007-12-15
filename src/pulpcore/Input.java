@@ -363,6 +363,7 @@ public abstract class Input {
     protected int mouseWheel;
     protected boolean hasKeyboardFocus;
     protected boolean isMouseInside;
+    protected boolean mouseMoving;
               
     protected boolean textInputMode;
     protected String textInput = "";
@@ -519,8 +520,8 @@ public abstract class Input {
     /**
         Checks a list of key codes and returns true if at least one key is 
         pressed and no other keys are down. This is a convenience method to 
-        bind an action to zero or more keys, which is useful for 
-        user-configurable key controls.
+        bind an action to zero or more keys. For example, the arrow keys
+        and the WASD keys could be bound to the same action.
         @return true if at least one key is pressed and no other keys are down.
     */
     public static boolean isPressed(int[] keyCodes) {
@@ -543,8 +544,8 @@ public abstract class Input {
     /**
         Checks a list of key codes and returns true if at least one key is 
         down. This is a convenience method to 
-        bind an action to zero or more keys, which is useful for 
-        user-configurable key controls.
+        bind an action to zero or more keys. For example, the arrow keys
+        and the WASD keys could be bound to the same action.
         @return true if any key is down.
     */
     public static boolean isDown(int[] keyCodes) {
@@ -563,8 +564,8 @@ public abstract class Input {
     /**
         Checks a list of key codes and returns true if at least one key is 
         released and no other keys are down. This is a convenience method to 
-        bind an action to zero or more keys, which is useful for 
-        user-configurable key controls.
+        bind an action to zero or more keys. For example, the arrow keys
+        and the WASD keys could be bound to the same action.
         @return true if at least one key is released and no other keys are down.
     */
     public static boolean isReleased(int[] keyCodes) {
@@ -655,6 +656,14 @@ public abstract class Input {
     */
     public static boolean isMouseDown() {
         return isDown(KEY_MOUSE_BUTTON_1);
+    }
+    
+    
+    /**
+        @return true if the mouse moved since the last frame.
+    */
+    public static boolean isMouseMoving() {
+        return getThisInputSystem().mouseMoving;
     }
     
     

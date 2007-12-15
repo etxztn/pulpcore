@@ -161,6 +161,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             }
         }
         
+        super.mouseMoving = (appletMouseX != super.mouseX || appletMouseY != super.mouseY);
         super.mouseX = appletMouseX;
         super.mouseY = appletMouseY;
         super.mousePressX = appletMousePressX;
