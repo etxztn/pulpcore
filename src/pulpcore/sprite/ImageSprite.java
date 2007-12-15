@@ -39,7 +39,7 @@ import pulpcore.math.Transform;
 /**
     An image-based sprite. The image can be an {@link pulpcore.image.AnimatedImage}.
     To ignore the CoreImage's hotspot, call {@link #setAnchor(int) } with an 
-    anchor other than Sprite.DEFAULT, like Sprite.TOP | Sprite.LEFT.
+    anchor other than Sprite.DEFAULT, like Sprite.NORTH_WEST.
 */
 public class ImageSprite extends Sprite {
     
@@ -125,43 +125,28 @@ public class ImageSprite extends Sprite {
         if (h < 0) {
             height.set(image.getHeight());
         }
-    }    
+    }
     
-   
+    
+    /**
+        Gets this ImageSprite's internal image.
+    */
+    public CoreImage getImage() {
+        return image;
+    }
+    
+    
+    /**
+        Sets this ImageSprite's internal image. The width and height of this ImageSprite is
+        not changed.
+    */
     public void setImage(CoreImage image) {
-        if (this.image == image) {
-            return;
-        }
-        
-        if (image instanceof AnimatedImage) {
-            ((AnimatedImage)image).setFrame(0);
-        }
-        this.image = image;
-        setDirty(true);
-        lastImageFrame = 0;
-    }
-    
-    
-    public void stop() {
-        if (image instanceof AnimatedImage) {
-            ((AnimatedImage)image).stop();
-            checkDirtyImage();
-        }
-    }
-    
-    
-    public void pause() {
-        if (image instanceof AnimatedImage) {
-            ((AnimatedImage)image).pause();
-            checkDirtyImage();
-        }
-    }
-    
-    
-    public void start() {
-        if (image instanceof AnimatedImage) {
-            ((AnimatedImage)image).start();
-            checkDirtyImage();
+        if (this.image != image) {
+            this.image = image;
+            setDirty(true);
+            if (image instanceof AnimatedImage) {
+                lastImageFrame = ((AnimatedImage)image).getFrame();
+            }
         }
     }
     
@@ -171,10 +156,11 @@ public class ImageSprite extends Sprite {
             int frame = ((AnimatedImage)image).getFrame();
             if (frame != lastImageFrame) {
                 setDirty(true);
+                lastImageFrame = frame;
             }
         }
     }
-    
+
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
@@ -183,11 +169,6 @@ public class ImageSprite extends Sprite {
             image.update(elapsedTime);
             checkDirtyImage();
         }
-    }
-    
-    
-    public CoreImage getImage() {
-        return image;
     }
     
     
@@ -232,13 +213,8 @@ public class ImageSprite extends Sprite {
     
     
     protected void drawSprite(CoreGraphics g) {
-        if (image == null) {
-            return;
+        if (image != null) {
+            g.drawImage(image);
         }
-        
-        if (image instanceof AnimatedImage) {
-            lastImageFrame = ((AnimatedImage)image).getFrame();
-        }
-        g.drawImage(image);
     }
 }
