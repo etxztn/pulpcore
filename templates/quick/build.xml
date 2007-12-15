@@ -4,7 +4,7 @@
     This template is designed for trying out PulpCore quickly without creating 
     a directory structure for a full project.
 -->
-<project name="PulpCore Quick Project" default="build-and-run" basedir=".">
+<project name="HelloWorld" default="build-and-run" basedir=".">
 
     <property file="build.properties" />
     
@@ -16,7 +16,7 @@
                               Default is true.
         project.jar           The name of the project jar to create.
         project.assets        The name of the project zip file to create.
-        project.scene         The name of the first scene to display 
+        project.scene         The name of the first scene to display.
         project.width         The width of the applet.
         project.height        The height of the applet.
         pulpcore.build        Build mode: "release" or "debug".
@@ -59,6 +59,9 @@
     <property name="pulpcore.platform" value="applet" />
     <property name="autoload.assets.zip" value="${project.assets.zip}" />
     
+    <!-- Java laungage to use. May be 1.4 or 1.5. If the value is 1.5, Retroweaver is used. -->
+    <property name="pulpcore.java.language" value="1.5" />
+    
     <!-- Project paths -->
     <property name="src" value="src" />
     <property name="build" value="build/" />
@@ -70,6 +73,7 @@
     <property name="core.jar.file" value="${pulpcore.path}/pulpcore-${pulpcore.platform}-${pulpcore.build}-${pulpcore.version}.jar" />
     <property name="tools.jar.file" value="${pulpcore.path}/pulpcore-assettools-${pulpcore.version}.jar" />
     <property name="player.jar.file" value="${pulpcore.path}/pulpcore-player-${pulpcore.version}.jar" />
+    <property name="retroweaver.jar.file" value="${pulpcore.path}/retroweaver-all.jar" />
     
     <!-- PulpCore tasks -->
     <taskdef resource="tasks.properties" classpath="${tools.jar.file}"/>
@@ -121,7 +125,7 @@
             </condition>
         </fail>            
 
-        <condition property="obfuscate.task">
+        <condition property="do.obfuscate">
             <and>
                 <equals arg1="${pulpcore.build}" arg2="release" />
                 <available resource="proguard/ant/task.properties" classpath="${proguard.path}" />
@@ -131,7 +135,7 @@
         <fail message="Required property library.path is not defined" >
             <condition>
                 <and>
-                    <isset property="obfuscate.task" />
+                    <isset property="do.obfuscate" />
                     <or>
                         <not><isset property="library.path" /></not>
                         <equals arg1="${library.path}" arg2="" />
@@ -140,8 +144,16 @@
             </condition>
         </fail>
         
-        <condition property="applet.html.task">
+        <condition property="do.applet.html">
             <equals arg1="${pulpcore.platform}" arg2="applet" />
+        </condition>
+        
+        <condition property="do.retroweaver">
+            <equals arg1="${pulpcore.java.language}" arg2="1.5" />
+        </condition>
+        
+        <condition property="bootclasspath" value="${library.path}" else="">
+            <equals arg1="${pulpcore.java.language}" arg2="1.4" />
         </condition>
         
         <delete dir="${build.classes}" failonerror="false" />
@@ -156,14 +168,15 @@
     <target name="compile" depends="init">
         <javac srcdir="${src}"
                 destdir="${build.classes}"
-                source="1.4"
-                target="1.4"
+                source="${pulpcore.java.language}"
+                target="${pulpcore.java.language}"
                 debug="on"
                 deprecation="on"
                 classpath="${core.jar.file}"
-                bootclasspath="${library.path}">
+                bootclasspath="${bootclasspath}">
 
             <include name="**/*.java"/>
+            <compilerarg line="-Xlint:all" />
         </javac>
     </target>
     
@@ -177,11 +190,25 @@
     </target>
    
     
+    <!-- Prepares the jar for Java 1.4 -->
+    <target name="retroweave" if="do.retroweaver" depends="jar">
+        <taskdef name="retroweaver" classname="net.sourceforge.retroweaver.ant.RetroWeaverTask"
+            classpath="${retroweaver.jar.file}" />
+            
+        <move file="${build}/${project.jar}" tofile="${build}/in.jar"/>
+        
+        <retroweaver inputjar="${basedir}/${build}/in.jar" 
+            outputjar="${basedir}/${build}/${project.jar}" />
+            
+        <delete file="${build}/in.jar" />
+    </target>
+
+    
     <!-- Obfuscates the jar using Proguard -->
-    <target name="obfuscate" if="obfuscate.task" depends="jar">
+    <target name="obfuscate" if="do.obfuscate" depends="retroweave">
         <taskdef resource="proguard/ant/task.properties" classpath="${proguard.path}" />
             
-        <copy file="${build}/${project.jar}" tofile="${build}/in.jar"/>
+        <move file="${build}/${project.jar}" tofile="${build}/in.jar"/>
 
         <proguard
                 defaultpackage="" 
@@ -193,7 +220,6 @@
                 >
 
             <libraryjar name="${library.path}" /> 
-            
             <injar name="${build}/in.jar" />
             <outjar name="${build}/${project.jar}" />
             
@@ -209,7 +235,7 @@
     
     
     <!-- Creates index.html, splash.gif, and pulpcore.js -->
-    <target name="applet.html" depends="init" if="applet.html.task">
+    <target name="applet.html" depends="init" if="do.applet.html">
         <pulpcore-applet 
             destDir="${build}"
             archive="${project.jar}"
