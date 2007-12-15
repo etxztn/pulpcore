@@ -85,6 +85,10 @@ public class ConsoleScene extends Scene2D {
     
     public void update(int elapsedTime) {
         
+        if (clearButton.isClicked()) {
+            CoreSystem.clearLog();
+        }
+        
         if (textbox.needsRefresh()) {
             textbox.refresh();
         }
@@ -94,9 +98,6 @@ public class ConsoleScene extends Scene2D {
             if (Stage.canPopScene()) {
                 Stage.popScene();
             }
-        }
-        if (clearButton.isClicked()) {
-            CoreSystem.clearLog();
         }
         if (copyButton.isClicked()) {
             CoreSystem.setClipboardText(CoreSystem.getLogText());
