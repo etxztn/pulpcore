@@ -229,7 +229,7 @@ public abstract class Sprite implements PropertyListener {
     /**
         For dirty rectangles - most apps will not need ot call this method directly.
     */
-    public Rect getDirtyRect() {
+    public final Rect getDirtyRect() {
         if (dirtyRect == null || dirtyRect.width <= 0) {
             return null;
         }
@@ -242,7 +242,7 @@ public abstract class Sprite implements PropertyListener {
     /**
         For dirty rectangles - most apps will not need ot call this method directly.
     */
-    public boolean calcDirtyRect() {
+    public final boolean calcDirtyRect() {
         
         boolean changed = false;
         
@@ -268,14 +268,14 @@ public abstract class Sprite implements PropertyListener {
     /**
         For dirty rectangles - most apps will not need ot call this method directly.
     */
-    public void clearDirtyRect() {
+    public final void clearDirtyRect() {
         if (dirtyRect != null) {
             dirtyRect.width = -1;
         }
     }
     
     
-    public void setDirty(boolean dirty) {
+    public final void setDirty(boolean dirty) {
         this.dirty = dirty;
     }
     
@@ -283,7 +283,7 @@ public abstract class Sprite implements PropertyListener {
     /**
         Returns true if the Sprite's properties have changed since the last call to draw()
     */
-    public boolean isDirty() {
+    public final boolean isDirty() {
         return dirty;
     }
 
@@ -303,16 +303,8 @@ public abstract class Sprite implements PropertyListener {
     */
     protected int getAnchorX() {
         if ((anchor & HCENTER) != 0) {
-            int w = getNaturalWidth();
-            // Special case: centered sprites with an integer width on an integer x location
-            if (width.getAsFixed() == w && CoreMath.fracPart(w) == 0 && 
-                CoreMath.fracPart(x.getAsFixed()) == 0) 
-            {
-                return CoreMath.floor(w / 2);
-            }
-            else {
-                return w / 2;
-            }
+            // Special case: make sure centered sprites are drawn on an integer boundary
+            return CoreMath.floor(getNaturalWidth() / 2);
         }
         else if ((anchor & RIGHT) != 0) {
             return getNaturalWidth() - CoreMath.ONE;
@@ -328,16 +320,8 @@ public abstract class Sprite implements PropertyListener {
     */
     protected int getAnchorY() {
         if ((anchor & VCENTER) != 0) {
-            int h = getNaturalHeight();
-            // Special case: centered sprites with an integer height on an integer y location
-            if (height.getAsFixed() == h && CoreMath.fracPart(h) == 0 && 
-                CoreMath.fracPart(y.getAsFixed()) == 0) 
-            {
-                return CoreMath.floor(h / 2);
-            }
-            else {
-                return h / 2;
-            }
+            // Special case: make sure centered sprites are drawn on an integer boundary
+            return CoreMath.floor(getNaturalHeight() / 2);
         }
         else if ((anchor & BOTTOM) != 0) {
             return getNaturalHeight() - CoreMath.ONE;
