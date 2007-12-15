@@ -1,6 +1,22 @@
-0.10.9 (In SVN)
-  * TODO: Fix dirty rectangle bug if a sprite is removed and immediately added.
-  * TODO: Group add moveToTop() moveToBottom() moveUp() moveDown()
+0.10.9 (December 14, 2007)
+  * Examples: Project template now contains more scenes
+  * Examples: Added SceneGraph example (fractal tree).
+  * Examples: Removed Scenes example (see Project template)
+  * Examples: Removed MultiThreaded example (moved example to JavaDoc)
+  * API: Added to Group: moveToTop(), moveToBottom(), moveUp(), moveDown().
+  * API: Added Assets.getAsStream().
+  * API: Added Label.createMultilineLabel() convenience functions.
+  * API: Added Input.isMouseMoving() to 
+  * Core: Retroweaver is now a normal part of the build process in the templates and examples.
+    For now, PulpCore itself still uses Java 1.4 code, just in case there are any problems with 
+    Retroweaver. All the examples now use Java 5 language features and have been tested to run
+    fine with Java 1.4.
+  * Fixed bug: another centering anchoring issue.
+  * Fixed bug: Surface is now correctly redrawn if another OS window was on top of it (occured 
+    on Java 6 + Windows when the Scene had no dirty rectangles).
+  * Fixed bug: ImageSprite now correctly detects if its AnimatedImage changed frames.
+  * Fixed bug: missing a dirty rectangle if a sprite is removed from a Group, added to the same
+    Group, and moved its position all in the same frame.
   * Fixed bug: Font creator had a ArrayIndexOutOfBoundsException if monospace.numerals was true but 
     the font contained no numerals.
     
