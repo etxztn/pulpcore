@@ -123,6 +123,7 @@ public final class AppletPlatform implements Platform {
             }
             
             // Look through all registered apps and find the context for this ThreadGroup
+            // TODO: implement as ThreadLocal instead? (This implementation was Java 1.1 compatible)
             ThreadGroup currentThreadGroup = Thread.currentThread().getThreadGroup();
             for (int i = 0; i < allContexts.size(); i++) {
                 AppletAppContext context = (AppletAppContext)allContexts.get(i);
