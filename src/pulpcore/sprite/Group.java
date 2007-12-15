@@ -51,6 +51,7 @@ public class Group extends Sprite {
     private static final int MOD_NONE = 0;
     private static final int MOD_ADDED = 1;
     private static final int MOD_REMOVED = 2;
+    private static final int MOD_REORDERED = 4;
     
     private ArrayList sprites = new ArrayList();
     private ArrayList previousSprites = null;
@@ -122,6 +123,21 @@ public class Group extends Sprite {
     }
     
     
+    /*
+        Using a custom method because list.indexOf() uses .equals(), which could cause problems
+    */
+    private int getIndex(Sprite s) {
+        if (s != null) {
+            for (int i = 0; i < sprites.size(); i++) {
+                if (s == sprites.get(i)) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    
+    
     /**
         Returns the number of sprites in this group and all child groups.
     */
@@ -185,14 +201,14 @@ public class Group extends Sprite {
     
     
     /**
-        Adds a Sprite to this Group.
+        Adds a Sprite to this Group. The Sprite is added so it appears above all other sprites in
+        this Group.
     */
     public void add(Sprite sprite) {
         if (sprite != null && isModificationAllowed() && !sprites.contains(sprite)) {
             modActions |= MOD_ADDED;
             modCount++;
             sprite.setDirty(true);
-            sprite.clearDirtyRect();
             sprites.add(sprite);
         }
     }
@@ -220,6 +236,76 @@ public class Group extends Sprite {
             modActions |= MOD_REMOVED;
             modCount++;
             sprites.clear();
+        }
+    }
+    
+    
+    /**
+        Moves the specified Sprite to the top of the z-order, so that all the other Sprites 
+        currently in this Group appear underneath it. If the specified Sprite is not in this Group,
+        or the Sprite is already at the top, this method does nothing.
+    */
+    public void moveToTop(Sprite sprite) {
+        moveTo(sprite, sprites.size() - 1);
+    }
+    
+    
+    /**
+        Moves the specified Sprite to the bottom of the z-order, so that all the other Sprites 
+        currently in this Group appear above it. If the specified Sprite is not in this Group,
+        or the Sprite is already at the bottom, this method does nothing.
+    */
+    public void moveToBottom(Sprite sprite) {
+        moveTo(sprite, 0);
+    }
+    
+    
+    /**
+        Moves the specified Sprite up in z-order, swapping places with the first Sprite that 
+        appears above it. If the specified Sprite is not in this Group, or the Sprite is already
+        at the top, this method does nothing.
+    */
+    public void moveUp(Sprite sprite) {
+        int position = getIndex(sprite);
+        swap(position, Math.min(position + 1, sprites.size() - 1));
+    }
+    
+    
+    /**
+        Moves the specified Sprite down in z-order, swapping places with the first Sprite that 
+        appears below it. If the specified Sprite is not in this Group, or the Sprite is already
+        at the bottom, this method does nothing.
+    */
+    public void moveDown(Sprite sprite) {
+        int position = getIndex(sprite);
+        swap(position, Math.max(position - 1, 0));
+    }
+    
+    
+    private void moveTo(Sprite sprite, int goalPosition) {
+        int position = getIndex(sprite);
+        if (position != -1 && position != goalPosition && isModificationAllowed()) {
+            sprites.remove(position);
+            sprites.add(goalPosition, sprite);
+            sprite.setDirty(true);
+            modActions |= MOD_REORDERED;
+            modCount++;
+        }
+    }
+    
+    
+    private void swap(int positionA, int positionB) {
+        if (positionA != -1 && positionB != -1 && positionA != positionB && 
+            isModificationAllowed()) 
+        {
+            Sprite a = (Sprite)sprites.get(positionA);
+            Sprite b = (Sprite)sprites.get(positionB);
+            sprites.set(positionA, b);
+            sprites.set(positionB, a);
+            // Doesn't matter which one is set to dirty
+            a.setDirty(true);
+            modActions |= MOD_REORDERED;
+            modCount++;
         }
     }
 
