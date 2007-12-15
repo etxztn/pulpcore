@@ -83,7 +83,15 @@ public class BufferStrategySurface extends Surface {
     
     public BufferStrategySurface(Container container) {
         this.container = container;
-        this.canvas = new Canvas();
+        this.canvas = new Canvas() {
+            public void paint(Graphics g) {
+                notifyOSRepaint();
+            }
+            
+            public void update(Graphics g) {
+                notifyOSRepaint();
+            }
+        };
         this.refreshRate = -1;
         container.removeAll();
         container.setLayout(null);
@@ -203,7 +211,7 @@ public class BufferStrategySurface extends Surface {
             return 0;
         }
         
-        if (numDirtyRectangles == 0) {
+        if (numDirtyRectangles == 0 && !contentsLost) {
             return sync();
         }
         
