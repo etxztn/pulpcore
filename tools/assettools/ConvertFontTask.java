@@ -35,6 +35,7 @@ import java.awt.Font;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphMetrics;
 import java.awt.font.GlyphVector;
+import java.awt.font.TextAttribute;
 import java.awt.FontFormatException;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
@@ -59,8 +60,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
@@ -69,6 +72,9 @@ import pulpcore.assettools.png.PNGWriter;
 public class ConvertFontTask extends Task {
     
     private static final long MAGIC = 0x70756c70666e740bL; // "pulpfnt" 0.11
+    
+    // For fonts with kerning pairs (work in progress)
+    //private static final long MAGIC_0_12 = 0x70756c70666e740cL; // "pulpfnt" 0.12
     
     private File srcFile;
     private File destFile;
@@ -137,7 +143,13 @@ public class ConvertFontTask extends Task {
     private boolean monospace;
     private boolean monospaceNumerals;
     
-    private final boolean autoKern = true;
+    private final boolean useGlyphBearingInfo = true;
+    
+    // Kerning: Java 6 only (work in progress)
+    private final boolean useKerningInfo = true;
+    
+    private final FontRenderContext context = 
+        new FontRenderContext(new AffineTransform(), true, true);
     
     
     private void create() throws IOException, FontFormatException {
@@ -326,12 +338,19 @@ public class ConvertFontTask extends Task {
             throw new IOException("No legal characters using font " + font.getFamily());
         }
         
+        // Get the kerning info (work in progress)
+        //if (useKerningInfo) {
+        //    List<Kerning> pairs = getKerningPairs(font, legalChars.toString().toCharArray());
+        //    for (Kerning pair : pairs) {
+        //        log(pair.toString());
+        //    }
+        //}
+        
         // Create the raster font image
         char firstChar = legalChars.charAt(0);
         char lastChar = legalChars.charAt(legalChars.length() - 1);
         int[] widths = new int[lastChar - firstChar + 1];
         BufferedImage image = renderFont(font, legalChars.toString(), widths);
-        
         
         // Reduce the colors of the image
         if (numColors > 0) {
@@ -350,7 +369,7 @@ public class ConvertFontTask extends Task {
         out.writeShort((short)fontTracking);
         out.writeBoolean(hasBearing);
         int position = 0;
-        for (int i=0; i<widths.length; i++) {
+        for (int i = 0; i < widths.length; i++) {
             out.writeShort((short)position);
             position+=widths[i];
         }
@@ -363,19 +382,14 @@ public class ConvertFontTask extends Task {
         }
         out.close();
         
-        
         // Save the image
         out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(destFile)));
         PNGWriter writer = new PNGWriter();
         String imageDescription = writer.write(image, 0, 0, null, fontData.toByteArray(), out);
         out.close();
         
-        //
         // Log diagnostic info
-        //
-        
         long time = (System.nanoTime() - startTime) / 1000000;
-        
         //String description = srcFile + " (" + time + "ms): " + imageDescription;
         String description = destFile + " (" + font.getFamily() + " font, " + imageDescription + ")";
         log("Created: " + description, Project.MSG_INFO);
@@ -495,8 +509,8 @@ public class ConvertFontTask extends Task {
                 BufferedImage charImage = drawChar(font, ch, null, fillPaint,
                     stroke, strokePaint, shadowPaint, shadowX, shadowY);
                 
-                if (autoKern && !monospace && !(monospaceNumerals && isNumeral)) {
-                    autoKern(font, ch, charImage, bounds[i].x, bounds[i].x + bounds[i].width - 1);
+                if (useGlyphBearingInfo && !monospace && !(monospaceNumerals && isNumeral)) {
+                    getBearing(font, ch, charImage, bounds[i].x, bounds[i].x + bounds[i].width - 1);
                 }
                 
                 //if (backgroundPaint != null) {
@@ -512,7 +526,7 @@ public class ConvertFontTask extends Task {
     }
     
     
-    private void autoKern(Font font, char ch, BufferedImage image, int x1, int x2) {
+    private void getBearing(Font font, char ch, BufferedImage image, int x1, int x2) {
         
         GlyphMetrics metrics = getMetrics(font, ch);
         float w = (float)metrics.getBounds2D().getWidth();
@@ -559,7 +573,6 @@ public class ConvertFontTask extends Task {
         Paint shadowPaint, float shadowX, float shadowY)
     {
         // Get the bounds (make plently of room for the stroke, anti-aliasing, etc.)
-        FontRenderContext context = new FontRenderContext(new AffineTransform(), true, true);
         Rectangle2D bounds = font.getMaxCharBounds(context);
         int width = (int)Math.round(bounds.getWidth() * 3);
         int height = (int)Math.round(bounds.getHeight() * 3);
@@ -627,7 +640,74 @@ public class ConvertFontTask extends Task {
     }
     
     private GlyphMetrics getMetrics(Font font, char ch) {
-        FontRenderContext context = new FontRenderContext(new AffineTransform(), true, true);
         return font.createGlyphVector(context, Character.toString(ch)).getGlyphMetrics(0);
+    }
+    
+    // Kerning
+    
+    private List<Kerning> getKerningPairs(Font font, char[] chars) {
+        List<Kerning> pairs = new ArrayList<Kerning>();
+        
+        // Use reflection because TextAttribute.KERNING is Java 6 only.
+        Map<TextAttribute, Object> attributes = new HashMap<TextAttribute, Object>();
+        try {
+            TextAttribute name = 
+                (TextAttribute)TextAttribute.class.getField("KERNING").get(null);
+            Object value = TextAttribute.class.getField("KERNING_ON").get(null);
+            attributes.put(name, value);
+            //attributes.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+        }
+        catch (Exception ex) {
+            // Assume Java 5: return empty list
+            return pairs;
+        }
+        
+        Font kerningFont = font.deriveFont(attributes);
+        // Brute-force approach (there is no Java API to get kerning values)
+        for (char prev : chars) {
+            for (char next : chars) {
+                float kerning = getKerning(kerningFont, prev, next);
+                if (kerning != 0) {
+                    pairs.add(new Kerning(prev, next, kerning));
+                }
+            }
+        }
+        return pairs;
+    }
+    
+    
+    /**
+        Gets the kerning between two chars. Assumes the font has the KERNING_ON attribute but
+        not LIGATURES_ON.
+    */
+    private float getKerning(Font font, char prev, char next) {
+        
+        GlyphVector glyphVector = font.layoutGlyphVector(context, new char[] { prev, next },
+            0, 2, Font.LAYOUT_LEFT_TO_RIGHT);
+        
+		float advance = glyphVector.getGlyphMetrics(0).getAdvance();
+        double x1 = glyphVector.getGlyphPosition(0).getX();
+        double x2 = glyphVector.getGlyphPosition(1).getX();
+		float xdif = (float)(x2 - x1);
+		float kerning = xdif - advance;
+        
+		return kerning;
+	}
+    
+    public static class Kerning {
+        
+        private final char prev;
+        private final char next;
+        private final float kerning;
+        
+        public Kerning(char prev, char next, float kerning) {
+            this.prev = prev;
+            this.next = next;
+            this.kerning = kerning;
+        }
+        
+        public String toString() {
+            return prev + "" + next + " (" + (int)prev + ", " + (int)next + "): " + kerning;
+        }
     }
 }
