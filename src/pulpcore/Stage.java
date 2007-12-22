@@ -887,7 +887,7 @@ public class Stage implements Runnable {
         // Take a sample of CPU, memory, and Scene info
         int fixedFPS = CoreMath.toFixed(actualFPS);
         //int fixedFPS = (int)(1000L*CoreMath.toFixed(overlayFrames) / time);
-        int fixedSleepTime = (int)(CoreMath.toFixed(overlaySleepTime) / overlayFrames);
+        int sleepTime = CoreMath.toFixed((float)overlaySleepTime / overlayFrames);
         int fixedCPU = CoreMath.ONE - (int)(CoreMath.toFixed(overlaySleepTime) / time);
         
         overlayFrames = 0;
@@ -895,8 +895,8 @@ public class Stage implements Runnable {
         overlayCreationTime = CoreSystem.getTimeMillis();
         
         String fps = CoreMath.toString(fixedFPS, 1) + "fps";
-        if (fixedSleepTime >= CoreMath.ONE_HALF) {
-            fps += " (" + CoreMath.toString(fixedSleepTime, 0) + "ms sleep)";
+        if (sleepTime > 0) {
+            fps += " (" + CoreMath.toString(sleepTime, 1) + "ms sleep)";
         }
         
         Runtime runtime = Runtime.getRuntime();

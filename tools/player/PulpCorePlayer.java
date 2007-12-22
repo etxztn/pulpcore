@@ -366,12 +366,12 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             // Assume a local path
             File file = new File(documentURL);
             if (file.isDirectory()) {
-                documentBaseURL = file.toURL();
+                documentBaseURL = file.toURI().toURL();
                 codeBaseURL = documentBaseURL;
             }
             else {
-                documentBaseURL = file.toURL();
-                codeBaseURL = file.getParentFile().toURL();
+                documentBaseURL = file.toURI().toURL();
+                codeBaseURL = file.getParentFile().toURI().toURL();
             }
         }
         if (archive == null) {
@@ -766,7 +766,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 parent = parent.getParent();
             }
             
-            urls = (URL[])urlList.toArray(new URL[0]);
+            urls = urlList.toArray(new URL[0]);
             
             return new NoResourceCacheClassLoader(urls, parent);
         }
