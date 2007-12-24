@@ -1,12 +1,15 @@
+0.?
+  * Fixed bug: Minor build file issue for NetBeans 6 on Windows.
+
 0.10.9 (December 14, 2007)
-  * Examples: Project template now contains more scenes
+  * Examples: Project template now contains more scenes.
   * Examples: Added SceneGraph example (fractal tree).
   * Examples: Removed Scenes example (see Project template)
   * Examples: Removed MultiThreaded example (moved example to JavaDoc)
   * API: Added to Group: moveToTop(), moveToBottom(), moveUp(), moveDown().
   * API: Added Assets.getAsStream().
   * API: Added Label.createMultilineLabel() convenience functions.
-  * API: Added Input.isMouseMoving() to 
+  * API: Added Input.isMouseMoving().
   * Core: Retroweaver is now a normal part of the build process in the templates and examples.
     For now, PulpCore itself still uses Java 1.4 code, just in case there are any problems with 
     Retroweaver. All the examples now use Java 5 language features and have been tested to run

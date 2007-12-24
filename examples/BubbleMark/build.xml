@@ -195,7 +195,7 @@
         <taskdef name="retroweaver" classname="net.sourceforge.retroweaver.ant.RetroWeaverTask"
             classpath="${retroweaver.jar.file}" />
             
-        <move file="${build}/${project.jar}" tofile="${build}/in.jar"/>
+        <copy file="${build}/${project.jar}" tofile="${build}/in.jar"/>
         
         <retroweaver inputjar="${basedir}/${build}/in.jar" 
             outputjar="${basedir}/${build}/${project.jar}" />
@@ -208,7 +208,7 @@
     <target name="obfuscate" if="do.obfuscate" depends="retroweave">
         <taskdef resource="proguard/ant/task.properties" classpath="${proguard.path}" />
             
-        <move file="${build}/${project.jar}" tofile="${build}/in.jar"/>
+        <copy file="${build}/${project.jar}" tofile="${build}/in.jar"/>
 
         <proguard
                 defaultpackage="" 
