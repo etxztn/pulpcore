@@ -233,16 +233,27 @@ public class Label extends Sprite {
     
     
     public void setFormatArgs(Object[] args) {
+        removeFormatArgListeners();
         formatArgs = args;
         if (formatArgs != null) {
             for (int i = 0; i < formatArgs.length; i++) {
                 if (formatArgs[i] instanceof Property) {
-                    ((Property)formatArgs[i]).setListener(this);
+                    ((Property)formatArgs[i]).addListener(this);
                 }
-                
             }
         }
         format();
+    }
+    
+    
+    private void removeFormatArgListeners() {
+        if (formatArgs != null) {
+            for (int i = 0; i < formatArgs.length; i++) {
+                if (formatArgs[i] instanceof Property) {
+                    ((Property)formatArgs[i]).removeListener(this);
+                }
+            }
+        }
     }
     
     

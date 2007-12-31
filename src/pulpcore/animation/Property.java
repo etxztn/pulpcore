@@ -34,40 +34,79 @@ package pulpcore.animation;
 */
 public abstract class Property {
     
-    
     protected Animation anim;
     private PropertyListener listener;
-    
     
     public Property() {
         this(null);
     }
-
     
     public Property(PropertyListener listener) {
         this.listener = listener;
     }
     
-    
     protected abstract void setValue(int value);
     
-    
-    public PropertyListener getListener() {
-        return listener;
+    /**
+        Returns an array of all the listeners registered on this Property.
+        @return all of this Property's PropertyListeners or an empty array if no listeners are 
+        currently registered.
+    */
+    public PropertyListener[] getListeners() {
+        if (listener == null) {
+            return new PropertyListener[0];
+        }
+        else if (listener instanceof MultiListener) {
+            return ((MultiListener)listener).getListeners();
+        }
+        else {
+            return new PropertyListener[] { listener };
+        }
     }
     
-    
-    public void setListener(PropertyListener listener) {
-        this.listener = listener;
+    /**
+        Adds the specified listener to receive events from this Property. If the listener is null, 
+        no exception is thrown and no action is performed.
+    */
+    public void addListener(PropertyListener listener) {
+        if (listener == null || this.listener == listener) {
+            // Do nothing
+        }
+        else if (this.listener == null) {
+            this.listener = listener;
+        }
+        else if (this.listener instanceof MultiListener) {
+            ((MultiListener)this.listener).addListener(listener);
+        }
+        else {
+            this.listener = new MultiListener(this.listener, listener);
+        }
     }
     
+    /**
+        Removes the specified listener so that it no longer receives events from this Property.
+        This method performs no function, nor does it throw an exception, if the listener specified 
+        by the argument was not previously added to this Property. If the listener is null, 
+        no exception is thrown and no action is performed.
+    */
+    public void removeListener(PropertyListener listener) {
+        if (this.listener == listener) {
+            this.listener = null;
+        }
+        else if (this.listener instanceof MultiListener) {
+            MultiListener ml = ((MultiListener)this.listener);
+            ml.removeListener(listener);
+            if (ml.size() == 1) {
+                this.listener = ml.get(0);
+            }
+        }
+    }
     
     protected void notifyListener() {
         if (listener != null) {
             listener.propertyChange(this);
         }
     }
-    
      
     /**
         Updates this Property, possibly modifying its value if it has an
@@ -89,11 +128,9 @@ public abstract class Property {
         }
     }
     
-    
     public boolean isAnimating() {
         return (anim != null && anim.isAnimating());
     }
-    
     
     /**
         @param gracefully if true and the animation is not 
@@ -107,5 +144,4 @@ public abstract class Property {
         }
         anim = null;
     }
-    
 }
