@@ -67,6 +67,7 @@ public abstract class AppContext {
     // Sound
     
     private boolean mute = false;
+    private double masterVolume = 1;
     
     
     public AppContext() {
@@ -413,6 +414,14 @@ public abstract class AppContext {
     
     public boolean isMute() {
         return mute;
+    }
+    
+    public void setSoundVolume(double f) {
+        masterVolume = f;
+    }
+    
+    public double getSoundVolume() {
+        return masterVolume;
     }
 
 }

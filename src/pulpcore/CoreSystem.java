@@ -301,6 +301,14 @@ public class CoreSystem {
     
     
     /**
+        Prints the string representation of a float to the log.
+    */
+    public static void print(float n) {
+        print(Float.toString(n));
+    }
+    
+    
+    /**
         Prints the string representation of a double to the log.
     */
     public static void print(double n) {
@@ -490,6 +498,14 @@ public class CoreSystem {
     
     
     /**
+        Gets the audio mute setting for this application.
+        @return true if the application is muted (silent), false otherwise
+    */
+    public static boolean isMute() {
+        return getThisAppContext().isMute();
+    }
+    
+    /**
         Sets the audio mute setting for this application. This setting takes effect immediately 
         for all calls to {@link pulpcore.sound.Sound#play()}.
         <p>
@@ -500,14 +516,25 @@ public class CoreSystem {
     public static void setMute(boolean mute) {
         getThisAppContext().setMute(mute);
     }
-
     
     /**
-        Gets the audio mute setting for this application.
-        @return true if the application is muted (silent), false otherwise
+        Gets the master sound volume mute setting for this application.
+        @return the master sound volume, from 0 (silent) to 1 (full).
     */
-    public static boolean isMute() {
-        return getThisAppContext().isMute();
+    public static double getSoundVolume() {
+        return getThisAppContext().getSoundVolume();
+    }
+    
+    /**
+        Sets the master sound volume mute setting for this application. This setting takes effect 
+        immediately for all calls to {@link pulpcore.sound.Sound#play()}.
+        <p>
+        Due to buffering, if any sounds are playing when this setting is changed, there may be a 
+        slight delay before the new setting takes affect on those playing sounds. 
+        @param volume the master sound volume, from 0 (silent) to 1 (full).
+    */
+    public static void setSoundVolume(double volume) {
+        getThisAppContext().setSoundVolume(volume);
     }
     
     

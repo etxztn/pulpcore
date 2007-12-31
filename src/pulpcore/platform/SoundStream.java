@@ -55,6 +55,7 @@ public class SoundStream {
     private int frame;
     private int animationFrame;
     private boolean lastMute;
+    private double lastMasterVolume;
     private boolean loop;
     
     
@@ -73,19 +74,26 @@ public class SoundStream {
         this.animationFrame = -animationFrameDelay;
         
         this.lastMute = isMute();
-        this.outputLevel.set(lastMute?0:1);
+        this.lastMasterVolume = getMasterVolume();
+        this.outputLevel.set(lastMute ? 0 : lastMasterVolume);
     }
-    
     
     public boolean isMute() {
         return context != null && context.isMute();
     }
-
+    
+    private double getMasterVolume() {
+        if (context == null) {
+            return 0;
+        }
+        else {
+            return context.getSoundVolume();
+        }
+    }
     
     public boolean isFinished() {
         return (frame >= sound.getNumFrames());
     }
-    
     
     public void skip(int numFrames) {
         int oldAnimationTime = getAnimationTime();
@@ -127,19 +135,20 @@ public class SoundStream {
     
     public void render(byte[] dest, int destOffset, int destChannels, int numFrames) {
         boolean mute = isMute();
+        double masterVolume = getMasterVolume();
         if (context != null && context.getStage() == null) {
             // Destroyed!
             mute = true;
             loop = false;
         }
         
-        // Gradually mute/unmute over time to reduce popping
-        if (lastMute != mute) {
-            int currLevel = outputLevel.getAsFixed();
-            int goalLevel = mute?0:CoreMath.ONE;
-            int diff = Math.abs(goalLevel - currLevel);
-            outputLevel.animateToFixed(goalLevel, (diff * MUTE_TIME) >> CoreMath.FRACTION_BITS);
+        // Gradually change sound volume over time to reduce popping
+        if (lastMute != mute || lastMasterVolume != masterVolume) {
+            double currLevel = outputLevel.get();
+            double goalLevel = mute ? 0 : masterVolume;
+            outputLevel.animateTo(goalLevel, MUTE_TIME);
             lastMute = mute;
+            lastMasterVolume = masterVolume;
         }
         
         int destFrameSize = destChannels * 2;
