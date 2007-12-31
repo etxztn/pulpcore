@@ -244,11 +244,26 @@ public class Label extends Sprite {
             }
             for (int i = 0; i < formatArgs.length; i++) {
                 if (formatArgs[i] instanceof Property) {
-                    ((Property)formatArgs[i]).addListener(formatArgListener);
+                    Property p = (Property)formatArgs[i];
+                    checkFormatArgListeners(p);
+                    p.addListener(formatArgListener);
                 }
             }
         }
         format();
+    }
+    
+    
+    private void checkFormatArgListeners(Property p) {
+        PropertyListener[] listeners = p.getListeners();
+        for (int i = 0; i < listeners.length; i++) {
+            if (listeners[i] instanceof WeakListener) {
+                WeakListener l = (WeakListener)listeners[i];
+                if (l.getListener() == null) {
+                    p.removeListener(l);
+                }
+            }
+        }
     }
     
     
@@ -304,8 +319,12 @@ public class Label extends Sprite {
             reference = new WeakReference(l);
         }
         
+        public PropertyListener getListener() {
+            return (PropertyListener)reference.get();
+        }
+        
         public void propertyChange(Property p) {
-            PropertyListener l = (PropertyListener)reference.get();
+            PropertyListener l = getListener();
             if (l == null) {
                 // The Label was garbage collected.
                 p.removeListener(this);
