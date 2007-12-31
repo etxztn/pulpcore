@@ -1,5 +1,10 @@
-0.?
-  * Fixed bug: Minor build file issue for NetBeans 6 on Windows.
+0.10.10 (In progress: January ?, 2008)
+  * API: Added a Slider widget. See the Widgets demo for an example.
+  * API: Added CoreSystem.getMasterVolume() and CoreSystem.setMasterVolume()
+  * API: Properties can now have multiple listeners (implemented in a way that won't affect memory
+  usage for Properties with only one listener, which will be the vast majority of Properties).
+  * API: Added CoreMath.clamp(int n, int min, int max)
+  * Fixed bug: Ant build files had a minor issue for NetBeans 6 on Windows.
 
 0.10.9 (December 14, 2007)
   * Examples: Project template now contains more scenes.
