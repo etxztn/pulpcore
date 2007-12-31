@@ -29,8 +29,10 @@
 
 package pulpcore.sprite;
 
+import java.lang.ref.WeakReference;
 import pulpcore.animation.Int;
 import pulpcore.animation.Property;
+import pulpcore.animation.PropertyListener;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -49,6 +51,7 @@ public class Label extends Sprite {
     private String formatText;
     private String displayText;
     private Object[] formatArgs;
+    private WeakListener formatArgListener;
     
     private int stringWidth;
     private CoreFont font;
@@ -236,9 +239,12 @@ public class Label extends Sprite {
         removeFormatArgListeners();
         formatArgs = args;
         if (formatArgs != null) {
+            if (formatArgListener == null) {
+                formatArgListener = new WeakListener(this);
+            }
             for (int i = 0; i < formatArgs.length; i++) {
                 if (formatArgs[i] instanceof Property) {
-                    ((Property)formatArgs[i]).addListener(this);
+                    ((Property)formatArgs[i]).addListener(formatArgListener);
                 }
             }
         }
@@ -247,10 +253,10 @@ public class Label extends Sprite {
     
     
     private void removeFormatArgListeners() {
-        if (formatArgs != null) {
+        if (formatArgs != null && formatArgListener != null) {
             for (int i = 0; i < formatArgs.length; i++) {
                 if (formatArgs[i] instanceof Property) {
-                    ((Property)formatArgs[i]).removeListener(this);
+                    ((Property)formatArgs[i]).removeListener(formatArgListener);
                 }
             }
         }
@@ -285,6 +291,29 @@ public class Label extends Sprite {
     protected void drawText(CoreGraphics g, String text) {
         g.setFont(getFont());
         g.drawString(text);
+    }
+    
+    /**
+        Weak listener to prevent memory leaks. (Many throw-away Labels listening to one Property)
+    */
+    private static class WeakListener implements PropertyListener {
+        
+        private WeakReference reference;
+        
+        public WeakListener(PropertyListener l) {
+            reference = new WeakReference(l);
+        }
+        
+        public void propertyChange(Property p) {
+            PropertyListener l = (PropertyListener)reference.get();
+            if (l == null) {
+                // The Label was garbage collected.
+                p.removeListener(this);
+            }
+            else {
+                l.propertyChange(p);
+            }
+        }
     }
     
     

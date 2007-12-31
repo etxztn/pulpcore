@@ -69,8 +69,10 @@ class MultiListener implements PropertyListener {
     }
 
     public void propertyChange(Property property) {
-        for (int i = 0; i < listeners.size(); i++) {
-            get(i).propertyChange(property);
+        // Make a copy in case any of the listeners remove themselves
+        PropertyListener[] list = getListeners();
+        for (int i = 0; i < list.length; i++) {
+            list[i].propertyChange(property);
         }
     }
     
