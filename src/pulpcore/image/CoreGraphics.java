@@ -2095,6 +2095,17 @@ public class CoreGraphics {
                     rectAlpha = (rectAlpha * (((hLimit-v) >> 8) & 0xff)) >> 8;
                 }
                 
+                // Trying out oval rendering.
+                // This is a naive technique: lots of calcs per pixel, no anti-aliasing.
+                // Needs scan converting instead.
+                //int a = fw / 2;
+                //int b = fh / 2;
+                //int m = CoreMath.div(u-a, a);
+                //int n = CoreMath.div(v-b, b);
+                //if (CoreMath.mul(m, m) + CoreMath.mul(n, n) > CoreMath.ONE) {
+                //    rectAlpha = 0;
+                //}
+                
                 if (rectAlpha == lastAlpha) {
                     runLength++;
                 }
