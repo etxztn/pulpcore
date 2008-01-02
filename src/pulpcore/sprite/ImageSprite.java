@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,7 +30,6 @@
 package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
-import pulpcore.image.AnimatedImage;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
@@ -44,8 +43,6 @@ import pulpcore.math.Transform;
 public class ImageSprite extends Sprite {
     
     private CoreImage image;
-    private int lastImageFrame;
-    
     
     /**
         Creates an ImageSprite that has the same dimensions as the image.
@@ -62,14 +59,12 @@ public class ImageSprite extends Sprite {
         this(image, x, y, -1, -1);
     }
     
-    
     /**
         Creates an ImageSprite that draws the image scaled to the specified dimensions.
     */
     public ImageSprite(String imageAsset, int x, int y, int w, int h) {
         this(CoreImage.load(imageAsset), x, y, w, h);
     }
-    
     
     /**
         Creates an ImageSprite that draws the image scaled to the specified dimensions.
@@ -88,14 +83,12 @@ public class ImageSprite extends Sprite {
         }
     }
     
-    
     /**
         Creates an ImageSprite that has the same dimensions as the image.
     */
     public ImageSprite(String imageAsset, double x, double y) {
         this(imageAsset, x, y, -1, -1);
     }
-    
     
     /**
         Creates an ImageSprite that has the same dimensions as the image.
@@ -104,14 +97,12 @@ public class ImageSprite extends Sprite {
         this(image, x, y, -1, -1);
     }
     
-    
     /**
         Creates an ImageSprite that draws the image scaled to the specified dimensions.
     */
     public ImageSprite(String imageAsset, double x, double y, double w, double h) {
         this(CoreImage.load(imageAsset), x, y, w, h);
     }
-    
     
     /**
         Creates an ImageSprite that draws the image scaled to the specified dimensions.
@@ -127,14 +118,12 @@ public class ImageSprite extends Sprite {
         }
     }
     
-    
     /**
         Gets this ImageSprite's internal image.
     */
     public CoreImage getImage() {
         return image;
     }
-    
     
     /**
         Sets this ImageSprite's internal image. The width and height of this ImageSprite is
@@ -144,33 +133,19 @@ public class ImageSprite extends Sprite {
         if (this.image != image) {
             this.image = image;
             setDirty(true);
-            if (image instanceof AnimatedImage) {
-                lastImageFrame = ((AnimatedImage)image).getFrame();
-            }
         }
     }
-    
-    
-    private void checkDirtyImage() {
-        if (image instanceof AnimatedImage) {
-            int frame = ((AnimatedImage)image).getFrame();
-            if (frame != lastImageFrame) {
-                setDirty(true);
-                lastImageFrame = frame;
-            }
-        }
-    }
-
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         
         if (image != null) {
-            image.update(elapsedTime);
-            checkDirtyImage();
+            boolean changed = image.update(elapsedTime);
+            if (changed) {
+                setDirty(true);
+            }
         }
     }
-    
     
     protected int getNaturalWidth() {
         if (image != null) {
@@ -181,7 +156,6 @@ public class ImageSprite extends Sprite {
         }
     }
     
-    
     protected int getNaturalHeight() {
         if (image != null) {
             return CoreMath.toFixed(image.getHeight());
@@ -190,7 +164,6 @@ public class ImageSprite extends Sprite {
             return super.getNaturalHeight();
         }
     }
-    
     
     protected int getAnchorX() {
         if (image != null && getAnchor() == DEFAULT) {
@@ -201,7 +174,6 @@ public class ImageSprite extends Sprite {
         }
     }
     
-    
     protected int getAnchorY() {
         if (image != null && getAnchor() == DEFAULT) {
             return CoreMath.toFixed(image.getHotspotY());
@@ -210,7 +182,6 @@ public class ImageSprite extends Sprite {
             return super.getAnchorY();
         }
     }
-    
     
     protected void drawSprite(CoreGraphics g) {
         if (image != null) {

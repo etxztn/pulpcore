@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -167,9 +167,10 @@ public class CoreImage {
     /**
         Does nothing by default. Subclasses can use this method for
         dynamically generated images or animations.
+        @return true if the image changed since the last call to this method.
     */
-    public void update(int elapsedTime) {
-        // do nothing 
+    public boolean update(int elapsedTime) {
+        return false;
     }
     
     

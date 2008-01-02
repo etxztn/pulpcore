@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -40,8 +40,7 @@ import pulpcore.math.Rect;
 
 /**
     The Button is a Sprite that behaves like a common UI push button. A
-    Button has
-    three visual states: normal, hover, and pressed. Call 
+    Button has three visual states: normal, hover, and pressed. Call 
     {@link #isClicked()} to check if the user clicked the button.
 */
 public class Button extends ImageSprite {
@@ -50,9 +49,9 @@ public class Button extends ImageSprite {
     private static final int MARGIN = 12;
     private static final int MIN_WIDTH = 72;
 
-    public static final int NORMAL = 0;
-    public static final int HOVER = 1;
-    public static final int PRESSED = 2;
+    private static final int NORMAL = 0;
+    private static final int HOVER = 1;
+    private static final int PRESSED = 2;
     private static final int PRESSED_BUT_OUTSIDE = 3;
     
     private static final int NUM_VISIBLE_STATES = 3;
@@ -160,7 +159,6 @@ public class Button extends ImageSprite {
     
     
     /**
-        Determines whether this component is enabled. An enabled component can respond to user input and generate events. Components are enabled initially by default. A component may be enabled or disabled by calling its setEnabled method.
         @return true if this button is a toggle button, false otherwise
     */
     public boolean isToggleButton() {
@@ -266,6 +264,15 @@ public class Button extends ImageSprite {
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         enabled.update(elapsedTime);
+        
+        boolean imageChanged = false;
+        for (int i = 0; i < images.length; i++) {
+            imageChanged |= images[i].update(elapsedTime);
+        }
+        if (imageChanged) {
+            setDirty(true);
+        }
+        
         isClicked = isClickedImpl();
     }
     

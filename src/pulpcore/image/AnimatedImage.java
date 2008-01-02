@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,20 +34,27 @@ import pulpcore.math.CoreMath;
 
 /**
     An AnimatedImage is a CoreImage that contains multiple frames of animation.
+    Frames are either physical or virtual.
 */
 public class AnimatedImage extends CoreImage {
     
+    /** Physical frames */
     private CoreImage[] frames;
     
+    /** Virtual frames */
     private int[] frameSequence;
+    
+    /** Duration of each frame (virtual is it exists; otherwise, physical) */
     private int[] frameDuration;
     private boolean loop;
     
-    // fields used during animation
+    // Fields used during animation
     private boolean playing;
     private int animTime;
     private int currentFrame;
     
+    /** Frame at the end of the last update */
+    private int lastFrame;
     
     /**
         Creates a copy of the specified AnimatedImage. The internal raster data array is shared.
@@ -64,7 +71,6 @@ public class AnimatedImage extends CoreImage {
         setFrame(0);
         playing = true;
     }
-    
     
     /**
         Creates an AnimatedImage by spliting a image into frames on a grid.
@@ -83,42 +89,17 @@ public class AnimatedImage extends CoreImage {
         playing = true;
     }
     
-    
-    public boolean isLooping() {
-        return loop;
-    }
-    
-
-    public int getNumFrames() {
-        if (frameSequence == null) {
-            return frames.length;
-        }
-        else {
-            return frameSequence.length;
-        }
-    }
-    
-    
-    public int getDuration() {
-        if (frameDuration == null) {
-            return 0;
-        }
-        else {
-            int duration = 0;
-            for (int i = 0; i < frameDuration.length; i++) {
-                duration += frameDuration[i];
-            }
-            return duration;
-        }
-    }
-    
-    
+    /**
+        Sets the duration for each physical frame, and optionally sets the animation to loop.
+        Virtual frames are not used.
+    */
     public void setFrameDuration(int duration, boolean loop) {
-        if (frameDuration == null) {
+        if (frameDuration == null || frameDuration.length != frames.length) {
             frameDuration = new int[frames.length];
         }
         
         this.loop = loop;
+        this.frameSequence = null;
         
         for (int i = 0; i < frameDuration.length; i++) {
             frameDuration[i] = duration;
@@ -127,9 +108,16 @@ public class AnimatedImage extends CoreImage {
         setFrame(0);
     }
     
-    
+    /**
+        Sets the frame sequence (virtual frames), the duration for each virtual frame, and 
+        optionally sets the animation to loop.
+        @param frameSequence an array where each element points to an index in the list of
+        physical frames. Can be null.
+        @param frameDuration the duration of each virtual frame. If frameSequence is not null, 
+        frameDuration must be the same length as frameSequence. If frameSequence is null, 
+        frameDuration must be the same length as the number of physical frames.
+    */
     public void setSequence(int[] frameSequence, int[] frameDuration, boolean loop) {
-        
         if (frameSequence == null) {
             this.frameSequence = null;
         }
@@ -149,15 +137,72 @@ public class AnimatedImage extends CoreImage {
         this.loop = loop;
         setFrame(0);
     }
-    
-    
-    public void update(int elapsedTime) {
-        super.update(elapsedTime);
-        
-        if (!playing || frameDuration == null) {
-            return;
-        }
 
+    /**
+        Returns true if this AnimatedImage loops.
+    */
+    public boolean isLooping() {
+        return loop;
+    }
+
+    /**
+        Gets the number of frames in this AnimatedImage. If this AnimatedImage has virtual
+        frames, this method returns the number of virtual frames. Otherwise, the number of 
+        physical frames is returned.
+    */
+    public int getNumFrames() {
+        if (frameSequence == null) {
+            return frames.length;
+        }
+        else {
+            return frameSequence.length;
+        }
+    }
+    
+    /**
+        Gets the total duration of this AnimatedImage.
+    */
+    public int getDuration() {
+        int duration = 0;
+        if (frameDuration != null) {
+            for (int i = 0; i < frameDuration.length; i++) {
+                duration += frameDuration[i];
+            }
+        }
+        return duration;
+    }
+    
+    /**
+        Sets the current frame.
+    */
+    public void setFrame(int frame) {
+        currentFrame = frame;
+        animTime = 0;
+        if (frameSequence != null) {
+            super.data = frames[frameSequence[currentFrame]].getData();
+        }
+        else {
+            super.data = frames[currentFrame].getData();
+        }
+    }
+    
+    /**
+        Gets the current frame.
+    */
+    public int getFrame() {
+        if (frameSequence != null) {
+            return frameSequence[currentFrame];
+        }
+        else {
+            return currentFrame;
+        }
+    }
+
+    public boolean update(int elapsedTime) {
+        if (!playing || frameDuration == null) {
+            return false;
+        }
+        
         animTime += elapsedTime;
         
         while (animTime >= frameDuration[currentFrame]) {
@@ -175,46 +220,54 @@ public class AnimatedImage extends CoreImage {
                 setFrame(currentFrame + 1);
             }
         }
-    }
-    
-    
-    public void setFrame(int frame) {
-        currentFrame = frame;
-        animTime = 0;
-        if (frameSequence != null) {
-            super.data = frames[frameSequence[currentFrame]].getData();
+        
+        int frame = getFrame();
+        if (frame != lastFrame) {
+            lastFrame = frame;
+            return true;
         }
         else {
-            super.data = frames[currentFrame].getData();
+            return false;
         }
     }
     
-    
-    public int getFrame() {
-        if (frameSequence != null) {
-            return frameSequence[currentFrame];
-        }
-        else {
-            return currentFrame;
-        }
-    }
-    
-    
+    /**
+        Returns true if this AnimatedImage is currently playing.
+        @see #start()
+        @see #stop()
+        @see #pause()
+    */
     public boolean isPlaying() {
         return playing;
     }
     
-    
+    /**
+        Starts playing the animation. By defauly, an AnimatedImage is started on creation; this
+        method is useful after calling {@link #stop()} or {@link #pause()}.
+        @see #isPlaying()
+        @see #stop()
+        @see #pause()
+    */
     public void start() {
         playing = true;
     }
     
-    
+    /**
+        Stops the animation without changing the current frame.
+        @see #isPlaying()
+        @see #start()
+        @see #stop()
+    */
     public void pause() {
         playing = false;
     }
     
-    
+    /**
+        Stops the animation and sets the frame to zero.
+        @see #isPlaying()
+        @see #start()
+        @see #pause()
+    */
     public void stop() {
         playing = false;
         setFrame(0);
@@ -222,7 +275,7 @@ public class AnimatedImage extends CoreImage {
     
     
     //
-    // Image Manipulation
+    // Image Manipulation - overrides CoreImage's methods
     //
 
     public CoreImage crop(int x, int y, int w, int h) {
@@ -238,7 +291,6 @@ public class AnimatedImage extends CoreImage {
         
         return newImage;
     }
-    
     
     public CoreImage rotate(int angle, boolean sizeAsNeeded) {
         int newWidth = width;
@@ -272,7 +324,6 @@ public class AnimatedImage extends CoreImage {
         return newImage;
     }
     
-    
     public CoreImage halfSize() {
         AnimatedImage newImage = new AnimatedImage(this);
         newImage.width = width/2;
@@ -290,9 +341,7 @@ public class AnimatedImage extends CoreImage {
         return newImage;
     }
     
-    
     public CoreImage scale(int scaledFrameWidth, int scaledFrameHeight) {
-        
         AnimatedImage newImage = new AnimatedImage(this);
         newImage.width = scaledFrameWidth;
         newImage.height = scaledFrameHeight;
@@ -309,9 +358,7 @@ public class AnimatedImage extends CoreImage {
         return newImage;
     }
     
-    
     public CoreImage mirror() {
-        
         AnimatedImage newImage = new AnimatedImage(this);
         newImage.setHotspot(width - 1 - getHotspotX(), getHotspotY());
         
@@ -323,7 +370,6 @@ public class AnimatedImage extends CoreImage {
         
         return newImage;
     }
-    
     
     public CoreImage flip() {
         AnimatedImage newImage = new AnimatedImage(this);
@@ -337,7 +383,6 @@ public class AnimatedImage extends CoreImage {
         
         return newImage;
     }
-    
     
     public CoreImage rotateLeft() {
         AnimatedImage newImage = new AnimatedImage(this);
@@ -353,7 +398,6 @@ public class AnimatedImage extends CoreImage {
         
         return newImage;
     }
-    
     
     public CoreImage rotateRight() {
         AnimatedImage newImage = new AnimatedImage(this);
@@ -383,7 +427,6 @@ public class AnimatedImage extends CoreImage {
         return newImage;
     }
     
-    
     public CoreImage tint(int rgbColor) {
         AnimatedImage newImage = new AnimatedImage(this);
         
@@ -395,7 +438,6 @@ public class AnimatedImage extends CoreImage {
         
         return newImage;
     }
-    
     
     public CoreImage background(int argbColor, boolean hasAlpha) {
 
@@ -409,7 +451,6 @@ public class AnimatedImage extends CoreImage {
         
         return newImage;
     }
-    
     
     public CoreImage fade(int alpha) {
         AnimatedImage newImage = new AnimatedImage(this);
