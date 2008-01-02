@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -31,9 +31,12 @@ package pulpcore.platform;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import pulpcore.animation.Property;
+import pulpcore.animation.PropertyListener;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
+import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
@@ -42,35 +45,35 @@ import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
 import pulpcore.sprite.Label;
+import pulpcore.sprite.Slider;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
 import pulpcore.util.StringUtil;
 
 public class ConsoleScene extends Scene2D {
     
-    private Button backButton = Button.createLabeledButton("OK", 0, 0);
-    private Button clearButton = Button.createLabeledButton("Clear", 0, 0);
-    private Button copyButton = Button.createLabeledButton("Copy to Clipboard", 0, 0);
+    private Button backButton;
+    private Button clearButton;
+    private Button copyButton;
     private TextBox textbox;
     
     public void load() {
         
         add(new FilledSprite(CoreGraphics.WHITE));
         
-        backButton.setLocation(Stage.getWidth() - 5, Stage.getHeight() - 5);
-        backButton.setAnchor(Sprite.BOTTOM | Sprite.RIGHT);
-        backButton.setKeyBinding(Input.KEY_SPACE);
+        backButton = Button.createLabeledButton("OK", Stage.getWidth() - 5, Stage.getHeight() - 5);
+        backButton.setAnchor(Sprite.SOUTH_EAST);
+        backButton.setKeyBinding(new int[] { Input.KEY_ESCAPE, Input.KEY_ENTER });
         
-        clearButton.setLocation(5, Stage.getHeight() - 5);
-        clearButton.setAnchor(Sprite.BOTTOM | Sprite.LEFT);
+        clearButton = Button.createLabeledButton("Clear", 5, Stage.getHeight() - 5);
+        clearButton.setAnchor(Sprite.SOUTH_WEST);
         
-        copyButton.setLocation(clearButton.x.getAsInt() + clearButton.width.getAsInt() + 5,
-            Stage.getHeight() - 5);
-        copyButton.setAnchor(Sprite.BOTTOM | Sprite.LEFT);
+        copyButton = Button.createLabeledButton("Copy to Clipboard", 
+            clearButton.x.getAsInt() + clearButton.width.getAsInt() + 5, Stage.getHeight() - 5);
+        copyButton.setAnchor(Sprite.SOUTH_WEST);
         
-        textbox = new TextBox(5, 5, Stage.getWidth() - 10, Stage.getHeight() - 15 - 
-            clearButton.height.getAsInt());
-        
+        textbox = new TextBox(5, 5, Stage.getWidth() - 10, 
+            Stage.getHeight() - 15 - clearButton.height.getAsInt());
         addLayer(textbox);
         
         add(clearButton);
@@ -84,17 +87,12 @@ public class ConsoleScene extends Scene2D {
     
     
     public void update(int elapsedTime) {
-        
         if (clearButton.isClicked()) {
             CoreSystem.clearLog();
         }
         
-        if (textbox.needsRefresh()) {
-            textbox.refresh();
-        }
-        
         // Check button presses
-        if (backButton.isClicked() || Input.isPressed(Input.KEY_ESCAPE)) {
+        if (backButton.isClicked()) {
             if (Stage.canPopScene()) {
                 Stage.popScene();
             }
@@ -102,51 +100,93 @@ public class ConsoleScene extends Scene2D {
         if (copyButton.isClicked()) {
             CoreSystem.setClipboardText(CoreSystem.getLogText());
         }
-        if (Input.isPressed(Input.KEY_HOME)) {
-            textbox.scrollHome();
-        }
-        if (Input.isPressed(Input.KEY_END)) {
-            textbox.scrollEnd();
-        }
-        if (Input.isTyped(Input.KEY_UP)) {
-            textbox.scrollLine(1);
-        }
-        if (Input.isTyped(Input.KEY_DOWN)) {
-            textbox.scrollLine(-1);
-        }
-        if (Input.isTyped(Input.KEY_PAGE_UP)) {
-            textbox.scrollPage(1);
-        }
-        if (Input.isTyped(Input.KEY_PAGE_DOWN)) {
-            textbox.scrollPage(-1);
-        }
-        if (textbox.isMouseWheelRotated()) {
-            textbox.scrollLine(Input.getMouseWheelRotation() * -3);
-        }
     }
-    
     
     static class TextBox extends Group {
         
         private static final int LINE_SPACING = CoreFont.getSystemFont().getHeight() + 2;
         
+        /*
+            Use a slider as a scrollbar. Ideally a real scroll bar would look better (a thumb
+            image that changes its dimensions based on the size of the extent, and up/down arrows) 
+            but using a slider works for now.
+        */
+        private Slider scrollBar;
         private Group contents;
         private String lastLine;
-        private final int pageSize;
-        private int displayLine;
-        private int numLines;
-        
         
         public TextBox(int x, int y, int w, int h) {
             super(x, y, w, h);
-            pageSize = CoreMath.intDivCeil(height.getAsInt(), LINE_SPACING);
-            contents = new Group();
+            
+            scrollBar = createScrollBar(w - 1, 0, 16, h);
+            scrollBar.setAnchor(Sprite.NORTH_EAST);
+            scrollBar.value.set(0);
+            scrollBar.setRange(0, 10, h / LINE_SPACING);
+            scrollBar.setAnimationDuration(60, 250);
+            add(scrollBar);
+            
+            contents = new Group(0, 0, w - scrollBar.width.get() - 2, h);
             add(contents);
+            
+            scrollBar.value.addListener(new PropertyListener() {
+                public void propertyChange(Property p) {
+                    // Set as integer to prevent text blurring
+                    contents.y.set((int)Math.round(-scrollBar.value.get() * LINE_SPACING));
+                }
+            });
+            
             refresh();
+            scrollBar.scrollEnd();
         }
         
+        private Slider createScrollBar(int x, int y, int w, int h) {
+            CoreImage background = new CoreImage(w, h);
+            CoreGraphics g = background.createGraphics();
+            g.setColor(0xe0e0e0);
+            g.fill();
+            g.setColor(0xc0c0c0);
+            g.drawRect(0, 0, w, h);
+            
+            CoreImage thumb = new CoreImage(w, Math.max(w, h/5));
+            g = thumb.createGraphics();
+            g.setColor(0x404040);
+            g.fill();
+            
+            Slider slider = new Slider(background, thumb, x, y);
+            slider.setOrientation(Slider.VERTICAL);
+            return slider;
+        }
         
-        public boolean needsRefresh() {
+        public void update(int elapsedTime) {
+            super.update(elapsedTime);
+            if (needsRefresh()) {
+                refresh();
+            }
+            
+            if (Input.isPressed(Input.KEY_HOME)) {
+                scrollBar.scrollHome();
+            }
+            if (Input.isPressed(Input.KEY_END)) {
+                scrollBar.scrollEnd();
+            }
+            if (Input.isTyped(Input.KEY_UP)) {
+                scrollBar.scrollUp();
+            }
+            if (Input.isTyped(Input.KEY_DOWN)) {
+                scrollBar.scrollDown();
+            }
+            if (Input.isTyped(Input.KEY_PAGE_UP)) {
+                scrollBar.scrollPageUp();
+            }
+            if (Input.isTyped(Input.KEY_PAGE_DOWN)) {
+                scrollBar.scrollPageDown();
+            }
+            if (isMouseWheelRotated()) {
+                scrollBar.scroll(Input.getMouseWheelRotation() * 3);
+            }            
+        }
+        
+        private boolean needsRefresh() {
             LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
             String line = null;
             if (logLines.size() > 0) {
@@ -155,44 +195,7 @@ public class ConsoleScene extends Scene2D {
             return (lastLine != line);
         }
         
-        
-        public void scrollHome() {
-            scrollLine(numLines);
-            contents.y.stopAnimation(true);
-        }
-        
-        
-        public void scrollEnd() {
-            scrollLine(-numLines);
-            contents.y.stopAnimation(true);
-        }
-        
-        
-        public void scrollPage(int dy) {
-            scrollLine(dy * (pageSize-2));
-        }
-        
-        
-        public void scrollLine(int dy) {
-            int newDisplayLine = displayLine + dy;
-            
-            if (newDisplayLine > numLines - pageSize + 1) {
-                newDisplayLine = numLines - pageSize + 1;
-            }
-            if (newDisplayLine < 0) {
-                newDisplayLine = 0;
-            }
-            
-            if (displayLine != newDisplayLine) {
-                int scrollTime = Math.max(100, Math.abs(displayLine - newDisplayLine) * 20);
-                displayLine = newDisplayLine;
-                contents.y.animateTo(height.getAsInt() - (numLines - displayLine) * LINE_SPACING,
-                    scrollTime); 
-            }
-        }
-        
-        
-        public void refresh() {
+        private void refresh() {
             LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
             if (logLines.size() > 0) {
                 lastLine = (String)logLines.getLast();
@@ -202,25 +205,33 @@ public class ConsoleScene extends Scene2D {
             }
             
             contents.removeAll();
-            numLines = 0;
+            int numLines = 0;
             int y = 0;
+            int w = contents.width.getAsInt();
             Iterator i = logLines.iterator();
             while (i.hasNext()) {
-                String[] text = StringUtil.wordWrap((String)i.next(), null, width.getAsInt());
+                String[] text = StringUtil.wordWrap((String)i.next(), null, w);
                 
                 if (text.length == 0) {
                     text = new String[] { " " };
                 }
                 for (int j = 0; j < text.length; j++) {
-                    String line = StringUtil.replace(text[j], "\t", "        ");
+                    String line = StringUtil.replace(text[j], "\t", "    ");
                     contents.add(new Label(line, 0, y));
                     y += LINE_SPACING;
                     numLines++;
                 }
             }
-            contents.y.set(height.getAsInt() - (numLines - displayLine) * LINE_SPACING);
+            
+            scrollBar.setRange(0, numLines, scrollBar.getExtent());
+            if (scrollBar.getExtent() >= numLines) {
+                scrollBar.visible.set(false);
+                scrollBar.value.set(0);
+            }
+            else {
+                scrollBar.visible.set(true);
+            }
         }
-        
         
         protected void drawSprite(CoreGraphics g) {
             Rect lastClip = new Rect();
