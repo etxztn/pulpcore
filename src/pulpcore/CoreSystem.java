@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -320,7 +320,13 @@ public class CoreSystem {
         Prints a line of text to the log.
     */
     public static void print(String statement) {
-        getThisAppContext().print(statement);
+        AppContext context = getThisAppContext();
+        if (context != null) {
+            context.print(statement);
+        }
+        else if (Build.DEBUG) {
+            System.out.println(statement);
+        }
     }
 
 
@@ -328,7 +334,14 @@ public class CoreSystem {
         Prints a line of text and a Throwable's stack trace to the log.
     */
     public static void print(String statement, Throwable t) {
-        getThisAppContext().print(statement, t);
+        AppContext context = getThisAppContext();
+        if (context != null) {
+            context.print(statement, t);
+        }
+        else if (Build.DEBUG) {
+            System.out.println(statement);
+            t.printStackTrace();
+        }
     }
 
 
@@ -338,7 +351,13 @@ public class CoreSystem {
         before querying the amount of free memory.
     */
     public static void printMemory(String statement) {
-        getThisAppContext().printMemory(statement);
+        AppContext context = getThisAppContext();
+        if (context != null) {
+            context.printMemory(statement);
+        }
+        else if (Build.DEBUG) {
+            System.out.println(statement);
+        }
     }
 
 
