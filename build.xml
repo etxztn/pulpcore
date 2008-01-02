@@ -300,7 +300,7 @@
             
             <doctitle><![CDATA[<h1>PulpCore ${version.full}</h1>]]></doctitle>
             <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore</a>]]></header>
-            <bottom>Copyright &amp;copy; 2007 Interactive Pulp, LLC.</bottom>
+            <bottom>Copyright &amp;copy; 2007-2008 Interactive Pulp, LLC.</bottom>
             <!-- 
             <group title="PulpCore" packages="pulpcore*"/>
             <group title="PulpCore platform implementations" packages="pulpcore.platform*"/>
