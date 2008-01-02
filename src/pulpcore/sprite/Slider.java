@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,9 +30,8 @@
 package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
-import pulpcore.animation.Int;
+import pulpcore.animation.Fixed;
 import pulpcore.animation.Property;
-import pulpcore.image.AnimatedImage;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -43,7 +42,13 @@ import pulpcore.math.CoreMath;
 */
 public class Slider extends Sprite {
     
+    private static final int DRAG_GUTTER_FIRST_DELAY = 500;
+    private static final int DRAG_GUTTER_DELAY = 100;
+    
+    /** Horizontal orientation. */
     public static final int HORIZONTAL = 0;
+    
+    /** Vertical orientation. */
     public static final int VERTICAL = 1;
     
     private static final int DRAG_NONE = 0;
@@ -57,23 +62,26 @@ public class Slider extends Sprite {
     public final Bool enabled = new Bool(this, true);
     
     /** 
-        The value of this Slider, initially set to 50.
+        The value of this Slider, initially set to 50. The value is a Fixed for animation purposes,
+        but the Slider's internal methods ensure the end result (after animation) is always an
+        integer.
     */
-    public final Int value = new Int(this, 50);
+    public final Fixed value = new Fixed(this, 50);
     
     private CoreImage backgroundImage;
     private CoreImage thumbImage;
     private int orientation;
     private int top, left, bottom, right;
-    private int min, max;
-    private int pageAmount;
+    private int min, max, extent;
     
-    private int lastFrameBackgroundImage;
-    private int lastFrameThumbImage;
+    private int pageDuration = 0;
+    private int unitDuration = 0;
     
     private int thumbX, thumbY;
     private int dragMode;
     private int dragOffset;
+    private int dragGutterDelay;
+    private int dragGutterDir;
     
     /**
         Creates a Slider with a background image and a thumb image.
@@ -91,29 +99,23 @@ public class Slider extends Sprite {
         this.thumbImage = thumbImage;
         this.min = 0;
         this.max = 100;
+        this.extent = 0;
     }
     
     public void propertyChange(Property property) {
         super.propertyChange(property);
         if (property == value) {
-            positionThumb();
-        }
-    }
-    
-    private void checkDirtyImage() {
-        if (backgroundImage instanceof AnimatedImage) {
-            int frame = ((AnimatedImage)backgroundImage).getFrame();
-            if (frame != lastFrameBackgroundImage) {
-                setDirty(true);
-                lastFrameBackgroundImage = frame;
+            // Clamp the value.
+            // Keep things in fixed-point to avoid floating point error
+            int fValue = value.getAsFixed();
+            int fClampedValue = CoreMath.clamp(fValue, 
+                CoreMath.toFixed(min), CoreMath.toFixed(max - extent));
+            if (fClampedValue != value.getAsFixed()) {
+                // Calls propertyChange() again
+                value.setAsFixed(fClampedValue);
             }
-        }
-        
-        if (thumbImage instanceof AnimatedImage) {
-            int frame = ((AnimatedImage)thumbImage).getFrame();
-            if (frame != lastFrameThumbImage) {
-                setDirty(true);
-                lastFrameThumbImage = frame;
+            else {
+                positionThumb();
             }
         }
     }
@@ -123,98 +125,126 @@ public class Slider extends Sprite {
         value.update(elapsedTime);
         enabled.update(elapsedTime);
         
-        backgroundImage.update(elapsedTime);
-        thumbImage.update(elapsedTime);
-        checkDirtyImage();
+        boolean imageChange = false;
+        imageChange |= backgroundImage.update(elapsedTime);
+        imageChange |= thumbImage.update(elapsedTime);
+        if (imageChange) {
+            setDirty(true);
+        }
         
-        if (enabled.get()) {
-            if (dragMode == DRAG_THUMB) {
-                if (Input.isMouseReleased()) {
-                    dragMode = DRAG_NONE;
-                }
-                else {
-                    int offset;
-                    if (isHorizontal()) {
-                        offset = getLocalX(Input.getMouseX(), Input.getMouseY());
-                    }
-                    else {
-                        offset = getLocalY(Input.getMouseX(), Input.getMouseY());
-                    }
-                    value.set(getValue(offset - dragOffset));
-                }
+        boolean takeInput = enabled.get() && visible.get() && alpha.get() > 0;
+        
+        if (!takeInput) {
+            dragMode = DRAG_NONE;
+        }
+        else if (dragMode == DRAG_THUMB) {
+            if (Input.isMouseReleased()) {
+                dragMode = DRAG_NONE;
             }
-            else if (dragMode == DRAG_GUTTER) {
-                if (Input.isMouseReleased()) {
-                    dragMode = DRAG_NONE;
+            else {
+                int offset;
+                if (isHorizontal()) {
+                    offset = getLocalX(Input.getMouseX(), Input.getMouseY());
                 }
                 else {
+                    offset = getLocalY(Input.getMouseX(), Input.getMouseY());
+                }
+                value.set(getValue(offset - dragOffset));
+            }
+        }
+        else if (dragMode == DRAG_GUTTER) {
+            if (Input.isMouseReleased()) {
+                dragMode = DRAG_NONE;
+            }
+            else {
+                if (Input.isMouseMoving()) {
+                    dragGutterDir = 0;
+                }
+                dragGutterDelay -= elapsedTime;
+                if (dragGutterDelay <= 0) {
+                    dragGutterDelay = DRAG_GUTTER_DELAY;
                     int x = getLocalX(Input.getMouseX(), Input.getMouseY());
                     int y = getLocalY(Input.getMouseX(), Input.getMouseY());
                     if (isHorizontal()) {
-                        if (x < thumbX) {
+                        if (x < thumbX && dragGutterDir <= 0) {
                             // Scroll left
-                            page(-pageAmount, x - thumbImage.getWidth()/2);
+                            page(-extent, x - thumbImage.getWidth()/2);
                         }
-                        else if (x >= thumbX + thumbImage.getWidth()) {
+                        else if (x >= thumbX + thumbImage.getWidth() && dragGutterDir >= 0) {
                             // Scroll right
-                            page(pageAmount, x - thumbImage.getWidth()/2);
+                            page(extent, x - thumbImage.getWidth()/2);
                         }
                     }
                     else {
                         // Vertical
-                        if (y < thumbY) {
+                        if (y < thumbY && dragGutterDir <= 0) {
                             // Scroll left
-                            page(-pageAmount, y - thumbImage.getWidth()/2);
+                            page(-extent, y - thumbImage.getHeight()/2);
                         }
-                        else if (y >= thumbY + thumbImage.getHeight()) {
+                        else if (y >= thumbY + thumbImage.getHeight() && dragGutterDir >= 0) {
                             // Scroll right
-                            page(pageAmount, y - thumbImage.getWidth()/2);
+                            page(extent, y - thumbImage.getHeight()/2);
                         }
-                    }
-                }
-            }
-            else if (isMousePressed()) {
-                int x = getLocalX(Input.getMousePressX(), Input.getMousePressY());
-                int y = getLocalY(Input.getMousePressX(), Input.getMousePressY());
-                if (isHorizontal()) {
-                    if (x < thumbX) {
-                        // Scroll left
-                        page(-pageAmount, x - thumbImage.getWidth()/2);
-                        dragMode = DRAG_GUTTER;
-                    }
-                    else if (x >= thumbX + thumbImage.getWidth()) {
-                        // Scroll right
-                        page(pageAmount, x - thumbImage.getWidth()/2);
-                        dragMode = DRAG_GUTTER;
-                    }
-                    else if (y >= thumbY && y < thumbY + thumbImage.getHeight()) {
-                        // Start dragging
-                        dragOffset = x - thumbX;
-                        dragMode = DRAG_THUMB;
-                    }
-                }
-                else {
-                    // Vertical
-                    if (y < thumbY) {
-                        // Scroll left
-                        page(-pageAmount, y - thumbImage.getWidth()/2);
-                        dragMode = DRAG_GUTTER;
-                    }
-                    else if (y >= thumbY + thumbImage.getHeight()) {
-                        // Scroll right
-                        page(pageAmount, y - thumbImage.getWidth()/2);
-                        dragMode = DRAG_GUTTER;
-                    }
-                    else if (x >= thumbX && x < thumbX + thumbImage.getWidth()) {
-                        // Start dragging
-                        dragOffset = y - thumbY;
-                        dragMode = DRAG_THUMB;
                     }
                 }
             }
         }
+        else if (isMousePressed()) {
+            int x = getLocalX(Input.getMousePressX(), Input.getMousePressY());
+            int y = getLocalY(Input.getMousePressX(), Input.getMousePressY());
+            if (isHorizontal()) {
+                dragOffset = x - thumbX;
+                if (x < thumbX) {
+                    // Scroll left
+                    page(-extent, x - thumbImage.getWidth()/2);
+                    setDragGutterMode(-1);
+                }
+                else if (x >= thumbX + thumbImage.getWidth()) {
+                    // Scroll right
+                    page(extent, x - thumbImage.getWidth()/2);
+                    setDragGutterMode(1);
+                }
+                else if (y >= thumbY && y < thumbY + thumbImage.getHeight()) {
+                    // Start dragging
+                    dragOffset = x - thumbX;
+                    dragMode = DRAG_THUMB;
+                }
+            }
+            else {
+                // Vertical
+                if (y < thumbY) {
+                    // Scroll left
+                    page(-extent, y - thumbImage.getHeight()/2);
+                    setDragGutterMode(-1);
+                }
+                else if (y >= thumbY + thumbImage.getHeight()) {
+                    // Scroll right
+                    page(extent, y - thumbImage.getHeight()/2);
+                    setDragGutterMode(1);
+                }
+                else if (x >= thumbX && x < thumbX + thumbImage.getWidth()) {
+                    // Start dragging
+                    dragOffset = y - thumbY;
+                    dragMode = DRAG_THUMB;
+                }
+            }
+        }
+    }
+    
+    private void setDragGutterMode(int dir) {
+        if (extent == 0) {
+            dragMode = DRAG_THUMB;
+            if (isHorizontal()) {
+                dragOffset = thumbImage.getWidth()/2;
+            }
+            else {
+                dragOffset = thumbImage.getHeight()/2;
+            }
+        }
         else {
-            dragMode = DRAG_NONE;
+            dragMode = DRAG_GUTTER;
+            dragGutterDir = dir;
+            dragGutterDelay = DRAG_GUTTER_FIRST_DELAY;
         }
     }
     
@@ -230,13 +260,17 @@ public class Slider extends Sprite {
             space = getVerticalSpace();
         }
         
-        int value = min + CoreMath.intDivCeil((offset - start) * (max - min), space);
-        return CoreMath.clamp(value, min, max);
+        if (space == 0) {
+            return 0;
+        }
+        
+        int value = min + CoreMath.intDivCeil((offset - start) * (max - extent - min), space);
+        return CoreMath.clamp(value, min, max - extent);
     }
     
     private void page(int scroll, int offset) {
         if (scroll != 0) {
-            value.set(CoreMath.clamp(value.get() + scroll, min, max));
+            scroll(scroll, pageDuration);
         }
         else {
             value.set(getValue(offset));
@@ -247,15 +281,22 @@ public class Slider extends Sprite {
         setDirty(true);
         int horizontalSpace = getHorizontalSpace();
         int verticalSpace =  getVerticalSpace();
-        int thumbValue = CoreMath.clamp(value.get(), min, max);
+        int range = max - extent - min;
+        double thumbValue = CoreMath.clamp(value.get(), min, max - extent);
         
         if (isHorizontal()) {
-            thumbX = (left > 0 ? left : 0) + (thumbValue - min) * horizontalSpace / (max - min);
+            thumbX = (left > 0 ? left : 0);
+            if (range > 0) {
+                thumbX += (int)Math.round((thumbValue - min) * horizontalSpace / range);
+            }
             thumbY = (top > 0 ? top : 0) + verticalSpace / 2;
         }
         else {
             thumbX = (left > 0 ? left : 0) + horizontalSpace / 2;
-            thumbY = (top > 0 ? top : 0) + (thumbValue - min) * verticalSpace / (max - min);
+            thumbY = (top > 0 ? top : 0);
+            if (range > 0) {
+                thumbY += (int)Math.round((thumbValue - min) * verticalSpace / range);
+            }
         }
     }
     
@@ -296,9 +337,6 @@ public class Slider extends Sprite {
         if (this.thumbImage != thumbImage) {
             this.thumbImage = thumbImage;
             positionThumb();
-            if (thumbImage instanceof AnimatedImage) {
-                lastFrameThumbImage = ((AnimatedImage)thumbImage).getFrame();
-            }
         }
     }
     
@@ -361,25 +399,164 @@ public class Slider extends Sprite {
     }
     
     /**
-        Sets the min and max range of the value. By default, the min is 0 and the max is 100.
+        Sets the internal data model for this Slider. The range of the value is set have a bounds
+        of the specified minimum and maximum values. The extent is set to zero.
+        <p>
+        The minimum and maximum can be any integer, and do not 
+        correspond to any pixel value. By default, the minimum is 0, the maximum is 100, and the
+        extent is 0.
+        @see #value
+        @see #setRange(int, int, int)
     */
     public void setRange(int min, int max) {
-        if (this.min != min || this.max != max) {
+        setRange(min, max, 0);
+    }
+    
+    /**
+        Sets the internal data model for this Slider. The range of the value is set have a bounds
+        of the specified minimum and maximum values. The extent is the inner range that this Slider
+        covers, such that:
+        <code>
+        minimum <= value <= value+extent <= maximum
+        </code>
+        <p>
+        The minimum, maximum, and extent can be any integer, and do not 
+        correspond to any pixel value. By default, the minimum is 0, the maximum is 100, and the
+        extent is 0.
+        @see #value
+        @see #setRange(int, int)
+    */
+    public void setRange(int min, int max, int extent) {
+        if (this.min != min || this.max != max || this.extent != extent) {
             this.min = min;
             this.max = max;
-            value.set(CoreMath.clamp(value.get(), min, max));
+            this.extent = extent;
+            value.stopAnimation(true);
+            value.set(CoreMath.clamp(value.getAsInt(), min, max - extent));
             positionThumb();
         }
     }
     
     /**
-        Sets the amount to page when clicking the gutter 
-        (the background of the Slider outside the thumb).
-        If zero, the value is scrolled to exactly the position clicked on. 
-        By default, the page amount is zero.
+        Gets the minimum value of the internal data model of this Slider.
+        The default minimum value is 0.
+        @see #setRange(int, int)
+        @see #setRange(int, int, int)
     */
-    public void setPageAmount(int pageAmount) {
-        this.pageAmount = pageAmount;
+    public int getMin() {
+        return min;
     }
     
+    /**
+        Gets the maximum value of the internal data model of this Slider.
+        The default maximum value is 100.
+        @see #setRange(int, int)
+        @see #setRange(int, int, int)
+    */
+    public int getMax() {
+        return max;
+    }
+    
+    /**
+        Gets the extent (inner range) of the internal data model of this Slider.
+        The default extent is 0.
+        @see #setRange(int, int)
+        @see #setRange(int, int, int)
+    */
+    public int getExtent() {
+        return extent;
+    }
+    
+    /**
+        Sets the duration, in milliseconds, to animate when the value is changed when the
+        gutter (the background of the Slider outside the thumb) is clicked or when the 
+        {@link #scrollUp()}, {@link #scrollDown()}, 
+        {@link #scrollPageUp()}, or {@link #scrollPageDown()} methods are called. 
+        <p>
+        The page duration is only used if the extent is non-zero. By default, both animation
+        durations are set to zero.
+    */
+    public void setAnimationDuration(int unitDuration, int pageDuration) {
+        this.unitDuration = unitDuration;
+        this.pageDuration = pageDuration;
+    }
+    
+    /**
+        Sets the {@link #value} to the minimum. No animation is performed.
+    */
+    public void scrollHome() {
+        value.set(min);
+    }
+    
+    /**
+        Sets the {@link #value} to (maximum - extent). No animation is performed.
+    */
+    public void scrollEnd() {
+        value.set(max - extent);
+    }
+    
+    /**
+        Changes the {@link #value} by the specified number of units, 
+        animating the change if the unit animation duration is defined.
+        @see #setAnimationDuration(int, int)
+    */
+    public void scroll(int units) {
+        scroll(units, unitDuration*Math.abs(units));
+    }
+    
+    /**
+        Decreases the {@link #value} by 1, animating the change if the unit animation duration
+        is defined.
+        @see #setAnimationDuration(int, int)
+    */
+    public void scrollUp() {
+        scroll(-1, unitDuration);
+    }
+    
+    /**
+        Increases the {@link #value} by 1, animating the change if the unit animation duration
+        is defined.
+        @see #setAnimationDuration(int, int)
+    */
+    public void scrollDown() {
+        scroll(1, unitDuration);
+    }
+    
+    /**
+        Decreases the {@link #value} by the extent, animating the change if the page animation 
+        duration is defined. If the extent is zero, this method does nothing.
+        @see #setAnimationDuration(int, int)
+    */
+    public void scrollPageUp() {
+        if (extent != 0) {
+            scroll(-extent, pageDuration);
+        }
+    }
+    
+    /**
+        Decreases the {@link #value} by the extent, animating the change if the page animation 
+        duration is defined. If the extent is zero, this method does nothing.
+        @see #setAnimationDuration(int, int)
+    */
+    public void scrollPageDown() {
+        if (extent != 0) {
+            scroll(extent, pageDuration);
+        }
+    }
+    
+    private void scroll(int units, int dur) {
+        double oldValue = value.get();
+        value.stopAnimation(true);
+        int newValue = CoreMath.clamp(value.getAsInt() + units, min, max-extent);
+        if (dur == 0) {
+            value.set(newValue);
+        }
+        else {
+            double actualUnits = Math.abs(oldValue - newValue);
+            if (actualUnits < Math.abs(units)) {
+                dur = (int)Math.round(actualUnits * dur / Math.abs(units));
+            }
+            value.animate(oldValue, newValue, dur);
+        }
+    }
 }
