@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -123,7 +123,7 @@ public abstract class Property {
             setValue(anim.getValue());
         }
         
-        if (anim.isFinished()) {
+        if (anim != null && anim.isFinished()) {
             anim = null;
         }
     }
