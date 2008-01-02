@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -70,7 +70,7 @@ public final class StringUtil {
         </tr>
         <tr>
             <td>%d</td>
-            <td>An integer - Integer or Int. ("1000")</td>
+            <td>An integer - Integer, Int, or Fixed (rounded). ("1000")</td>
         </tr>
         <tr>
             <td>%,d</td>
