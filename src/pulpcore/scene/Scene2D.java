@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -88,15 +88,16 @@ public class Scene2D extends Scene {
     
     private boolean dirtyRectanglesEnabled;
     private boolean paused;
-    private int maxElapsedTime = DEFAULT_MAX_ELAPSED_TIME;
+    private int maxElapsedTime;
+    private boolean isUnloading;
     
     // Layers
     
-    private Group layers = new Group();
+    private Group layers;
     
     // Timelines
     
-    private ArrayList timelines = new ArrayList();
+    private ArrayList timelines;
     
     // Dirty Rectangles
     
@@ -112,27 +113,35 @@ public class Scene2D extends Scene {
     
     // Saved state: options automatically restored on showNotify()
     
-    private boolean stateSaved = false;
+    private boolean stateSaved;
     private int desiredFPS;
     private int cursor;
     private boolean isTextInputMode;
-    
     
     /**
         Creates a new Scene2D with one layer and with dirty rectangles enabled.
     */
     public Scene2D() {
+        dirtyRectangles = new RectList(NUM_DIRTY_RECTANGLES);
+        subRects = new RectList(NUM_DIRTY_RECTANGLES);
+        
+        reset();
+    }
+    
+    private void reset() {
+        maxElapsedTime = DEFAULT_MAX_ELAPSED_TIME;
         desiredFPS = Stage.DEFAULT_FPS;
         isTextInputMode = false;
         dirtyRectanglesEnabled = true;
         needsFullRedraw = true;
+        stateSaved = false;
+        paused = false;
+        isUnloading = false;
         
-        dirtyRectangles = new RectList(NUM_DIRTY_RECTANGLES);
-        subRects = new RectList(NUM_DIRTY_RECTANGLES);
-        
+        layers = new Group();
+        timelines = new ArrayList();
         addLayer(new Group()); 
     }
-    
     
     /**
         Sets the paused state of this Scene2D. A paused Scene2D does not update sprites or 
@@ -142,7 +151,6 @@ public class Scene2D extends Scene {
         this.paused = paused;
     }
     
-    
     /**
         Gets the paused state of this Scene2D.
         @return true if this Scene2D is paused.
@@ -151,7 +159,6 @@ public class Scene2D extends Scene {
     public boolean isPaused() {
         return paused;
     }
-    
     
     /**
         Sets the dirty rectangle mode on or off. By default, a Scene2D has dirty rectangles
@@ -168,7 +175,6 @@ public class Scene2D extends Scene {
         }
     }
     
-    
     /**
         Checks the dirty rectangles are enabled for this Scene2D.
         @return true if dirty rectangles are enabled.
@@ -177,7 +183,6 @@ public class Scene2D extends Scene {
     public boolean isDirtyRectanglesEnabled() {
         return dirtyRectanglesEnabled;
     }
-    
     
     /**
         Sets the maximum elapsed time used to update this Scene2D.
@@ -269,12 +274,10 @@ public class Scene2D extends Scene {
         return timelines.size();
     }
 
-
     //
     // Events
     //
     
-
     /**
         Adds a TimelineEvent to this Scene2D. The TimelineEvent is automatically triggered
         in the updateScene() method. The TimelineEvent is removed after triggering.
@@ -287,20 +290,20 @@ public class Scene2D extends Scene {
         addTimeline(timeline);
     }
     
-    
-    
     /**
-        Adds a TimelineEvent to this Scene2D and waits for it to execute.
+        Adds a TimelineEvent to this Scene2D and returns after the TimelineEvent executes or
+        when this Scene2D is unloaded (whichever comes first).
         @throws Error if the current thread is the animation thread.
     */
     public void addEventAndWait(TimelineEvent event) {
         if (Stage.isAnimationThread()) {
-            throw new Error("Cannot call invokeAndWait from the animation thread");
+            throw new Error("Cannot call addEventAndWait() or invokeAndWait() from the " + 
+                "animation thread.");
         }
         
         synchronized (event) {
             addEvent(event);
-            while (!event.hasExecuted()) {
+            while (!event.hasExecuted() && !isUnloading) {
                 try {
                     event.wait();
                 }
@@ -308,7 +311,6 @@ public class Scene2D extends Scene {
             }
         }
     }
-    
     
     /**
         Causes a runnable to have it's run() method called in the animation thread. This method
@@ -331,10 +333,10 @@ public class Scene2D extends Scene {
         });
     }
     
-    
     /**
-        Causes a runnable to have it's run() method called in the animation thread, 
-        and waits for it to execute. This method is equivalent to:
+        Causes a runnable to have it's run() method called in the animation thread, and returns
+        after the Runnable executes or
+        when this Scene2D is unloaded (whichever comes first). This method is equivalent to:
         <pre>
         addEventAndWait(new TimelineEvent(0) {
             public void run() {
@@ -352,11 +354,9 @@ public class Scene2D extends Scene {
         });
     }
     
-    
     //
     // Layers
     //
-    
     
     /**
         Returns the main (bottom) layer. This layer cannot be removed.
@@ -365,14 +365,12 @@ public class Scene2D extends Scene {
         return (Group)layers.get(0);
     }
     
-    
     /**
         Adds the specified Group as the top-most layer.
     */
     public void addLayer(Group layer) {
         layers.add(layer);
     }
-
     
     /**
         Removes the specified layer. If the specified layer is the main layer, this method
@@ -384,7 +382,6 @@ public class Scene2D extends Scene {
         }
     }
     
-    
     /**
         Returns the total number of sprites in all layers.
     */
@@ -392,19 +389,16 @@ public class Scene2D extends Scene {
         return layers.getNumSprites();
     }
 
-
     /**
         Returns the total number of visible sprites in all layers.
     */
     public int getNumVisibleSprites() {
         return layers.getNumVisibleSprites();
     }
-    
         
     //
     // Sprites
     //
-    
     
     /**
         Adds a sprite to the main (bottom) layer.
@@ -413,14 +407,12 @@ public class Scene2D extends Scene {
         getMainLayer().add(sprite);
     }
     
-    
     /**
         Removes a sprite from the main (bottom) layer.
     */
     public void remove(Sprite sprite) {
         getMainLayer().remove(sprite);
     }
-    
     
     //
     // Dirty Rectangles
@@ -451,7 +443,6 @@ public class Scene2D extends Scene {
             }
         }
     }
-        
     
     private void addDirtyRectangle(int x, int y, int w, int h, int maxNonDirtyArea) {
         if (w <= 0 || h <= 0 || dirtyRectangles.isOverflowed()) {
@@ -555,23 +546,26 @@ public class Scene2D extends Scene {
         dirtyRectangles.add(newRect);
     }
     
-    
-    
     //
     // Scene implementation
     //
     
-    
+    /**
+        Forces all invokeAndWait() and addEventAndWait() calls to return, and 
+        removes all layers, sprites, and timelines. 
+    */
     public void unload() {
-        // Make sure all invokeAndWait() calls return
+        isUnloading = true;
+        
         synchronized (timelines) {
             for (int i = 0; i < timelines.size(); i++) {
                 Timeline timeline = (Timeline)timelines.get(i);
-                timeline.update(1);
+                timeline.notifyChildren();
             }
         }
+        
+        reset();
     }
-    
     
     public final void showNotify() {
         if (stateSaved) {
@@ -583,7 +577,6 @@ public class Scene2D extends Scene {
         redrawNotify();
     }
     
-    
     public final void hideNotify() {
         desiredFPS = Stage.getFrameRate();
         isTextInputMode = Input.isTextInputMode();
@@ -591,9 +584,7 @@ public class Scene2D extends Scene {
         stateSaved = true;
     }
     
-    
     public final void redrawNotify() {
-        
         Transform defaultTransform = Stage.getDefaultTransform();
                 
         drawBounds.setBounds(
@@ -603,7 +594,6 @@ public class Scene2D extends Scene {
             CoreMath.toInt(Stage.getHeight() * defaultTransform.getScaleY()));
         needsFullRedraw = true;
     }
-    
     
     public final void updateScene(int elapsedTime) {
         
@@ -689,7 +679,6 @@ public class Scene2D extends Scene {
         }
     }
     
-    
     private void setDirty(Group group, boolean dirty) {
         group.setDirty(dirty);
         for (int i = 0; i < group.size(); i++) {
@@ -703,7 +692,6 @@ public class Scene2D extends Scene {
         }
     }
     
-    
     private void clearDirtyRects(Group group) {
         group.clearDirtyRect();
         for (int i = 0; i < group.size(); i++) {
@@ -716,7 +704,6 @@ public class Scene2D extends Scene {
             }
         }
     }
-    
     
     /**
         Recursive function to loop through all the child sprites of the 
@@ -752,12 +739,7 @@ public class Scene2D extends Scene {
             sprite.setDirty(false);
         }
     }
-    
         
-    /**
-        Internal callback method for dirty rectangles. Most implementations will
-        not need to call this method.
-    */
     private final void notifyRemovedSprite(Sprite sprite) {
         if (dirtyRectangles.isOverflowed()) {
             return;
@@ -774,13 +756,6 @@ public class Scene2D extends Scene {
         }
     }
     
-    /** 
-        @deprecated Renamed to update()
-    */
-    // Made final so older Scene2D subclasses won't compile.
-    protected final void update2D(int elapsedTime) { }
-    
-    
     /**
         Allows subclasses to check for input, change scenes, etc. By default, this method does
         nothing.
@@ -788,7 +763,6 @@ public class Scene2D extends Scene {
     public void update(int elapsedTime) {
         // Do nothing
     }
-    
     
     /**
         Draws all of the sprites in this scene. Most apps will not override this method.
@@ -829,7 +803,6 @@ public class Scene2D extends Scene {
         dirtyRectangles.clear();
     }
     
-        
     static class RectList {
         
         private Rect[] rects;
