@@ -125,8 +125,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
                 focusCountdown = 0;
             }
             else {
-                Dimension size = comp.getSize();
-                if (size.width > 0 && size.height > 0) {
+                if (comp.getWidth() > 0 && comp.getHeight() > 0) {
                     focusCountdown--;
                     if (focusCountdown == 0) {
                         requestKeyboardFocusImpl();
