@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -61,7 +61,6 @@ public final class CoreApplet extends Applet {
 
     
     public final void init() {
-        
         String bgColor = getParameter("boxbgcolor");
         if (bgColor != null) {
             try {
@@ -93,7 +92,7 @@ public final class CoreApplet extends Applet {
     
     public final void destroy() {
         if (context != null) {
-            context.stop();
+            // Calls context.destroy()
             AppletPlatform.getInstance().unregisterApp(this);
             context = null;
         }
@@ -101,23 +100,28 @@ public final class CoreApplet extends Applet {
     
     
     public final void update(Graphics g) {
-        paint(g);
-    }
-    
-    
-    public final void paint(Graphics g) {
+        // App-triggered painting
         if (context == null) {
-            g.setColor(getBackground());
-            g.fillRect(0, 0, getSize().width, getSize().height);
+            // Do nothing
         }
         else {
             Surface surface = context.getSurface();
             if (surface instanceof BufferedImageSurface) {
                 ((BufferedImageSurface)surface).draw(g);
             }
-            else {
-                surface.notifyOSRepaint();
-            }
+        }
+    }
+    
+    
+    public final void paint(Graphics g) {
+        // System-triggered painting
+        if (context == null) {
+            g.setColor(getBackground());
+            g.fillRect(0, 0, getWidth(), getHeight());
+        }
+        else {
+            Surface surface = context.getSurface();
+            surface.notifyOSRepaint();
         }
     }
     

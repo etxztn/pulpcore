@@ -208,7 +208,15 @@ public class CoreSystem {
         return getThisAppContext().getAppProperty(name);
     }
     
+    
+    /**
+        Gets a named TalkBack field.
+    */
+    public static String getTalkBackField(String name) {
+        return getThisAppContext().getTalkBackField(name);
+    }
 
+    
     /**
         Sets a new TalkBack field. If the named field already exists, it is replaced.
     */
@@ -228,17 +236,16 @@ public class CoreSystem {
 
 
     /**
-        <code>
-        Upload upload = Stage.sendTalkBackData();
-
-        ...
-
-        boolean sent = upload.isCompleted();
-        </code>
-        @return null if talkback is not enabled or there are no fields to send.
+        Uploads talkback data to an external URL using the POST (multipart form)
+        method. 
+        <p>
+        The upload starts immediately. Use {@link upload#isCompleted()} to check if the upload is 
+        finished.
+        @param talkbackPath the path on the applet's server.
+        @return null if talkbackPath is an invalid URL.
     */
-    public static Upload sendTalkBackData() {
-        return getThisAppContext().sendTalkBackData();
+    public static Upload uploadTalkBackFields(String talkbackPath) {
+        return getThisAppContext().uploadTalkBackFields(talkbackPath);
     }
 
 

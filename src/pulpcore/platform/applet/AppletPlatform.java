@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -418,7 +418,7 @@ public final class AppletPlatform implements Platform {
         }
        
         if (soundEngine == null) {
-            CoreSystem.setTalkBackField("pulpcore.sound", "none");
+            CoreSystem.setTalkBackField("pulpcore.platform.sound", "none");
         }
         
         soundEngineCreated = true;

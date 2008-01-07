@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,6 +29,7 @@
 
 package pulpcore.platform;
 
+import pulpcore.CoreSystem;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.Rect;
@@ -38,11 +39,17 @@ import pulpcore.math.Rect;
     copying the surface data to the screen.
 */
 public abstract class Surface {
+    
+    private static final int NO_LIMIT = 0; 
 
     private CoreGraphics g;
     protected CoreImage image;
     protected boolean contentsLost;
     
+    private int refreshRate = NO_LIMIT;
+    private int highestRefreshRate = NO_LIMIT;
+    private long refreshRateSyncTime = 0;
+    private boolean canChangeRefreshRate = true;
     
     protected int[] getData() {
         if (image == null) {
@@ -53,16 +60,13 @@ public abstract class Surface {
         }
     }
     
-    
     public boolean isReady() {
         return (image != null);
     }
     
-    
     public boolean contentsLost() {
         return contentsLost;
     }
-    
     
     protected final void setSize(int w, int h) {
         image = new CoreImage(w, h);
@@ -70,21 +74,25 @@ public abstract class Surface {
         notifyResized();
     }
     
-    
     protected void notifyResized() {
         contentsLost = true;
     }
-    
     
     public void notifyOSRepaint() {
         // Do nothing
     }
     
+    public void notifyStop() {
+        // Do nothing
+    }
+    
+    public void notifyStart() {
+        // Do nothing
+    }
     
     public CoreGraphics getGraphics() {
         return g;
     }
-    
     
     public int getWidth() {
         if (image == null) {
@@ -95,7 +103,6 @@ public abstract class Surface {
         }
     }
     
-    
     public int getHeight() {
         if (image == null) {
             return -1;
@@ -104,7 +111,6 @@ public abstract class Surface {
             return image.getHeight();
         }
     }
-    
     
     /**
         @return the number of microseconds slept before the frame was shown, if possible.
@@ -115,19 +121,68 @@ public abstract class Surface {
         return show(null, -1);
     }
     
-    
     /**
-        Returns the refresh rate of the surface  or -1 if the surface
+        Returns the refresh rate of the surface or 0 if the surface
         has no refresh rate.
     */
-    public abstract int getRefreshRate();
+    public final int getRefreshRate() {
+        return refreshRate;
+    }
     
+    /**
+        Returns true if the refresh rate can be changed.
+    */
+    public final boolean canChangeRefreshRate() {
+        return canChangeRefreshRate;
+    }
     
-    public abstract boolean canChangeRefreshRate();
+    /**
+        Sets the refresh rate (if {@link #canChangeRefreshRate() } returns true.
+    */
+    public final void setRefreshRate(int refreshRate) {
+        if (highestRefreshRate != NO_LIMIT) {
+            refreshRate = Math.min(refreshRate, highestRefreshRate);
+        }
+        if (canChangeRefreshRate() && this.refreshRate != refreshRate) {
+            this.refreshRate = refreshRate;
+            if (refreshRate != NO_LIMIT) {
+                this.refreshRateSyncTime = CoreSystem.getTimeMicros() + 1000000 / refreshRate;
+            }
+        }
+    }
     
+    protected final void setCanChangeRefreshRate(boolean b) {
+        canChangeRefreshRate = b;
+    }
     
-    public abstract void setRefreshRate(int refreshRate);
+    protected final void setHighestRefreshRate(int highestRefreshRate) {
+        this.highestRefreshRate = highestRefreshRate;
+        if (highestRefreshRate != NO_LIMIT && this.refreshRate > highestRefreshRate) {
+            this.refreshRate = highestRefreshRate;
+            this.refreshRateSyncTime = CoreSystem.getTimeMicros() + 1000000 / refreshRate;
+        }
+    }
     
+    /**
+        @return the number of microseconds slept before the frame was shown.
+    */
+    protected long refreshRateSync() {
+        if (refreshRate == NO_LIMIT) {
+            return 0;
+        }
+        else {
+            int delay = 1000000 / refreshRate;
+            long startTimeMicros = CoreSystem.getTimeMicros();
+            long endTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(refreshRateSyncTime);
+            refreshRateSyncTime += delay;
+            if (endTimeMicros > refreshRateSyncTime + delay) {
+                // Missed too many sync's
+                long x = (long)Math.ceil((double)(endTimeMicros - refreshRateSyncTime) / delay);
+                refreshRateSyncTime += x * delay;
+            }
+            return endTimeMicros - startTimeMicros;
+        }
+    }
     
     /**
         @param dirtyRectangles list of dirty rectangles
@@ -139,12 +194,10 @@ public abstract class Surface {
     */
     public abstract long show(Rect[] dirtyRectangles, int numDirtyRectangles);
     
-    
     public void getScreenshot(CoreImage image, int x, int y) {
         if (image != null) {
             CoreGraphics g = image.createGraphics();
             g.drawImage(this.image, -x, -y);
         }
     }
-    
 }

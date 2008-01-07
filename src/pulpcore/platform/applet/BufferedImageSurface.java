@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,8 +30,6 @@
 package pulpcore.platform.applet;
 
 import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
@@ -42,8 +40,8 @@ import java.awt.image.SampleModel;
 import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
 import java.awt.Point;
-import java.awt.Toolkit;
 import java.util.Hashtable;
+import pulpcore.CoreSystem;
 import pulpcore.math.Rect;
 import pulpcore.platform.Surface;
 
@@ -60,33 +58,21 @@ public class BufferedImageSurface extends Surface {
     
     private Component component;
     protected BufferedImage awtImage;
-    private boolean needsRefresh;
+    private boolean repaintAllowed;
+    private boolean osRepaint;
+    private boolean active;
     
     private Rect repaintBounds = new Rect();
     protected Rect[] dirtyRectangles;
     protected int numDirtyRectangles;
     
-    
     public BufferedImageSurface(Component component) {
         this.component = component;
+        if (CoreSystem.isMacOSXLeopardOrNewer()) {
+            setHighestRefreshRate(55);
+        }
     }
-    
-    
-    public int getRefreshRate() {
-        return -1;
-    }
-    
-    
-    public boolean canChangeRefreshRate() {
-        return false;
-    }
-    
-    
-    public void setRefreshRate(int refreshRate) {
-        // Ignore
-    }
-    
-    
+
     protected void notifyResized() {
         contentsLost = true;
         
@@ -104,31 +90,59 @@ public class BufferedImageSurface extends Surface {
         awtImage = new BufferedImage(COLOR_MODEL, raster, true, new Hashtable());
     }
     
+    public synchronized void notifyOSRepaint() {
+        osRepaint = true;
+        synchronized (paintLock) {
+            paintLock.notify();
+        }
+    }
+    
+    private synchronized void checkOSRepaint() {
+        if (osRepaint) {
+            osRepaint = false;
+            contentsLost = true;
+        }
+    }
+    
+    public void notifyStart() {
+        synchronized (paintLock) {
+            active = true;
+        }
+    }
+    
+    public void notifyStop() {
+        synchronized (paintLock) {
+            active = false;
+            paintLock.notify();
+        }
+    }
     
     public boolean isReady() {
-        
-        Dimension size = component.getSize();
-        if (size.width <= 0 || size.height <= 0) {
+        int w = component.getWidth();
+        int h = component.getHeight();
+        if (w <= 0 || h <= 0) {
             return false;
         }
-        else if (getWidth() != size.width || getHeight() != size.height) {
-            setSize(size.width, size.height);
+        else if (getWidth() != w || getHeight() != h) {
+            setSize(w, h);
         }
+        
+        checkOSRepaint();
         
         return true;
     }
     
-    
     public long show(Rect[] dirtyRectangles, int numDirtyRectangles) {
-        
         this.dirtyRectangles = dirtyRectangles;
         this.numDirtyRectangles = numDirtyRectangles;
         
         if (contentsLost || numDirtyRectangles < 0) {
             repaintBounds.setBounds(0, 0, getWidth(), getHeight());
+            numDirtyRectangles = -1;
+            contentsLost = false;
         }
         else if (numDirtyRectangles == 0) {
-            return 0;
+            repaintBounds.width = 0;
         }
         else {
             repaintBounds.setBounds(dirtyRectangles[0]);
@@ -137,62 +151,53 @@ public class BufferedImageSurface extends Surface {
             }
         }
         
-        if (repaintBounds.width <= 0 || repaintBounds.height <= 0) {
+        if (repaintBounds.width > 0 && repaintBounds.height > 0) {
+            synchronized (paintLock) {
+                if (active) { 
+                    repaintAllowed = true;
+                    component.repaint(repaintBounds.x, repaintBounds.y, 
+                        repaintBounds.width, repaintBounds.height);
+                    try {
+                        paintLock.wait(1000);
+                    }
+                    catch (InterruptedException ex) {
+                        // ignore
+                    }
+                    repaintAllowed = false;
+                }
+            }
+        }
+        if (osRepaint) {
+            // OS asked for repaint while waiting - return immediately
             return 0;
         }
-        
-        synchronized (paintLock) {
-            needsRefresh = true;
-            component.repaint(repaintBounds.x, repaintBounds.y, 
-                repaintBounds.width, repaintBounds.height);
-            try {
-                paintLock.wait(1000);
-            }
-            catch (InterruptedException ex) {
-                // ignore
-            }
-        }
-        return 0;
-    }
-    
-    
-    public void draw(Graphics g) {
-        
-        if (!needsRefresh) {
-            // Call from the OS?
-            contentsLost = true;
-            return;
-        }
-        if (awtImage != null) {
-            show(g);
-        }
-        
-        synchronized (paintLock) {
-            needsRefresh = false;
-            paintLock.notify();
-        }
-    }
-    
-    
-    protected void show(Graphics g) {
-        
-        if (contentsLost || numDirtyRectangles < 0) {
-            g.drawImage(awtImage, 0, 0, null);
-        }
         else {
-            for (int i = 0; i < numDirtyRectangles; i++) {
-                Rect r = dirtyRectangles[i];
-                g.setClip(r.x, r.y, r.width, r.height);
-                g.drawImage(awtImage, 0, 0, null);
-            }
+            return refreshRateSync();
         }
-        
-        contentsLost = false;
     }
     
+    // Called from the AWT thread
+    public void draw(Graphics g) {
+        synchronized (paintLock) {
+            if (repaintAllowed) {
+                if (awtImage != null) {
+                    if (numDirtyRectangles < 0) {
+                        g.drawImage(awtImage, 0, 0, null);
+                    }
+                    else {
+                        for (int i = 0; i < numDirtyRectangles; i++) {
+                            Rect r = dirtyRectangles[i];
+                            g.setClip(r.x, r.y, r.width, r.height);
+                            g.drawImage(awtImage, 0, 0, null);
+                        }
+                    }
+                }
+                paintLock.notify();
+            }
+        }
+    }
     
     public String toString() {
         return "BufferedImage";
     }
-    
 }

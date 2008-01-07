@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,14 +29,9 @@
 
 package pulpcore.platform.applet;
 
-import java.awt.AWTEvent;
-import java.awt.AWTException;
 import java.awt.BufferCapabilities;
 import java.awt.Canvas;
 import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.DisplayMode;
-import java.awt.event.AWTEventListener;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.BufferStrategy;
@@ -49,7 +44,6 @@ import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
 import java.awt.ImageCapabilities;
 import java.awt.Point;
-import java.awt.Toolkit;
 import java.util.Hashtable;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -73,14 +67,6 @@ public class BufferStrategySurface extends Surface {
     private boolean osRepaint;
     private boolean useDirtyRects;
     
-    private int refreshRate;
-    
-    // For Mac OS X workaround
-    // All times in milliseconds
-    private static final int MAC_MIN_DURATION = 18; // Delay can be from 17 to 17.99999... ms
-    private boolean doAppleWorkaroundSync;
-    private long nextSyncTime = 0;
-    
     public BufferStrategySurface(Container container) {
         this.container = container;
         this.canvas = new Canvas() {
@@ -92,73 +78,41 @@ public class BufferStrategySurface extends Surface {
                 notifyOSRepaint();
             }
         };
-        this.refreshRate = -1;
         container.removeAll();
         container.setLayout(null);
         canvas.setSize(1, 1);
         container.add(canvas);
         canvas.setLocation(0, 0);
-        doAppleWorkaroundSync = CoreSystem.isMacOSXLeopardOrNewer();
+        if (CoreSystem.isMacOSXLeopardOrNewer()) {
+            setHighestRefreshRate(55);
+        }
         // Try to create the surface for the sake of toString(), below
         isReady();
     }
-    
-
-    public int getRefreshRate() {
-        if (doAppleWorkaroundSync) {
-            if (MAC_MIN_DURATION > 0) {
-                return 1000 / MAC_MIN_DURATION;
-            }
-            else {
-                return -1;
-            }
-        }
-        else {
-            return refreshRate;
-        }
-    }
-    
-    
-    public boolean canChangeRefreshRate() {
-        return !doAppleWorkaroundSync;
-    }
-    
-    
-    public void setRefreshRate(int refreshRate) {
-        if (this.refreshRate != refreshRate) {
-            this.refreshRate = refreshRate;
-            if (refreshRate > 0) {
-                this.nextSyncTime = CoreSystem.getTimeMicros() + 1000000 / refreshRate;
-            }
-        }
-    }
-    
     
     public Canvas getCanvas() {
         return canvas;
     }
     
-    
     public synchronized void notifyOSRepaint() {
         osRepaint = true;
     }
     
-    
-    private synchronized void checkOsRepaint() {
+    private synchronized void checkOSRepaint() {
         if (osRepaint) {
             osRepaint = false;
             contentsLost = true;
         }
     }
     
-    
     public boolean isReady() {
-        Dimension size = container.getSize();
-        if (size.width <= 0 || size.height <= 0) {
+        int w = container.getWidth();
+        int h = container.getHeight();
+        if (w <= 0 || h <= 0) {
             return false;
         }
-        else if (image == null || getWidth() != size.width || getHeight() != size.height) {
-            setSize(size.width, size.height);
+        else if (image == null || getWidth() != w || getHeight() != h) {
+            setSize(w, h);
         }
         
         if (bufferStrategy == null) {
@@ -182,18 +136,17 @@ public class BufferStrategySurface extends Surface {
             contentsLost = bufferStrategy.contentsLost() | bufferStrategy.contentsRestored();
         }
         
-        checkOsRepaint();
+        checkOSRepaint();
         
         return (bufferStrategy != null);
     }
-    
     
     protected void notifyResized() {
         int w = getWidth();
         int h = getHeight();
         contentsLost = true;
         bufferStrategy = null;
-        canvas.setSize(new Dimension(w, h));
+        canvas.setSize(w, h);
 
         // Create the AWT image
         SampleModel sampleModel = new SinglePixelPackedSampleModel(
@@ -204,15 +157,13 @@ public class BufferStrategySurface extends Surface {
         image = new BufferedImage(COLOR_MODEL, raster, true, new Hashtable());
     }
     
-    
     public long show(Rect[] dirtyRectangles, int numDirtyRectangles) {
-        
         if (bufferStrategy == null || image == null) {
             return 0;
         }
         
         if (numDirtyRectangles == 0 && !contentsLost) {
-            return sync();
+            return refreshRateSync();
         }
         
         long sleepTime = 0;
@@ -244,22 +195,9 @@ public class BufferStrategySurface extends Surface {
                         break;
                     }
                 }
-                
-                if (doAppleWorkaroundSync) {
-                    // Call show(), sync, and if there is enough time, call show() again
-                    bufferStrategy.show();
-                    boolean showAgain = (System.currentTimeMillis() < nextSyncTime);
-                    sleepTime += appleWorkaroundSync();
-                    if (showAgain) {
-                        bufferStrategy.show();
-                    }
-                }
-                else {
-                    if (refreshRate > 0) {
-                        sleepTime += refreshRateSync();
-                    }
-                    bufferStrategy.show();
-                }
+
+                sleepTime += refreshRateSync();
+                bufferStrategy.show();
                 
                 if (bufferStrategy.contentsLost()) {
                     contentsLost = true;
@@ -280,7 +218,6 @@ public class BufferStrategySurface extends Surface {
         }
         return sleepTime;
     }
-
     
     private void createBufferStrategy() {
         // First, try Copied method (double buffering)
@@ -299,63 +236,23 @@ public class BufferStrategySurface extends Surface {
         canvas.createBufferStrategy(2);
     }
     
-    
-    private long sync() {
-        if (doAppleWorkaroundSync) {
-            return appleWorkaroundSync();
-        }
-        else if (refreshRate > 0) {
-            return refreshRateSync();
-        }
-        else {
-            return 0;
-        }
-    }
-    
-    
-    private long refreshRateSync() {
-        int delay = 1000000 / refreshRate;
-        long startTimeMicros = CoreSystem.getTimeMicros();
-        long endTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(nextSyncTime);
-        nextSyncTime += delay;
-        if (endTimeMicros > nextSyncTime + delay) {
-            // Missed too many sync's
-            long x = (long)Math.ceil((double)(endTimeMicros - nextSyncTime) / delay);
-            nextSyncTime += x * delay;
-        }
-        return endTimeMicros - startTimeMicros;
-    }
-    
-    
-    private long appleWorkaroundSync() {
-        long startTime = CoreSystem.getTimeMicros();
-        while (true) {
-            long currTime = System.currentTimeMillis();
-            if (currTime >= nextSyncTime || currTime < nextSyncTime - MAC_MIN_DURATION) {
-                nextSyncTime = currTime + MAC_MIN_DURATION;
-                break;
-            }
-            else {
-                int sleepTime = 1;
-                if (currTime == nextSyncTime - 1) {
-                    sleepTime = 0;
-                }
-                try {
-                    Thread.sleep(sleepTime);
-                }
-                catch (InterruptedException ex) { }
-            }
-        }
-        return CoreSystem.getTimeMicros() - startTime;
-    }
-    
-    
     public String toString() {
         String s = "BufferStrategy";
         if (bufferStrategy != null) {
-            s += "(doAppleWorkaroundSync=" + doAppleWorkaroundSync + ", " +
-            "isPageFlipping=" + bufferStrategy.getCapabilities().isPageFlipping() + ", " + 
-            "useDirtyRects=" + useDirtyRects + ")";
+            BufferCapabilities caps = bufferStrategy.getCapabilities();
+            s += " (" + 
+            //"doAppleSync=" + doAppleSync + 
+            //", " +
+            "isPageFlipping=" + caps.isPageFlipping() + 
+            ", " + 
+            "useDirtyRects=" + useDirtyRects + 
+            //", " +
+            //"frontBufferAccelerated=" + caps.getFrontBufferCapabilities().isAccelerated() + 
+            //", " +
+            //"backBufferAccelerated=" + caps.getBackBufferCapabilities().isAccelerated() + 
+            //", " + 
+            //"flipContents=" + caps.getFlipContents() +
+            ")";
         }
         return s;
     }

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -31,6 +31,7 @@ package pulpcore.platform;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -194,9 +195,6 @@ public abstract class AppContext {
     public abstract URL getBaseURL();
     
     
-    public abstract URL getTalkbackURL();
-    
-
     public abstract Input getInputSystem();
     
     
@@ -210,13 +208,19 @@ public abstract class AppContext {
   
   
     /**
+        Gets a named TalkBack field.
+    */
+    public String getTalkBackField(String name) {
+        return (String)talkbackFields.get(name);
+    }
+    
+    
+    /**
         Adds a new TalkBack field, or replaces an exisiting field.
     */
     public void setTalkBackField(String name, String value) {
-        if (getTalkbackURL() != null) {
-            talkbackFields.remove(name);
-            talkbackFields.put(name, value);
-        }
+        talkbackFields.remove(name);
+        talkbackFields.put(name, value);
 
         if (Build.DEBUG) print(name + ": " + value);
     }
@@ -232,26 +236,18 @@ public abstract class AppContext {
     }
 
 
-    /**
-        <code>
-        Upload upload = Stage.sendTalkBackData();
-
-        ...
-
-        boolean sent = upload.isCompleted();
-        </code>
-        @return null if talkback is not enabled or there are no fields to send.
-    */
-    public Upload sendTalkBackData() {
-        if (talkbackFields.size() == 0) {
-            return null;
-        }
-        URL talkbackURL = getTalkbackURL();
-        if (talkbackURL != null) {
-            Upload upload = new Upload(talkbackURL);
-            upload.addFields(talkbackFields);
-            upload.start();
-            return upload;
+    public Upload uploadTalkBackFields(String talkbackPath) {
+        if (talkbackPath != null && talkbackPath.length() > 0) {
+            try {
+                URL talkbackURL = new URL(getBaseURL(), talkbackPath);
+                Upload upload = new Upload(talkbackURL);
+                upload.addFields(talkbackFields);
+                upload.start();
+                return upload;
+            }
+            catch (MalformedURLException ex) {
+                if (Build.DEBUG) print("Bad url", ex);
+            }
         }
         return null;
     }
@@ -370,7 +366,7 @@ public abstract class AppContext {
         if (newLine != null && !"\n".equals(newLine)) {
             s = StringUtil.replace(s, newLine, "\n");
         }
-        return s;
+        return s.trim();
     }
 
 

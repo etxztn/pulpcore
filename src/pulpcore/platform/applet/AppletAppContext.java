@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -62,7 +62,6 @@ public final class AppletAppContext extends AppContext {
     private Surface surface;
     private Input inputSystem;
     private Stage stage;
-    private URL talkbackURL;
     private Object jsObject;
     private boolean firstFrameDrawn = false;
     private boolean enableLiveConnect;
@@ -90,25 +89,10 @@ public final class AppletAppContext extends AppContext {
             }
         }
         
-        boolean talkbackEnabled = "true".equals(app.getParameter("talkback"));
-        
-        String talkbackPath = app.getParameter("talkback-path");
-        talkbackURL = null;
-        
-        if (talkbackEnabled && talkbackPath != null) {
-            try {
-                talkbackURL = new URL(app.getCodeBase(), talkbackPath);
-            }
-            catch (MalformedURLException ex) {
-                if (Build.DEBUG) print("Bad url", ex);
-                talkbackURL = null;
-            }
-        }
-        
         setTalkBackField("pulpcore.platform", "Applet");
         setTalkBackField("pulpcore.platform.timer", timer.getName());
         setTalkBackField("pulpcore.platform.javascript", "" + (jsObject != null));  
-        
+        setTalkBackField("pulpcore.url", getBaseURL().toString());
         createSurface(app);
         stage = new Stage(surface, this);
     }
@@ -268,10 +252,14 @@ public final class AppletAppContext extends AppContext {
         boolean useBufferStrategy = false;
         
         // Use BufferStrategy on:
-        // * Mac OS X Java 1.5 or newer 
+        // * Mac OS X 10.4, Java 1.5 or newer, but not Mac OS X 10.5 
         // * All others on Java 1.6 or newer
+        // TODO: re-evaluate this once Max OS X Java 6 is finalized
+        // Currently BufferStrategy on Java 5 on Mac OS X uses an obscene amount of CPU
         if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
-            useBufferStrategy = true;
+            if (!CoreSystem.isMacOSXLeopardOrNewer()) {
+                useBufferStrategy = true;
+            }
         }
         else if (CoreSystem.isJava16orNewer()) {
             useBufferStrategy = true;
@@ -350,11 +338,6 @@ public final class AppletAppContext extends AppContext {
         //    // Just assume the site is legit and use the code base.
         //    return applet.getCodeBase();
         //}
-    }
-    
-    
-    public URL getTalkbackURL() {
-        return talkbackURL;
     }
     
     
