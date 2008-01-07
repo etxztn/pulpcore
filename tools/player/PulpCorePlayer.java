@@ -431,12 +431,14 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
         // Hack: This anonymous class must be pre-loaded. If it is not loaded, and
         // the developer rebuilds the jar, applet.destroy() will fail.  
-        try {
-            classLoader.loadClass("pulpcore.Stage$1");
-        }
-        catch (Exception ex) {
-            // Ignore
-        }
+        // NOTE: that inner class is no longer used, but this is left here in case similar
+        // problems pop up.
+        //try {
+        //    classLoader.loadClass("pulpcore.Stage$1");
+        //}
+        //catch (Exception ex) {
+        //    // Ignore
+        //}
         
         applet.setStub(this);
         applet.setSize(width, height);
@@ -463,10 +465,12 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     
     private synchronized void unloadApplet() {
-        getContentPane().removeAll();
         active = false;
         if (applet != null) {
             applet.stop();
+        }
+        getContentPane().removeAll();
+        if (applet != null) {
             applet.destroy();
             applet = null;
         }
