@@ -427,6 +427,7 @@ public class Label extends Sprite {
         for (int i = 0; i < lines.length; i++) {
             group.add(new Label(font, lines[i], 0, i * lineSpacing));
         }
+        group.pack();
         return group;
     }
     
