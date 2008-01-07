@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -204,7 +204,7 @@ public final class Timeline extends Animation {
     
     
     //
-    // Adding children
+    // Children
     //
     
     
@@ -221,6 +221,23 @@ public final class Timeline extends Animation {
         animationList.add(anim);
         propertyList.add(property);
         calcDuration();
+    }
+    
+    
+    /**
+        Calls notifyAll() on all child TimelineEvents, waking any threads that are waiting for
+        them to execute.
+    */
+    public void notifyChildren() {
+        for (int i = 0; i < animationList.size(); i++) {
+            Object anim = animationList.get(i);
+            if (anim instanceof Timeline) {
+                ((Timeline)anim).notifyChildren();
+            }
+            else if (anim instanceof TimelineEvent) {
+                ((TimelineEvent)anim).notifyAll();
+            }
+        }
     }
     
     
