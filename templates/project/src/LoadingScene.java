@@ -7,8 +7,7 @@ public class LoadingScene extends pulpcore.scene.LoadingScene {
     public LoadingScene() {
         super("HelloWorld-" + ProjectBuild.VERSION + ".zip" , new TitleScene());
         
-        // Stage settings
-        //Stage.setAutoScale(WIDTH, HEIGHT, Stage.AUTO_CENTER);
+        Stage.setUncaughtExceptionScene(new UncaughtExceptionScene());
     }
     
     @Override

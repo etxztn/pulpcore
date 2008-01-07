@@ -15,10 +15,8 @@ public class HelloWorld extends Scene2D {
     public void load() {
         add(new ImageSprite("background.png", 0, 0));
         
-        String message = CoreSystem.getAppProperty("message");
-        
         CoreFont font = CoreFont.load("hello.font.png");
-        label = new Label(font, message, 320, 240);
+        label = new Label(font, "Hello World", 320, 240);
         label.setAnchor(Sprite.CENTER);
         add(label);
         

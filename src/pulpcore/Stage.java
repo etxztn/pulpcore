@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -104,12 +104,15 @@ public class Stage implements Runnable {
     private long remainderMicros;
     private Thread animationThread;
     private final Surface surface;
+    private boolean destroyed = false;
     
     // Scene management
     private Scene currentScene;
     private Scene nextScene;
     private int nextSceneType = NO_NEXT_SCENE;
     private LinkedList sceneStack = new LinkedList();
+    private Scene uncaughtExceptionScene;
+    private boolean uncaughtExceptionSceneSet = false;
     
     // Auto scaling
     private int naturalWidth = 1;
@@ -130,6 +133,7 @@ public class Stage implements Runnable {
     private float speed = 1;
     private float elapsedTimeRemainder;
     
+    // Called from the AWT thread
     public Stage(Surface surface, AppContext appContext) {
         this.surface = surface;
         this.appContext = appContext;
@@ -383,6 +387,23 @@ public class Stage implements Runnable {
     
     
     /**
+        Sets the scene to use when an uncaught exception occurs. If null, the app "reboots" itself
+        after a short delay. By default, debug builds use a ConsoleScene, and release builds use
+        null.
+        <p>
+        When an uncaught exception occurs, the talkback field "pulpcore.uncaught-exception" is
+        set to the exception's stack trace.
+        <p>
+        If the uncaught exception scene itself throws an exception, the app is stopped.
+    */
+    public static void setUncaughtExceptionScene(Scene scene) {
+        Stage instance = getThisStage();
+        instance.uncaughtExceptionSceneSet = true;
+        instance.uncaughtExceptionScene = scene;
+    }
+    
+    
+    /**
         Gets a screenshot of the current appearance of the stage.
         @return a new image that contains the screenshot.
     */
@@ -426,8 +447,12 @@ public class Stage implements Runnable {
     
     // Called from the AWT event thread
     public synchronized void start() {
+        if (destroyed) {
+            throw new RuntimeException();
+        }
         
         if (animationThread == null) {
+            surface.notifyStart();
             // Run animation at norm priority because the AWT Event thread 
             // needs to run at a higher priority. 
             animationThread = appContext.createThread("PulpCore-Stage", this);
@@ -438,12 +463,12 @@ public class Stage implements Runnable {
     
     // Called from the AWT event thread
     public synchronized void stop() {
-        
         if (animationThread != null) {
-            Thread oldAnimationThread = animationThread; 
-            animationThread = null;
+            surface.notifyStop();
+            Thread t = animationThread; 
+            animationThreadStop();
             try {
-                oldAnimationThread.join(1000);
+                t.join(5000);
             }
             catch (InterruptedException ex) { }
         }
@@ -451,20 +476,10 @@ public class Stage implements Runnable {
     
     
     // Called from the AWT event thread
+    // After destroying, the Stage must never be used again
     public synchronized void destroy() {
+        destroyed = true;
         stop();
-        
-        final Scene scene = currentScene;
-        if (scene != null) {
-            currentScene = null;
-            // Scene destruction needs to occur in the app context for this stage
-            appContext.invokeAndWait("PulpCore-StageDestroy", 1000, new Runnable() {
-                public void run() {
-                    scene.unload();
-                    clearSceneStack();
-                }
-            });
-        }
     }
         
     
@@ -473,6 +488,16 @@ public class Stage implements Runnable {
     //
     
     public void run() {
+        
+        if (!uncaughtExceptionSceneSet) {
+            // This has to be set in the animation thread, not the Stage's constructor
+            if (Build.DEBUG) {
+                setUncaughtExceptionScene(new ConsoleScene());
+            }
+            else {
+                setUncaughtExceptionScene(null);
+            }
+        }
         
         Thread currentThread = Thread.currentThread();
         
@@ -485,30 +510,32 @@ public class Stage implements Runnable {
             }
             catch (Throwable t) {
                 
-                // Reboot if not ThreadDeath
+                boolean uncaughtExceptionSceneBroke = 
+                    (currentScene != null && currentScene == uncaughtExceptionScene);
+                
                 currentScene = null;
                 nextScene = null;
                 nextSceneType = NO_NEXT_SCENE;
                 sceneStack = new LinkedList();
                 
-                if (t instanceof ThreadDeath) {
+                if (t instanceof ThreadDeath || uncaughtExceptionSceneBroke) {
                     // Don't reboot 
-                    animationLoopStop();
+                    animationThreadStop();
                 }
                 else {
-                    if (Build.DEBUG) {
-                        CoreSystem.print("Animation loop error");
-                        CoreSystem.setTalkBackField("pulpcore.uncaught-exception", t);
-                        currentScene = new ConsoleScene();
-                        currentScene.load();
-                    }
-                    else {
-                        CoreSystem.setTalkBackField("pulpcore.uncaught-exception", t);
-                        // Delay before rebooting
+                    CoreSystem.setTalkBackField("pulpcore.uncaught-exception", t);
+                    if (uncaughtExceptionScene == null) {
+                        // Delay and reboot
                         try {
                             Thread.sleep(1000);
                         }
                         catch (InterruptedException ex) { }
+                    }
+                    else {
+                        // Show error scene
+                        currentScene = uncaughtExceptionScene;
+                        currentScene.load();
+                        currentScene.showNotify();
                     }
                 }
             }
@@ -516,10 +543,8 @@ public class Stage implements Runnable {
     }
     
     
-    private synchronized void animationLoopStop() {
-        if (animationThread == Thread.currentThread()) {
-            animationThread = null;
-        }
+    private synchronized void animationThreadStop() {
+        animationThread = null;
     }
         
     
@@ -567,7 +592,7 @@ public class Stage implements Runnable {
                 remainderMicros = 0;
             }
             if (currentScene == null) {
-                animationLoopStop();
+                animationThreadStop();
                 return;
             }
             
@@ -715,6 +740,12 @@ public class Stage implements Runnable {
                 elapsedTime = (int)e;
                 elapsedTimeRemainder = e - elapsedTime;
             }
+        }
+        
+        if (currentScene != null && destroyed) {
+            currentScene.hideNotify();
+            currentScene.unload();
+            clearSceneStack();
         }
     }
     
