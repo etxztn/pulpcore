@@ -31,10 +31,11 @@ package pulpcore.platform;
 
 import pulpcore.animation.Fixed;
 import pulpcore.math.CoreMath;
+import pulpcore.sound.Playback;
 import pulpcore.sound.Sound;
 
 
-public class SoundStream {
+public class SoundStream extends Playback {
     
     // The number of milliseconds to fade from a mute/unmute
     public static final int MUTE_TIME = 5;
@@ -43,31 +44,36 @@ public class SoundStream {
     // (that is, greater than 44 frames)
     private static final int MAX_FRAMES_TO_RENDER_WHILE_ANIMATING = 64;
     
+    private static final int STATE_PLAYING = 0;
+    private static final int STATE_PAUSED = 1;
+    private static final int STATE_STOPPING = 2;
+    private static final int STATE_STOPPED = 3;
+    
     private final AppContext context;
     private final Sound sound;
     private final int loopFrame;
     private final int numLoopFrames;
+    private final int stopFrame;
     
-    private final Fixed level;
-    private final Fixed pan;
     private final Fixed outputLevel = new Fixed();
     
     private int frame;
     private int animationFrame;
+    private boolean loop;
+    private int state;
+    
     private boolean lastMute;
     private double lastMasterVolume;
-    private boolean loop;
-    
     
     public SoundStream(AppContext context, Sound sound, Fixed level, Fixed pan, 
-        int loopFrame, int numLoopFrames, int animationFrameDelay)
+        int loopFrame, int numLoopFrames, int animationFrameDelay, int stopFrame)
     {
+        super(level, pan);
         this.context = context;
         this.sound = sound;
-        this.level = level;
-        this.pan = pan;
         this.loopFrame = loopFrame;
         this.numLoopFrames = numLoopFrames;
+        this.stopFrame = stopFrame;
         
         this.loop = (numLoopFrames > 0);
         this.frame = 0;
@@ -76,10 +82,49 @@ public class SoundStream {
         this.lastMute = isMute();
         this.lastMasterVolume = getMasterVolume();
         this.outputLevel.set(lastMute ? 0 : lastMasterVolume);
+        
+        this.state = STATE_PLAYING;
     }
     
-    public boolean isMute() {
-        return context != null && context.isMute();
+    //@Override
+    public long getMicrosecondPosition() {
+        if (animationFrame < loopFrame) {
+            return 0;
+        }
+        else {
+            return 1000000L * (animationFrame - loopFrame) / sound.getSampleRate();
+        }
+    }
+    
+    //@Override
+    public void setPaused(boolean paused) {
+        if (paused && state == STATE_PLAYING) {
+            state = STATE_PAUSED;
+        }
+        else if (!paused && state == STATE_PAUSED) {
+            state = STATE_PLAYING;
+        }
+    }
+    
+    //@Override
+    public boolean isPaused() {
+        return state == STATE_PAUSED;
+    }
+        
+    //@Override
+    public void stop() {
+        if (state == STATE_PLAYING || state == STATE_PAUSED) {
+            state = STATE_STOPPING;
+        }
+    }
+    
+    //@Override
+    public boolean isFinished() {
+        return (context == null || frame >= sound.getNumFrames());
+    }
+    
+    private boolean isMute() {
+        return (context == null || context.isMute() || state != STATE_PLAYING);
     }
     
     private double getMasterVolume() {
@@ -91,53 +136,52 @@ public class SoundStream {
         }
     }
     
-    public boolean isFinished() {
-        return (frame >= sound.getNumFrames());
-    }
-    
-    public void skip(int numFrames) {
-        int oldAnimationTime = getAnimationTime();
-        int oldFrame = frame;
-        int newFrame = frame + numFrames;
-        animationFrame += numFrames;
+    private void advanceFramePosition(int numFrames) {
         
-        if (inLoop()) {
-            frame = loopFrame + ((newFrame - loopFrame) % numLoopFrames);
+        if (state == STATE_STOPPED) {
+            // Advance the frame so that the stream will reached the isFinished() state
+            frame += numFrames;
         }
-        else if (newFrame > sound.getNumFrames()) {
-            frame = sound.getNumFrames();
+        else if (state != STATE_PLAYING && outputLevel.getAsFixed() == 0) {
+            // Do nothing
         }
         else {
-            frame = newFrame;
+            int oldAnimationTime = getAnimationTime();
+            int oldFrame = frame;
+            int newFrame = frame + numFrames;
+            animationFrame += numFrames;
+            
+            if (inLoop()) {
+                frame = loopFrame + ((newFrame - loopFrame) % numLoopFrames);
+            }
+            else if (newFrame > sound.getNumFrames()) {
+                frame = sound.getNumFrames();
+            }
+            else {
+                frame = newFrame;
+            }
+            
+            int elapsedTime = getAnimationTime() - oldAnimationTime;
+            // TODO: possible thread issue if the PulpCore thread sets the animation of these?
+            level.update(elapsedTime);
+            pan.update(elapsedTime);
+            outputLevel.update(elapsedTime);
         }
-        
-        int elapsedTime = getAnimationTime() - oldAnimationTime;
-        level.update(elapsedTime);
-        pan.update(elapsedTime);
-        outputLevel.update(elapsedTime);
     }
-    
     
     private int getAnimationTime() {
-        if (animationFrame < loopFrame) {
-            return 0;
-        }
-        else {
-            return 1000 * (animationFrame - loopFrame) / sound.getSampleRate();
-        }
+        return (int)(getMicrosecondPosition() / 1000);
     }
-    
     
     private boolean inLoop() {
         return (loop && frame >= loopFrame && frame < loopFrame + numLoopFrames);
     }
     
-    
     public void render(byte[] dest, int destOffset, int destChannels, int numFrames) {
         boolean mute = isMute();
         double masterVolume = getMasterVolume();
-        if (context != null && context.getStage() == null) {
-            // Destroyed!
+        if (context == null || context.getStage() == null) {
+            // Context destroyed!
             mute = true;
             loop = false;
         }
@@ -149,6 +193,14 @@ public class SoundStream {
             outputLevel.animateTo(goalLevel, MUTE_TIME);
             lastMute = mute;
             lastMasterVolume = masterVolume;
+        }
+        
+        // Last render when stopping
+        if (state == STATE_STOPPING && outputLevel.getAsFixed() == 0) {
+            loop = false;
+            mute = true;
+            frame = stopFrame;
+            state = STATE_STOPPED;
         }
         
         int destFrameSize = destChannels * 2;
@@ -172,7 +224,7 @@ public class SoundStream {
             
             // Figure out the next level and pan (for interpolation)
             int startFrame = frame;
-            skip(framesToRender);
+            advanceFramePosition(framesToRender);
             int nextLevel = getCurrLevel();
             int nextPan = getCurrPan();
             
@@ -189,7 +241,6 @@ public class SoundStream {
         }
     }
     
-    
     private int getCurrLevel() {
         int currLevel = level.getAsFixed();
         if (frame >= sound.getNumFrames()) {
@@ -205,7 +256,6 @@ public class SoundStream {
         return currLevel;
     }
     
-    
     private int getCurrPan() {
         int currPan = pan.getAsFixed();
         if (currPan < -CoreMath.ONE) {
@@ -216,7 +266,6 @@ public class SoundStream {
         }
         return currPan;
     }
-    
     
     private static void render(byte[] data, int offset, int channels,
         int numFrames, int startLevel, int endLevel, int startPan, int endPan)
@@ -326,12 +375,10 @@ public class SoundStream {
         }
     }
     
-    
     public static int getSample(byte[] data, int offset) {
         // Signed little endian
         return (data[offset + 1] << 8) | (data[offset] & 0xff);
     }
-    
     
     public static void setSample(byte[] data, int offset, int sample) {
         // Signed little endian

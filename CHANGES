@@ -1,4 +1,5 @@
 0.10.10 (In progress: January ?, 2008)
+  * API: Sound.play() now returns a Playback object that can be used to pause or stop the sound.
   * API: Added a Slider widget. See the Widgets demo for an example.
   * API: Added CoreSystem.getSoundVolume() and CoreSystem.setSoundVolume() for setting the master
     volume.

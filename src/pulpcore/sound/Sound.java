@@ -34,6 +34,7 @@ import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.platform.AppContext;
 import pulpcore.platform.SoundEngine;
+import pulpcore.platform.SoundStream;
 
 /**
     The Sound class is a base class for sampled sound.
@@ -45,7 +46,6 @@ public abstract class Sound {
     private final int sampleSize = 2;
     private final int sampleRate;
     
-    
     /**
         Creates a new Sound with the specified sample rate.
         @param sampleRate the sample rate (samples per second, per channel). 
@@ -53,7 +53,6 @@ public abstract class Sound {
     public Sound(int sampleRate) {
         this.sampleRate = sampleRate;
     }
-        
     
     /**
         Returns the sample rate - the number of samples played per second, per channel. 
@@ -61,7 +60,6 @@ public abstract class Sound {
     public final int getSampleRate() {
         return sampleRate;
     }
-    
     
     /**
         Returns the sample size - the number of bytes in each sample.
@@ -71,7 +69,6 @@ public abstract class Sound {
         return sampleSize;
     }
   
-    
     /**
         Gets the duration of this clip in milliseconds.
         @return the duration of this clip in milliseconds.
@@ -80,14 +77,12 @@ public abstract class Sound {
         return 1000L * getNumFrames() / sampleRate;
     }
     
-    
     /**
         Gets the length of this sound, expressed in the number of frames. For mono sounds,
         a frame is one sample, for stereo sounds, a frame consists of two samples - one for
         the left channel, and one for the right channel.
     */
     public abstract int getNumFrames();
-    
     
     /**
         Copies a sequence of samples from this Sound to a byte array as 
@@ -100,23 +95,22 @@ public abstract class Sound {
     */
     public abstract void getSamples(byte[] dest, int destOffset, int destChannels,
         int srcFrame, int numFrames);
-    
 
     //
     // Play methods
     //
-    
     
     /**
         Plays this sound clip. The Sound is played at full volume with no panning.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
     */
-    public final void play() {
-        play(new Fixed(1.0), new Fixed(0), false);
+    public final Playback play() {
+        return play(new Fixed(1.0), new Fixed(0), false);
     }
-    
         
     /**
         Plays this sound clip with the specified colume level (0.0 to 1.0). 
@@ -124,11 +118,12 @@ public abstract class Sound {
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
     */
-    public final void play(Fixed level) {
-        play(level, new Fixed(0), false);
+    public final Playback play(Fixed level) {
+        return play(level, new Fixed(0), false);
     }
-    
     
     /**
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0).
@@ -136,11 +131,12 @@ public abstract class Sound {
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
     */
-    public final void play(Fixed level, Fixed pan) {
-        play(level, pan, false);
+    public final Playback play(Fixed level, Fixed pan) {
+        return play(level, pan, false);
     }
-    
     
     /**
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0),
@@ -148,23 +144,28 @@ public abstract class Sound {
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
     */
-    public final void play(Fixed level, Fixed pan, boolean loop) {
+    public Playback play(Fixed level, Fixed pan, boolean loop) {
 
         AppContext context = CoreSystem.getThisAppContext();
         SoundEngine soundEngine = CoreSystem.getPlatform().getSoundEngine();
+        Playback playback = null;
         
-        if (soundEngine == null || context.isMute() || this.getNumFrames() == 0) {
-            return;
+        if (context != null && soundEngine != null && this.getNumFrames() > 0) {
+            try {
+                playback = soundEngine.play(context, this, level, pan, loop);
+            }
+            catch (Exception ex) {
+                if (Build.DEBUG) CoreSystem.print("Sound play", ex);
+            }
         }
         
-        try {
-            soundEngine.play(context, this, level, pan, loop);
+        if (playback == null) {
+            playback = new SoundStream(null, this, level, pan, 0, 0, 0, this.getNumFrames());
+            playback.stop();
         }
-        catch (Exception ex) {
-            if (Build.DEBUG) CoreSystem.print("Sound play", ex);
-            context.setMute(true);
-        }
-    }    
-
+        return playback;
+    }
 }

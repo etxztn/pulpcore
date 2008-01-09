@@ -40,6 +40,7 @@ import pulpcore.CoreSystem;
 import pulpcore.platform.AppContext;
 import pulpcore.platform.SoundEngine;
 import pulpcore.platform.SoundStream;
+import pulpcore.sound.Playback;
 import pulpcore.sound.Sound;
 import pulpcore.sound.SoundSequence;
 
@@ -270,17 +271,18 @@ public class JavaSound implements SoundEngine {
     }
     
     
-    public synchronized void play(AppContext context, Sound sound, Fixed level, Fixed pan,
+    public synchronized Playback play(AppContext context, Sound sound, Fixed level, Fixed pan,
         boolean loop) 
     {
         boolean played = false;
         int numOpenLines = 0;
+        Playback playback = null;
         
         // First, try to play an open line
         for (int i = 0; i < players.length; i++) {
             if (!players[i].isPlaying() && players[i].isOpen()) {
                 if (!played && players[i].getSampleRate() == sound.getSampleRate()) {
-                    players[i].play(context, sound, level, pan, loop);
+                    playback = players[i].play(context, sound, level, pan, loop);
                     played = true;
                 }
                 else {
@@ -299,7 +301,7 @@ public class JavaSound implements SoundEngine {
                     if (!players[i].isPlaying()) {
                         boolean success = players[i].reopen(sound.getSampleRate());
                         if (success) {
-                            players[i].play(context, sound, level, pan, loop);
+                            playback = players[i].play(context, sound, level, pan, loop);
                             played = true;
                             numOpenLines--;
                             break;
@@ -313,6 +315,8 @@ public class JavaSound implements SoundEngine {
                 }
             }
         }
+        
+        return playback;
         
         //if (Build.DEBUG) {
         //    printStatus();
@@ -478,11 +482,12 @@ public class JavaSound implements SoundEngine {
         /**
             Forces playback of the specified buffer, even if isPlaying() is true.
         */
-        public synchronized void play(AppContext context, Sound clip, Fixed level, Fixed pan,
+        public synchronized Playback play(AppContext context, Sound clip, Fixed level, Fixed pan,
             boolean loop) 
         {
             int loopFrame = 0;
-            int numLoopFrames = loop ? clip.getNumFrames() : 0;
+            int stopFrame = clip.getNumFrames();
+            int numLoopFrames = loop ? stopFrame : 0;
             
             // Create a full buffer of post-clip silence
             // This fixes a problem with circular buffers.
@@ -495,6 +500,7 @@ public class JavaSound implements SoundEngine {
                 Sound preSilence = new SilentSound(clip.getSampleRate(), preSilenceFrames);
                 clip = new SoundSequence(new Sound[] { preSilence, clip, postSilence });
                 loopFrame += preSilenceFrames;
+                stopFrame += preSilenceFrames;
             }
             else {
                 // Non-Windows OS
@@ -505,7 +511,9 @@ public class JavaSound implements SoundEngine {
             framesWritten = 0;
             numWrites = 0;
             minBufferSize = MIN_BUFFER_SIZE;
-            stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames, 0);
+            stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames, 0, 
+                stopFrame);
+            return stream;
         }
         
 

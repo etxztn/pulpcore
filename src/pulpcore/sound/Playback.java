@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -27,26 +27,55 @@
     POSSIBILITY OF SUCH DAMAGE.
 */
 
-package pulpcore.platform;
+package pulpcore.sound;
 
 import pulpcore.animation.Fixed;
-import pulpcore.platform.AppContext;
-import pulpcore.sound.Sound;
-import pulpcore.sound.Playback;
 
-public interface SoundEngine {
+/**
+    The Playback class allows a Sound be modified while it is playing.
+*/
+public abstract class Playback {
     
-    public int getNumSoundsPlaying();
+    /**
+        The level, from 0 to 1. The level animation is synchronized with the Sound's playback time,
+        and can't be animated with a Timeline.
+    */
+    public final Fixed level;
     
-    public int[] getSupportedSampleRates();
+    /**
+        The pan, from -1 to 1. The pan animation is synchronized with the Sound's playback time,
+        and can't be animated with a Timeline.
+    */
+    public final Fixed pan;
     
-    public int getMaxSimultaneousSounds();
+    public Playback(Fixed level, Fixed pan) {
+        this.level = level;
+        this.pan = pan;
+    }
     
-    public Playback play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop);
+    public abstract long getMicrosecondPosition();
     
-    public void update(int timeUntilNextUpdate);
+    /**
+        Pauses this playback or contunues playback after pausing. A paused sound may continue to
+        send data (in the form of inaudible sound) to the sound engine.
+    */
+    public abstract void setPaused(boolean paused);
     
-    public void destroy();
+    /**
+        Checks if this playback is currently paused and playback can continue.
+    */
+    public abstract boolean isPaused();
+    
+    /**
+        Stops this playback as soon as possible. A stopped playback cannot be restarted.
+    */
+    public abstract void stop();
+    
+    /**
+        Returns true if the playback is finished.
+    */
+    public abstract boolean isFinished();
+    
+    // TODO: FFT stuff
     
 }
-    
