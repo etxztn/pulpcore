@@ -269,12 +269,15 @@ public class Animation {
     //
 
 
+    /**
+        Returns true if the value changed.
+    */
     public boolean update(int elapsedTime) {
         return setTime(this.elapsedTime + elapsedTime);
     }
     
 
-    public boolean setTime(int newTime) {
+    protected boolean setTime(int newTime) {
         
         int totalDuration = getTotalDuration();
         

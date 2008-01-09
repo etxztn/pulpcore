@@ -603,11 +603,11 @@ public class Button extends ImageSprite {
             int y1 = i;
             int y2 = h - 1 - i;
             
-            topGradient.setTime(i);
+            topGradient.update(1);
             g.setColor(topGradient.getValue());
             g.fillRect(x, y1, lineWidth, 1);
             
-            bottomGradient.setTime(i);
+            bottomGradient.update(1);
             g.setColor(bottomGradient.getValue());
             g.fillRect(x, y2, lineWidth, 1);
         }

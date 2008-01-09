@@ -60,7 +60,7 @@ public abstract class TimelineEvent extends Animation implements Runnable {
     }
     
     
-    public final boolean setTime(int newTime) {
+    protected final boolean setTime(int newTime) {
         super.setTime(newTime);
         
         if (super.value == 1 && !hasExecuted) {
