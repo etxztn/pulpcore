@@ -709,7 +709,9 @@ public class Stage implements Runnable {
             // Sleep to create correct frame rate
             long currTimeMicros;
             if (desiredFPS == MAX_FPS || surface.getRefreshRate() > 0) {
-                Thread.yield();
+                if (surfaceSleepTimeMicros == 0) {
+                    Thread.yield();
+                }
                 currTimeMicros = CoreSystem.getTimeMicros();
                 
                 if (Build.DEBUG) {
@@ -967,6 +969,14 @@ public class Stage implements Runnable {
                     info += ", ";
                 }
                 info += numDirtyRectangles + " dirty rects";
+            }
+            
+            int numSounds = CoreSystem.getNumSoundsPlaying();
+            if (numSounds > 0) {
+                if (info.length() > 0) {
+                    info += ", ";
+                }
+                info += numSounds + " sounds";
             }
             
             if (info.length() > 0) {
