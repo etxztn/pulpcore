@@ -65,10 +65,12 @@ public class Easings extends Scene2D {
         Easing easing = easings[index];
         label.setText(easingNames[index]);
         
+        int dur = 1000;
+        int delay = 500;
         timeline = new Timeline();
-        timeline.move(icon, 140, 240, 500, 240, 750, easing);
-        timeline.move(icon, 500, 240, 140, 240, 750, easing, 1250);
-        timeline.loopForever(500);
+        timeline.move(icon, 140,240, 500,240, dur, easing);
+        timeline.move(icon, 500,240, 140,240, dur, easing, dur+delay);
+        timeline.loopForever(delay);
     }
     
     @Override
