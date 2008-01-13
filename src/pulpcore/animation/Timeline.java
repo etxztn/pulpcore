@@ -235,7 +235,9 @@ public final class Timeline extends Animation {
                 ((Timeline)anim).notifyChildren();
             }
             else if (anim instanceof TimelineEvent) {
-                ((TimelineEvent)anim).notifyAll();
+                synchronized (anim) {
+                    ((TimelineEvent)anim).notifyAll();
+                }
             }
         }
     }
