@@ -43,7 +43,7 @@ public class SceneGraph extends Scene2D {
         // Blend the color from trunk to stem
         ColorAnimation color = new ColorAnimation(ColorAnimation.HSB, trunkColor, leafColor,
             maxDepth);
-        color.setTime(depth);
+        color.update(depth);
         
         // Create this stem
         double w = (startSize/3) / (Math.pow(depth, 1.5)+1);
