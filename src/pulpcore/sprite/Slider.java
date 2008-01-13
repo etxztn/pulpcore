@@ -38,7 +38,7 @@ import pulpcore.Input;
 import pulpcore.math.CoreMath;
 
 /**
-    A Slider is a widget that lets the user select a value by sliding a thumb. 
+    A Slider is a widget that lets the user select a value by sliding a knob. 
 */
 public class Slider extends Sprite {
     
@@ -52,7 +52,7 @@ public class Slider extends Sprite {
     public static final int VERTICAL = 1;
     
     private static final int DRAG_NONE = 0;
-    private static final int DRAG_THUMB = 1;
+    private static final int DRAG_KNOB = 1;
     private static final int DRAG_GUTTER = 2;
     
     /**
@@ -69,7 +69,7 @@ public class Slider extends Sprite {
     public final Fixed value = new Fixed(this, 50);
     
     private CoreImage backgroundImage;
-    private CoreImage thumbImage;
+    private CoreImage knobImage;
     private int orientation;
     private int top, left, bottom, right;
     private int min, max, extent;
@@ -77,30 +77,38 @@ public class Slider extends Sprite {
     private int pageDuration = 0;
     private int unitDuration = 0;
     
-    private int thumbX, thumbY;
+    private int knobX, knobY;
     private int dragMode;
     private int dragOffset;
     private int dragGutterDelay;
     private int dragGutterDir;
     
     /**
-        Creates a Slider with a background image and a thumb image.
+        Creates a Slider with a background image and a knob image.
     */
-    public Slider(String backgroundImage, String thumbImage, int x, int y) {
-        this(CoreImage.load(backgroundImage), CoreImage.load(thumbImage), x, y);
+    public Slider(String backgroundImage, String knobImage, int x, int y) {
+        this(CoreImage.load(backgroundImage), CoreImage.load(knobImage), x, y);
     }
     
     /**
-        Creates a Slider with a background image and a thumb image.
+        Creates a Slider with a background image and a knob image.
     */
-    public Slider(CoreImage backgroundImage, CoreImage thumbImage, int x, int y) {
+    public Slider(CoreImage backgroundImage, CoreImage knobImage, int x, int y) {
         super(x, y, backgroundImage.getWidth(), backgroundImage.getHeight());
         this.backgroundImage = backgroundImage;
-        this.thumbImage = thumbImage;
+        this.knobImage = knobImage;
         this.min = 0;
         this.max = 100;
         this.extent = 0;
     }
+    
+    /**
+        @return True if the slider knob is being dragged.
+    */
+    public boolean isAdjusting() {
+        return dragMode != DRAG_NONE;
+    }
+
     
     public void propertyChange(Property property) {
         super.propertyChange(property);
@@ -115,7 +123,7 @@ public class Slider extends Sprite {
                 value.setAsFixed(fClampedValue);
             }
             else {
-                positionThumb();
+                positionKnob();
             }
         }
     }
@@ -127,7 +135,7 @@ public class Slider extends Sprite {
         
         boolean imageChange = false;
         imageChange |= backgroundImage.update(elapsedTime);
-        imageChange |= thumbImage.update(elapsedTime);
+        imageChange |= knobImage.update(elapsedTime);
         if (imageChange) {
             setDirty(true);
         }
@@ -137,7 +145,7 @@ public class Slider extends Sprite {
         if (!takeInput) {
             dragMode = DRAG_NONE;
         }
-        else if (dragMode == DRAG_THUMB) {
+        else if (dragMode == DRAG_KNOB) {
             if (Input.isMouseReleased()) {
                 dragMode = DRAG_NONE;
             }
@@ -166,24 +174,24 @@ public class Slider extends Sprite {
                     int x = getLocalX(Input.getMouseX(), Input.getMouseY());
                     int y = getLocalY(Input.getMouseX(), Input.getMouseY());
                     if (isHorizontal()) {
-                        if (x < thumbX && dragGutterDir <= 0) {
+                        if (x < knobX && dragGutterDir <= 0) {
                             // Scroll left
-                            page(-extent, x - thumbImage.getWidth()/2);
+                            page(-extent, x - knobImage.getWidth()/2);
                         }
-                        else if (x >= thumbX + thumbImage.getWidth() && dragGutterDir >= 0) {
+                        else if (x >= knobX + knobImage.getWidth() && dragGutterDir >= 0) {
                             // Scroll right
-                            page(extent, x - thumbImage.getWidth()/2);
+                            page(extent, x - knobImage.getWidth()/2);
                         }
                     }
                     else {
                         // Vertical
-                        if (y < thumbY && dragGutterDir <= 0) {
+                        if (y < knobY && dragGutterDir <= 0) {
                             // Scroll left
-                            page(-extent, y - thumbImage.getHeight()/2);
+                            page(-extent, y - knobImage.getHeight()/2);
                         }
-                        else if (y >= thumbY + thumbImage.getHeight() && dragGutterDir >= 0) {
+                        else if (y >= knobY + knobImage.getHeight() && dragGutterDir >= 0) {
                             // Scroll right
-                            page(extent, y - thumbImage.getHeight()/2);
+                            page(extent, y - knobImage.getHeight()/2);
                         }
                     }
                 }
@@ -193,39 +201,39 @@ public class Slider extends Sprite {
             int x = getLocalX(Input.getMousePressX(), Input.getMousePressY());
             int y = getLocalY(Input.getMousePressX(), Input.getMousePressY());
             if (isHorizontal()) {
-                dragOffset = x - thumbX;
-                if (x < thumbX) {
+                dragOffset = x - knobX;
+                if (x < knobX) {
                     // Scroll left
-                    page(-extent, x - thumbImage.getWidth()/2);
+                    page(-extent, x - knobImage.getWidth()/2);
                     setDragGutterMode(-1);
                 }
-                else if (x >= thumbX + thumbImage.getWidth()) {
+                else if (x >= knobX + knobImage.getWidth()) {
                     // Scroll right
-                    page(extent, x - thumbImage.getWidth()/2);
+                    page(extent, x - knobImage.getWidth()/2);
                     setDragGutterMode(1);
                 }
-                else if (y >= thumbY && y < thumbY + thumbImage.getHeight()) {
+                else if (y >= knobY && y < knobY + knobImage.getHeight()) {
                     // Start dragging
-                    dragOffset = x - thumbX;
-                    dragMode = DRAG_THUMB;
+                    dragOffset = x - knobX;
+                    dragMode = DRAG_KNOB;
                 }
             }
             else {
                 // Vertical
-                if (y < thumbY) {
+                if (y < knobY) {
                     // Scroll left
-                    page(-extent, y - thumbImage.getHeight()/2);
+                    page(-extent, y - knobImage.getHeight()/2);
                     setDragGutterMode(-1);
                 }
-                else if (y >= thumbY + thumbImage.getHeight()) {
+                else if (y >= knobY + knobImage.getHeight()) {
                     // Scroll right
-                    page(extent, y - thumbImage.getHeight()/2);
+                    page(extent, y - knobImage.getHeight()/2);
                     setDragGutterMode(1);
                 }
-                else if (x >= thumbX && x < thumbX + thumbImage.getWidth()) {
+                else if (x >= knobX && x < knobX + knobImage.getWidth()) {
                     // Start dragging
-                    dragOffset = y - thumbY;
-                    dragMode = DRAG_THUMB;
+                    dragOffset = y - knobY;
+                    dragMode = DRAG_KNOB;
                 }
             }
         }
@@ -233,12 +241,12 @@ public class Slider extends Sprite {
     
     private void setDragGutterMode(int dir) {
         if (extent == 0) {
-            dragMode = DRAG_THUMB;
+            dragMode = DRAG_KNOB;
             if (isHorizontal()) {
-                dragOffset = thumbImage.getWidth()/2;
+                dragOffset = knobImage.getWidth()/2;
             }
             else {
-                dragOffset = thumbImage.getHeight()/2;
+                dragOffset = knobImage.getHeight()/2;
             }
         }
         else {
@@ -277,35 +285,35 @@ public class Slider extends Sprite {
         }
     }
     
-    private void positionThumb() {
+    private void positionKnob() {
         setDirty(true);
         int horizontalSpace = getHorizontalSpace();
         int verticalSpace =  getVerticalSpace();
         int range = max - extent - min;
-        double thumbValue = CoreMath.clamp(value.get(), min, max - extent);
+        double knobValue = CoreMath.clamp(value.get(), min, max - extent);
         
         if (isHorizontal()) {
-            thumbX = (left > 0 ? left : 0);
+            knobX = (left > 0 ? left : 0);
             if (range > 0) {
-                thumbX += (int)Math.round((thumbValue - min) * horizontalSpace / range);
+                knobX += (int)Math.round((knobValue - min) * horizontalSpace / range);
             }
-            thumbY = (top > 0 ? top : 0) + verticalSpace / 2;
+            knobY = (top > 0 ? top : 0) + verticalSpace / 2;
         }
         else {
-            thumbX = (left > 0 ? left : 0) + horizontalSpace / 2;
-            thumbY = (top > 0 ? top : 0);
+            knobX = (left > 0 ? left : 0) + horizontalSpace / 2;
+            knobY = (top > 0 ? top : 0);
             if (range > 0) {
-                thumbY += (int)Math.round((thumbValue - min) * verticalSpace / range);
+                knobY += (int)Math.round((knobValue - min) * verticalSpace / range);
             }
         }
     }
     
     private int getHorizontalSpace() {
-        return backgroundImage.getWidth() - left - right - thumbImage.getWidth();
+        return backgroundImage.getWidth() - left - right - knobImage.getWidth();
     }
     
     private int getVerticalSpace() {
-        return backgroundImage.getHeight() - top - bottom - thumbImage.getHeight();
+        return backgroundImage.getHeight() - top - bottom - knobImage.getHeight();
     }
     
     protected int getNaturalWidth() {
@@ -331,26 +339,26 @@ public class Slider extends Sprite {
     }
     
     /**
-        Sets the thumb image.
+        Sets the knob image.
     */
-    public void setThumb(CoreImage thumbImage) {
-        if (this.thumbImage != thumbImage) {
-            this.thumbImage = thumbImage;
-            positionThumb();
+    public void setKnob(CoreImage knobImage) {
+        if (this.knobImage != knobImage) {
+            this.knobImage = knobImage;
+            positionKnob();
         }
     }
     
     /**
-        Sets the visual insets that the thumb image is bound to. 
+        Sets the visual insets that the knob image is bound to. 
         <p>
         If an inset is positive, it is used as inner boundry within the background image. If 
-        an inset is negative, the the thumb can extend outisde the background image by that amount.
+        an inset is negative, the the knob can extend outisde the background image by that amount.
         <p>
         For horizontal sliders, the left and right insets are use as boundaries, 
-        and the thumb is centered vertically between the top and bottom insets.
+        and the knob is centered vertically between the top and bottom insets.
         <p>
         For vertical sliders, the top and bottom insets are use as boundaries, 
-        and the thumb is centered horizontally between the left and right insets.
+        and the knob is centered horizontally between the left and right insets.
     */
     public void setInsets(int top, int left, int bottom, int right) {
         if (this.top != top || this.left != left || this.bottom != bottom || this.right != right) {
@@ -366,7 +374,7 @@ public class Slider extends Sprite {
             if (height.getAsFixed() == oldNaturalHeight) {
                 height.setAsFixed(getNaturalHeight());
             }
-            positionThumb();
+            positionKnob();
         }
     }
     
@@ -375,7 +383,7 @@ public class Slider extends Sprite {
         int bgY = (top < 0) ? -top : 0;
         
         g.drawImage(backgroundImage, bgX, bgY);
-        g.drawImage(thumbImage, thumbX, thumbY);
+        g.drawImage(knobImage, knobX, knobY);
     }
     
     // 
@@ -394,7 +402,7 @@ public class Slider extends Sprite {
     public void setOrientation(int orientation) {
         if (this.orientation != orientation) {
             this.orientation = orientation;
-            positionThumb();
+            positionKnob();
         }
     }
     
@@ -433,7 +441,7 @@ public class Slider extends Sprite {
             this.extent = extent;
             value.stopAnimation(true);
             value.set(CoreMath.clamp(value.getAsInt(), min, max - extent));
-            positionThumb();
+            positionKnob();
         }
     }
     
@@ -469,7 +477,7 @@ public class Slider extends Sprite {
     
     /**
         Sets the duration, in milliseconds, to animate when the value is changed when the
-        gutter (the background of the Slider outside the thumb) is clicked or when the 
+        gutter (the background of the Slider outside the knob) is clicked or when the 
         {@link #scrollUp()}, {@link #scrollDown()}, 
         {@link #scrollPageUp()}, or {@link #scrollPageDown()} methods are called. 
         <p>
