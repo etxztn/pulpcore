@@ -251,18 +251,41 @@ public final class AppletAppContext extends AppContext {
         surface = null;
         boolean useBufferStrategy = false;
         
-        // Use BufferStrategy on:
-        // * Mac OS X 10.4, Java 1.5 or newer, but not Mac OS X 10.5 
-        // * All others on Java 1.6 or newer
-        // TODO: re-evaluate this once Max OS X Java 6 is finalized
-        // Currently BufferStrategy on Java 5 on Mac OS X uses an obscene amount of CPU
+        /*
+            On Windows/Linux, currently only use BufferStrategy on Java 6.
+            
+            BufferStrategy has a problem on:
+            * Mac OS X 10.5 (Leopard) - uses lots of CPU. Cannot reach 60fps (55fps max).
+            
+            Repainting (BufferedImageSurface) has a problem on:
+            * Mac OS X + Firefox (using the "apple.awt.MyCPanel" peer) - repaint events are lost 
+              when moving the mouse over the applet.
+            * Mac OS X (all) - cannot reach 60fps (55fps max).
+            
+            TODO: re-evaluate this once Max OS X Java 6 is finalized
+        */
         if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
-            if (!CoreSystem.isMacOSXLeopardOrNewer()) {
+            if (CoreSystem.isMacOSXLeopardOrNewer()) {
+                // For Mac OS X 10.5:
+                // Only use BufferStrategy on Firefox (the "apple.awt.MyCPanel" peer)
+                Object peer = applet.getPeer();
+                if (peer != null && "apple.awt.MyCPanel".equals(peer.getClass().getName())) {
+                    useBufferStrategy = true;
+                }
+                else {
+                    useBufferStrategy = false;
+                }
+            }
+            else {
+                // Before Mac OS X 10.5, BufferStrategy was perfect.
                 useBufferStrategy = true;
             }
         }
         else if (CoreSystem.isJava16orNewer()) {
             useBufferStrategy = true;
+        }
+        else {
+            useBufferStrategy = false;
         }
         
         if (surface == null && useBufferStrategy) {
