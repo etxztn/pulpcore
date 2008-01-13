@@ -239,7 +239,7 @@ public class CoreSystem {
         Uploads talkback data to an external URL using the POST (multipart form)
         method. 
         <p>
-        The upload starts immediately. Use {@link upload#isCompleted()} to check if the upload is 
+        The upload starts immediately. Use {@link Upload#isCompleted()} to check if the upload is 
         finished.
         @param talkbackPath the path on the applet's server.
         @return null if talkbackPath is an invalid URL.

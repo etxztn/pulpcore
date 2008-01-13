@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -47,12 +47,12 @@ import pulpcore.util.crypt.ARC4;
     like compression and encryption.
     <p>
     Both little endian and big endian byte orders are provided, and can be toggled at any time
-    during the read/write process. The default is big endian (the same byte order at 
+    during the read/write process. The default is big endian (the same byte order as 
     DataInputStream and DataOutputStream).
     <p>
     Note that, when the position is at the end, the length of the underlying data array is 
     increased each time a write method is called. It can often be more economical to first 
-    allocate a larger array, perform the writes, and then call the truncate() method:
+    allocate a larger array, perform the writes, and then call {@link #truncate()}:
     <pre>
     ByteArray byteArray = new ByteArray(1000);
     for (int i = 0; i < 100; i++) {
@@ -64,15 +64,15 @@ import pulpcore.util.crypt.ARC4;
 public class ByteArray {
     
     /** 
-        Big Endian is the byte order where the data is stored Most Significant Byte (MSB) first.
+        Big Endian is the byte order where data is stored Most Significant Byte (MSB) first.
         Big Endian is Java's internal byte order, common in pre-Intel Macs, and 
         is the common network byte order. 
     */
     public static final int BIG_ENDIAN = 0;
     
     /** 
-        Little Endian is the byte order where the data is stored Least Significant Byte (LSB) first.
-        Little Endian is common on Intel-based Macs and PCs. 
+        Little Endian is the byte order where data is stored Least Significant Byte (LSB) first.
+        Little Endian is common on PCs and Intel-based Macs. 
     */
     public static final int LITTLE_ENDIAN = 1;
     
@@ -81,7 +81,7 @@ public class ByteArray {
     private int position;
     private int byteOrder;
     
-    
+
     /**
         Creates a new ByteArray with a length of zero.
     */
