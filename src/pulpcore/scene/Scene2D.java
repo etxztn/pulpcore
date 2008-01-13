@@ -567,7 +567,13 @@ public class Scene2D extends Scene {
         reset();
     }
     
-    public final void showNotify() {
+    /**
+        Notifies that this scene has been shown after another Scene is hidden
+        or immediately after a call to start(). 
+        <p>
+        Subclasses that override this method should call <code>super.showNotify();</code>
+    */
+    public void showNotify() {
         if (stateSaved) {
             Stage.setFrameRate(desiredFPS);
             Input.setTextInputMode(isTextInputMode);
@@ -577,7 +583,13 @@ public class Scene2D extends Scene {
         redrawNotify();
     }
     
-    public final void hideNotify() {
+    /**
+        Notifies that this scene has been hidden by another Scene or 
+        immediately before a call to stop(). 
+        <p>
+        Subclasses that override this method should call <code>super.hideNotify();</code>
+    */
+    public void hideNotify() {
         desiredFPS = Stage.getFrameRate();
         isTextInputMode = Input.isTextInputMode();
         cursor = Input.getCursor();
