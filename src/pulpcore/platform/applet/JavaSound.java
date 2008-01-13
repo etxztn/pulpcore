@@ -402,16 +402,13 @@ public class JavaSound implements SoundEngine {
             }
         }
         
-        
         public int getSampleRate() {
             return sampleRate;
         }
-
         
         public synchronized boolean isOpen() {
             return line != null && line.isOpen();
         }
-        
         
         public synchronized void open() {
             if (!isOpen()) {
@@ -435,7 +432,6 @@ public class JavaSound implements SoundEngine {
             }
         }
         
-        
         public synchronized boolean reopen(int sampleRate) {
             int oldSampleRate = this.sampleRate;
             close(false);
@@ -452,7 +448,6 @@ public class JavaSound implements SoundEngine {
                 return false;
             }
         }
-        
         
         public synchronized void close(boolean drain) {
             stream = null;
@@ -477,7 +472,6 @@ public class JavaSound implements SoundEngine {
             }
             line = null;
         }
-
 
         /**
             Forces playback of the specified buffer, even if isPlaying() is true.
@@ -511,17 +505,15 @@ public class JavaSound implements SoundEngine {
             framesWritten = 0;
             numWrites = 0;
             minBufferSize = MIN_BUFFER_SIZE;
-            stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames, 0, 
+            stream = new SoundStream(context, clip, level, pan, loopFrame, numLoopFrames,
                 stopFrame);
-            return stream;
+            return stream.getPlayback();
         }
-        
 
         public synchronized boolean isPlaying() {
             return line != null && stream != null;
         }
         
-       
         public synchronized void update(int timeUntilNextUpdate) {
             if (line == null || stream == null) {
                 return;
@@ -639,7 +631,6 @@ public class JavaSound implements SoundEngine {
         private int getSample(int offset) {
             return SoundStream.getSample(WORK_BUFFER, offset);
         }
-        
         
         private void setSample(int offset, int sample) {
             SoundStream.setSample(WORK_BUFFER, offset, sample);

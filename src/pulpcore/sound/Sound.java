@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -163,7 +163,8 @@ public abstract class Sound {
         }
         
         if (playback == null) {
-            playback = new SoundStream(null, this, level, pan, 0, 0, 0, this.getNumFrames());
+            SoundStream stream = new SoundStream(null, this, level, pan, 0, 0, this.getNumFrames());
+            playback = stream.getPlayback();
             playback.stop();
         }
         return playback;

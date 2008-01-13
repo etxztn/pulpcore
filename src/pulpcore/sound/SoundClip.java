@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -41,7 +41,7 @@ import pulpcore.util.ByteArray;
     A SoundClip represents a sampled sound clip. 
     Samples are in signed, little endian, 16-bit PCM format.
 */
-public final class SoundClip extends Sound {
+public class SoundClip extends Sound {
     
     private static final SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
     
@@ -49,13 +49,20 @@ public final class SoundClip extends Sound {
     private static final int[] EXP_TABLE = { 
         0, 132, 396, 924, 1980, 4092, 8316, 16764
     };
-    
 
     private final byte[] data;
     private final int numChannels;
     private final int frameSize;
     private final int numFrames;
     
+    // Package-private
+    SoundClip(int sampleRate, boolean stereo, int numFrames) {
+        super(sampleRate);
+        this.data = new byte[0];
+        this.numChannels = stereo ? 2 : 1;
+        this.frameSize = getSampleSize() * numChannels;
+        this.numFrames = numFrames;
+    }
     
     /**
         Creates an sound clip with the specified samples 
@@ -65,26 +72,23 @@ public final class SoundClip extends Sound {
         super(sampleRate);
         this.data = data;
         this.numChannels = stereo ? 2 : 1;
-        this.frameSize = getSampleSize() * getNumChannels();
+        this.frameSize = getSampleSize() * numChannels;
         if ((data.length % frameSize) != 0) {
             throw new IllegalArgumentException();
         }
         this.numFrames = data.length / frameSize;
     }
     
-    
     /**
         Returns the number of channels of this sound: 1 for mono or 2 for stereo.
     */
-    public int getNumChannels() {
+    public final int getNumChannels() {
         return numChannels;
     }
     
-    
-    public int getNumFrames() {
+    public final int getNumFrames() {
         return numFrames;
     }
-    
     
     public void getSamples(byte[] dest, int destOffset, int destChannels,
         int srcFrame, int numFrames)
@@ -124,21 +128,17 @@ public final class SoundClip extends Sound {
         }
     }
     
-    
     private int getSample(int offset) {
         return SoundStream.getSample(data, offset);
     }
     
-    
     private void setSample(int offset, int sample) {
         SoundStream.setSample(data, offset, sample);
     }
-    
 
     //
     // Loading
     //
-    
     
     /**
         Loads a sound from the specified sound asset. 
@@ -180,7 +180,6 @@ public final class SoundClip extends Sound {
             return NO_SOUND;
         }
     }
-        
     
     private static SoundClip loadAU(ByteArray in, String soundAsset) throws EOFException {
         // Make sure magic number is ".snd"
@@ -228,7 +227,6 @@ public final class SoundClip extends Sound {
     
         return new SoundClip(data, sampleRate, stereo);
     }
-    
     
     private static SoundClip loadWAV(ByteArray in, String soundAsset) throws EOFException {
     
@@ -297,11 +295,6 @@ public final class SoundClip extends Sound {
                 }
                 byte[] samples = new byte[chunkSize];
                 in.read(samples);
-                //for (int i = 0; i < samples.length; i+=2) {
-                //    // Convert to big endian (Java endian style)
-                //    samples[i + 1] = in.readByte();
-                //    samples[i] = in.readByte();
-                //}
                 return new SoundClip(samples, sampleRate, stereo);
             }
             else {
@@ -310,7 +303,6 @@ public final class SoundClip extends Sound {
             }
         }
     }
-    
     
     private static SoundClip loadOGG(ByteArray in, String soundAsset) throws EOFException {
         /*
@@ -350,7 +342,6 @@ public final class SoundClip extends Sound {
         }
     }
     
-    
     private static boolean isSupportedSampleRate(String soundAsset, int sampleRate) {
         int[] sampleRates = CoreSystem.getPlatform().getSoundEngine().getSupportedSampleRates();
         for (int i = 0; i < sampleRates.length; i++) {
@@ -365,11 +356,9 @@ public final class SoundClip extends Sound {
         return false;
     }
     
-    
     //
     // For u-law conversion
     //
-    
     
     /** 
         Converts an 8-bit ulaw sample to a signed 16-bit linear sample.
@@ -390,5 +379,4 @@ public final class SoundClip extends Sound {
             return sample;
         }
     }        
-
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,13 +29,14 @@
 
 package pulpcore.platform;
 
+import java.lang.ref.WeakReference;
 import pulpcore.animation.Fixed;
 import pulpcore.math.CoreMath;
 import pulpcore.sound.Playback;
 import pulpcore.sound.Sound;
 
 
-public class SoundStream extends Playback {
+public class SoundStream {
     
     // The number of milliseconds to fade from a mute/unmute
     public static final int MUTE_TIME = 5;
@@ -46,12 +47,16 @@ public class SoundStream extends Playback {
     
     private static final int STATE_PLAYING = 0;
     private static final int STATE_PAUSED = 1;
-    private static final int STATE_STOPPING = 2;
-    private static final int STATE_STOPPED = 3;
+    private static final int STATE_TRACKING = 2;
+    private static final int STATE_TRACKING_WHILE_PAUSED = 3;
+    private static final int STATE_STOPPING = 4;
+    private static final int STATE_STOPPED = 5;
     
+    private final Fixed level;
+    private final Fixed pan;
     private final AppContext context;
     private final Sound sound;
-    private final int loopFrame;
+    private final int startFrame;
     private final int numLoopFrames;
     private final int stopFrame;
     
@@ -65,64 +70,89 @@ public class SoundStream extends Playback {
     private boolean lastMute;
     private double lastMasterVolume;
     
+    private int trackingFrame;
+    
+    private Playback playback;
+    private WeakReference playbackRef;
+    
     public SoundStream(AppContext context, Sound sound, Fixed level, Fixed pan, 
-        int loopFrame, int numLoopFrames, int animationFrameDelay, int stopFrame)
+        int startFrame, int numLoopFrames, int stopFrame)
     {
-        super(level, pan);
+        this.level = level;
+        this.pan = pan;
         this.context = context;
         this.sound = sound;
-        this.loopFrame = loopFrame;
+        this.startFrame = startFrame;
         this.numLoopFrames = numLoopFrames;
         this.stopFrame = stopFrame;
         
         this.loop = (numLoopFrames > 0);
         this.frame = 0;
-        this.animationFrame = -animationFrameDelay;
+        this.animationFrame = 0;
         
         this.lastMute = isMute();
         this.lastMasterVolume = getMasterVolume();
         this.outputLevel.set(lastMute ? 0 : lastMasterVolume);
         
         this.state = STATE_PLAYING;
-    }
-    
-    //@Override
-    public long getMicrosecondPosition() {
-        if (animationFrame < loopFrame) {
-            return 0;
-        }
-        else {
-            return 1000000L * (animationFrame - loopFrame) / sound.getSampleRate();
-        }
-    }
-    
-    //@Override
-    public void setPaused(boolean paused) {
-        if (paused && state == STATE_PLAYING) {
-            state = STATE_PAUSED;
-        }
-        else if (!paused && state == STATE_PAUSED) {
-            state = STATE_PLAYING;
-        }
-    }
-    
-    //@Override
-    public boolean isPaused() {
-        return state == STATE_PAUSED;
-    }
         
-    //@Override
-    public void stop() {
-        if (state == STATE_PLAYING || state == STATE_PAUSED) {
-            state = STATE_STOPPING;
-        }
+        this.playback = new SoundStreamPlayback(level, pan);
+        this.playbackRef = new WeakReference(playback);
     }
     
-    //@Override
+    // Called right after creation of SoundStream
+    public Playback getPlayback() {
+        return this.playback;
+    }
+    
     public boolean isFinished() {
         return (context == null || frame >= sound.getNumFrames());
     }
     
+    private boolean isPaused() {
+        return state == STATE_PAUSED || state == STATE_TRACKING_WHILE_PAUSED;
+    }
+        
+    private void stop() {
+        if (state != STATE_STOPPED) {
+            state = STATE_STOPPING;
+        }
+    }
+    
+    private void checkPlayback() {
+        if (playback == null) {
+            Playback thisPlayback = (Playback)playbackRef.get();
+            if (thisPlayback != null) {
+                if (!isPaused()) {
+                    // App code called setPause(false).
+                    playback = thisPlayback;
+                }
+            }
+            else if (isPaused()) {
+                // Playback is paused, but no references to the Playback object exist, so
+                // stop the sound
+                stop();
+            }
+        }
+        else if (playback.isPaused()) {
+            // App code called setPause(true).
+            playback = null;
+        }
+    }
+    
+    private void setFramePositionNow(int framePosition) {
+        animationFrame = startFrame + framePosition;
+        if (inLoop()) {
+            frame = startFrame + (framePosition % numLoopFrames);
+        }
+        else if (framePosition > sound.getNumFrames()) {
+            frame = sound.getNumFrames();
+        }
+        else {
+            frame = framePosition;
+        }
+    }
+        
     private boolean isMute() {
         return (context == null || context.isMute() || state != STATE_PLAYING);
     }
@@ -137,7 +167,6 @@ public class SoundStream extends Playback {
     }
     
     private void advanceFramePosition(int numFrames) {
-        
         if (state == STATE_STOPPED) {
             // Advance the frame so that the stream will reached the isFinished() state
             frame += numFrames;
@@ -152,7 +181,7 @@ public class SoundStream extends Playback {
             animationFrame += numFrames;
             
             if (inLoop()) {
-                frame = loopFrame + ((newFrame - loopFrame) % numLoopFrames);
+                frame = startFrame + ((newFrame - startFrame) % numLoopFrames);
             }
             else if (newFrame > sound.getNumFrames()) {
                 frame = sound.getNumFrames();
@@ -163,6 +192,7 @@ public class SoundStream extends Playback {
             
             int elapsedTime = getAnimationTime() - oldAnimationTime;
             // TODO: possible thread issue if the PulpCore thread sets the animation of these?
+            // Currently JavaSound runs in the animation thread, so it should be okay.
             level.update(elapsedTime);
             pan.update(elapsedTime);
             outputLevel.update(elapsedTime);
@@ -170,11 +200,16 @@ public class SoundStream extends Playback {
     }
     
     private int getAnimationTime() {
-        return (int)(getMicrosecondPosition() / 1000);
+        if (animationFrame < startFrame) {
+            return 0;
+        }
+        else {
+            return 1000 * (animationFrame - startFrame) / sound.getSampleRate();
+        }
     }
     
     private boolean inLoop() {
-        return (loop && frame >= loopFrame && frame < loopFrame + numLoopFrames);
+        return (loop && frame >= startFrame && frame < startFrame + numLoopFrames);
     }
     
     public void render(byte[] dest, int destOffset, int destChannels, int numFrames) {
@@ -202,6 +237,12 @@ public class SoundStream extends Playback {
             frame = stopFrame;
             state = STATE_STOPPED;
         }
+        else if (state == STATE_TRACKING && outputLevel.getAsFixed() == 0) {
+            state = STATE_PLAYING;
+            setFramePositionNow(trackingFrame);
+        }
+        
+        checkPlayback();
         
         int destFrameSize = destChannels * 2;
         
@@ -219,7 +260,7 @@ public class SoundStream extends Playback {
             }
             if (inLoop()) {
                 // Don't render past loop boundary
-                framesToRender = Math.min(framesToRender, loopFrame + numLoopFrames - frame); 
+                framesToRender = Math.min(framesToRender, startFrame + numLoopFrames - frame); 
             }
             
             // Figure out the next level and pan (for interpolation)
@@ -384,7 +425,66 @@ public class SoundStream extends Playback {
         // Signed little endian
         data[offset] = (byte)sample;
         data[offset + 1] = (byte)(sample >> 8);
-    }    
+    }
+    
+    public class SoundStreamPlayback extends Playback {
+        
+        public SoundStreamPlayback(Fixed level, Fixed pan) {
+            super(level, pan);
+        }
+        
+        public int getSampleRate() {
+            return sound.getSampleRate();
+        }
+        
+        public int getFramePosition() {
+            if (animationFrame < startFrame) {
+                return 0;
+            }
+            else {
+                return animationFrame - startFrame;
+            }
+        }
+        
+        public void setFramePosition(int framePosition) {
+            if (getFramePosition() != framePosition) {
+                trackingFrame = framePosition;
+                if (state == STATE_PAUSED) {
+                    //state = STATE_TRACKING_WHILE_PAUSED;
+                    setFramePositionNow(trackingFrame);
+                }
+                else if (state == STATE_PLAYING) {
+                    state = STATE_TRACKING;
+                }
+            }
+        }
+        
+        public void setPaused(boolean paused) {
+            if (paused && state == STATE_PLAYING) {
+                state = STATE_PAUSED;
+            }
+            else if (paused && state == STATE_TRACKING) {
+                state = STATE_TRACKING_WHILE_PAUSED;
+            }
+            else if (!paused && state == STATE_PAUSED) {
+                state = STATE_PLAYING;
+            }
+            else if (!paused && state == STATE_TRACKING_WHILE_PAUSED) {
+                state = STATE_PLAYING;
+                setFramePositionNow(trackingFrame);
+            }
+        }
+        
+        public boolean isPaused() {
+            return SoundStream.this.isPaused();
+        }
+            
+        public void stop() {
+            SoundStream.this.stop();
+        }
+        
+        public boolean isFinished() {
+            return SoundStream.this.isFinished();
+        }        
+    }
 }
-
-

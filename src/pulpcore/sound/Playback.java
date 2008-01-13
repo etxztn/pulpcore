@@ -53,11 +53,67 @@ public abstract class Playback {
         this.pan = pan;
     }
     
-    public abstract long getMicrosecondPosition();
+    /**
+        Gets the sound's sample rate.
+    */
+    public abstract int getSampleRate();
     
     /**
-        Pauses this playback or contunues playback after pausing. A paused sound may continue to
-        send data (in the form of inaudible sound) to the sound engine.
+        Gets the current playback position in frames.
+    */
+    public abstract int getFramePosition();
+    
+    /**
+        Gets the current playback position in microseconds.
+    */
+    public final long getMicrosecondPosition() {
+        return 1000000L * getFramePosition() / getSampleRate();
+    }
+    
+    /**
+        Sets the current plaback position to the first frame. This method returns immediately, 
+        but there may be a slight delay (a few milliseconds) before the frame position is actually 
+        set (to avoid clicks/pops).
+    */
+    public final void rewind() {
+        setFramePosition(0);
+    }
+    
+    /**
+        Sets the current playback position. This method returns immediately, but there may be a 
+        slight delay (a few milliseconds) before the frame position is actually set (to 
+        avoid clicks/pops).
+    */
+    public abstract void setFramePosition(int framePosition);
+    
+    /**
+        Sets the current playback position, in microseconds. This method returns immediately, 
+        but there may be a slight delay (a few milliseconds) before the frame position is actually 
+        set (to avoid clicks/pops).
+    */
+    public final void setMicrosecondPosition(long pos) {
+        setFramePosition((int)(pos * getSampleRate() / 1000000));
+    }
+    
+    /**
+        Pauses this playback or continues playback after pausing. A paused sound may continue to
+        send data (in the form of inaudible sound) to the sound engine until the playback is
+        stopped.
+        <p>
+        If playback is paused and the garbage collector determines no references to this Playback 
+        object exist (for example, when music is paused, but the Scene with the Playback object 
+        no longer exists), the playback will automatically stop, and data will no longer be sent to 
+        the sound engine. For example:
+        <pre>
+        SoundClip music = SoundClip.load("music.wav");
+        Playback musicPlayback = music.play();
+        ...
+        // Playback is paused, but still active and ready to be unpaused.
+        musicPlayback.setPaused(true); 
+        ...
+        // Paused playback will automatically become inactive at a future point in time.
+        musicPlayback = null; 
+        </pre>
     */
     public abstract void setPaused(boolean paused);
     
@@ -72,10 +128,8 @@ public abstract class Playback {
     public abstract void stop();
     
     /**
-        Returns true if the playback is finished.
+        Returns true if the playback is finished. Once finished, the playback cannot be restarted.
     */
     public abstract boolean isFinished();
-    
-    // TODO: FFT stuff
     
 }
