@@ -1,5 +1,6 @@
-0.10.10 (In progress: January ?, 2008)
-  * API: Sound.play() now returns a Playback object that can be used to pause or stop the sound.
+0.10.10 (January 13, 2008)
+  * API: Sound.play() now returns a Playback object that can be used to pause, stop, or
+    set the position of the sound while is it playing.
   * API: Added a Slider widget. See the Widgets demo for an example.
   * API: Added CoreSystem.getSoundVolume() and CoreSystem.setSoundVolume() for setting the master
     volume.
@@ -8,9 +9,10 @@
   * API: Added CoreMath.clamp(int n, int min, int max)
   * API: Added Stage.setUncaughtExceptionScene(). See the project template for an example.
   * Documentation: CoreSystem.uploadTalkBackFields() is documented and tested to work correctly.
+    See the project template for an example.
   * Core: Scene2Ds now automatically remove all sprites, layers and timelines when unloaded.
-  * Core: Provided a yet another Mac OS X Leopard fix (this time avoiding BufferStrategy 
-    altogether - it uses an obscene amount of CPU)
+  * Core: Provided a yet another Mac OS X Leopard fix (using BufferStrategy on Firefox,
+    and BufferedImageSurface on Safari)
   * Fixed bug: Ant build files had a minor issue for NetBeans 6 on Windows.
 
 0.10.9 (December 14, 2007)
