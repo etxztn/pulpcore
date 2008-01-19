@@ -56,7 +56,7 @@
         Normally you won't need to edit anything below this line 
     -->
     
-    <property name="pulpcore.version" value="0.10" />
+    <property name="pulpcore.version" value="0.11" />
     <property name="pulpcore.platform" value="applet" />
     <property name="autoload.assets.zip" value="" />
     
