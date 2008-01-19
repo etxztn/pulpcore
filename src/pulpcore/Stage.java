@@ -76,7 +76,7 @@ public class Stage implements Runnable {
     public static final int AUTO_CENTER = 1;
     
     /** Automatically stretch the Scene to the Stage dimensions. */
-    public static final int AUTO_STETCH = 2;
+    public static final int AUTO_STRETCH = 2;
     
     /** 
         Automatically scale the Scene to the Stage dimensions, preserving the Scene's 
@@ -855,7 +855,7 @@ public class Stage implements Runnable {
                     CoreMath.toFixed((surface.getHeight() - naturalHeight) / 2));
                 break;
                 
-            case AUTO_STETCH:
+            case AUTO_STRETCH:
                 defaultTransform.scale(
                     CoreMath.toFixed(surface.getWidth()) / naturalWidth,
                     CoreMath.toFixed(surface.getHeight()) / naturalHeight);
