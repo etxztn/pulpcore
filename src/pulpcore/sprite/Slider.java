@@ -55,12 +55,6 @@ public class Slider extends Sprite {
     private static final int DRAG_KNOB = 1;
     private static final int DRAG_GUTTER = 2;
     
-    /**
-        The flag indicating whether this Slider is enabled. An enabled Slider 
-        responds to user input. Sliders are enabled by default.
-    */
-    public final Bool enabled = new Bool(this, true);
-    
     /** 
         The value of this Slider, initially set to 50. The value is a Fixed for animation purposes,
         but the Slider's internal methods ensure the end result (after animation) is always an
@@ -131,7 +125,6 @@ public class Slider extends Sprite {
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         value.update(elapsedTime);
-        enabled.update(elapsedTime);
         
         boolean imageChange = false;
         imageChange |= backgroundImage.update(elapsedTime);
@@ -140,9 +133,7 @@ public class Slider extends Sprite {
             setDirty(true);
         }
         
-        boolean takeInput = enabled.get() && visible.get() && alpha.get() > 0;
-        
-        if (!takeInput) {
+        if (!isEnabledAndVisible()) {
             dragMode = DRAG_NONE;
         }
         else if (dragMode == DRAG_KNOB) {

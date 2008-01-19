@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -41,7 +41,7 @@ import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
-
+import pulpcore.Stage;
 
 /**
     The superclass of all sprites. Contains location, dimension, alpha, 
@@ -56,7 +56,7 @@ public abstract class Sprite implements PropertyListener {
     // Text anchors
     //
     
-    /** 
+        /** 
         Constant for positioning the anchor point at the "default" location
         of the Sprite, which is usually its upper-left corner. One exception is
         ImageSprite which uses the image's hotspot at the default anchor. 
@@ -140,6 +140,12 @@ public abstract class Sprite implements PropertyListener {
     // Properties
     //
     
+    /**
+        The flag indicating whether this Sprite is enabled. An enabled sprite can 
+        respond to user input. Sprites are enabled by default.
+    */
+    public final Bool enabled = new Bool(this, true);
+    
     /** The x location of this Sprite. */
     public final Fixed x = new Fixed(this);
     
@@ -187,14 +193,19 @@ public abstract class Sprite implements PropertyListener {
     
     private int anchor = DEFAULT;
     private int composite = -1;
+    private int cosAngle = CoreMath.ONE;
+    private int sinAngle = 0;
+    
+    private Group parent;
+    private int parentTransformModCount;
     private boolean dirty = true;
-    protected final Transform drawTransform = new Transform();
+    private boolean transformDirty = true;
+    
+    /** Transform based on parent transform and this sprite's x, y, width, height, and angle. */
+    protected final Transform transform = new Transform();
     
     /** The draw bounding box used for directy rectangles in Scene2D */
     private Rect dirtyRect;
-    
-    protected int cosAngle = CoreMath.ONE;
-    protected int sinAngle = 0;
     
     
     public Sprite(int x, int y, int width, int height) {
@@ -204,7 +215,6 @@ public abstract class Sprite implements PropertyListener {
         this.height.set(height);
     }
     
-    
     public Sprite(double x, double y, double width, double height) {
         this.x.set(x);
         this.y.set(y);
@@ -212,19 +222,71 @@ public abstract class Sprite implements PropertyListener {
         this.height.set(height);
     }
     
+    /**
+        Gets this Sprite's parent Group, or null if this Sprite does not have a parent.
+    */
+    public final Group getParent() {
+        return parent;
+    }
+    
+    /**
+        Gets this Sprite's oldest ancestor Group, or null if this Sprite does not have a parent.
+    */
+    public final Group getRoot() {
+        Group currRoot = null;
+        Group nextRoot = parent;
+        while (true) {
+            if (nextRoot == null) {
+                return currRoot;
+            }
+            else {
+                currRoot = nextRoot;
+                nextRoot = nextRoot.getParent();
+            }
+        }
+    }
+    
+    /* package-private */ final void setParent(Group parent) {
+        if (this.parent != parent) {
+            this.parent = parent;
+            if (parent == null) {
+                parentTransformModCount = -1;
+            }
+            else {
+                parentTransformModCount = parent.getTransformModCount();
+            }
+            setDirty(true);
+        }
+    }
+    
+    /**
+        Returns true if this Sprite's enabled property is set to true and its parent, if any, 
+        is enabled.
+    */
+    public final boolean isEnabled() {
+        return (enabled.get() == true && (parent == null || parent.isEnabled())); 
+    }
+    
+    /**
+        Returns true if this Sprite's enabled property is set to true, its visible property set
+        to true, its alpha property is greater than zero, and its parent, if any, is enabled
+        and visible.
+    */
+    public final boolean isEnabledAndVisible() {
+        return (enabled.get() == true && visible.get() == true && 
+            alpha.get() > 0 && (parent == null || parent.isEnabledAndVisible())); 
+    }
     
     /**
         On a property change this Sprite is marked as dirty.
     */
     public void propertyChange(Property property) {
         setDirty(true);
-        
         if (property == angle) {
             cosAngle = CoreMath.cos(angle.getAsFixed());
             sinAngle = CoreMath.sin(angle.getAsFixed());
         }
     }
-    
     
     /**
         For dirty rectangles - most apps will not need ot call this method directly.
@@ -238,11 +300,10 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    
     /**
         For dirty rectangles - most apps will not need ot call this method directly.
     */
-    public final boolean calcDirtyRect() {
+    public final boolean updateDirtyRect() {
         
         boolean changed = false;
         
@@ -256,14 +317,15 @@ public abstract class Sprite implements PropertyListener {
                 dirtyRect = new Rect();
             }
             
-            changed |= drawTransform.getBounds(
+            updateTransform();
+            
+            changed |= transform.getBounds(
                 getNaturalWidth(), getNaturalHeight(), dirtyRect);
         }
         
         return changed;
        
     }
-    
     
     /**
         For dirty rectangles - most apps will not need ot call this method directly.
@@ -274,11 +336,15 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    
+    /**
+        Marks this Sprite as dirty, which will force it to redraw on the next frame.
+    */
     public final void setDirty(boolean dirty) {
         this.dirty = dirty;
+        if (dirty) {
+            transformDirty = true;
+        }
     }
-    
     
     /**
         Returns true if the Sprite's properties have changed since the last call to draw()
@@ -286,17 +352,109 @@ public abstract class Sprite implements PropertyListener {
     public final boolean isDirty() {
         return dirty;
     }
-
+    
+    /* package-private */ final Transform getTransform() {
+        updateTransform();
+        return transform;
+    }
+    
+    /* package-private */ final boolean isTransformDirty() {
+        if (transformDirty) {
+            return true;
+        }
+        else if (parent == null) {
+            return false;
+        }
+        else {
+            return (parentTransformModCount != parent.getTransformModCount() ||
+                parent.isTransformDirty());
+        }
+    }
+    
+    /* package-private */ final Transform getParentTransform() {
+        if (parent == null) {
+            return Stage.getDefaultTransform();
+        }
+        else {
+            return parent.getTransform();
+        }
+    }
+    
+    /* package-private */ final void updateTransform(Transform parentTransform) {
+        transform.set(parentTransform);
+            
+        // Translate
+        if (pixelSnapping.get()) {
+            transform.translate(CoreMath.floor(x.getAsFixed()), 
+                CoreMath.floor(y.getAsFixed()));
+        }
+        else {
+            transform.translate(x.getAsFixed(), y.getAsFixed());
+        }
+        
+        // Rotate
+        if (cosAngle != CoreMath.ONE || sinAngle != 0) {
+            transform.rotate(cosAngle, sinAngle);
+        }
+        
+        // Scale
+        int naturalWidth = getNaturalWidth();
+        int naturalHeight = getNaturalHeight();
+        if (naturalWidth > 0 && naturalHeight > 0 &&
+            (naturalWidth != width.getAsFixed() || naturalHeight != height.getAsFixed())) 
+        {
+            int sx = CoreMath.div(width.getAsFixed(), naturalWidth);
+            int sy = CoreMath.div(height.getAsFixed(), naturalHeight);
+            transform.scale(sx, sy);
+        }
+        
+        // Adjust for anchor
+        if (pixelSnapping.get()) {
+            transform.translate(CoreMath.floor(-getAnchorX()), CoreMath.floor(-getAnchorY()));
+        }
+        else {
+            transform.translate(-getAnchorX(), -getAnchorY());
+        }
+    }
+    
+    /**
+        Gets the bounds relative to the parent.
+    */
+    /* package-private */ final Rect getRelativeBounds() {
+        Transform oldTransform = new Transform(transform);
+        Transform identityTransform = new Transform();
+        Rect bounds = new Rect();
+        
+        updateTransform(identityTransform);
+        transform.getBounds(getNaturalWidth(), getNaturalHeight(), bounds);
+        
+        transform.set(oldTransform);
+        return bounds;
+    }
+    
+    private final void updateTransform() {
+        if (isTransformDirty()) {
+            updateTransform(getParentTransform());
+            
+            // Keep track of dirty state
+            transformDirty = false;
+            if (parent != null) {
+                // Must happen after getParentTransform()
+                parentTransformModCount = parent.getTransformModCount();
+            }
+            if (this instanceof Group) {
+                ((Group)this).updateTransformModCount();
+            }
+        }
+    }
 
     protected int getNaturalWidth() {
         return width.getAsFixed();
     }
     
-    
     protected int getNaturalHeight() {
         return height.getAsFixed();
     }
-    
     
     /**
         @return the fixed-point x anchor.
@@ -314,7 +472,6 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    
     /**
         @return the fixed-point y anchor.
     */
@@ -331,91 +488,35 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    
     /**
-        Sets the absolute location of this Sprite.
-    */
-    public void setLocation(int x, int y) {
-        this.x.set(x);
-        this.y.set(y);
-    }
-    
-    
-    /**
-        Sets the absolute location of this Sprite.
-    */
-    public void setLocation(double x, double y) {
-        this.x.set(x);
-        this.y.set(y);
-    }    
-    
-    
-    /**
-        Translates the absolute location of this Sprite.
-    */
-    public void translate(int x, int y) {
-        this.x.set(this.x.get() + x);
-        this.y.set(this.y.get() + y);
-    }
-    
-    
-    /**
-        Translates the absolute location of this Sprite.
-    */
-    public void translate(double x, double y) {
-        this.x.set(this.x.get() + x);
-        this.y.set(this.y.get() + y);
-    }    
-    
-    
-    /**
-        Sets the size of this Sprite.
-        Changing the size is non-destructive - for example, an ImageSprite 
-        doesn't internally scale it's image when this method is called. 
-        Instead, an ImageSprite uses appropriate
-        CoreGraphics methods to draw a scaled version of its image.
-    */
-    public void setSize(int width, int height) {
-        this.width.set(width);
-        this.height.set(height);
-    }    
-    
-    
-    /**
-        Sets the size of this Sprite.
-        Changing the size is non-destructive - for example, an ImageSprite 
-        doesn't internally scale it's image when this method is called. 
-        Instead, an ImageSprite uses appropriate
-        CoreGraphics methods to draw a scaled version of its image.
-    */
-    public void setSize(double width, double height) {
-        this.width.set(width);
-        this.height.set(height);
-    }
-    
-    
-    /**
-        Sets the anchor of this Sprite. The anchor point is the combination of
-        one of the horizontal anchor constants (LEFT, HCENTER, RIGHT) with
-        one of the vertical anchor constants (TOP, VCENTER, BOTTOM). 
+        Sets the anchor of this Sprite. The anchor affects where the Sprite is drawn in
+        relation to its (x, y) location, and can be one of {@link #DEFAULT}, 
+        {@link #NORTH}, {@link #SOUTH}, {@link #WEST}, {@link #EAST},
+        {@link #NORTH_WEST}, {@link #SOUTH_WEST}, {@link #NORTH_EAST}, {@link #SOUTH_EAST}, or
+        {@link #CENTER}.
         <p>
-        For example, to set the anchor to the sprite's lower right corner:
-        <code>sprite.setAnchor(Sprite.BOTTOM | Sprite.RIGHT);</code>.
-        <p>
-        The anchor works with all Sprite subclasses.
+        <pre>
+        NW     N     NE
+          +----+----+
+          |         |
+        W +    *    + E
+          |         |
+          +----+----+
+        SW     S     SE
+        </pre>
+        The {@link #DEFAULT} anchor is equivilant to {@link #NORTH_WEST} for most Sprites (except
+        for ImageSprites, which use the CoreImage's hotspot as the anchor).
     */
-    public void setAnchor(int anchor) {
+    public final void setAnchor(int anchor) {
         if (this.anchor != anchor) {
             this.anchor = anchor;
             setDirty(true);
         }
     }
     
-    
-    public int getAnchor() {
+    public final int getAnchor() {
         return anchor;
     }
-    
     
     /**
         Sets the compositing method used to draw this Sprite. By default, the compositing 
@@ -423,18 +524,16 @@ public abstract class Sprite implements PropertyListener {
         Valid values are -1, CoreGraphics.COMPOSITE_SRC_OVER, CoreGraphics.COMPOSITE_SRC, and
         CoreGraphics.COMPOSITE_ADD.
     */
-    public void setComposite(int composite) {
+    public final void setComposite(int composite) {
         if (this.composite != composite) {
             this.composite = composite;
             setDirty(true);
         }
     }
     
-    
-    public int getComposite() {
+    public final int getComposite() {
         return composite;
     }    
-    
     
     /**
         Updates all of this Sprite's properties. Subclasses that override this method should
@@ -448,53 +547,14 @@ public abstract class Sprite implements PropertyListener {
         alpha.update(elapsedTime);
         angle.update(elapsedTime);
         visible.update(elapsedTime);
+        enabled.update(elapsedTime);
         pixelSnapping.update(elapsedTime);
     }
-        
-        
-    public void prepareToDraw(Transform parentTransform, boolean parentDirty) {
-        
-        if (!parentDirty && !isDirty()) {
-            return;
-        }
-        
-        drawTransform.set(parentTransform);
-        
-        // Translate
-        if (pixelSnapping.get()) {
-            drawTransform.translate(CoreMath.floor(x.getAsFixed()), 
-                CoreMath.floor(y.getAsFixed()));
-        }
-        else {
-            drawTransform.translate(x.getAsFixed(), y.getAsFixed());
-        }
-        
-        // Rotate
-        if (cosAngle != CoreMath.ONE || sinAngle != 0) {
-            drawTransform.rotate(cosAngle, sinAngle);
-        }
-        
-        // Scale
-        if (getNaturalWidth() != width.getAsFixed() || getNaturalHeight() != height.getAsFixed()) {
-            int sx = CoreMath.div(width.getAsFixed(), getNaturalWidth());
-            int sy = CoreMath.div(height.getAsFixed(), getNaturalHeight());
-            drawTransform.scale(sx, sy);
-        }
-        
-        // Adjust for anchor
-        if (pixelSnapping.get()) {
-            drawTransform.translate(CoreMath.floor(-getAnchorX()), CoreMath.floor(-getAnchorY()));
-        }
-        else {
-            drawTransform.translate(-getAnchorX(), -getAnchorY());
-        }
-    }
-    
     
     public final void draw(CoreGraphics g) {
         
         if (isDirty()) {
-            prepareToDraw(null, false);
+            updateTransform();
             setDirty(false);
         }
         
@@ -527,7 +587,7 @@ public abstract class Sprite implements PropertyListener {
         
         // Set transform
         g.pushTransform();
-        g.setTransform(drawTransform);
+        g.setTransform(transform);
         
         // Draw
         drawSprite(g);
@@ -538,7 +598,6 @@ public abstract class Sprite implements PropertyListener {
         g.setComposite(oldComposite);
     }
     
-    
     /**
         Draws the sprite. The graphic context's alpha is set to this sprite,
         and it's translation is offset by this sprite's location.
@@ -547,53 +606,75 @@ public abstract class Sprite implements PropertyListener {
     */
     protected abstract void drawSprite(CoreGraphics g);
     
-    
     /**
-        Gets the integer x-cordinate in Local Space of the specified location in
+        Gets the integer x-coordinate in Local Space of the specified location in
         View Space. Returns Integer.MAX_VALUE if the Local Space is invalid 
         (that is, it's Transform determinant is zero).
     */
-    public int getLocalX(int viewX, int viewY) {
+    public final int getLocalX(int viewX, int viewY) {
+        updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
-        int localX = drawTransform.inverseTransformX(fx, fy);
+        int localX = transform.inverseTransformX(fx, fy);
         if (localX == Integer.MAX_VALUE) {
             return Integer.MAX_VALUE;
         }
         return CoreMath.toInt(localX);
     }
     
-    
     /**
-        Gets the integer y-cordinate in Local Space of the specified location in
+        Gets the integer y-coordinate in Local Space of the specified location in
         View Space. Returns Integer.MAX_VALUE if the Local Space is invalid 
         (that is, it's Transform determinant is zero).
     */
-    public int getLocalY(int viewX, int viewY) {
+    public final int getLocalY(int viewX, int viewY) {
+        updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
-        int localY = drawTransform.inverseTransformY(fx, fy);
+        int localY = transform.inverseTransformY(fx, fy);
         if (localY == Integer.MAX_VALUE) {
             return Integer.MAX_VALUE;
         }
         return CoreMath.toInt(localY);
     }
     
+    /**
+        Gets the integer x-coordinate in View Space of the specified location in
+        Local Space.
+    */
+    public final int getViewX(int localX, int localY) {
+        updateTransform();
+        int fx = CoreMath.toFixed(localX);
+        int fy = CoreMath.toFixed(localY);
+        return CoreMath.toInt(transform.transformX(fx, fy));
+    }
     
     /**
-        Checks if the specified point is within the bounds of this 
+        Gets the integer y-coordinate in View Space of the specified location in
+        Local Space.
+    */
+    public final int getViewY(int localX, int localY) {
+        updateTransform();
+        int fx = CoreMath.toFixed(localX);
+        int fy = CoreMath.toFixed(localY);
+        return CoreMath.toInt(transform.transformY(fx, fy));
+    }
+    
+    /**
+        Checks if the specified location is within the bounds of this 
         Sprite. 
             
+        @param viewX x-coordinate in view space
+        @param viewY y-coordinate in view space
         @return true if the specified point is within the bounds of this 
         Sprite.
     */
-    public boolean contains(int viewX, int viewY) {
-        
+    public final boolean contains(int viewX, int viewY) {
+        updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
-        
-        int localX = drawTransform.inverseTransformX(fx, fy);
-        int localY = drawTransform.inverseTransformY(fx, fy);
+        int localX = transform.inverseTransformX(fx, fy);
+        int localY = transform.inverseTransformY(fx, fy);
         
         if (localX == Integer.MAX_VALUE || localY == Integer.MAX_VALUE) {
             return false;
@@ -603,109 +684,192 @@ public abstract class Sprite implements PropertyListener {
                 localY >= 0 && localY < getNaturalHeight());
     }
     
+    /**
+        Checks if the specified location is within the bounds of this 
+        Sprite and this Sprite is the top-most sprite at that location.
+            
+        @param viewX x-coordinate in view space
+        @param viewY y-coordinate in view space
+    */
+    public final boolean isPick(int viewX, int viewY) {
+        if (contains(viewX, viewY)) {
+            // Since the location is within the sprite, root.pick() won't search below this
+            // sprite in the scene graph
+            Group root = getRoot();
+            return (root == null || root.pick(viewX, viewY) == this);
+        }
+        else {
+            return false;
+        }
+    }
+    
+    /*
+    public final boolean intersects(Sprite sprite) {
+        // Idea 1: 
+        // Convert both to View Space 
+        
+        // Idea 2:
+        // Convert specified sprite to this sprite's View Space
+    }
+    */
     
     /**
-        Checks if the mouse is currently within the bounds of this Sprite.
+        Checks if this Sprite (and its parents) are enabled, and
+        the mouse is currently within the bounds of this Sprite.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the mouse is currently within the bounds of this Sprite.
     */
     public boolean isMouseOver() {
-        return contains(Input.getMouseX(), Input.getMouseY());
+        return isEnabled() && contains(Input.getMouseX(), Input.getMouseY());
     }
     
-    
     /**
-        Checks if the mouse is within the bounds of this Sprite and the primary mouse
+        Checks if this Sprite (and its parents) are enabled, 
+        the mouse is within the bounds of this Sprite, and the primary mouse
         button is not pressed down.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the mouse is currently within the bounds of this Sprite and 
         the primary mouse button is not pressed down.
     */
     public boolean isMouseHover() {
-        return !Input.isMouseDown() && 
+        return isEnabled() && !Input.isMouseDown() && 
             contains(Input.getMouseX(), Input.getMouseY());
     }
     
-    
     /**
-        Checks if the mouse is currently within the bounds of this Sprite and the primary mouse
+        Checks if this Sprite (and its parents) are enabled, 
+        the mouse is currently within the bounds of this Sprite, and the primary mouse
         button is pressed down.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the mouse is currently within the bounds of this Sprite and 
         the primary mouse button is pressed down.
     */
     public boolean isMouseDown() {
-        return Input.isMouseDown() && 
+        return isEnabled() && Input.isMouseDown() && 
             contains(Input.getMouseX(), Input.getMouseY());
     }
     
-    
     /**
-        Checks if the primary mouse button was pressed since the last update and the press 
+        Checks if this Sprite (and its parents) are enabled, 
+        the primary mouse button was pressed since the last update, and the press 
         occurred within this Sprite's bounds.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the primary mouse button was pressed since the last update and the press 
         occurred within this Sprite's bounds.
     */
     public boolean isMousePressed() {
-        return Input.isMousePressed() && 
+        return isEnabled() && Input.isMousePressed() && 
             contains(Input.getMousePressX(), Input.getMousePressY());
     }
     
-    
     /**
-        Checks if the primary mouse button was released since the last update and the release 
+        Checks if this Sprite (and its parents) are enabled, 
+        the primary mouse button was released since the last update, and the release 
         occurred within this Sprite's bounds.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the primary mouse button was released since the last update and the release 
         occurred within this Sprite's bounds.
     */
     public boolean isMouseReleased() {
-        return Input.isMouseReleased() && 
+        return isEnabled() && Input.isMouseReleased() && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
     }
     
-    
     /**
-        Checks if the primary mouse button was double-clicked since the last update and the
+        Checks if this Sprite (and its parents) are enabled, 
+        the primary mouse button was double-clicked since the last update, and the
         double-click occurred within this Sprite's bounds.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the primary mouse button was double-clicked since the last update and the 
         double-click occurred within this Sprite's bounds.
     */
     public boolean isMouseDoubleClicked() {
-        return Input.isPressed(Input.KEY_DOUBLE_MOUSE_BUTTON_1) && 
+        return isEnabled() && Input.isPressed(Input.KEY_DOUBLE_MOUSE_BUTTON_1) && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
     }
     
-    
     /**
-        Checks if the primary mouse button was triple-clicked since the last update and the
+        Checks if this Sprite (and its parents) are enabled, 
+        the primary mouse button was triple-clicked since the last update, and the
         triple-click occurred within this Sprite's bounds.
         <p>For a typical button UI button behavior, use {@link Button}.
         @return true if the primary mouse button was triple-clicked since the last update and the 
         triple-click occurred within this Sprite's bounds.
     */
     public boolean isMouseTripleClicked() {
-        return Input.isPressed(Input.KEY_TRIPLE_MOUSE_BUTTON_1) && 
+        return isEnabled() && Input.isPressed(Input.KEY_TRIPLE_MOUSE_BUTTON_1) && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
     }
     
-    
     /**
-        Checks if the mouse wheel was rotated over this Sprite.
+        Checks if this Sprite (and its parents) are enabled and
+        the mouse wheel was rotated over this Sprite.
         @return true if the mouse wheel was rotated over this sprite since the  
         last rendering frame.
     */
     public boolean isMouseWheelRotated() {
-        return Input.getMouseWheelRotation() != 0 && 
+        return isEnabled() && Input.getMouseWheelRotation() != 0 && 
             contains(Input.getMouseWheelX(), Input.getMouseWheelY());
     }
     
+// CONVENIENCE METHODS
+
+    /**
+        Sets the location of this Sprite.
+    */
+    public void setLocation(int x, int y) {
+        this.x.set(x);
+        this.y.set(y);
+    }
     
-// CONVENIENCE METHODS - BELOW THIS LINE THAR BE DRAGONS  
-
-
+    /**
+        Sets the location of this Sprite.
+    */
+    public void setLocation(double x, double y) {
+        this.x.set(x);
+        this.y.set(y);
+    }    
+    
+    /**
+        Translates the location of this Sprite.
+    */
+    public void translate(int x, int y) {
+        this.x.set(this.x.get() + x);
+        this.y.set(this.y.get() + y);
+    }
+    
+    /**
+        Translates the location of this Sprite.
+    */
+    public void translate(double x, double y) {
+        this.x.set(this.x.get() + x);
+        this.y.set(this.y.get() + y);
+    }    
+    
+    /**
+        Sets the size of this Sprite.
+        Changing the size is non-destructive - for example, an ImageSprite 
+        doesn't internally scale it's image when this method is called. 
+        Instead, an ImageSprite uses appropriate
+        CoreGraphics methods to draw a scaled version of its image.
+    */
+    public void setSize(int width, int height) {
+        this.width.set(width);
+        this.height.set(height);
+    }    
+    
+    /**
+        Sets the size of this Sprite.
+        Changing the size is non-destructive - for example, an ImageSprite 
+        doesn't internally scale it's image when this method is called. 
+        Instead, an ImageSprite uses appropriate
+        CoreGraphics methods to draw a scaled version of its image.
+    */
+    public void setSize(double width, double height) {
+        this.width.set(width);
+        this.height.set(height);
+    }
+    
     //
     // Move as int convenience methods
     //
@@ -715,12 +879,10 @@ public abstract class Sprite implements PropertyListener {
         y.animate(startY, endY, duration);
     }
     
-    
     public void move(int startX, int startY, int endX, int endY, int duration, Easing easing) {
         x.animate(startX, endX, duration, easing);
         y.animate(startY, endY, duration, easing);
     }
-    
     
     public void move(int startX, int startY, int endX, int endY, int duration, Easing easing,
         int startDelay)
@@ -729,35 +891,29 @@ public abstract class Sprite implements PropertyListener {
         y.animate(startY, endY, duration, easing, startDelay);
     }
     
-    
     public void moveTo(int x, int y, int duration) {
         this.x.animateTo(x, duration);
         this.y.animateTo(y, duration);
     }
-    
     
     public void moveTo(int x, int y, int duration, Easing easing) {
         this.x.animateTo(x, duration, easing);
         this.y.animateTo(y, duration, easing);
     }
     
-    
     public void moveTo(int x, int y, int duration, Easing easing, int startDelay) {
         this.x.animateTo(x, duration, easing, startDelay);
         this.y.animateTo(y, duration, easing, startDelay);
     }
-
     
     //
     // Move as double convenience methods
     //
     
-    
     public void move(double startX, double startY, double endX, double endY, int duration) {
         x.animate(startX, endX, duration);
         y.animate(startY, endY, duration);
     }
-    
     
     public void move(double startX, double startY, double endX, double endY, int duration,
         Easing easing) 
@@ -765,7 +921,6 @@ public abstract class Sprite implements PropertyListener {
         x.animate(startX, endX, duration, easing);
         y.animate(startY, endY, duration, easing);
     }
-    
     
     public void move(double startX, double startY, double endX, double endY, int duration,
         Easing easing, int startDelay)
@@ -779,23 +934,19 @@ public abstract class Sprite implements PropertyListener {
         this.y.animateTo(y, duration);
     }
     
-    
     public void moveTo(double x, double y, int duration, Easing easing) {
         this.x.animateTo(x, duration, easing);
         this.y.animateTo(y, duration, easing);
     }
-    
     
     public void moveTo(double x, double y, int duration, Easing easing, int startDelay) {
         this.x.animateTo(x, duration, easing, startDelay);
         this.y.animateTo(y, duration, easing, startDelay);
     }
     
-    
     //
     // Scale as int convenience methods
     //
-
     
     public void scale(int width1, int height1, int width2, int height2, 
         int duration) 
@@ -804,14 +955,12 @@ public abstract class Sprite implements PropertyListener {
         height.animate(height1, height2, duration);
     }
     
-    
     public void scale(int width1, int height1, int width2, int height2, 
         int duration, Easing easing) 
     {
         width.animate(width1, width2, duration, easing);
         height.animate(height1, height2, duration, easing);
     }
-    
     
     public void scale(int width1, int height1, int width2, int height2, 
         int duration, Easing easing, int startDelay)
@@ -820,18 +969,15 @@ public abstract class Sprite implements PropertyListener {
         height.animate(height1, height2, duration, easing, startDelay);
     }
     
-    
     public void scaleTo(int width, int height, int duration) {
         this.width.animateTo(width, duration);
         this.height.animateTo(height, duration);
     }
     
-    
     public void scaleTo(int width, int height, int duration, Easing easing) {
         this.width.animateTo(width, duration, easing);
         this.height.animateTo(height, duration, easing);
     }    
-    
     
     public void scaleTo(int width, int height, int duration, Easing easing, 
         int startDelay) 
@@ -840,11 +986,9 @@ public abstract class Sprite implements PropertyListener {
         this.height.animateTo(height, duration, easing, startDelay);
     }    
     
-    
     //
     // Scale as double convenience methods
     //
-    
     
     public void scale(double width1, double height1, double width2, double height2, 
         int duration) 
@@ -853,14 +997,12 @@ public abstract class Sprite implements PropertyListener {
         height.animate(height1, height2, duration);
     }
     
-    
     public void scale(double width1, double height1, double width2, double height2, 
         int duration, Easing easing) 
     {
         width.animate(width1, width2, duration, easing);
         height.animate(height1, height2, duration, easing);
     }
-    
     
     public void scale(double width1, double height1, double width2, double height2, 
         int duration, Easing easing, int startDelay)
@@ -869,18 +1011,15 @@ public abstract class Sprite implements PropertyListener {
         height.animate(height1, height2, duration, easing, startDelay);
     }
     
-    
     public void scaleTo(double width, double height, int duration) {
         this.width.animateTo(width, duration);
         this.height.animateTo(height, duration);
     }
     
-    
     public void scaleTo(double width, double height, int duration, Easing easing) {
         this.width.animateTo(width, duration, easing);
         this.height.animateTo(height, duration, easing);
     }    
-    
     
     public void scaleTo(double width, double height, int duration, Easing easing, 
         int startDelay) 
@@ -888,5 +1027,4 @@ public abstract class Sprite implements PropertyListener {
         this.width.animateTo(width, duration, easing, startDelay);
         this.height.animateTo(height, duration, easing, startDelay);
     }            
-    
 }

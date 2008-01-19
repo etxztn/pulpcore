@@ -645,8 +645,9 @@ public class Scene2D extends Scene {
             dirtyRectangles.clear();
         }
         
-        Transform transform = Stage.getDefaultTransform();
-        layers.prepareToDraw(transform, needsFullRedraw);
+        if (needsFullRedraw) {
+            layers.setDirty(true);
+        }
         
         if (!dirtyRectanglesEnabled) {
             setDirty(layers, false);
@@ -672,14 +673,14 @@ public class Scene2D extends Scene {
             if (Build.DEBUG) {
                 Sprite overlay = Stage.getInfoOverlay();
                 if (overlay != null) {
-                    overlay.prepareToDraw(transform, needsFullRedraw);
+                    //overlay.prepareToDraw(transform, needsFullRedraw);
                     if (needsFullRedraw || overlay.isDirty()) {
                         if (dirtyRectangles.isOverflowed()) {
-                            overlay.calcDirtyRect();
+                            overlay.updateDirtyRect();
                         }
                         else {
                             addDirtyRectangle(overlay.getDirtyRect());
-                            boolean boundsChanged = overlay.calcDirtyRect();
+                            boolean boundsChanged = overlay.updateDirtyRect();
                             if (boundsChanged) {
                                 addDirtyRectangle(overlay.getDirtyRect());
                             }
@@ -737,11 +738,11 @@ public class Scene2D extends Scene {
             }
             else if (parentDirty || sprite.isDirty()) {
                 if (dirtyRectangles.isOverflowed()) {
-                    sprite.calcDirtyRect();
+                    sprite.updateDirtyRect();
                 }
                 else {
                     addDirtyRectangle(sprite.getDirtyRect());
-                    boolean boundsChanged = sprite.calcDirtyRect();
+                    boolean boundsChanged = sprite.updateDirtyRect();
                     if (boundsChanged) {
                         addDirtyRectangle(sprite.getDirtyRect());
                     }

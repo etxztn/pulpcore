@@ -56,12 +56,6 @@ public class Button extends ImageSprite {
     
     private static final int NUM_VISIBLE_STATES = 3;
     
-    /**
-        The flag indicating whether this Button is enabled. An enabled button 
-        responds to user input. Buttons are enabled by default.
-    */
-    public final Bool enabled = new Bool(this, true);
-    
     private final CoreImage[] images;
     private final boolean isToggleButton;
     
@@ -239,7 +233,7 @@ public class Button extends ImageSprite {
         this.state = state;
         
         int frame;
-        if (enabled.get() == false || state == PRESSED_BUT_OUTSIDE) {
+        if (!isEnabledAndVisible() || state == PRESSED_BUT_OUTSIDE) {
             frame = NORMAL;
         }
         else {
@@ -263,7 +257,6 @@ public class Button extends ImageSprite {
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
-        enabled.update(elapsedTime);
         
         boolean imageChanged = false;
         for (int i = 0; i < images.length; i++) {
@@ -288,7 +281,7 @@ public class Button extends ImageSprite {
         
     private boolean isClickedImpl() {
         
-        if (enabled.get() == false) {
+        if (!isEnabledAndVisible()) {
             if (state != NORMAL) {
                 setState(NORMAL);
                 Input.setCursor(outsideCursor);
@@ -425,8 +418,7 @@ public class Button extends ImageSprite {
         }
         
         return createLabeledButton(images, font, text, x, y, 
-            textX, textY,
-            Sprite.HCENTER | Sprite.VCENTER, false, true);
+            textX, textY, Sprite.CENTER, false, true);
     }
     
     

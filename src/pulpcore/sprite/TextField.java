@@ -86,12 +86,6 @@ public class TextField extends Sprite {
     private static final int EXTRA_CARET_HEIGHT = 0;
     
     private static CoreFont systemSelectionFont;
-    
-    /**
-        The flag indicating whether this TextField is enabled. An enabled TextField 
-        responds to user input. TextFields are enabled by default.
-    */
-    public final Bool enabled = new Bool(this, true);
 
     private CoreFont font;
     private String text;
@@ -464,9 +458,8 @@ public class TextField extends Sprite {
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
-        enabled.update(elapsedTime);
         
-        if (enabled.get()) {
+        if (isEnabledAndVisible()) {
             if (hasFocus && !Input.isTextInputMode()) {
                 Input.setTextInputMode(true);
             }
@@ -486,19 +479,10 @@ public class TextField extends Sprite {
                 }
             }
         }
-    }
-    
-    
-    public void propertyChange(Property p) {
-        super.propertyChange(p);
-        if (p == enabled) {
+        else {
             timeUntilBlinkOff = BLINK_TIME;
-            if (enabled.get() == false && Input.isTextInputMode()) {
-                Input.setTextInputMode(false);
-            }
         }
     }
-    
     
     private int findPreviousWordStart(int position) {
         if (passwordMode) {
@@ -867,7 +851,7 @@ public class TextField extends Sprite {
     
     protected void drawSprite(CoreGraphics g) {
 
-        boolean focusVisible = enabled.get() && hasFocus && Input.hasKeyboardFocus();
+        boolean focusVisible = isEnabledAndVisible() && hasFocus && Input.hasKeyboardFocus();
         
         String text = convertToDisplayText(this.text);
         String displayText = text;

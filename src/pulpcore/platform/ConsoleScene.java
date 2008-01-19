@@ -237,7 +237,7 @@ public class ConsoleScene extends Scene2D {
             Rect lastClip = new Rect();
             g.getClip(lastClip);
             
-            calcDirtyRect();
+            updateDirtyRect();
             Rect newClip = getDirtyRect();
             if (newClip == null) {
                 g.clipRect(x.getAsInt(), y.getAsInt(), width.getAsInt(), height.getAsInt());

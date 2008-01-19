@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -35,9 +35,7 @@ import pulpcore.math.CoreMath;
 import pulpcore.Stage;
 
 /**
-    Solid-colored rectangluar shaped sprite. Note, CoreGraphics cannot draw
-    rotated solid-colored rectuanglar shapes, so changing the angle of this
-    sprite will have no effect. 
+    Solid-colored rectangluar shaped sprite.
 */
 public class FilledSprite extends Sprite {
     
