@@ -1790,11 +1790,15 @@ public class CoreGraphics {
     // an integer
     private void internalFillRectFixedPoint(int fw, int fh) {
         
+        // Scale
+        fw = CoreMath.mul(transform.getScaleX(), fw);
+        fh = CoreMath.mul(transform.getScaleY(), fh);
+        
         // Find the bounding rectangle
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
-        int x2 = x1 + CoreMath.mul(transform.getScaleX(), fw);
-        int y2 = y1 + CoreMath.mul(transform.getScaleY(), fh);
+        int x2 = x1 + fw;
+        int y2 = y1 + fh;
         
         int boundsX1 = Math.min(x1, x2);
         int boundsY1 = Math.min(y1, y2);
