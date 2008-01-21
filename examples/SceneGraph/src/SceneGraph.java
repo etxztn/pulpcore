@@ -51,7 +51,7 @@ public class SceneGraph extends Scene2D {
         if (depth > 0) {
             h *= CoreMath.rand(0.8, 1.2);
         }
-        Stem stem = new Stem(parent, 0, 0, w, h, color.getValue());
+        Stem stem = new Stem(0, 0, w, h, color.getValue());
         stem.setAnchor(Sprite.SOUTH);
         parent.add(stem);
         
@@ -76,17 +76,16 @@ public class SceneGraph extends Scene2D {
     
     public static class Stem extends FilledSprite {
         
-        Group parent;
         double angleJitter;
         
-        public Stem(Group parent, double x, double y, double w, double h, int color) {
+        public Stem(double x, double y, double w, double h, int color) {
             super(x, y, w, h, color);
-            this.parent = parent;
         }
         
         @Override
         public void update(int elapsedTime) {
             // Make the stem (and it's children) sway
+            Group parent = getParent();
             if (Input.isMouseMoving() && !parent.angle.isAnimating() && isMouseOver()) {
                 double maxAngleJitter = 1.5 / width.get();
                 double newAngleJitter = CoreMath.rand(-maxAngleJitter, maxAngleJitter);
@@ -96,5 +95,4 @@ public class SceneGraph extends Scene2D {
             }
         }
     }
-   
 }
