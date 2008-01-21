@@ -709,8 +709,7 @@ public abstract class Sprite implements PropertyListener {
     
     /**
         Checks if the specified location is within the bounds of this 
-        Sprite and this Sprite is the top-most sprite at that location.
-            
+        Sprite and this Sprite is the top-most Sprite at that location.
         @param viewX x-coordinate in view space
         @param viewY y-coordinate in view space
     */
@@ -720,6 +719,24 @@ public abstract class Sprite implements PropertyListener {
             // sprite in the scene graph
             Group root = getRoot();
             return (root == null || root.pick(viewX, viewY) == this);
+        }
+        else {
+            return false;
+        }
+    }
+    
+    /**
+        Checks if the specified location is within the bounds of this 
+        Sprite and this Sprite is the top-most visible and enabled Sprite at that location.
+        @param viewX x-coordinate in view space
+        @param viewY y-coordinate in view space
+    */
+    public final boolean isPickEnabledAndVisible(int viewX, int viewY) {
+        if (contains(viewX, viewY)) {
+            // Since the location is within the sprite, root.pick() won't search below this
+            // sprite in the scene graph
+            Group root = getRoot();
+            return (root == null || root.pickEnabledAndVisible(viewX, viewY) == this);
         }
         else {
             return false;
@@ -743,7 +760,7 @@ public abstract class Sprite implements PropertyListener {
         @return true if the mouse is currently within the bounds of this Sprite.
     */
     public boolean isMouseOver() {
-        return isEnabled() && contains(Input.getMouseX(), Input.getMouseY());
+        return Input.isMouseInside() && isEnabled() && contains(Input.getMouseX(), Input.getMouseY());
     }
     
     /**
@@ -755,7 +772,7 @@ public abstract class Sprite implements PropertyListener {
         the primary mouse button is not pressed down.
     */
     public boolean isMouseHover() {
-        return isEnabled() && !Input.isMouseDown() && 
+        return Input.isMouseInside() && !Input.isMouseDown() && isEnabled() && 
             contains(Input.getMouseX(), Input.getMouseY());
     }
     
@@ -768,7 +785,7 @@ public abstract class Sprite implements PropertyListener {
         the primary mouse button is pressed down.
     */
     public boolean isMouseDown() {
-        return isEnabled() && Input.isMouseDown() && 
+        return Input.isMouseInside() && Input.isMouseDown() && isEnabled() && 
             contains(Input.getMouseX(), Input.getMouseY());
     }
     
@@ -781,7 +798,7 @@ public abstract class Sprite implements PropertyListener {
         occurred within this Sprite's bounds.
     */
     public boolean isMousePressed() {
-        return isEnabled() && Input.isMousePressed() && 
+        return Input.isMouseInside() && Input.isMousePressed() && isEnabled() && 
             contains(Input.getMousePressX(), Input.getMousePressY());
     }
     
@@ -794,7 +811,7 @@ public abstract class Sprite implements PropertyListener {
         occurred within this Sprite's bounds.
     */
     public boolean isMouseReleased() {
-        return isEnabled() && Input.isMouseReleased() && 
+        return Input.isMouseInside() && Input.isMouseReleased() && isEnabled() && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
     }
     
@@ -807,7 +824,8 @@ public abstract class Sprite implements PropertyListener {
         double-click occurred within this Sprite's bounds.
     */
     public boolean isMouseDoubleClicked() {
-        return isEnabled() && Input.isPressed(Input.KEY_DOUBLE_MOUSE_BUTTON_1) && 
+        return Input.isMouseInside() && Input.isPressed(Input.KEY_DOUBLE_MOUSE_BUTTON_1) && 
+            isEnabled() && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
     }
     
@@ -820,7 +838,8 @@ public abstract class Sprite implements PropertyListener {
         triple-click occurred within this Sprite's bounds.
     */
     public boolean isMouseTripleClicked() {
-        return isEnabled() && Input.isPressed(Input.KEY_TRIPLE_MOUSE_BUTTON_1) && 
+        return Input.isMouseInside() && Input.isPressed(Input.KEY_TRIPLE_MOUSE_BUTTON_1) && 
+            isEnabled() && 
             contains(Input.getMouseReleaseX(), Input.getMouseReleaseY());
     }
     
@@ -831,7 +850,7 @@ public abstract class Sprite implements PropertyListener {
         last rendering frame.
     */
     public boolean isMouseWheelRotated() {
-        return isEnabled() && Input.getMouseWheelRotation() != 0 && 
+        return Input.isMouseInside() && Input.getMouseWheelRotation() != 0 && isEnabled() && 
             contains(Input.getMouseWheelX(), Input.getMouseWheelY());
     }
     

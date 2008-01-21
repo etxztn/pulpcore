@@ -276,23 +276,33 @@ public class Button extends ImageSprite {
             }
         }
         else if (state == HOVER) {
-            if (isMousePressed()) {
+            if (isMousePressedPick()) {
                 setState(PRESSED);
             }
-            else if (!isMouseHover()) {
+            else if (!isMouseHoverPick()) {
                 setState(NORMAL);
             }
         }
         else {
-            if (isMousePressed()) {
+            if (isMousePressedPick()) {
                 setState(PRESSED);
             }
-            else if (isMouseHover()) {
+            else if (isMouseHoverPick()) {
                 setState(HOVER);
             }
         }
         
         return false;
+    }
+    
+    private boolean isMousePressedPick() {
+        return Input.isMouseInside() && Input.isMousePressed() &&
+                isPickEnabledAndVisible(Input.getMousePressX(), Input.getMousePressY());
+    }
+    
+    private boolean isMouseHoverPick() {
+        return Input.isMouseInside() && !Input.isMouseDown() && 
+                isPickEnabledAndVisible(Input.getMouseX(), Input.getMouseY());
     }
     
     //
