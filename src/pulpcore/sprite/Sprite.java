@@ -191,6 +191,7 @@ public abstract class Sprite implements PropertyListener {
     // Private fields
     //
     
+    private int cursor = Input.CURSOR_DEFAULT;
     private int anchor = DEFAULT;
     private int composite = -1;
     private int cosAngle = CoreMath.ONE;
@@ -516,6 +517,28 @@ public abstract class Sprite implements PropertyListener {
     
     public final int getAnchor() {
         return anchor;
+    }
+    
+    /**
+        Sets the cursor for this button. By default, a Sprite's cursor is 
+        {@link pulpcore.Input#CURSOR_DEFAULT}. Note, the Sprite itself does not set the cursor -
+        it is set by {@link pulpcore.scene.Scene2D}.
+        @see pulpcore.Input
+        @see #getCursor()
+    */
+    public final void setCursor(int cursor) {
+        this.cursor = cursor;
+    }
+    
+    
+    /**
+        Gets the cursor for this Sprite. By default, a Sprite's cursor is 
+        {@link pulpcore.Input#CURSOR_DEFAULT}.
+        @see pulpcore.Input
+        @see #setCursor(int)
+    */
+    public final int getCursor() {
+        return cursor;
     }
     
     /**

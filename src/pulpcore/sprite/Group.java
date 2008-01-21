@@ -56,6 +56,8 @@ public class Group extends Sprite {
     private int modCount = 0;
     // Modification actions since the last call to getRemovedSprites()
     private int modActions = MOD_NONE;
+    
+    /** Use for children to check if this Group's transform has changed since the last update */
     private int transformModCount = 0;
     
     protected int fNaturalWidth;
@@ -119,13 +121,15 @@ public class Group extends Sprite {
     }
     
     /**
-        Finds the top-most sprite at the specified location in this Group and any child Groups,
-        or null if none. This method never returns a Group.
-        @param viewX x-coordinate in view space
-        @param viewY y-coordinate in view space
+        Finds the top-most sprite at the specified location, or null if none is found.
+        All sprites in this Group and any child Groups are searched until a sprite is found.
+        This method never returns a Group.
+        @param viewX x-coordinate in view space.
+        @param viewY y-coordinate in view space.
+        @return The top-most sprite at the specified location, or null if none is found.
     */
     public Sprite pick(int viewX, int viewY) {
-        for (int i = size() - 1; i >= 0 ; i--) {
+        for (int i = size() - 1; i >= 0; i--) {
             Sprite child = get(i);
             if (child instanceof Group) {
                 child = ((Group)child).pick(viewX, viewY);
@@ -135,6 +139,41 @@ public class Group extends Sprite {
             }
             else if (child.contains(viewX, viewY)) {
                 return child;
+            }
+        }
+        return null;
+    }
+    
+    /**
+        Finds the top-most sprite that is enabled and visible at the specified location, or null 
+        if none is found.
+        All sprites in this Group and any child Groups are searched until a sprite is found.
+        This method never returns a Group.
+        <p>
+        This Group or it's ancestors (if any) are not checked if they are enabled or visible.
+        <p>
+        This method is useful for finding a sprite to use to set the cursor or take mouse input
+        from.
+        @param viewX x-coordinate in view space
+        @param viewY y-coordinate in view space
+        @return The top-most sprite that is enabled and visible at the specified location, or null 
+        if none is found.
+    */
+    public Sprite pickEnabledAndVisible(int viewX, int viewY) {
+        for (int i = size() - 1; i >= 0; i--) {
+            Sprite child = get(i);
+            if (child.enabled.get() == true && child.visible.get() == true && 
+                child.alpha.get() > 0) 
+            {
+                if (child instanceof Group) {
+                    child = ((Group)child).pickEnabledAndVisible(viewX, viewY);
+                    if (child != null) {
+                        return child;
+                    }
+                }
+                else if (child.contains(viewX, viewY)) {
+                    return child;
+                }
             }
         }
         return null;

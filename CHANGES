@@ -1,11 +1,17 @@
 0.11 (Alpha, in progress)
-  * API: Added sprite.getParent() (Sprites now know their parent, which allows future feature
+  * API: Added sprite.getParent() (Sprites now know their parent, which allows many feature
     additions).
   * API: The 'enabled' Property (in Button, TextField, and Slider) is now in the Sprite class.
-  * API: Sprites no longer take input if their parent is not enabled. So, an antire Group of 
+  * API: The setCursor() method (in Button and TextField) is now in the Sprite class.
+    Any Sprite can now have it's own cursor, and Scene2D handles cursor mangement. This also
+    means there will be no more odd cursor bugs.
+  * API: Sprites no longer take input if their parent is not enabled. So, an entire Group of 
     widgets can be disabled by using group.enabled.set(false);
+  * API: Added Group.pick() and Group.pickEnabledAndVisible().
   * Fixed bug: scaled rectangles weren't drawn correctly when pixelSnapping was false.
   
+== Version 0.10 ==
+
 0.10.10 (January 13, 2008)
   * API: Sound.play() now returns a Playback object that can be used to pause, stop, or
     set the position of the sound while is it playing.

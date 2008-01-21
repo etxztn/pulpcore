@@ -638,6 +638,16 @@ public class Scene2D extends Scene {
         // Allow subclasses to check input, change scenes, etc.
         update(elapsedTime);
         
+        // Set cursor
+        int cursor = Input.CURSOR_DEFAULT;
+        if (Input.isMouseInside()) {
+            Sprite pick = layers.pickEnabledAndVisible(Input.getMouseX(), Input.getMouseY());
+            if (pick != null) {
+                cursor = pick.getCursor();
+            }
+        }
+        Input.setCursor(cursor);
+        
         if (!dirtyRectanglesEnabled || needsFullRedraw) {
             dirtyRectangles.overflow();
         }

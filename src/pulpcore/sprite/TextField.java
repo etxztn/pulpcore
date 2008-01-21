@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -38,11 +38,10 @@ import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Transform;
 
-
 /**
     The TextField is a Sprite that behaves like a common UI text input
     field. It handles selection, cut, copy, paste, keyboard traversal and mouse
-    input.
+    input. By default, a TextField's cursor is {@link pulpcore.Input#CURSOR_TEXT}.
     
     <!--
     <table>
@@ -106,11 +105,6 @@ public class TextField extends Sprite {
     private boolean isMouseDragging;
     private int dragScrollDelay;
     
-    // For mouse cursor display
-    private boolean isMouseInside;
-    private int outsideCursor;
-    
-    
     /**
         If height < 0, the height is automatically set to fit the font
         height.
@@ -118,7 +112,6 @@ public class TextField extends Sprite {
     public TextField(int x, int y, int w, int h) {
         this(null, null, "", x, y, w, h);
     }
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -128,11 +121,9 @@ public class TextField extends Sprite {
         this(null, null, "", x, y, w, h);
     }
     
-    
     public TextField(String text, int x, int y) {
         this(null, null, text, x, y, -1, -1);
     }
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -142,11 +133,9 @@ public class TextField extends Sprite {
         this(null, null, text, x, y, w, h);
     }
     
-    
     public TextField(String text, double x, double y) {
         this(null, null, text, x, y, -1, -1);
     }
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -156,12 +145,9 @@ public class TextField extends Sprite {
         this(null, null, text, x, y, w, h);
     }
     
-    
     public TextField(CoreFont font, CoreFont selectionFont, String text, int x, int y) {
         this(font, selectionFont, text, x, y, -1, -1);
     }
-    
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -175,11 +161,9 @@ public class TextField extends Sprite {
         init(font, selectionFont, w < 0, h < 0);
     }
     
-    
     public TextField(CoreFont font, CoreFont selectionFont, String text, double x, double y) {
         this(font, selectionFont, text, x, y, -1, -1);
     }
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -192,7 +176,6 @@ public class TextField extends Sprite {
         this.text = text;
         init(font, selectionFont, w < 0, h < 0);
     }
-    
     
     private void init(CoreFont font, CoreFont selectionFont, 
         boolean autoWidth, boolean autoHeight) 
@@ -234,23 +217,20 @@ public class TextField extends Sprite {
         timeUntilBlinkOff = BLINK_TIME;
         
         setSelectionColor(0x000000);
+        setCursor(Input.CURSOR_TEXT);
     }
-    
     
     protected int getNaturalWidth() {
         return CoreMath.mulDiv(width.getAsFixed(), getNaturalHeight(), height.getAsFixed());
     }
     
-    
     protected int getNaturalHeight() {
         return CoreMath.toFixed(font.getHeight() + EXTRA_CARET_HEIGHT * 2);
     }
     
-    
     public boolean isPasswordMode() {
         return passwordMode;
     }
-    
     
     public void setPasswordMode(boolean passwordMode) {
         if (this.passwordMode != passwordMode) {
@@ -259,11 +239,9 @@ public class TextField extends Sprite {
         }
     }
     
-    
     public String getText() {
         return text;
     }
-    
     
     public void setText(String text) {
         if (text == null) {
@@ -282,7 +260,6 @@ public class TextField extends Sprite {
         setSelectionLength(0);
     }
     
-    
     protected void setSelectionLength(int length) {
         if (selectionLength != length) {
             selectionLength = length;
@@ -290,23 +267,19 @@ public class TextField extends Sprite {
         }
     }
     
-    
     public void setMaxNumChars(int maxNumChars) {
         this.maxNumChars = maxNumChars;
         // Make sure text isn't longer than maxNumChars
         setText(text);
     }
     
-    
     public int getMaxNumChars() {
         return maxNumChars;
     }
     
-    
     public boolean hasFocus() {
         return hasFocus;
     }
-    
     
     public void setFocus(boolean hasFocus) {
         if (this.hasFocus != hasFocus) {
@@ -317,11 +290,9 @@ public class TextField extends Sprite {
         Input.setTextInputMode(hasFocus);
     }
     
-    
     public void setCaretPosition(int position) {
         setCaretPosition(position, false);
     }
-    
     
     public void setCaretPosition(int position, boolean selectMode) {
         if (position < 0) {
@@ -360,7 +331,6 @@ public class TextField extends Sprite {
         }
     }
     
-    
     private boolean isPositionVisible(int position) {
         if (position < scrollPosition) {
             return false;
@@ -375,7 +345,6 @@ public class TextField extends Sprite {
         return true;
     }
     
-    
     private void setScrollPositionPercent(int percent) {
         int goalWidth = CoreMath.toInt(getNaturalWidth()) * percent / 100;
         for (int i = caretPosition - 1; i >= 0; i--) {
@@ -387,11 +356,9 @@ public class TextField extends Sprite {
         scrollPosition = 0;
     }
     
-    
     public int getCaretPosition() {
         return caretPosition;
     }
-    
     
     private int getCharPositionFromMouse() {
         int mouseClickX = getLocalX(Input.getMouseX(), Input.getMouseY());
@@ -429,21 +396,17 @@ public class TextField extends Sprite {
         }
     }
     
-    
     public void setSelectionColor(int r, int g, int b) {
         setSelectionColor((r << 16) | (g << 8) | b, false);
     }
-    
     
     public void setSelectionColor(int r, int g, int b, int a) {
         setSelectionColor((a << 24) | (r << 16) | (g << 8) | b, true);
     }
     
-    
     public void setSelectionColor(int rgbColor) {
         setSelectionColor(rgbColor, false);
     }
-    
     
     public void setSelectionColor(int argbColor, boolean hasAlpha) {
         if (hasAlpha) {
@@ -454,7 +417,6 @@ public class TextField extends Sprite {
         }
         setDirty(true);
     }
-
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
@@ -508,7 +470,6 @@ public class TextField extends Sprite {
         }
     }
     
-    
     private int findNextWordStart(int position) {
         if (passwordMode) {
             return text.length();
@@ -533,7 +494,6 @@ public class TextField extends Sprite {
         }
     }
     
-    
     private void insertTextAtCaret(String newText) {
         // Only allow characters that can be displayed by the current font
         for (int i = 0; i < newText.length(); i++) {
@@ -557,7 +517,6 @@ public class TextField extends Sprite {
         setDirty(true);
     }
     
-    
     private void deleteSelectedText() {
         int selectionStart;
         int selectionEnd;
@@ -579,7 +538,6 @@ public class TextField extends Sprite {
         setDirty(true);
     }
     
-    
     private void copySelectionToClipboard() {
         if (selectionLength == 0) {
             return;
@@ -588,7 +546,6 @@ public class TextField extends Sprite {
         String text = convertToDisplayText(getSelectedText());
         CoreSystem.setClipboardText(text);
     }
-    
     
     // Coverts text to stars ("*******") if password mode is enabled
     private String convertToDisplayText(String text) {
@@ -602,7 +559,6 @@ public class TextField extends Sprite {
         }
         return buffer.toString();
     }
-    
     
     private String getSelectedText() {
         int selectionStart;
@@ -622,12 +578,10 @@ public class TextField extends Sprite {
         return text.substring(selectionStart, selectionEnd);
     }
     
-    
     public void selectAll() {
         caretPosition = 0;
         setCaretPosition(text.length(), true);
     }
-    
     
     private void selectWord(int position) {
         if (passwordMode) {
@@ -673,36 +627,7 @@ public class TextField extends Sprite {
         setCaretPosition(end, true);
     }
     
-    
-    private void getOutsideCursor() {
-        int cursor =  Input.getCursor();
-        if (cursor != Input.CURSOR_TEXT) {
-            outsideCursor = cursor;
-        }
-    }
-    
-    
     private void handleInput(int elapsedTime) {
-        
-        if (!visible.get() || alpha.get() <= 0) {
-            if (isMouseInside) {
-                Input.setCursor(outsideCursor);
-                isMouseInside = false;
-            }
-            return;
-        }
-        
-        if (isMouseOver()) {
-            if (!isMouseInside) {
-                getOutsideCursor();
-                Input.setCursor(Input.CURSOR_TEXT);
-                isMouseInside = true;
-            }
-        }
-        else if (isMouseInside) {
-            Input.setCursor(outsideCursor);
-            isMouseInside = false;
-        }
         
         if (isMouseTripleClicked()) {
             selectAll();
@@ -724,7 +649,6 @@ public class TextField extends Sprite {
         }
         else if (Input.isMouseDown()) {
             if (isMouseDragging) {
-                
                 int pos = getCharPositionFromMouse();
                 
                 if (isPositionVisible(pos)) {
@@ -847,7 +771,6 @@ public class TextField extends Sprite {
             }
         }
     }
-    
     
     protected void drawSprite(CoreGraphics g) {
 

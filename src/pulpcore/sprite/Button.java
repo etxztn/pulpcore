@@ -41,7 +41,8 @@ import pulpcore.math.Rect;
 /**
     The Button is a Sprite that behaves like a common UI push button. A
     Button has three visual states: normal, hover, and pressed. Call 
-    {@link #isClicked()} to check if the user clicked the button.
+    {@link #isClicked()} to check if the user clicked the button. By default, a Button's cursor
+    is {@link pulpcore.Input#CURSOR_HAND}.
 */
 public class Button extends ImageSprite {
     
@@ -65,10 +66,6 @@ public class Button extends ImageSprite {
     private boolean isSelected;
     private boolean isClicked;
     
-    private int cursor = Input.CURSOR_HAND;
-    private int outsideCursor = Input.CURSOR_DEFAULT;
-    
-    
     /**
         @param images an array of three images: normal, hover, and pressed. 
     */
@@ -76,19 +73,16 @@ public class Button extends ImageSprite {
         this(images, x, y, false);
     }
     
-    
     /**
         @param images an array of three images: normal, hover, and pressed.
         Use six images for toggle buttons (unselected and selected).
     */
     public Button(CoreImage[] images, int x, int y, boolean isToggleButton) {
         super(images[0], x, y);
-        
         this.isToggleButton = isToggleButton;
         this.images = new CoreImage[images.length];
         init(images, isToggleButton);
     }
-    
     
     /**
         @param images an array of three images: normal, hover, and pressed. 
@@ -97,60 +91,24 @@ public class Button extends ImageSprite {
         this(images, x, y, false);
     }
     
-    
     /**
         @param images an array of three images: normal, hover, and pressed.
         Use six images for toggle buttons (unselected and selected).
     */
     public Button(CoreImage[] images, double x, double y, boolean isToggleButton) {
         super(images[0], x, y);
-        
         this.isToggleButton = isToggleButton;
         this.images = new CoreImage[images.length];
         init(images, isToggleButton);
     }
     
-    
     private void init(CoreImage[] images, boolean isToggleButton) {
         if (images.length < (isToggleButton?6:3)) {
             throw new IllegalArgumentException("Not enough button images.");
         }
-        
         System.arraycopy(images, 0, this.images, 0, images.length);
-        
-        outsideCursor = Input.getCursor();
+        setCursor(Input.CURSOR_HAND);
     }
-    
-    
-    /**
-        Sets the cursor for this button. By default, a button's cursor is 
-        {@link pulpcore.Input#CURSOR_HAND}.
-        @see pulpcore.Input
-        @see #getCursor()
-    */
-    public void setCursor(int cursor) {
-        this.cursor = cursor;
-    }
-    
-    
-    /**
-        Gets the cursor for this button. By default, a button's cursor is 
-        {@link pulpcore.Input#CURSOR_HAND}.
-        @see pulpcore.Input
-        @see #setCursor(int)
-    */
-    public int getCursor() {
-        return cursor;
-    }
-  
-    
-    private void getOutsideCursor() {
-        int systemCursor =  Input.getCursor();
-        if (systemCursor != Input.CURSOR_HAND) {
-            outsideCursor = systemCursor;
-        }
-    }
-    
     
     /**
         @return true if this button is a toggle button, false otherwise
@@ -158,7 +116,6 @@ public class Button extends ImageSprite {
     public boolean isToggleButton() {
         return isToggleButton;
     }
-    
     
     /**
         Gets the key bindings for this button. A button has no key bindings by default.
@@ -171,7 +128,6 @@ public class Button extends ImageSprite {
         return keyBinding;
     }
     
-    
     /**
         Clears the key binding for this button.
         @see #getKeyBinding()
@@ -181,7 +137,6 @@ public class Button extends ImageSprite {
     public void clearKeyBinding() {
         keyBinding = null;
     }
-    
     
     /**
         Sets the key binding for this button to the specified key code. The button is
@@ -194,7 +149,6 @@ public class Button extends ImageSprite {
         setKeyBinding(new int[] { keyCode });
     }
     
-    
     /**
         Sets the key binding for this button to the specified key codes. The button is
         considered "clicked" if any of those keys are pressed and released.
@@ -205,7 +159,6 @@ public class Button extends ImageSprite {
     public void setKeyBinding(int[] keyCodes) {
         keyBinding = keyCodes;
     }
-    
     
     /**
         Sets whether this button is selected. For toggle buttons only.
@@ -220,14 +173,12 @@ public class Button extends ImageSprite {
         }
     }
     
-    
     /**
         Determines if this button is selected. For toggle buttons only.
     */
     public boolean isSelected() {
         return isSelected;
     }
-    
 
     private void setState(int state) {
         this.state = state;
@@ -249,11 +200,9 @@ public class Button extends ImageSprite {
         }
     }
     
-    
     private int getState() {
         return state;
     }
-    
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
@@ -269,7 +218,6 @@ public class Button extends ImageSprite {
         isClicked = isClickedImpl();
     }
     
-    
     /**
         Determines if this button was clicked since the last frame.
         @return true if this button was clicked since the last frame.
@@ -278,45 +226,18 @@ public class Button extends ImageSprite {
         return isClicked;
     }
     
-        
     private boolean isClickedImpl() {
         
+        // Disabled button
         if (!isEnabledAndVisible()) {
             if (state != NORMAL) {
                 setState(NORMAL);
-                Input.setCursor(outsideCursor);
             }
             return false;
         }
-        
-        // Not visible (disabled button)
-        if (!visible.get() || alpha.get() <= 0) {
-            if (state != NORMAL) {
-                setState(NORMAL);
-                Input.setCursor(outsideCursor);
-            }
-            else {
-                getOutsideCursor();
-            }
-            return false;
-        }
-        
-        
-        // Set the mouse cursor
-        if (isMouseOver()) {
-            Input.setCursor(cursor);
-        }
-        else if (state != NORMAL) {
-            Input.setCursor(outsideCursor);
-        }
-        else {
-            getOutsideCursor();
-        }
-        
         
         // Handle key input
         if (keyBinding != null) {
-                
             if (Input.isPressed(keyBinding)) {
                 setState(PRESSED);
                 return false;
@@ -325,16 +246,13 @@ public class Button extends ImageSprite {
                 return false;
             }
             else if (Input.isReleased(keyBinding) && state == PRESSED) {
-                
                 if (isToggleButton) {
                     isSelected = !isSelected;
                 }
                 setState(NORMAL);
-                Input.setCursor(outsideCursor);
                 return true;
             }
         }
-        
         
         // Handle mouse input
         if (state == PRESSED) {
@@ -377,7 +295,6 @@ public class Button extends ImageSprite {
         return false;
     }
     
-    
     //
     // Convenience methods to create buttons with text labels.
     //
@@ -386,11 +303,9 @@ public class Button extends ImageSprite {
         return createLabeledButton(null, null, text, x, y);
     }
     
-    
     public static Button createLabeledToggleButton(String text, int x, int y) {
         return createLabeledToggleButton(null, null, text, x, y);
     }
-    
     
     public static Button createLabeledButton(CoreImage[] images, CoreFont font, 
         String text, int x, int y)
@@ -421,14 +336,12 @@ public class Button extends ImageSprite {
             textX, textY, Sprite.CENTER, false, true);
     }
     
-    
     public static Button createLabeledButton(CoreImage[] images, CoreFont font, 
         String text, int x, int y, int textX, int textY, int textAnchor, boolean offsetPressedText)
     {
         return createLabeledButton(images, font, text, x, y, 
             textX, textY, textAnchor, false, offsetPressedText);
     }
-    
     
     public static Button createLabeledToggleButton(CoreImage[] images, CoreFont font, 
         String text, int x, int y)
@@ -460,14 +373,12 @@ public class Button extends ImageSprite {
             Sprite.CENTER, true, true);
     }
     
-    
     public static Button createLabeledToggleButton(CoreImage[] images, CoreFont font, 
         String text, int x, int y, int textX, int textY, int textAnchor, boolean offsetPressedText)
     {
         return createLabeledButton(images, font, text, x, y, 
             textX, textY, textAnchor, true, offsetPressedText);
     }
-    
     
     /**
         @param images the images to use. If null, simple gray images are created to fit the text
@@ -546,7 +457,6 @@ public class Button extends ImageSprite {
     
         return new Button(textImages, x, y, isToggleButton);
     }
-    
     
     private static CoreImage createButtonImage(int buttonWidth, int buttonHeight, int type) {
         
