@@ -1,4 +1,7 @@
 0.11 (Alpha, in progress)
+The version's inital focus is going to be on the animation/properties framework and the scene graph.
+To use the new version, edit your build.xml file to set "pulpcore.version" to "0.11".
+
   * API: Added sprite.getParent() (Sprites now know their parent, which allows many feature
     additions).
   * API: The 'enabled' Property (in Button, TextField, and Slider) is now in the Sprite class.
@@ -8,6 +11,9 @@
   * API: Sprites no longer take input if their parent is not enabled. So, an entire Group of 
     widgets can be disabled by using group.enabled.set(false);
   * API: Added Group.pick() and Group.pickEnabledAndVisible().
+  * Core: Images, fonts, and sounds are cached (using WeakReferences) which will speed up loading
+    and reduce memory when loading the same asset more than once. 
+  * Core: In a stack of Buttons, only the top-most button accepts mouse input.
   * Fixed bug: scaled rectangles weren't drawn correctly when pixelSnapping was false.
   
 == Version 0.10 ==
