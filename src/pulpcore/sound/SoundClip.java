@@ -30,7 +30,9 @@
 package pulpcore.sound;
 
 import java.io.EOFException;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import pulpcore.Assets;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -43,7 +45,9 @@ import pulpcore.util.ByteArray;
 */
 public class SoundClip extends Sound {
     
-    private static final SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
+    // HashMap<String, WeakReference<SoundClip>>
+    private static HashMap loadedSounds = new HashMap();
+    private static SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
     
     // For u-law conversion. 132 * ((1 << i) - 1)
     private static final int[] EXP_TABLE = { 
@@ -141,12 +145,21 @@ public class SoundClip extends Sound {
     //
     
     /**
-        Loads a sound from the specified sound asset. 
+        Loads a sound from the the asset catalog.
         The sound can either be a .au file (8-bit u-law) or 
         a .wav file (16-bit, signed, PCM). Both mono and stereo is supported.
         <p>
-        This method never returns null. If the sound asset cannot be loaded, or there is no
+        Ogg Vorvis is support with an add-on. See 
+        <a href="http://code.google.com/p/pulpcore/wiki/OggHowTo">http://code.google.com/p/pulpcore/wiki/OggHowTo</a>
+        for defailts.
+        <p>
+        This method never returns {@code null}. If the sound cannot be loaded, or there is no
         sound engine available, a zero-length SoundClip is returned.
+        <p>
+        Sounds are internally cached (using a WeakReference), and if the sound was previously 
+        loaded, this method may return the same reference.
+        @param soundAsset The name of a AU, WAV, or OGG sound file.
+        @return The sound, or a zero-length SoundClip on error.
     */
     public static SoundClip load(String soundAsset) {
         
@@ -154,29 +167,49 @@ public class SoundClip extends Sound {
             return NO_SOUND;
         }
         
-        ByteArray in = Assets.get(soundAsset);
+        // Attempt to load from the cache
+        // NOTE: we may need to disable caching if the sound engine can't play multiple copies
+        // of the same sound simultaneously. Currently the JavaSound engine can.
+        WeakReference soundRef = (WeakReference)loadedSounds.get(soundAsset);
+        if (soundRef != null) {
+            SoundClip sound = (SoundClip)soundRef.get();
+            if (sound != null) {
+                return sound;
+            }
+            else {
+                loadedSounds.remove(soundAsset);
+            }
+        }
         
+        ByteArray in = Assets.get(soundAsset);
         if (in == null) {
             return NO_SOUND;
         }
         
+        SoundClip sound = null;
         try {
             if (soundAsset.toLowerCase().endsWith(".au")) {
-                return loadAU(in, soundAsset);
+                sound = loadAU(in, soundAsset);
             }
             else if (soundAsset.toLowerCase().endsWith(".wav")) {
-                return loadWAV(in, soundAsset);
+                sound = loadWAV(in, soundAsset);
             }
             else if (soundAsset.toLowerCase().endsWith(".ogg")) {
-                return loadOGG(in, soundAsset);
+                sound = loadOGG(in, soundAsset);
             }
             else {
                 if (Build.DEBUG) CoreSystem.print("Unknown audio file: " + soundAsset);
-                return NO_SOUND;
             }
         }
         catch (EOFException ex) {
             if (Build.DEBUG) CoreSystem.print("Error loading sound: " + soundAsset);
+        }
+        
+        if (sound != null) {
+            loadedSounds.put(soundAsset, new WeakReference(sound));
+            return sound;
+        }
+        else {
             return NO_SOUND;
         }
     }

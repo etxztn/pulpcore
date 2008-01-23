@@ -30,6 +30,8 @@
 package pulpcore.image;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import pulpcore.Assets;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -48,6 +50,8 @@ import pulpcore.util.ByteArray;
 */
 public class CoreImage {
     
+    // HashMap<String, WeakReference<? extends CoreImage>>
+    private static HashMap loadedImages = new HashMap();
     private static CoreImage brokenImage;
     
     protected int width;
@@ -197,8 +201,18 @@ public class CoreImage {
     
     
     /**
-        Loads either a PNG or JPEG image from the specified imageAsset. If the PNG file
-        has animation info, an {@link AnimatedImage} is returned.
+        Loads a PNG or JPEG image from the asset catalog.
+        If the PNG file has animation info, an {@link AnimatedImage} is returned.
+        <p>
+        This method never returns {@code null}.
+        If the image is not found, an error is printed to the log
+        and a "broken" image is returned. The broken image is similar to a red X image found in
+        a web browser.
+        <p>
+        Images are internally cached (using a WeakReference), and if the image was previously 
+        loaded, this method may return the same reference.
+        @param imageAsset The name of a PNG or JPEG image file.
+        @return The image, or a broken image if the image cannot be found.
     */
     public static CoreImage load(String imageAsset) {
         return load(imageAsset, null);
@@ -209,13 +223,26 @@ public class CoreImage {
         
         //if (Build.DEBUG) CoreSystem.print("Loading: " + imageAsset);
         
-        ByteArray in = Assets.get(imageAsset);
+        // Attempt to load from the cache
+        WeakReference imageRef = (WeakReference)loadedImages.get(imageAsset);
+        if (imageRef != null) {
+            CoreImage image = (CoreImage)imageRef.get();
+            if (image != null) {
+                return image;
+            }
+            else {
+                loadedImages.remove(imageAsset);
+            }
+        }
         
+        // Attempt to load raw bytes from the asset collection
+        ByteArray in = Assets.get(imageAsset);
         if (in == null) {
             return getBrokenImage();
         }
         
         CoreImage image = null;
+        // Try the internal image loader
         if (imageAsset.toLowerCase().endsWith(".png")) {
             try {
                 PNGReader pngReader = new PNGReader();
@@ -224,21 +251,20 @@ public class CoreImage {
             catch (IOException ex) {
                 if (Build.DEBUG) CoreSystem.print("Error loading image: " + imageAsset, ex);
             }
-            
-            if (image != null) {
-                return image;
-            }
-            
-            // Try again with the system decoder
-            in.reset();
         }
         
-        image = CoreSystem.getThisAppContext().loadImage(in);
-
+        // Try again with the system image loader
         if (image == null) {
-            if (Build.DEBUG) CoreSystem.print("Could not load image: " + imageAsset);
-            image = getBrokenImage();
+            in.reset();
+            image = CoreSystem.getThisAppContext().loadImage(in);
+            if (image == null) {
+                if (Build.DEBUG) CoreSystem.print("Could not load image: " + imageAsset);
+                return getBrokenImage();
+            }
         }
+        
+        loadedImages.put(imageAsset, new WeakReference(image));
+        
         return image;
     }
   

@@ -818,9 +818,11 @@ public class Stage implements Runnable {
         
         // Perform a garbage collection if no sounds are playing
         // (A GC causes sound distortion on some systems)
-        if (CoreSystem.getNumSoundsPlaying() == 0) {
-            System.gc();
-        }
+        // NOTE: this is disabled because it could interfere with WeakReference caching of
+        // images, sounds, and fonts inbetween scenes.
+        //if (CoreSystem.getNumSoundsPlaying() == 0) {
+        //    System.gc();
+        //}
         
         if (currentScene != null) {
             if (Build.DEBUG) {

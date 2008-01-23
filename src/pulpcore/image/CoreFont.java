@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,6 +30,8 @@
 package pulpcore.image;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.util.ByteArray;
@@ -41,6 +43,8 @@ public class CoreFont {
     
     private static final long MAGIC = 0x70756c70666e740bL; // "pulpfnt" 0.11
     
+    // HashMap<String, WeakReference<CoreFont>>
+    private static HashMap loadedFonts = new HashMap();
     private static CoreFont systemFont;
     
     private CoreImage image;
@@ -64,12 +68,41 @@ public class CoreFont {
     }
     
     
+    /**
+        Loads a PNG-based image font from the asset catalog.
+        <p>
+        This method never returns {@code null}.
+        If the image is not found, or the PNG image does not have font information, 
+        an error is printed to the log
+        and the system font is returned. If the system font cannot be found, an Error is thrown.
+        <p>
+        PNG-based image fonts are created from a font.properties file. See the Text example
+        in the distribution archive.
+        <p>
+        Fonts are internally cached (using a WeakReference), and if the font was previously 
+        loaded, this method may return the same reference.
+        @param fontAsset The name of a PNG image file with font information.
+        @return The font, or a broken image if the font cannot be found.
+    */
     public static CoreFont load(String fontAsset) {
-        CoreFont font = new CoreFont();
         
+        // Attempt to load from the cache
+        WeakReference fontRef = (WeakReference)loadedFonts.get(fontAsset);
+        if (fontRef != null) {
+            CoreFont font = (CoreFont)fontRef.get();
+            if (font != null) {
+                return font;
+            }
+            else {
+                loadedFonts.remove(fontAsset);
+            }
+        }
+        
+        CoreFont font = new CoreFont();
         CoreImage.load(fontAsset, font);
         
         if (font.image != null) {
+            loadedFonts.put(fontAsset, new WeakReference(font));
             return font;
         }
         else if ("system.font.png".equals(fontAsset)) {
