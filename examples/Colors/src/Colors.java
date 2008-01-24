@@ -3,6 +3,7 @@
 import pulpcore.animation.ColorAnimation;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.Input;
@@ -20,10 +21,10 @@ public class Colors extends Scene2D {
     int[] composites = { CoreGraphics.COMPOSITE_SRC_OVER, CoreGraphics.COMPOSITE_ADD, 
         CoreGraphics.COMPOSITE_MULT, CoreGraphics.COMPOSITE_SRC_OVER, 
         CoreGraphics.COMPOSITE_ADD, CoreGraphics.COMPOSITE_MULT};
-    int[] backgrounds = { CoreGraphics.GRAY, CoreGraphics.BLACK, CoreGraphics.WHITE,
-        CoreGraphics.GRAY, CoreGraphics.BLACK, CoreGraphics.WHITE}; 
-    int[] labelColors = { CoreGraphics.BLACK, CoreGraphics.WHITE, CoreGraphics.BLACK,
-        CoreGraphics.BLACK, CoreGraphics.WHITE, CoreGraphics.BLACK};
+    int[] backgrounds = { Colors.GRAY, Colors.BLACK, Colors.WHITE,
+        Colors.GRAY, Colors.BLACK, Colors.WHITE}; 
+    int[] labelColors = { Colors.BLACK, Colors.WHITE, Colors.BLACK,
+        Colors.BLACK, Colors.WHITE, Colors.BLACK};
     int[] alphas = { 255, 255, 255, 128, 128, 128 };
     
     Group[] colorGroups;
@@ -33,7 +34,7 @@ public class Colors extends Scene2D {
     @Override
     public void load() {
         // Add the background
-        background = new FilledSprite(CoreGraphics.GRAY);
+        background = new FilledSprite(Colors.GRAY);
         add(background);
         
         Timeline timeline1 = new Timeline();
@@ -77,7 +78,7 @@ public class Colors extends Scene2D {
         addTimeline(timeline1);
         addTimeline(timeline2);
         setGroup(0);
-        Input.setCursor(Input.CURSOR_HAND);
+        setCursor(Input.CURSOR_HAND);
     }
     
     void setGroup(int index) {

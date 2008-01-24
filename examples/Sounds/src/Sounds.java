@@ -26,7 +26,8 @@ public class Sounds extends Scene2D {
         add(new FilledSprite(0xffffff));
         add(ear);
         add(muteButton);
-        Input.setCursor(Input.CURSOR_CROSSHAIR);
+        setCursor(Input.CURSOR_CROSSHAIR);
+        ear.setCursor(Input.CURSOR_HAND);
         
         boopSound = SoundClip.load("boop.wav");
         wooshSound = SoundClip.load("stereo.wav");

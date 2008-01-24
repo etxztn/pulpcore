@@ -4,8 +4,8 @@
 import pulpcore.Input;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
-import pulpcore.image.CoreGraphics;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
@@ -46,7 +46,7 @@ public class Easings extends Scene2D {
     
     @Override
     public void load() {
-        CoreFont font = CoreFont.getSystemFont().tint(CoreGraphics.WHITE);
+        CoreFont font = CoreFont.getSystemFont().tint(Colors.WHITE);
         icon = new ImageSprite("earth.png", 140, 240);
         icon.setAnchor(Sprite.CENTER);
         label = new Label(font, "", 320, 20);
@@ -55,7 +55,7 @@ public class Easings extends Scene2D {
         add(new ImageSprite("background.png", 0, 0));
         add(icon);
         add(label);
-        Input.setCursor(Input.CURSOR_HAND);
+        setCursor(Input.CURSOR_HAND);
         
         setEasing(0);
     }

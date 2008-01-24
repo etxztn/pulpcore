@@ -28,7 +28,7 @@ public class ImagesAndFonts extends Scene2D {
         person = new ImageSprite(personLeft, 320, 180);
         add(person);
         
-        Input.setCursor(Input.CURSOR_OFF);
+        setCursor(Input.CURSOR_OFF);
         cursor = new ImageSprite("cursor.png", 0, 0);
         add(cursor);
     }

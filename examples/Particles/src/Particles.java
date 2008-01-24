@@ -3,6 +3,7 @@
 import pulpcore.animation.Easing;
 import pulpcore.animation.event.RemoveSpriteEvent;
 import pulpcore.animation.Timeline;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -24,7 +25,7 @@ public class Particles extends Scene2D {
     
     @Override
     public void load() {
-        background = new FilledSprite(CoreGraphics.BLACK);
+        background = new FilledSprite(Colors.BLACK);
         images = CoreImage.load("particles.png").split(6, 1);
         
         particleLayer = new Group();
@@ -34,7 +35,7 @@ public class Particles extends Scene2D {
         
         makeParticles(320, 240, 320, 240, 50);
         
-        Input.setCursor(Input.CURSOR_OFF);
+        setCursor(Input.CURSOR_OFF);
     }
     
     @Override

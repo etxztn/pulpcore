@@ -3,7 +3,7 @@
 // Shows how Scene2D internally uses a scene graph: Groups can have child Groups, and children
 // inherit their parent's transform.
 import pulpcore.animation.ColorAnimation;
-import pulpcore.image.CoreGraphics;
+import pulpcore.image.Colors;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene2D;
@@ -21,7 +21,7 @@ public class SceneGraph extends Scene2D {
     
     @Override
     public void load() {
-        add(new FilledSprite(CoreGraphics.BLACK));
+        add(new FilledSprite(Colors.BLACK));
         
         Group trunk = new Group(Stage.getWidth() / 2, Stage.getHeight());
         generateTree(trunk, 0);
