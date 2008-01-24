@@ -115,7 +115,6 @@ public class Scene2D extends Scene {
     
     private boolean stateSaved;
     private int desiredFPS;
-    private int cursor;
     private boolean isTextInputMode;
     
     /**
@@ -158,6 +157,30 @@ public class Scene2D extends Scene {
     */
     public boolean isPaused() {
         return paused;
+    }
+    
+    /**
+        Sets the default cursor for this Scene. By default, a Scene2D uses the default cursor.
+        @see pulpcore.Input
+        @see #getCursor()
+    */
+    public final void setCursor(int cursor) {
+        layers.setCursor(cursor);
+    }
+    
+    /**
+        Gets the cursor for this Scene. 
+        @see pulpcore.Input
+        @see #setCursor(int)
+    */
+    public final int getCursor() {
+        int cursor = layers.getCursor();
+        if (cursor == -1) {
+            return Input.CURSOR_DEFAULT;
+        }
+        else {
+            return cursor;
+        }
     }
     
     /**
@@ -577,7 +600,6 @@ public class Scene2D extends Scene {
         if (stateSaved) {
             Stage.setFrameRate(desiredFPS);
             Input.setTextInputMode(isTextInputMode);
-            Input.setCursor(cursor);
             stateSaved = false;
         }
         redrawNotify();
@@ -592,7 +614,6 @@ public class Scene2D extends Scene {
     public void hideNotify() {
         desiredFPS = Stage.getFrameRate();
         isTextInputMode = Input.isTextInputMode();
-        cursor = Input.getCursor();
         stateSaved = true;
     }
     

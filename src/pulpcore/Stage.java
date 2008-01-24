@@ -813,7 +813,6 @@ public class Stage implements Runnable {
         nextScene = null;
         nextSceneType = NO_NEXT_SCENE;
         setFrameRate(DEFAULT_FPS);
-        input.setCursor(Input.CURSOR_DEFAULT);
         input.setTextInputMode(false);
         
         // Perform a garbage collection if no sounds are playing

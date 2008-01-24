@@ -191,7 +191,7 @@ public abstract class Sprite implements PropertyListener {
     // Private fields
     //
     
-    private int cursor = Input.CURSOR_DEFAULT;
+    private int cursor = -1;
     private int anchor = DEFAULT;
     private int composite = -1;
     private int cosAngle = CoreMath.ONE;
@@ -520,25 +520,47 @@ public abstract class Sprite implements PropertyListener {
     }
     
     /**
-        Sets the cursor for this button. By default, a Sprite's cursor is 
-        {@link pulpcore.Input#CURSOR_DEFAULT}. Note, the Sprite itself does not set the cursor -
+        Sets the cursor for this Sprite. By default, a Sprite does not have a defined cursor.
+        Note, the Sprite itself does not set the cursor -
         it is set by {@link pulpcore.scene.Scene2D}.
         @see pulpcore.Input
         @see #getCursor()
+        @see #clearCursor()
     */
     public final void setCursor(int cursor) {
         this.cursor = cursor;
     }
     
-    
     /**
-        Gets the cursor for this Sprite. By default, a Sprite's cursor is 
-        {@link pulpcore.Input#CURSOR_DEFAULT}.
+        Clears the cursor for this Sprite, so that it's parent cursor is used.
         @see pulpcore.Input
+        @see #getCursor()
         @see #setCursor(int)
     */
+    public final void clearCursor() {
+        this.cursor = -1;
+    }
+    
+    
+    /**
+        Gets the cursor for this Sprite. If a cursor is not defined for this Sprite, the parent's
+        cursor is used.
+        @see pulpcore.Input
+        @see #setCursor(int)
+        @see #clearCursor()
+    */
     public final int getCursor() {
-        return cursor;
+        if (cursor == -1) {
+            if (parent == null) {
+                return Input.CURSOR_DEFAULT;
+            }
+            else {
+                return parent.getCursor();
+            }
+        }
+        else {
+            return cursor;
+        }
     }
     
     /**
@@ -743,16 +765,139 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    /*
-    public final boolean intersects(Sprite sprite) {
-        // Idea 1: 
-        // Convert both to View Space 
+    //public final boolean intersects(Sprite sprite) {
+    //    sprite.updateTransform();
+    //    updateTransform();
+    //    
+    //    // Step 1: Get this sprite's points
+    //    int w1 = getNaturalWidth();
+    //    int h1 = getNaturalHeight();
+    //    V[] pointsA = {
+    //        new V(0, 0),
+    //        new V(w1, 0),
+    //        new V(w1, h1),
+    //        new V(0, h1),
+    //    };
+    //    
+    //    // Step 2: Get points of specified sprite (convert this Sprite's Local Space)
+    //    int w2 = sprite.getNaturalWidth();
+    //    int h2 = sprite.getNaturalHeight();
+    //    V[] pointsB = {
+    //        new V(sprite.transform.transformX(0, 0), sprite.transform.transformY(0, 0)),
+    //        new V(sprite.transform.transformX(w2, 0), sprite.transform.transformY(w2, 0)),
+    //        new V(sprite.transform.transformX(w2, h2), sprite.transform.transformY(w2, h2)),
+    //        new V(sprite.transform.transformX(0, h2), sprite.transform.transformY(0, h2)),
+    //    };
+    //    for (int i = 0; i < 4; i++) {
+    //        V p = pointsB[i];
+    //        int lx = transform.inverseTransformX(p.x, p.y);
+    //        int ly = transform.inverseTransformY(p.x, p.y);
+    //        if (lx == Integer.MAX_VALUE || ly == Integer.MAX_VALUE) {
+    //            return false;
+    //        }
+    //        p.x = lx;
+    //        p.y = ly;
+    //    }
+    //    
+    //    // Step 3: Use separating axis theorem (four tests)
+    //    // Line A: (0,0)->(w1,0)
+    //    // Line B: (0,0)->(0,h1)
+    //    // Line C: Perpendicular to (fx[0], fy[0])->(fx[1], fy[1])
+    //    // Line D: Perpendicular to (fx[0], fy[0])->(fx[3], fy[3])
+    //    V[][] vectors = { 
+    //        new V(w1, 0),
+    //        new V(0, h1),
+    //        new V(pointsB[1].y-pointsB[0].y, pointsB[0].x-pointsB[1].x),
+    //        new V(pointsB[3].y-pointsB[0].y, pointsB[0].x-pointsB[3].x)
+    //    };
+    //    for (int i = 0; i < vectors.length; i++) {
+    //        
+    //    }
+    //}
+        /*
+           Any corner point in A lies inside box B.
+           Any corner point in B lies inside box A.
+           Any segment in A intersects any segment in B (after first two checks, there would have to be 2 intersections)
+        */        //// Step 3: Check if any segment intersects the AABB (0,0)->(naturalWidth, naturalHeight)
+        //int width = getNaturalWidth();
+        //int height = getNaturalHeight();
+        //for (int i = 0; i < 4; i++) {
+        //    int j = (i+1)&3;
+        //    if (lineSegmentBoxIntersection(fx[i], fy[i], fx[j], fy[j], 0, 0, width, height)) {
+        //        return true;
+        //    }
+        //}
+        //return false;
+    //}
+    //
+    ///**
+    //    Returns true if a line segment intersects an axis-aligned bounding box.
+    //*/
+    //private static boolean lineSegmentBoxIntersection(
+    //    int lineX1, int lineY1, int lineX2, int lineY2,
+    //    int boxXmin, int boxYmin, int boxXmax, int boxYmax)
+    //{
+    //    int st, et;
+    //    int fst = 0;
+    //    int fet = CoreMath.ONE;
+    //    
+    //    // Check x
+    //    if (lineX1 < lineX2) {
+    //        if (lineX1 > boxXmax || lineX2 < boxXmin) {
+    //            return false;
+    //        }
+    //        int d = lineX2 - lineX1;
+    //        st = (lineX1 < boxXmin) ? CoreMath.div(boxXmin - lineX1, d) : 0;
+    //        et = (lineX2 > boxXmax) ? CoreMath.div(boxXmax - lineX1, d) : 1;
+    //    }
+    //    else {
+    //        if (lineX2 > boxXmax || lineX1 < boxXmin) {
+    //            return false;
+    //        }
+    //        int d = lineX2 - lineX1;
+    //        st = (lineX1 > boxXmax) ? CoreMath.div(boxXmax - lineX1, d) : 0;
+    //        et = (lineX2 < boxXmin) ? CoreMath.div(boxXmin - lineX1, d) : 1;
+    //    }
+    //    if (st > fst) {
+    //        fst = st;
+    //    }
+    //    if (et < fet) {
+    //        fet = et;
+    //    }
+    //    if (fet < fst) {
+    //        return false;
+    //    }
+    //    
+    //    // Check y
+    //    if (lineY1 < lineY2) {
+    //        if (lineY1 > boxYmax || lineY2 < boxYmin) {
+    //            return false;
+    //        }
+    //        int d = lineY2 - lineY1;
+    //        st = (lineY1 < boxYmin) ? CoreMath.div(boxYmin - lineY1, d) : 0;
+    //        et = (lineY2 > boxYmax) ? CoreMath.div(boxYmax - lineY1, d) : 1;
+    //    }
+    //    else {
+    //        if (lineY2 > boxYmax || lineY1 < boxYmin) {
+    //            return false;
+    //        }
+    //        int d = lineY2 - lineY1;
+    //        st = (lineY1 > boxYmax) ? CoreMath.div(boxYmax - lineY1, d) : 0;
+    //        et = (lineY2 < boxYmin) ? CoreMath.div(boxYmin - lineY1, d) : 1;
+    //    }
+    //    if (st > fst) {
+    //        fst = st;
+    //    }
+    //    if (et < fet) {
+    //        fet = et;
+    //    }
+    //    if (fet < fst) {
+    //        return false;
+    //    }
+    //    
+    //    return true;
+    //}
         
-        // Idea 2:
-        // Convert specified sprite to this sprite's View Space
-    }
-    */
-    
     /**
         Checks if this Sprite (and its parents) are enabled, and
         the mouse is currently within the bounds of this Sprite.
@@ -1068,5 +1213,86 @@ public abstract class Sprite implements PropertyListener {
     {
         this.width.animateTo(width, duration, easing, startDelay);
         this.height.animateTo(height, duration, easing, startDelay);
-    }            
+    }
+    
+    // Quick-and-dirty fixed-point vector class for sprite.intersects()
+    private static class V {
+        public int x;
+        public int y;
+        
+        public V() {
+            setTo(0, 0);
+        }
+        
+        public V(int x, int y) {
+            setTo(x, y);
+        }
+        
+        public V(V v) {
+            setTo(v.x, v.y);
+        }
+        
+        public void setTo(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+        
+        public int getLengthSq() {
+            return CoreMath.mul(x, x) + CoreMath.mul(y, y);
+        }
+        
+        public int getLength() {
+            return CoreMath.sqrt(getLengthSq());
+        }
+        
+        public void setLength(int newLength) {
+            int length = getLength();
+            if (length != 0) {
+                mulDiv(newLength, length);
+            }
+        }
+        
+        public void normalize() {
+            int length = getLength();
+            if (length != 0) {
+                divide(length);
+            }
+        }    
+    
+        public void add(int x, int y) {
+            this.x += x;
+            this.y += y;
+        }
+    
+        public void subtract(int x, int y) {
+            add(-x, -y);
+        }
+    
+        public void add(V v) {
+            add(v.x, v.y);
+        }
+    
+        public void subtract(V v) {
+            add(-v.x, -v.y);
+        }    
+        
+        public void multiply(int s) {
+           x = CoreMath.mul(x, s);
+           y = CoreMath.mul(y, s);
+        }
+    
+        public void divide(int s) {
+           x = CoreMath.div(x, s);
+           y = CoreMath.div(y, s);
+        }
+        
+        public void mulDiv(int n, int d) {
+           x = CoreMath.mulDiv(x, n, d);
+           y = CoreMath.mulDiv(y, n, d);
+        }
+    
+        public int getDotProduct(V v) {
+            return CoreMath.mul(x, v.x) + CoreMath.mul(y, v.y);
+        }
+    }
 }
