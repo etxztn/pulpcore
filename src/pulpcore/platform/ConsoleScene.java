@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import pulpcore.animation.Property;
 import pulpcore.animation.PropertyListener;
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -59,7 +60,7 @@ public class ConsoleScene extends Scene2D {
     
     public void load() {
         
-        add(new FilledSprite(CoreGraphics.WHITE));
+        add(new FilledSprite(Colors.WHITE));
         
         backButton = Button.createLabeledButton("OK", Stage.getWidth() - 5, Stage.getHeight() - 5);
         backButton.setAnchor(Sprite.SOUTH_EAST);
