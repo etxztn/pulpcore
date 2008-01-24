@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,7 +29,7 @@
 
 package pulpcore.animation;
 
-import pulpcore.image.CoreGraphics;
+import pulpcore.image.Colors;
 import pulpcore.math.CoreMath;
 
 /**
@@ -74,8 +74,8 @@ public class ColorAnimation extends Animation {
         this.colorSpace = colorSpace;
         
         if (colorSpace == HSB) {
-            fromHSB = CoreGraphics.convertRGBtoHSB(fromRGB);
-            toHSB = CoreGraphics.convertRGBtoHSB(toRGB);
+            fromHSB = Colors.RGBtoHSB(fromRGB);
+            toHSB = Colors.RGBtoHSB(toRGB);
         }
         else {
             fromHSB = 0;
@@ -125,7 +125,7 @@ public class ColorAnimation extends Animation {
         int newValue = (a << 24) | (b << 16) | (c << 8) | d;
         
         if (colorSpace == HSB) {
-            return CoreGraphics.convertHSBtoRGB(newValue);
+            return Colors.HSBtoRGB(newValue);
         }
         else {
             return newValue;
