@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -50,46 +50,37 @@ public class PlayerTask extends Task {
     private String params;
     private boolean waitUntilClosed = true;
     
-    
     public void setPath(String path) {
         this.path = path;
     }
-    
     
     public void setArchive(String archive) {
         this.archive = archive;
     }
     
-    
     public void setScene(String scene) {
         this.scene = scene;
     }
-    
     
     public void setParams(String params) {
         this.params = params;
     }
     
-    
     public void setAssets(String assets) {
         this.assets = assets;
     }
-    
     
     public void setWidth(int width) {
         this.width = width;
     }
     
-    
     public void setHeight(int height) {
         this.height = height;
     }
     
-    
     public void setWaitUntilClosed(boolean waitUntilClosed) {
         this.waitUntilClosed = waitUntilClosed;
     }
-    
     
     public void execute() throws BuildException {
         if (path == null) {
@@ -194,5 +185,4 @@ public class PlayerTask extends Task {
         
         return map;
     }
-  
 }

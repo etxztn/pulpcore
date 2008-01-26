@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -85,7 +85,7 @@ import javax.swing.UIManager;
 import pulpcore.Build;
 
 /**
-    PulpCorePlayer is an applet viewer for PulpCore applets. 
+    PulpCore Player is an applet viewer for PulpCore applets. 
     Significant features not available in appletviewer include:
     <ul>
     <li>Ability to run in the save VM as an IDE or Ant runner.
@@ -206,18 +206,16 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         start(documentURL, archive, width, height, params, false);
     }
     
-    
     private static void showUsage() {
-        System.out.println("PulpCorePlayer is an applet viewer for PulpCore applets.");
+        System.out.println("PulpCore Player is an applet viewer for PulpCore applets.");
         System.out.println();
         System.out.println("Usage: java -jar pulpcore-player-" + Build.VERSION + ".jar file");
         System.out.println("Where 'file' is a path or URL pointing to an HTML file containing an");
         System.out.println("applet tag. The applet tag must contain a 'scene' parameter.");
         System.out.println();
-        System.out.println("Note, PulpCorePlayer does not install a SecurityManager.");
+        System.out.println("Note, PulpCore Player does not install a SecurityManager.");
         System.out.println("Always be sure to test applets in web browsers.");
     }
-    
     
     private static String readTextFile(Reader in) throws IOException {
         String text = "";
@@ -232,7 +230,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             text += line + '\n';
         }
     }
-
     
     public static void start(String documentURL, String archive, int width, int height,
         Map<String, String> params, boolean waitUntilClosed)
@@ -297,7 +294,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private List<String> savedAssets;
     private String savedScene;
     
-    
     public PulpCorePlayer(String key, String documentURL, String archive, 
         int width, int height, Map<String, String> params) 
         throws MalformedURLException, IOException
@@ -323,7 +319,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         this.width = width;
         this.height = height;
         this.params = params;
-        
+        params.put("browsername", "PulpCore Player");
+        params.put("browserversion", Build.VERSION);
         
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -337,7 +334,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 }
             }
         });
-        
 
         // Create the URLs
         if (documentURL.startsWith("file:/")) {
@@ -405,7 +401,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         
     }
     
-    
     private synchronized void loadApplet() {
         
         unloadApplet();
@@ -463,7 +458,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         });
     }
     
-    
     private synchronized void unloadApplet() {
         active = false;
         if (applet != null) {
@@ -475,7 +469,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             applet = null;
         }
     }
-    
     
     private synchronized void reloadApplet() {
         saveState();
@@ -494,7 +487,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         });
     }
     
-    
     private void showError(Throwable t) {
         t.printStackTrace();
         JPanel panel = new JPanel();
@@ -504,7 +496,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         validate();
         panel.repaint();
     }
-    
     
     private void saveState() {
 
@@ -547,7 +538,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
     }
     
-    
     private boolean isValidScene(Class c) {
         String name = c.getName();
         if (name.startsWith("pulpcore.")) {
@@ -576,7 +566,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         // All tests passed
         return true;
     }
-    
     
     private void restoreState() {
         if (applet != null) {
@@ -607,37 +596,30 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
     }
     
-    
     private void clearState() {
         savedAssets = null;
         savedScene = null;
     }
     
-    
     //
     // AppletStub methods
     //
-    
     
     public void appletResize(int width, int height) {
         // Do nothing
     }
     
-    
     public AppletContext getAppletContext() {
         return this;
     }
-    
     
     public URL getCodeBase() {
         return codeBaseURL;
     }
     
-
     public URL getDocumentBase() {
         return documentBaseURL;
     }
-    
     
     public String getParameter(String name) {
         if ("scene".equals(name) && savedScene != null && savedAssets != null) {
@@ -656,37 +638,30 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         return active;
     }
 
-    
     //
     // AppletContext methods
     //
-    
 
     public Applet getApplet(String name) {
         return null;
     }
     
-
     public Enumeration getApplets() {
         return null;        
     }
-    
     
     public AudioClip getAudioClip(URL url) {
         return null;
     }
     
-    
     public Image getImage(URL url) {
         return null;
     }
-    
     
     public void showDocument(URL url) {
         showDocument(url, "_self");
     }
 
-    
     public void showDocument(URL url, String target) {
         try {
             BrowserLaunch.open(url);
@@ -698,33 +673,27 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
     }
     
-
     public void showStatus(String status) {
         // Do nothing
     }
-    
     
     public void setStream(String s, InputStream in) {
         // Do nothing
     }
     
-    
     public InputStream getStream(String s) {
         // Do nothing
         return null;
     }
-    
 
     public Iterator getStreamKeys() {
         // Do nothing
         return null;
     }
     
-    
     //
     // Swing actions
     //
-    
     
     public class FileAction extends EditAction { }
     
@@ -734,7 +703,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
     }
 
-    
     //
     // ClassLoader hack
     //
@@ -774,7 +742,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             
             return new NoResourceCacheClassLoader(urls, parent);
         }
-        
         
         // Don't cache resources inside jars - a ZipException will occur if 
         // the jar is modified.
