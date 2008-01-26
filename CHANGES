@@ -1,3 +1,14 @@
+0.10.11 (January 27?, 2008):
+  * Tools: the contrib/ dir is now included in the distribution archive.
+  * Fixed bug: Sprite.isMouseXXX() methods no longer return true if the mouse is outside the applet.
+  * Fixed bug: Fixed typo, renamed Stage.AUTO_STETCH to Stage.AUTO_STRETCH.
+  * Fixed bug: scene.unload() is now invoked when the browser window or tab is closed.
+  * Fixed bug: scaled rectangles weren't drawn correctly when pixelSnapping was false.
+  * Fixed bug: Frame rate calculation is now correct in release mode.
+  * Fixed bug: Fixed typo in pulpcore.js that prevented an applet from querying the browser version.
+  * Tools: pulpcore.js now specifies "-Dsun.awt.noerasebackground=true", which improves an applet's
+    appearance when another window is moved over it (Java 6uN, Windows, IE).
+
 0.10.10 (January 13, 2008)
   * API: Sound.play() now returns a Playback object that can be used to pause, stop, or
     set the position of the sound while is it playing.

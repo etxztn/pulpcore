@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="PulpCore" default="build" basedir=".">
+<project name="PulpCore 0.10" default="build" basedir=".">
 
     <property file="version.number" />
     <property file="build.properties" />
@@ -380,6 +380,7 @@
         <mkdir dir="${dist.temp}/examples" />
         <mkdir dir="${dist.temp}/build" />
         <mkdir dir="${dist.temp}/doc" />
+        <mkdir dir="${dist.temp}/contrib" />
         
         <copy todir="${dist.temp}/templates">
             <fileset dir="templates">
@@ -402,6 +403,10 @@
         
         <copy todir="${dist.temp}/doc">
             <fileset dir="doc"/>
+        </copy>
+        
+        <copy todir="${dist.temp}/contrib">
+            <fileset dir="contrib"/>
         </copy>
         
         <copy todir="${dist.temp}" file="README" />
