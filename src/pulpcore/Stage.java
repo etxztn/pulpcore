@@ -76,7 +76,7 @@ public class Stage implements Runnable {
     public static final int AUTO_CENTER = 1;
     
     /** Automatically stretch the Scene to the Stage dimensions. */
-    public static final int AUTO_STETCH = 2;
+    public static final int AUTO_STRETCH = 2;
     
     /** 
         Automatically scale the Scene to the Stage dimensions, preserving the Scene's 
@@ -465,10 +465,8 @@ public class Stage implements Runnable {
     public synchronized void stop() {
         if (animationThread != null) {
             surface.notifyStop();
-            Thread t = animationThread; 
-            animationThreadStop();
             try {
-                t.join(5000);
+                animationThreadStop().join(500);
             }
             catch (InterruptedException ex) { }
         }
@@ -479,7 +477,12 @@ public class Stage implements Runnable {
     // After destroying, the Stage must never be used again
     public synchronized void destroy() {
         destroyed = true;
-        stop();
+        if (animationThread == null) {
+            doDestroy();
+        }
+        else {
+            stop();
+        }
     }
         
     
@@ -543,8 +546,10 @@ public class Stage implements Runnable {
     }
     
     
-    private synchronized void animationThreadStop() {
+    private synchronized Thread animationThreadStop() {
+        Thread t = animationThread;
         animationThread = null;
+        return t;
     }
         
     
@@ -745,10 +750,16 @@ public class Stage implements Runnable {
         }
         
         if (currentScene != null && destroyed) {
-            currentScene.hideNotify();
-            currentScene.unload();
-            clearSceneStack();
+            doDestroy();
         }
+    }
+    
+    private void doDestroy() {
+        animationThread = Thread.currentThread();
+        currentScene.hideNotify();
+        currentScene.unload();
+        clearSceneStack();
+        animationThread = null;
     }
     
     /**
@@ -855,7 +866,7 @@ public class Stage implements Runnable {
                     CoreMath.toFixed((surface.getHeight() - naturalHeight) / 2));
                 break;
                 
-            case AUTO_STETCH:
+            case AUTO_STRETCH:
                 defaultTransform.scale(
                     CoreMath.toFixed(surface.getWidth()) / naturalWidth,
                     CoreMath.toFixed(surface.getHeight()) / naturalHeight);
@@ -914,6 +925,8 @@ public class Stage implements Runnable {
         // For release mode, just calculate the frame rate and return;
         actualFPS = overlayFrames * 1000.0 / time;
         if (!Build.DEBUG) {
+            overlayFrames = 0;
+            overlayCreationTime = CoreSystem.getTimeMillis();
             return;
         }
         
