@@ -245,7 +245,7 @@ class PNGReader {
         for (int i = 0; i < length; i++) {
             int a = in.readByte() & 0xff;
             if (a < 0xff) {
-                image.isOpaque = false;
+                image.setOpaque(false);
             }
             palette[i] = (a << 24) | (palette[i] & 0xffffff);
         }

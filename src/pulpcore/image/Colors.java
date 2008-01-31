@@ -36,46 +36,49 @@ import pulpcore.math.CoreMath;
 */
 public class Colors {
     
-    /** Fully transparent color. Same as <code>gray(0, 0)</code>. */
+    // Prevent instantiation
+    private Colors() { }
+    
+    /** Fully transparent color. Same as {@code gray(0, 0)}. */
     public static final int TRANSPARENT = gray(0, 0);
     
-    /** The color black. Same as <code>gray(0)</code>. */
+    /** The color black. Same as {@code gray(0)}. */
     public static final int BLACK = gray(0);
     
-    /** The color white. Same as <code>gray(255)</code>. */
+    /** The color white. Same as {@code gray(255)}. */
     public static final int WHITE = gray(255);
     
-    /** The color light gray. Same as <code>gray(192)</code>. */
+    /** The color light gray. Same as {@code gray(192)}. */
     public static final int LIGHTGRAY = gray(192);
     
-    /** The color gray. Same as <code>gray(128)</code>. */
+    /** The color gray. Same as {@code gray(128)}. */
     public static final int GRAY = gray(128);
     
-    /** The color dark black. Same as <code>gray(64)</code>. */
+    /** The color dark black. Same as {@code gray(64)}. */
     public static final int DARKGRAY = gray(64);
     
-    /** The color red. Same as <code>rgb(255, 0 0)</code>. */
+    /** The color red. Same as {@code rgb(255, 0 0)}. */
     public static final int RED = rgb(255, 0, 0); // almost hue(0)
     
-    /** The color orange. Same as <code>rgb(255, 200, 0)</code>. */
+    /** The color orange. Same as {@code rgb(255, 200, 0)}. */
     public static final int ORANGE = rgb(255, 200, 0); // almost hue(33)
     
-    /** The color yellow. Same as <code>rgb(255, 255, 0)</code>. */
+    /** The color yellow. Same as {@code rgb(255, 255, 0)}. */
     public static final int YELLOW = rgb(255, 255, 0); // almost hue(43)
     
-    /** The color green. Same as <code>rgb(0, 255, 0)</code>. */
+    /** The color green. Same as {@code rgb(0, 255, 0)}. */
     public static final int GREEN = rgb(0, 255, 0); // almost hue(85)
     
-    /** The color cyan. Same as <code>rgb(0, 255, 255)</code>. */
+    /** The color cyan. Same as {@code rgb(0, 255, 255)}. */
     public static final int CYAN = rgb(0, 255, 255); // almost hue(128)
     
-    /** The color blue. Same as <code>rgb(0, 0, 255)</code>. */
+    /** The color blue. Same as {@code rgb(0, 0, 255)}. */
     public static final int BLUE = rgb(0, 0, 255); // almost hue(170)
     
-    /** The color purple. Same as <code>rgb(162, 0, 255)</code>. */
+    /** The color purple. Same as {@code rgb(162, 0, 255)}. */
     public static final int PURPLE = rgb(162, 0, 255); // almost hue(197)
     
-    /** The color magenta. Same as <code>rgb(255, 0, 255)</code>. */
+    /** The color magenta. Same as {@code rgb(255, 0, 255)}. */
     public static final int MAGENTA = rgb(255, 0, 255); // almost hue(213)
     
     /**
@@ -107,10 +110,10 @@ public class Colors {
     }
     
     /**
-        Creates a color. If <code>hasAlpha</code> is true, this method returns <code>rgb</code>
+        Creates a color. If {@code hasAlpha} is true, this method returns {@code rgb}
         without modification. Otherwise, this method sets the alpha to 255 (opaque).
         @param rgb a packed 32-bit ARGB color.
-        @param hasAlpha flag indicating the <code>rgb</code> param has alpha or not.
+        @param hasAlpha flag indicating the {@code rgb} param has alpha or not.
         @return a packed 32-bit ARGB color with the alpha set.
     */
     public static int rgb(int rgb, boolean hasAlpha) {
@@ -123,6 +126,16 @@ public class Colors {
     }
     
     /**
+        Creates a color with alpha. The original color's alpha value, if any, is ignored.
+        @param rgb a packed 32-bit ARGB color.
+        @param alpha the alpha component, from 0 (transparent) to 255 (opaque).
+        @return a packed 32-bit ARGB color.
+    */
+    public static int rgba(int rgb, int alpha) {
+        return (alpha << 24) | (0xffffff & rgb);
+    }
+    
+    /**
         Creates an opaque color.
         @param r the red component, from 0 to 255.
         @param g the green component, from 0 to 255.
@@ -130,7 +143,7 @@ public class Colors {
         @return a packed 32-bit ARGB color with the alpha set to 255 (opaque).
     */
     public static int rgb(int r, int g, int b) {
-        return rgb(r, g, b, 0xff);
+        return rgba(r, g, b, 0xff);
     }
     
     /**
@@ -141,7 +154,7 @@ public class Colors {
         @param alpha the alpha component, from 0 (transparent) to 255 (opaque).
         @return a packed 32-bit ARGB color.
     */
-    public static int rgb(int r, int g, int b, int alpha) {
+    public static int rgba(int r, int g, int b, int alpha) {
         return (alpha << 24) | (r << 16) | (g << 8) | b;
     }
     
@@ -151,7 +164,7 @@ public class Colors {
         @return a packed 32-bit ARGB color with the alpha set to 255 (opaque).
     */
     public static int hue(int h) {
-        return hsb(h, 0xff, 0xff, 0xff);
+        return hsba(h, 0xff, 0xff, 0xff);
     }
     
     /**
@@ -161,7 +174,7 @@ public class Colors {
         @return a packed 32-bit ARGB color.
     */
     public static int hue(int h, int alpha) {
-        return hsb(h, 0xff, 0xff, alpha);
+        return hsba(h, 0xff, 0xff, alpha);
     }
     
     /**
@@ -172,7 +185,7 @@ public class Colors {
         @return a packed 32-bit ARGB color with the alpha set to 255 (opaque).
     */
     public static int hsb(int h, int s, int b) {
-        return hsb(h, s, b, 0xff);
+        return hsba(h, s, b, 0xff);
     }
     
     /**
@@ -183,7 +196,7 @@ public class Colors {
         @param alpha the alpha component, from 0 (transparent) to 255 (opaque).
         @return a packed 32-bit ARGB color.
     */
-    public static int hsb(int h, int s, int b, int alpha) {
+    public static int hsba(int h, int s, int b, int alpha) {
         return HSBtoRGB((alpha << 24) | (h << 16) | (s << 8) | b);
     }
     
@@ -254,6 +267,17 @@ public class Colors {
     }
     
     /**
+        Checks if a 32-bit ARGB color is a gray color, from 0 (black) to 255 (white).
+        @return true if the color is gray.
+    */
+    public static boolean isGray(int color) {
+        int r = (color >> 16) & 0xff;
+        int g = (color >> 8) & 0xff;
+        int b = color & 0xff;
+        return (r == g && g == b);
+    }
+    
+    /**
         Converts a a packed, 32-bit RGB (red, green, blue) color to HSB (hue, saturation, 
         brightness). The hue, saturation, and brightness are in the range
         0 - 255. The alpha value, if any, is not modified.
@@ -264,9 +288,9 @@ public class Colors {
         int s = (hsb >> 8) & 0xff;
         int b = hsb & 0xff;
         </pre>
-        @see #HSBtoRGB(int)
         @param argbColor a 32-bit ARGB color.
         @return a 32-bit AHSB color.
+        @see #HSBtoRGB(int)
     */
     public static int RGBtoHSB(int argbColor) {
         
@@ -324,9 +348,9 @@ public class Colors {
         int g = (rgb >> 8) & 0xff;
         int b = rgb & 0xff;
         </pre>
-        @see #RGBtoHSB(int)
         @param ahsbColor a 32-bit AHSB color.
         @return a 32-bit ARGB color.
+        @see #RGBtoHSB(int)
     */
     public static int HSBtoRGB(int ahsbColor) {
         

@@ -39,7 +39,7 @@ import pulpcore.math.CoreMath;
 public class AnimatedImage extends CoreImage {
     
     /** Physical frames */
-    private CoreImage[] frames;
+    private final CoreImage[] frames;
     
     /** Virtual frames */
     private int[] frameSequence;
@@ -56,6 +56,45 @@ public class AnimatedImage extends CoreImage {
     /** Frame at the end of the last update */
     private int lastFrame;
     
+    private final boolean differentHotSpotPerFrame;
+    
+    // For Image Manipulation
+    private AnimatedImage(AnimatedImage image, CoreImage[] frames) {
+        super(frames[0].getWidth(), frames[0].getHeight(), frames[0].isOpaque(), null);
+        
+        setHotspot(image.getHotspotX(), image.getHotspotY()); 
+        
+        this.frames = new CoreImage[frames.length];
+        for (int i = 0; i < frames.length; i++) {
+            this.frames[i] = new CoreImage(frames[i]);
+        }
+        
+        setSequence(image.frameSequence, image.frameDuration, image.loop);
+        differentHotSpotPerFrame = image.differentHotSpotPerFrame;
+        setFrame(0);
+        playing = true;
+    }
+    
+    /**
+        Creates an AnimatedImage from a list of images. The internal raster data array is shared.
+        @throws IllegalArgumentException if not all the images have the same dimensions.
+    */
+    public AnimatedImage(CoreImage[] frames) {
+        super(frames[0].getWidth(), frames[0].getHeight(), frames[0].isOpaque(), null);
+        
+        this.frames = new CoreImage[frames.length];
+        for (int i = 0; i < frames.length; i++) {
+            if (frames[i].getWidth() != getWidth() || frames[i].getHeight() != getHeight()) {
+                throw new IllegalArgumentException();
+            }
+            this.frames[i] = new CoreImage(frames[i]);
+        }
+        
+        differentHotSpotPerFrame = true;
+        setFrame(0);
+        playing = true;
+    }
+    
     /**
         Creates a copy of the specified AnimatedImage. The internal raster data array is shared.
     */
@@ -67,7 +106,7 @@ public class AnimatedImage extends CoreImage {
             frames[i] = new CoreImage(image.frames[i]);
         }
         setSequence(image.frameSequence, image.frameDuration, image.loop);
-        
+        differentHotSpotPerFrame = image.differentHotSpotPerFrame;
         setFrame(0);
         playing = true;
     }
@@ -76,15 +115,13 @@ public class AnimatedImage extends CoreImage {
         Creates an AnimatedImage by spliting a image into frames on a grid.
     */
     public AnimatedImage(CoreImage image, int numFramesAcross, int numFramesDown) { 
-     
-        super.width = image.getWidth() / numFramesAcross;
-        super.height = image.getHeight() / numFramesDown;
-        super.isOpaque = image.isOpaque;
+        super(image.getWidth() / numFramesAcross, image.getHeight() / numFramesDown,
+            image.isOpaque(), null);
         
         setHotspot(image.getHotspotX(), image.getHotspotY()); 
             
         frames = image.split(numFramesAcross, numFramesDown);
-        
+        differentHotSpotPerFrame = false;
         setFrame(0);
         playing = true;
     }
@@ -179,10 +216,18 @@ public class AnimatedImage extends CoreImage {
         currentFrame = frame;
         animTime = 0;
         if (frameSequence != null) {
-            super.data = frames[frameSequence[currentFrame]].getData();
+            setFrame(frames[frameSequence[currentFrame]]);
         }
         else {
-            super.data = frames[currentFrame].getData();
+            setFrame(frames[currentFrame]);
+        }
+    }
+    
+    private void setFrame(CoreImage frame) {
+        setData(frame.getData());
+        setOpaque(frame.isOpaque());
+        if (differentHotSpotPerFrame) {
+            setHotspot(frame.getHotspotX(), frame.getHotspotY()); 
         }
     }
     
@@ -273,194 +318,140 @@ public class AnimatedImage extends CoreImage {
         setFrame(0);
     }
     
-    
     //
     // Image Manipulation - overrides CoreImage's methods
     //
 
     public CoreImage crop(int x, int y, int w, int h) {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.width = w;
-        newImage.height = h;
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].crop(x, y, w, h);
+            newFrames[i] = frames[i].crop(x, y, w, h);
         }
-        
-        newImage.setFrame(0);
-        
-        return newImage;
+        return new AnimatedImage(this, newFrames);
     }
     
     public CoreImage rotate(int angle, boolean sizeAsNeeded) {
-        int newWidth = width;
-        int newHeight = height;
+        CoreImage[] newFrames = new CoreImage[frames.length];
+        for (int i = 0; i < frames.length; i++) {
+            newFrames[i] = frames[i].rotate(angle, sizeAsNeeded);
+        }
         
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        int x = getHotspotX() - getWidth()/2;
+        int y = getHotspotY() - getHeight()/2;
         int cos = CoreMath.cos(angle);
         int sin = CoreMath.sin(angle);
-        
-        if (sizeAsNeeded) {
-            newWidth = CoreMath.toIntCeil(Math.abs(width * cos) + Math.abs(height * sin));
-            newHeight = CoreMath.toIntCeil(Math.abs(width * sin) + Math.abs(height * cos));
-        }
-        
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.width = newWidth;
-        newImage.height = newHeight;
-        
-        int x = getHotspotX() - width/2;
-        int y = getHotspotY() - height/2;
         newImage.setHotspot(
-            CoreMath.toIntRound(x * cos - y * sin) + newWidth / 2,
-            CoreMath.toIntRound(x * sin + y * cos) + newHeight / 2);
-            
-            
-        for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].rotate(angle, sizeAsNeeded);
-        }
-        
-        newImage.setFrame(0);
-        
+            CoreMath.toIntRound(x * cos - y * sin) + newImage.getWidth() / 2,
+            CoreMath.toIntRound(x * sin + y * cos) + newImage.getHeight() / 2);
         return newImage;
     }
     
     public CoreImage halfSize() {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.width = width/2;
-        newImage.height = height/2;
+        CoreImage[] newFrames = new CoreImage[frames.length];
+        for (int i = 0; i < frames.length; i++) {
+            newFrames[i] = frames[i].halfSize();
+        }
+        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
         newImage.setHotspot(
             getHotspotX() / 2,
             getHotspotY() / 2);
-        
-        for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].halfSize();
-        }
-        
-        newImage.setFrame(0);
-        
         return newImage;
     }
     
     public CoreImage scale(int scaledFrameWidth, int scaledFrameHeight) {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.width = scaledFrameWidth;
-        newImage.height = scaledFrameHeight;
-        newImage.setHotspot(
-            getHotspotX() * scaledFrameWidth / width,
-            getHotspotY() * scaledFrameHeight / height);
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].scale(scaledFrameWidth, scaledFrameHeight);
+            newFrames[i] = frames[i].scale(scaledFrameWidth, scaledFrameHeight);
         }
-        
-        newImage.setFrame(0);
-        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        newImage.setHotspot(
+            getHotspotX() * newImage.getWidth() / getWidth(),
+            getHotspotY() * newImage.getHeight() / getHeight());
         return newImage;
     }
     
     public CoreImage mirror() {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.setHotspot(width - 1 - getHotspotX(), getHotspotY());
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].mirror();
+            newFrames[i] = frames[i].mirror();
         }
         
-        newImage.setFrame(0);
-        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        newImage.setHotspot(getWidth() - 1 - getHotspotX(), getHotspotY());
         return newImage;
     }
     
     public CoreImage flip() {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.setHotspot(getHotspotX(), height - 1 - getHotspotY());
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].flip();
+            newFrames[i] = frames[i].flip();
         }
         
-        newImage.setFrame(0);
-        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        newImage.setHotspot(getHotspotX(), getHeight() - 1 - getHotspotY());
         return newImage;
     }
     
     public CoreImage rotateLeft() {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.width = height;
-        newImage.height = width;
-        newImage.setHotspot(getHotspotY(), (width - 1) - getHotspotX());
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].rotateLeft();
+            newFrames[i] = frames[i].rotateLeft();
         }
         
-        newImage.setFrame(0);
-        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        newImage.setHotspot(getHotspotY(), (getWidth() - 1) - getHotspotX());
         return newImage;
     }
     
     public CoreImage rotateRight() {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.width = height;
-        newImage.height = width;
-        newImage.setHotspot((height - 1) - getHotspotX(), getHotspotY());
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].rotateRight();
+            newFrames[i] = frames[i].rotateRight();
         }
         
-        newImage.setFrame(0);
-        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        newImage.setHotspot((getHeight() - 1) - getHotspotX(), getHotspotY());
         return newImage;
     }
     
     public CoreImage rotate180() {
-        AnimatedImage newImage = new AnimatedImage(this);
-        newImage.setHotspot((width - 1) - getHotspotX(), (height - 1) - getHotspotY());
-        
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].rotate180();
+            newFrames[i] = frames[i].rotate180();
         }
         
-        newImage.setFrame(0);
-        
+        AnimatedImage newImage = new AnimatedImage(this, newFrames);
+        newImage.setHotspot((getWidth() - 1) - getHotspotX(), (getHeight() - 1) - getHotspotY());
         return newImage;
     }
+    
+    //
+    // ARGB filters 
+    //
     
     public CoreImage tint(int rgbColor) {
         AnimatedImage newImage = new AnimatedImage(this);
-        
         for (int i = 0; i < frames.length; i++) {
             newImage.frames[i] = frames[i].tint(rgbColor);
         }
-        
-        newImage.setFrame(0);
-        
         return newImage;
     }
     
-    public CoreImage background(int argbColor, boolean hasAlpha) {
-
+    public CoreImage background(int argbColor) {
         AnimatedImage newImage = new AnimatedImage(this);
-        
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].background(argbColor, hasAlpha);
+            newImage.frames[i] = frames[i].background(argbColor);
         }
-        
-        newImage.setFrame(0);
-        
         return newImage;
     }
     
     public CoreImage fade(int alpha) {
         AnimatedImage newImage = new AnimatedImage(this);
-        
         for (int i = 0; i < frames.length; i++) {
             newImage.frames[i] = frames[i].fade(alpha);
         }
-        
-        newImage.setFrame(0);
-        
         return newImage;
     }
 }

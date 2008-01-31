@@ -49,9 +49,9 @@ public class CoreFont {
     
     private CoreImage image;
     
-    protected char firstChar;
-    protected char lastChar;
-    protected int[] charPositions;
+    private char firstChar;
+    private char lastChar;
+    /* package-private */ int[] charPositions;
     private boolean uppercaseOnly;
     /** Extra horizontal pixel space between chars. Can be negative. */
     private int tracking;
@@ -230,7 +230,7 @@ public class CoreFont {
     }
     
     
-    protected int getCharIndex(char ch) {
+    /* package-private */ int getCharIndex(char ch) {
         if (uppercaseOnly && ch >= 'a' && ch <= 'z') {
             ch += 'A' - 'a';
         }
@@ -256,7 +256,7 @@ public class CoreFont {
     }
     
     
-    protected int getKerning(int leftIndex, int rightIndex) {
+    /* package-private */ int getKerning(int leftIndex, int rightIndex) {
         // Future versions of this method might handle kerning pairs, like "WA" and "Yo"
         if (tracking != 0 && (shouldIgnoreTracking(rightIndex) || 
             shouldIgnoreTracking(leftIndex))) 
@@ -292,7 +292,6 @@ public class CoreFont {
     //
     //
     
-    
     /**
         Returns a new CoreFont with every pixel set to the specified color,
         without changing the alpha of each pixel. 
@@ -303,25 +302,17 @@ public class CoreFont {
         return tintedFont;
     }
     
-    
-    public CoreFont background(int rgbColor) {
-        return background(rgbColor, false);
-    }
-    
-    
-    public CoreFont background(int argbColor, boolean hasAlpha) {
+    public CoreFont background(int argbColor) {
         CoreFont newFont = new CoreFont(this);
-        newFont.image = image.background(argbColor, hasAlpha);
+        newFont.image = image.background(argbColor);
         return newFont;
     }
-    
     
     public CoreFont fade(int alpha) {
         CoreFont fadedFont = new CoreFont(this);
         fadedFont.image = image.fade(alpha);
         return fadedFont;
     }
-    
     
     /**
         Creates a scaled instance of this font.

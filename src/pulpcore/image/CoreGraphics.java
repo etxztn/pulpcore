@@ -44,6 +44,10 @@ import pulpcore.math.Transform;
 */
 public class CoreGraphics {
     
+    // Line drawing options
+    private static final boolean CENTER_PIXEL = true;
+    private static final boolean SWAP_POINTS = true;
+    
     /** 
         The source is composited over the destination (Porter-Duff Source Over Destination rule).
         This is the default composite type.
@@ -133,9 +137,9 @@ public class CoreGraphics {
     private int transformStackSize = 0;
 
     
-    CoreGraphics(CoreImage surface) {
-        surfaceWidth = surface.width;
-        surfaceHeight = surface.height;
+    /* package-private */ CoreGraphics(CoreImage surface) {
+        surfaceWidth = surface.getWidth();
+        surfaceHeight = surface.getHeight();
         surfaceData = surface.getData();
         compositeIndex = -1;
         
@@ -428,32 +432,12 @@ public class CoreGraphics {
         return alpha;
     }
     
-    
-    public void setColor(int r, int g, int b) {
-        setColor((r << 16) | (g << 8) | b, false);
-    }
-    
-    
-    public void setColor(int r, int g, int b, int a) {
-        setColor((a << 24) | (r << 16) | (g << 8) | b, true);
-    }
-    
-    
     /**
-        Sets the current color (color alpha is 255). 
+        Sets the current color. The color is used for drawing rectangles and lines.
+        @see Colors
     */
-    public void setColor(int rgbColor) {
-        setColor(rgbColor, false);
-    }
-    
-    
-    public void setColor(int argbColor, boolean hasAlpha) {
-        if (hasAlpha) {
-            srcColor = argbColor;
-        }
-        else {
-            srcColor = 0xff000000 | argbColor;
-        }
+    public void setColor(int argbColor) {
+        srcColor = argbColor;
         
         if (alpha == 0xff) {
             srcAlphaPremultiplied = srcColor >>> 24;
@@ -463,14 +447,13 @@ public class CoreGraphics {
         }
     }
     
-    
     /**
         Returns the current color in ARGB format.
+        @see Colors
     */
     public int getColor() {
         return srcColor;
     }
-    
     
     //
     // Primitive rendering
@@ -531,7 +514,7 @@ public class CoreGraphics {
 
     /**
         Fills the entire surface with the current color. 
-        Same as calling <code>fillRect(0, 0, surfaceWidth, surfaceHeight)</code> with
+        Same as calling {@code fillRect(0, 0, surfaceWidth, surfaceHeight)} with
         the identity transform.
     */
     public void fill() {
@@ -626,7 +609,7 @@ public class CoreGraphics {
         
         // Restore state
         popTransform();
-        setColor(color, true);
+        setColor(color);
         setAlpha(alpha);
         objectX = x;
         objectY = y;
@@ -795,8 +778,8 @@ public class CoreGraphics {
         }
         else if (srcX < 0 || srcY < 0 ||
             srcWidth < 0 || srcHeight < 0 || 
-            srcX + srcWidth > image.width ||
-            srcY + srcHeight > image.height)
+            srcX + srcWidth > image.getWidth() ||
+            srcY + srcHeight > image.getHeight())
         {
             throw new IllegalArgumentException("CoreImage source bounds outside of image bounds");
         }
@@ -805,7 +788,7 @@ public class CoreGraphics {
     
     public void drawImage(CoreImage image) {
         if (image != null) {
-            drawImage(image, 0, 0, image.width, image.height);
+            drawImage(image, 0, 0, image.getWidth(), image.getHeight());
         }
     }
     
@@ -850,7 +833,7 @@ public class CoreGraphics {
     */
     public void drawImage(CoreImage image, int x, int y) {
         if (image != null) {
-            drawImage(image, x, y, 0, 0, image.width, image.height);
+            drawImage(image, x, y, 0, 0, image.getWidth(), image.getHeight());
         }
     }
     
@@ -878,7 +861,7 @@ public class CoreGraphics {
     
     public void drawScaledImage(CoreImage image, int x, int y, int w, int h) {
         if (image != null) {
-            drawScaledImage(image, x, y, w, h, 0, 0, image.width, image.height);
+            drawScaledImage(image, x, y, w, h, 0, 0, image.getWidth(), image.getHeight());
         }
     }
     
@@ -924,7 +907,7 @@ public class CoreGraphics {
     public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, int angle) {
         if (image != null) {
             drawRotatedImage(image, x, y, w, h, CoreMath.cos(angle), CoreMath.sin(angle),
-                0, 0, image.width, image. height);
+                0, 0, image.getWidth(), image.getHeight());
         }
     }
     
@@ -953,7 +936,7 @@ public class CoreGraphics {
     {
         if (image != null) {
             drawRotatedImage(image, x, y, w, h, cosAngle, sinAngle,
-                0, 0, image.width, image. height);
+                0, 0, image.getWidth(), image.getHeight());
         }
     }
      
@@ -1022,14 +1005,14 @@ public class CoreGraphics {
         }
         
         int[] srcData = image.getData();
-        int srcScanSize = image.width;
+        int srcScanSize = image.getWidth();
         int surfaceOffset = objectX + objectY * surfaceWidth;
         int u = ((objectX - x) << 16);
         int v = ((objectY - y) << 16);          
         int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
 
         if ((alpha == 0xff) && (compositeIndex == COMPOSITE_SRC || 
-            (compositeIndex == COMPOSITE_SRC_OVER && image.isOpaque)))
+            (compositeIndex == COMPOSITE_SRC_OVER && image.isOpaque())))
         {
             // Fatest case - don't use the compositor.
             // Great optimization for background rendering.
@@ -1040,7 +1023,7 @@ public class CoreGraphics {
             }
         }
         else {
-            composite.blend(srcData, srcScanSize, image.isOpaque, 
+            composite.blend(srcData, srcScanSize, image.isOpaque(), 
                 srcX, srcY, srcWidth, srcHeight, srcOffset,
                 u, v,
                 (1 << 16), 0,
@@ -1163,7 +1146,7 @@ public class CoreGraphics {
         }
         
         int[] srcData = image.getData();
-        int srcScanSize = image.width;
+        int srcScanSize = image.getWidth();
         int surfaceOffset = objectX + objectY * surfaceWidth;
         int u = CoreMath.mul(CoreMath.toFixed(objectX) - fX, du);
         int v = CoreMath.mul(CoreMath.toFixed(objectY) - fY, dv);
@@ -1177,7 +1160,7 @@ public class CoreGraphics {
         for (int j = 0; j < objectHeight; j++) {
             int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
             
-            composite.blend(srcData, srcScanSize, image.isOpaque, 
+            composite.blend(srcData, srcScanSize, image.isOpaque(), 
                 srcX, srcY, srcWidth, srcHeight, srcOffset,
                 u, v,
                 du, 0,
@@ -1304,7 +1287,7 @@ public class CoreGraphics {
         
         // Start Render
         int[] srcData = image.getData();
-        int srcScanSize = image.width;
+        int srcScanSize = image.getWidth();
         int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
         int fSrcWidth = CoreMath.toFixed(srcWidth);
         int fSrcHeight = CoreMath.toFixed(srcHeight);
@@ -1412,7 +1395,7 @@ public class CoreGraphics {
             }
             
             int srcOffset = -1;
-            composite.blend(srcData, srcScanSize, image.isOpaque, 
+            composite.blend(srcData, srcScanSize, image.isOpaque(), 
                 srcX, srcY, srcWidth, srcHeight, srcOffset,
                 u, v,
                 duX, dvX,
@@ -1428,10 +1411,6 @@ public class CoreGraphics {
     // Primitive filling - internal
     //
     
-    
-    // Line drawing options
-    private static final boolean CENTER_PIXEL = true;
-    private static final boolean SWAP_POINTS = true;
     
     /**
         Draws a line (at fixed-point coordinates) using the current color.

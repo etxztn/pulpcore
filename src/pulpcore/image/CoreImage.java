@@ -54,10 +54,10 @@ public class CoreImage {
     private static HashMap loadedImages = new HashMap();
     private static CoreImage brokenImage;
     
-    protected int width;
-    protected int height;
-    protected boolean isOpaque;
-    protected int[] data;
+    private int width;
+    private int height;
+    private boolean isOpaque;
+    private int[] data;
     
     // This might be used in the future
     //private boolean sharedRaster;
@@ -72,7 +72,6 @@ public class CoreImage {
     */
     private int hotspotY;
     
-    
     CoreImage() { }
     
     /**
@@ -81,7 +80,6 @@ public class CoreImage {
     public CoreImage(int width, int height) {
         this(width, height, true);
     }
-    
 
     /**
         Creates a blank image.
@@ -89,7 +87,6 @@ public class CoreImage {
     public CoreImage(int width, int height, boolean isOpaque) {
         this(width, height, isOpaque, new int[width * height]);
     }
-    
     
     /**
         Creates a new image using the specified pixel data. The length of the 
@@ -105,7 +102,6 @@ public class CoreImage {
         this.data = data;
         //this.sharedRaster = false;
     }
-    
 
     /**
         Creates a CoreImage with the same properties as the specified 
@@ -120,7 +116,6 @@ public class CoreImage {
         this.hotspotY = image.hotspotY;
         //this.sharedRaster = true;
     }
-
     
     /**
         Creates a new CoreGaphics context for drawing onto this image. Note, the software 
@@ -131,42 +126,42 @@ public class CoreImage {
         return new CoreGraphics(this);
     }
     
+    /* package-private */ public final void setOpaque(boolean isOpaque) {
+        this.isOpaque = isOpaque;
+    }
     
-    public boolean isOpaque() {
+    public final boolean isOpaque() {
         return isOpaque;
     }
     
-
-    public int getWidth() {
+    public final int getWidth() {
         return width;
     }
-    
 
-    public int getHeight() {
+    public final int getHeight() {
         return height;
     }
-
     
-    public int[] getData() {
+    public final int[] getData() {
         return data;
     }
     
+    /* package-private */ public final void setData(int[] data) {
+        this.data = data;
+    }
     
-    public void setHotspot(int x, int y) {
+    public final void setHotspot(int x, int y) {
         hotspotX = x;
         hotspotY = y;
     }
     
-    
-    public int getHotspotX() {
+    public final int getHotspotX() {
         return hotspotX; 
     }
     
-    
-    public int getHotspotY() {
+    public final int getHotspotY() {
         return hotspotY; 
     }
-    
     
     /**
         Does nothing by default. Subclasses can use this method for
@@ -177,16 +172,15 @@ public class CoreImage {
         return false;
     }
     
-    
     public static CoreImage getBrokenImage() {
         if (brokenImage == null) {
             brokenImage = new CoreImage(16, 16, true);
             CoreGraphics g = brokenImage.createGraphics();
-            g.setColor(0xffffff);
+            g.setColor(Colors.WHITE);
             g.fill();
-            g.setColor(0x000000);
+            g.setColor(Colors.BLACK);
             g.drawRect(0, 0, 16, 16);
-            g.setColor(0xff0000);
+            g.setColor(Colors.RED);
             g.drawLine(2, 2, 13, 13);
             g.drawLine(13, 2, 2, 13);
         }
@@ -194,7 +188,6 @@ public class CoreImage {
         return brokenImage;
     }
     
-
     //
     // Image Reading
     //
@@ -303,43 +296,16 @@ public class CoreImage {
         specified color. The borderSize parameter can be negative.
         The hotspot is translated accordingly.
     */
-    public CoreImage expandCanvas(int borderSize, int rgbColor) {
-        return expandCanvas(borderSize, borderSize, borderSize, borderSize, rgbColor, false);
+    public CoreImage expandCanvas(int borderSize, int argbColor) {
+        return expandCanvas(borderSize, borderSize, borderSize, borderSize, argbColor);
     }
-    
-    
-    /**
-        Create a new image with an expanded canvas size. The borders are filled with the 
-        specified color. The borderSize parameter can be negative.
-        The hotspot is translated accordingly.
-    */
-    public CoreImage expandCanvas(int borderSize, int argbColor, boolean hasAlpha) {
-        return expandCanvas(borderSize, borderSize, borderSize, borderSize, argbColor, hasAlpha);
-    }
-    
     
     /**
         Create a new image with an expanded canvas size. The borders are filled with the 
         specified color. The top, right, bottom, left parameters can be negative.
         The hotspot is translated accordingly.
     */
-    public CoreImage expandCanvas(int top, int right, int bottom, int left, int rgbColor) {
-        return expandCanvas(top, right, bottom, left, rgbColor, false);
-    }
-    
-    
-    /**
-        Create a new image with an expanded canvas size. The borders are filled with the 
-        specified color. The top, right, bottom, left parameters can be negative.
-        The hotspot is translated accordingly.
-    */
-    public CoreImage expandCanvas(int top, int right, int bottom, int left, int argbColor, 
-        boolean hasAlpha) 
-    {
-        if (!hasAlpha) {
-            argbColor |= 0xff000000;
-        }
-
+    public CoreImage expandCanvas(int top, int right, int bottom, int left, int argbColor) {
         int alpha = argbColor >>> 24;
         boolean isOpaque = this.isOpaque && alpha == 0xff;
         int newWidth = width + left + right;
@@ -739,16 +705,7 @@ public class CoreImage {
     }
     
     
-    public CoreImage background(int rgbColor) {
-        return background(rgbColor, false);
-    }
-    
-    
-    public CoreImage background(int argbColor, boolean hasAlpha) {
-        if (!hasAlpha) {
-            argbColor |= 0xff000000;
-        }
-        
+    public CoreImage background(int argbColor) {
         CoreImage newImage = new CoreImage(width, height, 
             isOpaque || (argbColor >>> 24) == 0xff);
         newImage.setHotspot(hotspotX, hotspotY);

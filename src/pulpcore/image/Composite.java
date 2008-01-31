@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,8 +29,7 @@
 
 package pulpcore.image;
 
-abstract class Composite {
-    
+/* package-private */ abstract class Composite {
         
     /**
         The source is composited over the destination (Porter-Duff Source Over Destination rule).
@@ -40,8 +39,8 @@ abstract class Composite {
         @param srcRGB The red, green, and blue components of the source color (not premultiplied).
         @param srcAlpha The source alpha component.
     */    
-    abstract void blend(int[] destData, int destOffset, int srcRGB, int srcAlpha);
-
+    /* package-private */ abstract void blend(int[] destData, int destOffset, int srcRGB, 
+        int srcAlpha);
 
     /**
         Rasterize a horizontal row of pixels.
@@ -49,13 +48,12 @@ abstract class Composite {
         only used if rotation == false
         @param numRows only used if rotation == false, renderBilinear == false
     */
-    abstract void blend(int[] srcData, int srcScanSize, boolean srcOpaque, 
+    /* package-private */ abstract void blend(int[] srcData, int srcScanSize, boolean srcOpaque, 
         int srcX, int srcY, int srcWidth, int srcHeight, int srcOffset, 
         int u, int v, int du, int dv, 
         boolean rotation,
         boolean renderBilinear, int renderAlpha,
         int[] destData, int destScanSize, int destOffset, int numPixels, int numRows);
-    
     
     /**
         The source is composited over the destination (Porter-Duff Source Over Destination rule).
@@ -65,14 +63,12 @@ abstract class Composite {
         @param srcRGB The red, green, and blue components of the source color (not premultiplied).
         @param srcAlpha The source alpha component.
     */    
-    abstract void blendRow(int[] destData, int destOffset, 
+    /* package-private */ abstract void blendRow(int[] destData, int destOffset, 
         int srcRGB, int srcAlpha, int numPixels);
-    
     
     //
     // Bilinear filtering 
     //
-    
     
     protected final int getPixelBilinearOpaque(int[] imageData,
         int offsetTop, int offsetBottom, 
@@ -162,7 +158,6 @@ abstract class Composite {
             blueChannel;
     }
     
-    
     protected final int getPixelBilinearTranslucent(int[] data, int srcScanSize,
         int srcX, int srcY, int srcWidth, int srcHeight,
         int fx, int fy)
@@ -204,7 +199,6 @@ abstract class Composite {
             fy,
             srcWidth);
     }
-
 
     /**
     
