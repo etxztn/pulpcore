@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="PulpCore" default="build" basedir=".">
+<project name="PulpCore 0.11" default="build" basedir=".">
 
     <property file="version.number" />
     <property file="build.properties" />
@@ -20,7 +20,7 @@
     <property name="build.temp" value="${build}/temp" />
     <property name="tools.src" value="tools" />
     
-    <property name="compilerargs" value="-Xlint:all,-serial,-unchecked" />
+    <property name="compilerargs" value="-Xlint:all,-serial" />
     
     <target name="clean">
         <delete dir="${build.temp}" failonerror="false" />
@@ -290,7 +290,7 @@
             use="true"
             linksource="true"
             windowtitle="PulpCore ${version.full} API"
-            access="public"
+            access="protected"
             extdirs="lib/lwjgl">
         
             <packageset dir="${src}" defaultexcludes="yes">
@@ -335,7 +335,7 @@
             destdir="${basedir}/doc/dev/jcsc"
             rules="${basedir}/pulpcore-forgiving.jcsc.xml"
             copyassociatedfiles="true"
-            worstcount="50"
+            worstcount="1000"
             >
                 
             <fileset dir="${src}" includes="**/*.java"/>
@@ -380,6 +380,7 @@
         <mkdir dir="${dist.temp}/examples" />
         <mkdir dir="${dist.temp}/build" />
         <mkdir dir="${dist.temp}/doc" />
+        <mkdir dir="${dist.temp}/contrib" />
         
         <copy todir="${dist.temp}/templates">
             <fileset dir="templates">
@@ -402,6 +403,10 @@
         
         <copy todir="${dist.temp}/doc">
             <fileset dir="doc"/>
+        </copy>
+        
+        <copy todir="${dist.temp}/contrib">
+            <fileset dir="contrib"/>
         </copy>
         
         <copy todir="${dist.temp}" file="README" />
@@ -433,9 +438,11 @@
         <copy todir="${build}/www/api">
             <fileset dir="${dist.temp}/doc/api"/>
         </copy>
+        <!--
         <copy todir="${build}/www/colors">
             <fileset dir="${dist.temp}/examples/Colors/build"/>
         </copy>
+        -->
         <copy todir="${build}/www/easing">
             <fileset dir="${dist.temp}/examples/Easings/build"/>
         </copy>
@@ -502,6 +509,15 @@
         
         <copy file="${template.file}" overwrite="true" tofile="build.xml" />
         <replace file="build.xml" token="HelloWorld" value="${example.name}" />
+    </target>
+    
+    <target name="build-examples" description="Compile all examples and templates (for testing)">
+        <subant>
+            <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <fileset dir="examples" includes="*/build.xml"/>
+            <fileset dir="templates" includes="*/build.xml"/>
+            <target name="build"/>
+        </subant>
     </target>
 
 </project>
