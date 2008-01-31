@@ -161,7 +161,7 @@ public final class CoreApplet extends Applet {
     
     /**
         Gets the current active scene. This method is provided for calls from JavaScript.
-        <code>pulpcore_object.getCurrentScene().callMyMethod()</code>
+        {@code pulpcore_object.getCurrentScene().callMyMethod()}.
     */
     public Scene getCurrentScene() {
         if (context != null) {

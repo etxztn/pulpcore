@@ -77,7 +77,7 @@ public class ByteArray {
     public static final int LITTLE_ENDIAN = 1;
     
     
-    protected byte[] data;
+    private byte[] data;
     private int position;
     private int byteOrder;
     
@@ -319,9 +319,9 @@ public class ByteArray {
     
     /**
         Reads bytes from the current position in this ByteArray into a buffer.
+        @return the number of bytes read (always returns the length of the byte array)
         @throws EOFException if there aren't enough remaining bytes in this ByteArray to 
         fill the buffer
-        @return the number of bytes read (always returns the length of the byte array)
     */
     public int read(byte[] buffer) throws EOFException {
         return read(buffer, 0, buffer.length);
@@ -330,9 +330,9 @@ public class ByteArray {
     
     /**
         Reads bytes from the current position in this ByteArray into a buffer.
+        @return the number of bytes read (always returns the specified length)
         @throws EOFException if there aren't enough remaining bytes in this ByteArray to 
         read the specified number of bytes.
-        @return the number of bytes read (always returns the specified length)
     */
     public int read(byte[] buffer, int offset, int length) throws EOFException {
         if (length == 0) {

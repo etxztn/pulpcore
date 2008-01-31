@@ -45,14 +45,15 @@ import pulpcore.util.ByteArray;
 */
 public class SoundClip extends Sound {
     
-    // HashMap<String, WeakReference<SoundClip>>
-    private static HashMap loadedSounds = new HashMap();
-    private static SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
+    private static final SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
     
     // For u-law conversion. 132 * ((1 << i) - 1)
     private static final int[] EXP_TABLE = { 
         0, 132, 396, 924, 1980, 4092, 8316, 16764
     };
+    
+    // HashMap<String, WeakReference<SoundClip>>
+    private static HashMap loadedSounds = new HashMap();
 
     private final byte[] data;
     private final int numChannels;
@@ -149,9 +150,10 @@ public class SoundClip extends Sound {
         The sound can either be a .au file (8-bit u-law) or 
         a .wav file (16-bit, signed, PCM). Both mono and stereo is supported.
         <p>
-        Ogg Vorvis is support with an add-on. See 
-        <a href="http://code.google.com/p/pulpcore/wiki/OggHowTo">http://code.google.com/p/pulpcore/wiki/OggHowTo</a>
-        for defailts.
+        Ogg Vorbis is supported with an add-on. See 
+        <a href="http://code.google.com/p/pulpcore/wiki/OggHowTo">
+        http://code.google.com/p/pulpcore/wiki/OggHowTo</a>
+        for details.
         <p>
         This method never returns {@code null}. If the sound cannot be loaded, or there is no
         sound engine available, a zero-length SoundClip is returned.

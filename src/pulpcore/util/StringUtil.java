@@ -40,21 +40,16 @@ import pulpcore.math.CoreMath;
     Provides utilities for manipulating and formatting text strings.
 */
 public final class StringUtil {
-
     
     // Prevent instantiation
     private StringUtil() { }
     
     /**
-        Calls
-        <code>
-        StringUtil.format(message, new Object[] { arg });
-        </code>
+        Calls {@code StringUtil.format(message, new Object[] { arg });}
     */
     public static String format(String message, Object arg) {
         return format(message, new Object[] { arg });
     }
-    
     
     /**
         Formats a text string converting codes with string arguments. 

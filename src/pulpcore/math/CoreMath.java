@@ -409,7 +409,7 @@ public class CoreMath {
     
     /**
         Returns the log base 2 of an integer greater than 0. The returned value
-        is equal to <code>Math.floor(Math.log(n) / Math.log(2))</code>.
+        is equal to {@code Math.floor(Math.log(n) / Math.log(2))}.
     */
     public static final int log2(int n) {
         //if (n <= 1) {

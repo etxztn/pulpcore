@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -51,10 +51,10 @@ public class ARC4 {
         reset();
     }
     
-    
     /**
         Constructs a new ARC4 object with the specified encryption key. 
         The key can be at most 256 bytes in length.
+        @param key the encryption key.
     */
     public ARC4(byte[] key) {
         this.state = new byte[256];
@@ -65,7 +65,6 @@ public class ARC4 {
         this.key = keyCopy;
         reset();
     }
-    
     
     /**
         Resets the cipher to start encrypting a new stream of data.
@@ -87,7 +86,6 @@ public class ARC4 {
         y = 0;
     }
     
-    
     /**
         Crypts the data.
         @param data The data to crpyt.
@@ -95,7 +93,6 @@ public class ARC4 {
     public void crypt(byte[] data) {
         crypt(data, data);
     }
-        
         
     /**
         Crypts the data from the input array to the output array.

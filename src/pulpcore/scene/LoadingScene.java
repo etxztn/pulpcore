@@ -55,7 +55,7 @@ import pulpcore.util.StringUtil;
     <p>
     The default implementation creates a solid-colored background with a progress bar in
     the middle of the stage. Subclassess can change this appearance by invoking 
-    <code>getMainLayer().removeAll()</code> and adding other visual elements.
+    {@code getMainLayer().removeAll()} and adding other visual elements.
 */
 public class LoadingScene extends Scene2D {
     
@@ -73,7 +73,7 @@ public class LoadingScene extends Scene2D {
     
     private final String assetCatalogFile;
     private final int backgroundColor;
-    protected final CoreFont font;
+    private final CoreFont font;
     private final Sprite progressBar;
     private final Sprite progressBarBackground;
     private Button tryAgainButton;

@@ -382,12 +382,12 @@ public abstract class Input {
     protected abstract void requestKeyboardFocusImpl();
     
     
-    void poll() {
+    /* package-private */ void poll() {
         pollImpl();
     }
     
     
-    void clear() {
+    /* package-private */ void clear() {
         
         clearImpl();
         

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -31,7 +31,6 @@ package pulpcore.scene;
 
 import pulpcore.image.CoreGraphics;
 
-
 /**
     A Scene is an object that updates the display and
     handles input from the user. All PulpCore apps will implement a Scene. 
@@ -46,10 +45,8 @@ import pulpcore.image.CoreGraphics;
     @see pulpcore.Stage#replaceScene(Scene)
     @see pulpcore.Stage#pushScene(Scene)
     @see pulpcore.Stage#popScene()
-    
 */
 public abstract class Scene {
-
 
     /**
         Performs any actions needed to load this scene. By default, this 
@@ -58,13 +55,12 @@ public abstract class Scene {
     */
     public void load() { }
 
-
     /**
         Performs any actions needed to unload this scene. By default, this 
-        method does nothing. 
+        method does nothing. This method should return as quickly as possible; if unloading 
+        a scene requires a long computation, it should be done in a separate thread.
     */
     public void unload() { }
-    
     
     /**
         Notifies that this scene has been shown after another Scene is hidden
@@ -73,7 +69,6 @@ public abstract class Scene {
     */
     public void showNotify() { }
     
-    
     /**
         Notifies that this scene has been hidden by another Scene or 
         immediately before a call to stop(). Note, this method is not called if 
@@ -81,14 +76,12 @@ public abstract class Scene {
     */
     public void hideNotify() { }
     
-    
     /**
         Notifies that this scene that the Stage or the OS has requested a
         full redraw. By default, this method does nothing.
     */
     public void redrawNotify() { }
     
-
     /**
         Updates the scene. This method is peridocally called by 
         Stage while this Scene is active. A scene will typically update
@@ -99,7 +92,6 @@ public abstract class Scene {
         @param elapsedTime time, in milliseconds, since the last call to updateScene().
     */
     public abstract void updateScene(int elapsedTime);
-
 
     /**
         Draws to the surface's graphics context. The Stage calls this  

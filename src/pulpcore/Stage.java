@@ -30,6 +30,7 @@
 package pulpcore;
 
 import java.util.LinkedList;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -208,7 +209,7 @@ public class Stage implements Runnable {
         frame rate may vary.
         <p>
         To run at the highest frame rate possible (no pauses between frames),
-        invoke <code>setFrameRate(Stage.MAX_FPS)</code>. Note, however, 
+        invoke {@code setFrameRate(Stage.MAX_FPS)}. Note, however, 
         running at the highest frame rate possible usually means
         as many processor cycles are used as possible.
         
@@ -465,10 +466,8 @@ public class Stage implements Runnable {
     public synchronized void stop() {
         if (animationThread != null) {
             surface.notifyStop();
-            Thread t = animationThread; 
-            animationThreadStop();
             try {
-                t.join(5000);
+                animationThreadStop().join(500);
             }
             catch (InterruptedException ex) { }
         }
@@ -479,7 +478,12 @@ public class Stage implements Runnable {
     // After destroying, the Stage must never be used again
     public synchronized void destroy() {
         destroyed = true;
-        stop();
+        if (animationThread == null) {
+            doDestroy();
+        }
+        else {
+            stop();
+        }
     }
         
     
@@ -543,8 +547,10 @@ public class Stage implements Runnable {
     }
     
     
-    private synchronized void animationThreadStop() {
+    private synchronized Thread animationThreadStop() {
+        Thread t = animationThread;
         animationThread = null;
+        return t;
     }
         
     
@@ -745,10 +751,16 @@ public class Stage implements Runnable {
         }
         
         if (currentScene != null && destroyed) {
-            currentScene.hideNotify();
-            currentScene.unload();
-            clearSceneStack();
+            doDestroy();
         }
+    }
+    
+    private void doDestroy() {
+        animationThread = Thread.currentThread();
+        currentScene.hideNotify();
+        currentScene.unload();
+        clearSceneStack();
+        animationThread = null;
     }
     
     /**
@@ -915,6 +927,8 @@ public class Stage implements Runnable {
         // For release mode, just calculate the frame rate and return;
         actualFPS = overlayFrames * 1000.0 / time;
         if (!Build.DEBUG) {
+            overlayFrames = 0;
+            overlayCreationTime = CoreSystem.getTimeMillis();
             return;
         }
         
@@ -1003,7 +1017,7 @@ public class Stage implements Runnable {
             infoOverlay = new ImageSprite(image, 0, 0);
         }
         CoreGraphics g = infoOverlay.getImage().createGraphics();
-        g.setColor(0xffffff);
+        g.setColor(Colors.WHITE);
         g.fillRect(0, 0, getWidth(), height);
         g.drawString(currentSceneName, activityX, 2);
         
@@ -1049,9 +1063,9 @@ public class Stage implements Runnable {
         public void draw(CoreGraphics g, int x, int y, int height) {
             int max = getMax();
             
-            g.setColor(0x000000);
+            g.setColor(Colors.BLACK);
             g.fillRect(x, y, NUM_SAMPLES, height);
-            g.setColor(0x25f816);
+            g.setColor(0xff25f816);
             
             // Newest sample on the right
             for (int i = 0; i < NUM_SAMPLES; i++) {

@@ -35,6 +35,7 @@ import pulpcore.animation.event.TimelineEvent;
 import pulpcore.animation.Timeline;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -309,7 +310,7 @@ public class Scene2D extends Scene {
     */
     public void addEvent(TimelineEvent event) {
         Timeline timeline = new Timeline();
-        timeline.addEvent(event);
+        timeline.add(event);
         addTimeline(timeline);
     }
     
@@ -594,7 +595,7 @@ public class Scene2D extends Scene {
         Notifies that this scene has been shown after another Scene is hidden
         or immediately after a call to start(). 
         <p>
-        Subclasses that override this method should call <code>super.showNotify();</code>
+        Subclasses that override this method should call {@code super.showNotify();}.
     */
     public void showNotify() {
         if (stateSaved) {
@@ -609,7 +610,7 @@ public class Scene2D extends Scene {
         Notifies that this scene has been hidden by another Scene or 
         immediately before a call to stop(). 
         <p>
-        Subclasses that override this method should call <code>super.hideNotify();</code>
+        Subclasses that override this method should call {@code super.hideNotify();}.
     */
     public void hideNotify() {
         desiredFPS = Stage.getFrameRate();
@@ -680,10 +681,7 @@ public class Scene2D extends Scene {
             layers.setDirty(true);
         }
         
-        if (!dirtyRectanglesEnabled) {
-            setDirty(layers, false);
-        }
-        else {
+        if (dirtyRectanglesEnabled) {
             // Add dirty rectangles
             addDirtyRectangles(layers, needsFullRedraw);
             layers.setDirty(false);
@@ -822,9 +820,9 @@ public class Scene2D extends Scene {
             
             for (int i = 0; i < dirtyRectangles.size(); i++) {
                 Rect r = dirtyRectangles.get(i);
-                g.setColor(0x00ff00);
+                g.setColor(Colors.GREEN);
                 g.drawRect(r.x, r.y, r.width, r.height);
-                g.setColor(0x7f00ff00, true);
+                g.setColor(Colors.rgba(Colors.GREEN, 128));
                 g.fillRect(r.x, r.y, r.width, r.height);
             }
         }

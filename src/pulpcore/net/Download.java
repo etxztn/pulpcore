@@ -173,7 +173,7 @@ public class Download implements Runnable {
         return state;
     }
     
-    protected final void setState(int state) {
+    private final void setState(int state) {
         this.state = state;
         if (state == ERROR) {
             data = null;
@@ -370,7 +370,7 @@ public class Download implements Runnable {
     }
     
     
-    protected final void setErrorMessage(String error) {
+    private final void setErrorMessage(String error) {
         lastException = new IOException(error);
         if (Build.DEBUG) {
             CoreSystem.print(url.toString());
@@ -379,12 +379,12 @@ public class Download implements Runnable {
     }
     
     
-    protected final int getCurrentPosition() {
+    private final int getCurrentPosition() {
         return currentPosition;
     }
     
     
-    protected final void increasePosition(int numBytes) {
+    private final void increasePosition(int numBytes) {
         if (numBytes > 0) {
             currentPosition += numBytes;
             unsuccessfulAttempts = 0;
@@ -392,7 +392,7 @@ public class Download implements Runnable {
     }
     
     
-    protected final void markRestartPosition() {
+    private final void markRestartPosition() {
         restartPosition = currentPosition;
     }
     
@@ -400,7 +400,7 @@ public class Download implements Runnable {
     /**
         @return true if the data length should be double-checked with a head request.
     */
-    protected boolean downloadData(InputStream in) throws IOException {
+    private boolean downloadData(InputStream in) throws IOException {
 
         if (size == -1) {
             

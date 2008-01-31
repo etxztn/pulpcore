@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -80,27 +80,9 @@ public class JavaSound implements SoundEngine {
     // Work buffer used during audio rendering.
     private static final byte[] WORK_BUFFER = new byte[44100 * FRAME_SIZE * MAX_BUFFER_SIZE / 1000];
     
-    
-    private static AudioFormat getFormat(int sampleRate) {
-        return new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 
-            sampleRate, 16, NUM_CHANNELS, FRAME_SIZE, sampleRate, false);
-    }
-    
-    
-    private static int indexOf(int[] array, int value) {
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == value) {
-                return i;
-            }
-        }
-        return -1;
-    }
-    
-    
     private DataLinePlayer[] players = new DataLinePlayer[0];
     private int[] maxSoundsForSampleRate = new int[SAMPLE_RATES.length];
     private int[] sampleRates;
-    
     
     public JavaSound() {
         
@@ -171,6 +153,19 @@ public class JavaSound implements SoundEngine {
         }
     }        
     
+    private static AudioFormat getFormat(int sampleRate) {
+        return new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 
+            sampleRate, 16, NUM_CHANNELS, FRAME_SIZE, sampleRate, false);
+    }
+    
+    private static int indexOf(int[] array, int value) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == value) {
+                return i;
+            }
+        }
+        return -1;
+    }
     
     /**
         Gets the maximum number of simultaneous sounds with the
@@ -197,11 +192,9 @@ public class JavaSound implements SoundEngine {
         }
     }    
     
-    
     public int[] getSupportedSampleRates() {
         return sampleRates;
     }
-    
     
     public synchronized void destroy() {
         // This method is called from the AWT event thread.
@@ -215,7 +208,6 @@ public class JavaSound implements SoundEngine {
             players[i].close(true);
         }
     }
-    
     
     public synchronized void update(int timeUntilNextUpdate) {
         
@@ -270,7 +262,6 @@ public class JavaSound implements SoundEngine {
         }
     }
     
-    
     public synchronized Playback play(AppContext context, Sound sound, Fixed level, Fixed pan,
         boolean loop) 
     {
@@ -323,7 +314,6 @@ public class JavaSound implements SoundEngine {
         //}
     }
     
-    
     private void printStatus() {
         CoreSystem.print("Sound lines: (" + players.length + "):");
         for (int i = 0; i < players.length; i++) {
@@ -332,7 +322,6 @@ public class JavaSound implements SoundEngine {
                 ", playing=" + p.isPlaying());
         }
     }
-    
         
     public synchronized int getNumSoundsPlaying() {
         int count = 0;
@@ -344,11 +333,9 @@ public class JavaSound implements SoundEngine {
         return count;
     }
     
-    
     public int getMaxSimultaneousSounds() {
         return players.length;
     }
-    
     
     /**
         A simple sound generator that creates silence.
@@ -378,7 +365,6 @@ public class JavaSound implements SoundEngine {
             }
         }
     }
-    
     
     static class DataLinePlayer {
         

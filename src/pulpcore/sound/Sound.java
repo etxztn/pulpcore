@@ -102,11 +102,11 @@ public abstract class Sound {
     
     /**
         Plays this sound clip. The Sound is played at full volume with no panning.
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
-        @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
     */
     public final Playback play() {
         return play(new Fixed(1.0), new Fixed(0), false);
@@ -115,11 +115,11 @@ public abstract class Sound {
     /**
         Plays this sound clip with the specified colume level (0.0 to 1.0). 
         The level may have a property animation attached.
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
-        @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
     */
     public final Playback play(Fixed level) {
         return play(level, new Fixed(0), false);
@@ -128,11 +128,11 @@ public abstract class Sound {
     /**
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0).
         The level and pan may have a property animation attached. 
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
-        @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
     */
     public final Playback play(Fixed level, Fixed pan) {
         return play(level, pan, false);
@@ -141,11 +141,11 @@ public abstract class Sound {
     /**
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0),
         optionally looping. The level and pan may have a property animation attached.
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
-        @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
     */
     public Playback play(Fixed level, Fixed pan, boolean loop) {
 

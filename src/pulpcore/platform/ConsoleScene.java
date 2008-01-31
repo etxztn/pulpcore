@@ -143,14 +143,14 @@ public class ConsoleScene extends Scene2D {
         private Slider createScrollBar(int x, int y, int w, int h) {
             CoreImage background = new CoreImage(w, h);
             CoreGraphics g = background.createGraphics();
-            g.setColor(0xe0e0e0);
+            g.setColor(Colors.gray(224));
             g.fill();
-            g.setColor(0xc0c0c0);
+            g.setColor(Colors.gray(192));
             g.drawRect(0, 0, w, h);
             
             CoreImage thumb = new CoreImage(w, Math.max(w, h/5));
             g = thumb.createGraphics();
-            g.setColor(0x404040);
+            g.setColor(Colors.gray(64));
             g.fill();
             
             Slider slider = new Slider(background, thumb, x, y);

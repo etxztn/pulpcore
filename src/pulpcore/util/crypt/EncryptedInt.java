@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -31,9 +31,9 @@ package pulpcore.util.crypt;
 
 import java.io.EOFException;
 import pulpcore.animation.Int;
+import pulpcore.animation.Property;
 import pulpcore.animation.PropertyListener;
 import pulpcore.util.ByteArray;
-
 
 /**
     An EncryptedInt is an {@link pulpcore.animation.Int } whose value is internally encrypted. This
@@ -42,10 +42,11 @@ import pulpcore.util.ByteArray;
     For a game with global high scores, typical encrypted values might be the score and the
     game level.
 */
-public class EncryptedInt extends Int {
+public class EncryptedInt extends Int implements PropertyListener {
     
     private ARC4 cipher;
     private ByteArray buffer = new ByteArray(4);
+    private int cryptedValue;
     
     /**
         Constructs a new Int object with no listener, the value of zero, and a cipher
@@ -55,7 +56,6 @@ public class EncryptedInt extends Int {
         this(null, 0, new ARC4());
     }
     
-    
     /**
         Constructs a new Int object with no listener, the value of zero, and the specified
         cipher.
@@ -64,7 +64,6 @@ public class EncryptedInt extends Int {
         this(null, 0, cipher);
     }
 
-    
     /**
         Constructs a new Int object with the specified listener, the value of zero, and a cipher
         with a randomly generated encryption key.
@@ -72,7 +71,6 @@ public class EncryptedInt extends Int {
     public EncryptedInt(PropertyListener listener) {
         this(listener, 0, new ARC4());
     }
-    
     
     /**
         Constructs a new Int object with the specified listener, the value of zero, and the 
@@ -82,7 +80,6 @@ public class EncryptedInt extends Int {
         this(listener, 0, cipher);
     }
     
-    
     /**
         Constructs a new Int object with the specified value, no listener, and a cipher
         with a randomly generated encryption key.
@@ -90,7 +87,6 @@ public class EncryptedInt extends Int {
     public EncryptedInt(int value) {
         this(null, value, new ARC4());
     }
-    
     
     /**
         Constructs a new Int object with the specified value, no listener, and the 
@@ -100,7 +96,6 @@ public class EncryptedInt extends Int {
         this(null, value, cipher);
     }
     
-    
     /**
         Constructs a new Int object with the specified value, the specified listener, and a cipher
         with a randomly generated encryption key.
@@ -109,7 +104,6 @@ public class EncryptedInt extends Int {
         this(listener, value, new ARC4());
     }
     
-    
     /**
         Constructs a new Int object with the specified value, the specified listener, and the 
         specified cipher.
@@ -117,19 +111,17 @@ public class EncryptedInt extends Int {
     public EncryptedInt(PropertyListener listener, int value, ARC4 cipher) {
         super(listener, 0);
         this.cipher = cipher;
-        super.value = crypt(value);
+        propertyChange(this);
+        addListener(this);
     }
     
-    
-    protected void setValue(int value) {
-        super.setValue(crypt(value));
+    public void propertyChange(Property property) {
+        cryptedValue = crypt(getValue());
     }
-    
     
     public int get() {
-        return crypt(super.get());
+        return crypt(cryptedValue);
     }
-    
     
     private int crypt(int d) {
         buffer.reset();
