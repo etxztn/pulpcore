@@ -30,16 +30,34 @@
 package pulpcore.animation;
 
 /**
-    The PropertyListener is the listener interface for receiving notification
-    when a {@link Property}'s value has changed.
+    A Behavior controls how a {@link Property}'s value changes over time.
+    @see Property#setBehavior(Behavior)
 */
-public interface PropertyListener {
+public interface Behavior {
 
     /**
-        Notifies that a property's value has changed.
-        @param property the property whose value has changed.
+        Updates this Behavior and returns true if the update causes the value to change. 
+        @param elapsedTime The amount of time to increment, in milliseconds.
+        @return true if the update causes the value to change.
     */
-    public void propertyChange(Property property);
+    public boolean update(int elapsedTime);
     
+    /**
+        Fast-forwards to the end of the Behavior if possible.
+    */
+    public void fastForward();
+    
+    /** 
+        Checks if the Behavior will no longer update its value. In other words,
+        {@link #update(int)} will no longer return {@code true}.
+        @return true if this Behavior will no longer update it's value.
+    */
+    public boolean isFinished();
+    
+    /**
+        Returns this Behavior's current value. The value will be interpreted differently depending 
+        on the Property it's attached to.
+        @return The current value.
+    */
+    public int getValue();
 }
-  

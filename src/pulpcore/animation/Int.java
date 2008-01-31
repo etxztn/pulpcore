@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,17 +34,12 @@ package pulpcore.animation;
 */
 public class Int extends Property {
 
-    
-    protected int value;
-    
-    
     /**
         Constructs a new Int object with no listener and the value of zero.
     */
     public Int() {
         this(null, 0);
     }
-
     
     /**
         Constructs a new Int object with the specified listener and the value of zero.
@@ -54,7 +49,6 @@ public class Int extends Property {
         this(listener, 0);
     }
     
-    
     /**
         Constructs a new Int object with the specified value and no listener.
     */
@@ -62,34 +56,21 @@ public class Int extends Property {
         this(null, value);
     }
     
-    
     /**
         Constructs a new Int object with the specified listener and value.
         The listener is notified when the value is modified.
     */
     public Int(PropertyListener listener, int value) {
-        super(listener);
-        this.value = value;
+        super(listener, value);
     }
-    
-    
-    protected void setValue(int value) {
-        if (this.value != value) {
-            this.value = value;
-            notifyListener();
-        }
-    }
-    
     
     public int get() {
-        return value;
+        return super.getValue();
     }
-    
     
     public String toString() {
         return Integer.toString(get());
     }
-    
     
     /**
         Sets the value of this Int. 
@@ -97,9 +78,8 @@ public class Int extends Property {
     */
     public void set(int value) {
         setValue(value);
-        this.anim = null;
+        setBehavior(null);
     }
-    
     
     /**
         Sets the value of this Int after a specific delay. 
@@ -109,68 +89,63 @@ public class Int extends Property {
         animateTo(value, 0, null, delay);
     }
     
+    //
+    // Convenience methods
+    //
     
-    public void animate(Animation anim) {
-        this.anim = anim;
-        if (anim.getStartDelay() == 0) {
-            setValue(anim.getValue());
-        }
+    public void bindTo(Int property) {
+        setBehavior(new Binding(property));
     }
     
-    
-// CONVENIENCE METHODS - BELOW THIS LINE THAR BE DRAGONS 
-
+    public void bindTo(Fixed property) {
+        setBehavior(new Binding(property, Binding.FUNCTION_TO_INT));
+    }
     
     /**
         Animates this Int from the one value (fromValue) to another (toValue).
         Any previous animations are stopped.
     */
     public void animate(int fromValue, int toValue, int duration) {
-        animate(new Animation(fromValue, toValue, duration));
+        setBehavior(new Tween(fromValue, toValue, duration));
     }
-    
     
     /**
         Animates this Int from the one value (fromValue) to another (toValue).
         Any previous animations are stopped.
     */
     public void animate(int fromValue, int toValue, int duration, Easing easing) {
-        animate(new Animation(fromValue, toValue, duration, easing));
+        setBehavior(new Tween(fromValue, toValue, duration, easing));
     }
-    
     
     /**
         Animates this Int from the one value (fromValue) to another (toValue).
         Any previous animations are stopped.
     */
     public void animate(int fromValue, int toValue, int duration, Easing easing, int startDelay) {
-        animate(new Animation(fromValue, toValue, duration, easing, startDelay));
+        setBehavior(new Tween(fromValue, toValue, duration, easing, startDelay));
     }
-    
     
     /**
         Animates this Int from the current value to the specified value.
         Any previous animations are stopped.
     */
     public void animateTo(int toValue, int duration) {
-        animate(new Animation(get(), toValue, duration));
+        setBehavior(new Tween(get(), toValue, duration));
     }
-    
     
     /**
         Animates this Int from the current value to the specified value.
         Any previous animations are stopped.
     */
     public void animateTo(int toValue, int duration, Easing easing) {
-        animate(new Animation(get(), toValue, duration, easing));
+        setBehavior(new Tween(get(), toValue, duration, easing));
     }
-    
     
     /**
         Animates this Int from the current value to the specified value.
         Any previous animations are stopped.
     */
     public void animateTo(int toValue, int duration, Easing easing, int startDelay) {
-        animate(new Animation(get(), toValue, duration, easing, startDelay));
+        setBehavior(new Tween(get(), toValue, duration, easing, startDelay));
     }
 }

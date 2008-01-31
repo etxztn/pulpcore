@@ -29,17 +29,55 @@
 
 package pulpcore.animation;
 
-/**
-    The PropertyListener is the listener interface for receiving notification
-    when a {@link Property}'s value has changed.
-*/
-public interface PropertyListener {
+import pulpcore.math.CoreMath;
 
-    /**
-        Notifies that a property's value has changed.
-        @param property the property whose value has changed.
-    */
-    public void propertyChange(Property property);
+public class Tween extends Animation implements Behavior {
+
+    private final int fromValue;
+    private final int toValue;
+    private int value;
     
+    public Tween(int fromValue, int toValue, int duration) {
+        this(fromValue, toValue, duration, null, 0);
+    }
+    
+    public Tween(int fromValue, int toValue, int duration, Easing easing) {
+        this(fromValue, toValue, duration, easing, 0);
+    }
+    
+    public Tween(int fromValue, int toValue, int duration, Easing easing, int startDelay) {
+        super(duration, easing, startDelay);
+        this.fromValue = fromValue;
+        this.toValue = toValue;
+    }
+    
+    protected void updateState(int animTime) {
+        if (getDuration() == 0) {
+            if (animTime < 0) { 
+                value = fromValue;
+            }
+            else {
+                value = toValue;
+            }
+        }
+        else {
+            value = fromValue + CoreMath.mulDiv(toValue - fromValue, animTime, getDuration());
+        }
+    }
+    
+    public final int getFromValue() {
+        return fromValue;
+    }
+    
+    public final int getToValue() {
+        return toValue;
+    }
+    
+    protected final void setValue(int value) {
+        this.value = value;
+    }
+    
+    public final int getValue() {
+        return value;
+    }
 }
-  

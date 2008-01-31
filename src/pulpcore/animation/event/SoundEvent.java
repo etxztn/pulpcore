@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -39,9 +39,8 @@ public class SoundEvent extends TimelineEvent {
  
     private Sound sound;
     
-    
     /**
-        Creates a sound event
+        Creates a sound event.
         @param sound the sound to play
         @param delay the delay, in milliseconds, before playing the sound.
     */
@@ -49,7 +48,6 @@ public class SoundEvent extends TimelineEvent {
         super(delay);
         this.sound = sound;
     }
-    
     
     public void run() {
         sound.play();

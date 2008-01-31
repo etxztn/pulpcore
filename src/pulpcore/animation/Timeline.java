@@ -33,23 +33,22 @@ import java.util.ArrayList;
 import pulpcore.animation.event.SceneChangeEvent;
 import pulpcore.animation.event.SoundEvent;
 import pulpcore.animation.event.TimelineEvent;
+import pulpcore.Build;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene;
 import pulpcore.sound.SoundClip;
 import pulpcore.sprite.Sprite;
 
-
 /**
-    A Timeline is a list of Animations and/or Timelines with additional functionality
-    like looping and common movie functions (stop, pause, play, rewind, etc.)
+    A Timeline is a list of Animations.
 */
 public final class Timeline extends Animation {
     
     private Timeline parent;
     
-    // Parallel arrays
-    private ArrayList animationList;
-    private ArrayList propertyList;
+    // Parallel arrays - behaviors have a property
+    private ArrayList animationList; // Animations. Must implement Behavior if property is non-null.
+    private ArrayList propertyList; // Property if Behavior; false otherwise
     
     private boolean playing;
     private double playSpeed = 1;
@@ -59,56 +58,48 @@ public final class Timeline extends Animation {
     
     private int lastAnimTime = 0;
     
-    
     public Timeline() {
         this(null, 0);
     }
-    
     
     public Timeline(Easing easing) {
         this(easing, 0);
     }
     
-    
     public Timeline(Easing easing, int startDelay) {
-        super(0, 0, 0, easing, startDelay);
-        
+        super(0, easing, startDelay);
         animationList = new ArrayList();
         propertyList = new ArrayList();
         playing = true;
     }
     
-    
     private void setParent(Timeline parent) {
         this.parent = parent;
     }
     
-    
     private void calcDuration() {
         // TODO: sort children by their getTotalDuration() ?
-        
-        duration = 0;
+        int duration = 0;
         for (int i = 0; i < animationList.size(); i++) {
             Animation anim = (Animation)animationList.get(i);
             int childDuration = anim.getTotalDuration();
-            if (childDuration == -1) {
-                duration = -1;
+            if (childDuration == LOOP_FOREVER) {
+                duration = LOOP_FOREVER;
                 break;
             }
             else if (childDuration > duration) {
                 duration = childDuration;
             }
         }
+        super.setDuration(duration);
         if (parent != null) {
             parent.calcDuration();
         }
     }
-   
     
     //
     // Movie controls
     //
-    
     
     /**
         Sets the play speed. A speed of '1' is normal, '.5' is half speed,
@@ -121,67 +112,51 @@ public final class Timeline extends Animation {
         playSpeed = speed;
     }
     
-    
     public double getPlaySpeed() {
         return playSpeed;
     }
-    
     
     public void pause() {
         playing = false;
     }
     
-    
     public void play() {
         playing = true;
     }
-    
     
     public void stop() {
         playing = false;
         rewind();
     }
     
-    
     public boolean isPlaying() {
         return playing;
     }
     
-    
+    //@Override
     public boolean update(int elapsedTime) {
         if (!playing || playSpeed == 0) {
-            return false;
-        }
-        
-        if (playSpeed == 1) {
-            return setTime(this.elapsedTime + elapsedTime);
+            elapsedTime = 0;
         }
         else if (playSpeed == -1) {
-            return setTime(this.elapsedTime - elapsedTime);
+            elapsedTime = -elapsedTime;
         }
-        else {
+        else if (playSpeed != 1) {
             long timeMicros = Math.round(elapsedTime * 1000L * playSpeed) + remainderMicros;
             elapsedTime = (int)(timeMicros / 1000);
             remainderMicros = (int)(timeMicros % 1000);
-            return setTime(this.elapsedTime + elapsedTime);
         }
+        return super.update(elapsedTime);
     }
-    
-    
-    protected void updateValue(int animTime) {
-        if (easing != null && animTime > 0 && animTime < duration) {
-            animTime = easing.ease(animTime, duration);
-        }
         
-        // First, update those animations that were previously active
+    protected void updateState(int animTime) {
+        // First, update those animations that were previously in SECTION_ANIMATION
         for (int i = 0; i < animationList.size(); i++) {
             Animation anim = (Animation)animationList.get(i);
-            
-            if (anim.getAnimState(anim.getAnimTime(lastAnimTime)) == STATE_ACTIVE) {
-                boolean isActive = anim.setTime(animTime);
-                if (isActive) {
-                    Property property = (Property)propertyList.get(i);
-                    property.setValue(anim.getValue());
+            if (anim.getSection(lastAnimTime) == SECTION_ANIMATION) {
+                boolean active = anim.update(animTime - anim.getTime());
+                if (active && anim instanceof Behavior) {
+                    ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
                 }
             }
         }
@@ -189,40 +164,62 @@ public final class Timeline extends Animation {
         // Next, update all other animations
         for (int i = 0; i < animationList.size(); i++) {
             Animation anim = (Animation)animationList.get(i);
-            
-            if (anim.getAnimState(anim.getAnimTime(lastAnimTime)) != STATE_ACTIVE) {
-                boolean isActive = anim.setTime(animTime);
-                if (isActive) {
-                    Property property = (Property)propertyList.get(i);
-                    property.setValue(anim.getValue());
+            if (anim.getSection(lastAnimTime) != SECTION_ANIMATION) {
+                boolean active = anim.update(animTime - anim.getTime());
+                if (active && anim instanceof Behavior) {
+                    ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
                 }
             }
         }
         
-        lastAnimTime = animTime;
+        lastAnimTime = animTime;        
     }
-    
     
     //
     // Children
     //
     
-    
+    /**
+        @deprecated Replaced by {@link #add(Animation) } 
+    */
     public void addEvent(TimelineEvent event) {
-        animationList.add(event);
-        propertyList.add(new Int());
+        add(event);
+    }
+    
+    /**
+        @deprecated Replaced by {@link #add(Property, Animation) } 
+    */
+    public void animate(Property property, Animation animation) {
+        add(property, animation);
+    }
+    
+    public void add(Animation animation) {
+        if (Build.DEBUG) {
+            if (animation instanceof Behavior) {
+                throw new IllegalArgumentException("Behavior must have a property attached.");
+            }
+        }
+        if (animation instanceof Timeline) {
+            ((Timeline)animation).setParent(this);
+        }
+        animationList.add(animation);
+        propertyList.add(null);
         calcDuration();
     }
     
-    public void animate(Property property, Animation anim) {
-        if (anim instanceof Timeline) {
-            ((Timeline)anim).setParent(this);
+    public void add(Property property, Animation animation) {
+        if (Build.DEBUG) {
+            if (property == null || animation == null) {
+                throw new IllegalArgumentException("Both property and behavior must be non-null.");
+            }
+            if (!(animation instanceof Behavior)) {
+                 throw new IllegalArgumentException("Animation must implement Behavior");
+            }
         }
-        animationList.add(anim);
+        animationList.add(animation);
         propertyList.add(property);
         calcDuration();
     }
-    
     
     /**
         Calls notifyAll() on all child TimelineEvents, waking any threads that are waiting for
@@ -241,141 +238,142 @@ public final class Timeline extends Animation {
             }
         }
     }
-    
-    
-// CONVENIENCE METHODS - BELOW THIS LINE THAR BE DRAGONS 
-
 
     //
     // Event convenience methods
     //
     
-    
     public void setScene(Scene scene, int delay) {
-        addEvent(new SceneChangeEvent(scene, delay, false));
+        add(new SceneChangeEvent(scene, delay, false));
     }
-    
     
     public void interruptScene(Scene scene, int delay) {
-        addEvent(new SceneChangeEvent(scene, delay, true));
+        add(new SceneChangeEvent(scene, delay, true));
     }
-    
     
     public void playSound(SoundClip sound, int delay) {
-        addEvent(new SoundEvent(sound, delay));
+        add(new SoundEvent(sound, delay));
     }
-    
     
     //
     // Set convenience methods
     //
     
-    
     public void set(Bool property, boolean value, int delay) {
-        animate(property, new Animation(property.get()?1:0, value?1:0, 0, null, delay));
+        add(property, new Tween(property.get()?1:0, value?1:0, 0, null, delay));
     }
-    
     
     public void set(Int property, int value, int delay) {
-        animate(property, new Animation(property.get(), value, 0, null, delay));
+        add(property, new Tween(property.get(), value, 0, null, delay));
     }
-    
     
     public void setAsFixed(Fixed property, int fValue, int delay) {
-        animate(property, new Animation(property.getAsFixed(), fValue, 0, null, delay));
+        add(property, new Tween(property.getAsFixed(), fValue, 0, null, delay));
     }
-
 
     public void set(Fixed property, int value, int delay) {
-        animate(property, new Animation(property.getAsFixed(), CoreMath.toFixed(value), 0, null, 
-            delay));
+        add(property, new Tween(property.getAsFixed(), CoreMath.toFixed(value), 0, null, delay));
     }
-    
     
     public void set(Fixed property, double value, int delay) {
-        animate(property, new Animation(property.getAsFixed(), CoreMath.toFixed(value), 0, null, 
-            delay));
+        add(property, new Tween(property.getAsFixed(), CoreMath.toFixed(value), 0, null, delay));
     }
-
     
     //
     // Int convenience methods
-    //
-    
+    // 
     
     public void animate(Int property, int fromValue, int toValue, int duration) {
-        animate(property, new Animation(fromValue, toValue, duration));
+        add(property, new Tween(fromValue, toValue, duration));
     }
-    
     
     public void animate(Int property, int fromValue, int toValue, int duration, Easing easing) {
-        animate(property, new Animation(fromValue, toValue, duration, easing));
+        add(property, new Tween(fromValue, toValue, duration, easing));
     }
-    
     
     public void animate(Int property, int fromValue, int toValue, int duration, Easing easing, 
         int startDelay)
     {
-        animate(property, new Animation(fromValue, toValue, duration, easing, startDelay));
+        add(property, new Tween(fromValue, toValue, duration, easing, startDelay));
     }
-    
     
     public void animateTo(Int property, int toValue, int duration) {
-        animate(property, new Animation(property.get(), toValue, duration));
+        add(property, new Tween(property.get(), toValue, duration));
     }
-    
     
     public void animateTo(Int property, int toValue, int duration, Easing easing) {
-        animate(property, new Animation(property.get(), toValue, duration, easing));
+        add(property, new Tween(property.get(), toValue, duration, easing));
     }
-    
     
     public void animateTo(Int property, int toValue, int duration, Easing easing, int startDelay) {
-        animate(property, new Animation(property.get(), toValue, duration, easing, startDelay));
+        add(property, new Tween(property.get(), toValue, duration, easing, startDelay));
+    }
+
+    //
+    // Color convenience methods
+    //
+    
+    public void animate(Color property, int fromARGB, int toARGB, int duration) {
+        add(property, new Color.ColorTween(fromARGB, toARGB, duration));
     }
     
+    public void animate(Color property, int fromARGB, int toARGB, int duration, Easing easing) {
+        add(property, new Color.ColorTween(fromARGB, toARGB, duration, easing));
+    }
+    
+    public void animate(Color property, int fromARGB, int toARGB, int duration, Easing easing, 
+        int startDelay)
+    {
+        add(property, new Color.ColorTween(fromARGB, toARGB, duration, easing, startDelay));
+    }
+    
+    public void animateTo(Color property, int toARGB, int duration) {
+        add(property, new Color.ColorTween(property.get(), toARGB, duration));
+    }
+    
+    public void animateTo(Color property, int toARGB, int duration, Easing easing) {
+        add(property, new Color.ColorTween(property.get(), toARGB, duration, easing));
+    }
+    
+    public void animateTo(Color property, int toARGB, int duration, Easing easing, int startDelay) {
+        add(property, new Color.ColorTween(property.get(), toARGB, duration, easing, startDelay));
+    }
     
     //
     // Fixed convenience methods
     //
     
-    
     public void animateAsFixed(Fixed property, int fFromValue, int fToValue, int duration) {
-        animate(property, new Animation(fFromValue, fToValue, duration));
+        add(property, new Tween(fFromValue, fToValue, duration));
     }
-    
     
     public void animateAsFixed(Fixed property, int fFromValue, int fToValue, int duration,
         Easing easing)
     {
-        animate(property, new Animation(fFromValue, fToValue, duration, easing));
+        add(property, new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     public void animateAsFixed(Fixed property, int fFromValue, int fToValue, int duration,
         Easing easing, int startDelay)
     {
-        animate(property, new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }
     
-    
     public void animateToFixed(Fixed property, int fToValue, int duration) {
-        animate(property, new Animation(property.getAsFixed(), fToValue, duration));
+        add(property, new Tween(property.getAsFixed(), fToValue, duration));
     }
     
     
     public void animateToFixed(Fixed property, int fToValue, int duration, Easing easing) {
-        animate(property, new Animation(property.getAsFixed(), fToValue, duration, easing));
+        add(property, new Tween(property.getAsFixed(), fToValue, duration, easing));
     }
-    
     
     public void animateToFixed(Fixed property, int fToValue, int duration, Easing easing, 
         int startDelay)
     {
-        animate(property, new Animation(property.getAsFixed(), fToValue, duration, easing, 
+        add(property, new Tween(property.getAsFixed(), fToValue, duration, easing, 
             startDelay));
     }    
-
 
     //
     // Fixed as int convenience methods
@@ -384,48 +382,42 @@ public final class Timeline extends Animation {
     public void animate(Fixed property, int fromValue, int toValue, int duration) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration));
+        add(property, new Tween(fFromValue, fToValue, duration));
     }
-    
     
     public void animate(Fixed property, int fromValue, int toValue, int duration, Easing easing) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing));
+        add(property, new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     public void animate(Fixed property, int fromValue, int toValue, int duration, Easing easing,
         int startDelay)
     {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }
-    
     
     public void animateTo(Fixed property, int toValue, int duration) {
         int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration));
+        add(property, new Tween(fFromValue, fToValue, duration));
     }
-    
     
     public void animateTo(Fixed property, int toValue, int duration, Easing easing) {
         int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing));
+        add(property, new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     public void animateTo(Fixed property, int toValue, int duration, Easing easing, 
         int startDelay)
     {
         int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }    
-    
     
     //
     // Fixed as double convenience methods
@@ -434,55 +426,48 @@ public final class Timeline extends Animation {
     public void animate(Fixed property, double fromValue, double toValue, int duration) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration));
+        add(property, new Tween(fFromValue, fToValue, duration));
     }
-    
     
     public void animate(Fixed property, double fromValue, double toValue, int duration, 
         Easing easing) 
     {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing));
+        add(property, new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     public void animate(Fixed property, double fromValue, double toValue, int duration, 
         Easing easing, int startDelay)
     {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }
-    
 
     public void animateTo(Fixed property, double toValue, int duration) {
         int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration));
+        add(property, new Tween(fFromValue, fToValue, duration));
     }
-    
     
     public void animateTo(Fixed property, double toValue, int duration, Easing easing) {
         int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing));
+        add(property, new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     public void animateTo(Fixed property,double toValue, int duration, Easing easing, 
         int startDelay)
     {
         int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        animate(property, new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }    
-
 
     //
     // Move as int convenience methods
     //
-
     
     public void move(Sprite sprite, int x1, int y1, int x2, int y2, int duration) {
         animate(sprite.x, x1, x2, duration);
@@ -495,7 +480,6 @@ public final class Timeline extends Animation {
         animate(sprite.y, y1, y2, duration, easing);
     }
     
-    
     public void move(Sprite sprite, int x1, int y1, int x2, int y2, int duration, Easing easing,
         int startDelay)
     {
@@ -503,35 +487,29 @@ public final class Timeline extends Animation {
         animate(sprite.y, y1, y2, duration, easing, startDelay);
     }
     
-    
     public void moveTo(Sprite sprite, int x, int y, int duration) {
         animateTo(sprite.x, x, duration);
         animateTo(sprite.y, y, duration);
     }
-    
     
     public void moveTo(Sprite sprite, int x, int y, int duration, Easing easing) {
         animateTo(sprite.x, x, duration, easing);
         animateTo(sprite.y, y, duration, easing);
     }    
     
-    
     public void moveTo(Sprite sprite, int x, int y, int duration, Easing easing, int startDelay) {
         animateTo(sprite.x, x, duration, easing, startDelay);
         animateTo(sprite.y, y, duration, easing, startDelay);
     }    
     
-    
     //
     // Move as double convenience methods
     //
-    
     
     public void move(Sprite sprite, double x1, double y1, double x2, double y2, int duration) {
         animate(sprite.x, x1, x2, duration);
         animate(sprite.y, y1, y2, duration);
     }
-    
     
     public void move(Sprite sprite, double x1, double y1, double x2, double y2, int duration,
         Easing easing) 
@@ -540,7 +518,6 @@ public final class Timeline extends Animation {
         animate(sprite.y, y1, y2, duration, easing);
     }
     
-    
     public void move(Sprite sprite, double x1, double y1, double x2, double y2, int duration, 
         Easing easing, int startDelay)
     {
@@ -548,18 +525,15 @@ public final class Timeline extends Animation {
         animate(sprite.y, y1, y2, duration, easing, startDelay);
     }
     
-    
     public void moveTo(Sprite sprite, double x, double y, int duration) {
         animateTo(sprite.x, x, duration);
         animateTo(sprite.y, y, duration);
     }
     
-    
     public void moveTo(Sprite sprite, double x, double y, int duration, Easing easing) {
         animateTo(sprite.x, x, duration, easing);
         animateTo(sprite.y, y, duration, easing);
     }    
-    
     
     public void moveTo(Sprite sprite, double x, double y, int duration, Easing easing, 
         int startDelay) 
@@ -568,11 +542,9 @@ public final class Timeline extends Animation {
         animateTo(sprite.y, y, duration, easing, startDelay);
     }        
     
-    
     //
     // Scale as int convenience methods
     //
-
     
     public void scale(Sprite sprite, int width1, int height1, int width2, int height2, 
         int duration) 
@@ -581,14 +553,12 @@ public final class Timeline extends Animation {
         animate(sprite.height, height1, height2, duration);
     }
     
-    
     public void scale(Sprite sprite, int width1, int height1, int width2, int height2, 
         int duration, Easing easing) 
     {
         animate(sprite.width, width1, width2, duration, easing);
         animate(sprite.height, height1, height2, duration, easing);
     }
-    
     
     public void scale(Sprite sprite, int width1, int height1, int width2, int height2, 
         int duration, Easing easing, int startDelay)
@@ -597,18 +567,15 @@ public final class Timeline extends Animation {
         animate(sprite.height, height1, height2, duration, easing, startDelay);
     }
     
-    
     public void scaleTo(Sprite sprite, int width, int height, int duration) {
         animateTo(sprite.width, width, duration);
         animateTo(sprite.height, height, duration);
     }
     
-    
     public void scaleTo(Sprite sprite, int width, int height, int duration, Easing easing) {
         animateTo(sprite.width, width, duration, easing);
         animateTo(sprite.height, height, duration, easing);
     }    
-    
     
     public void scaleTo(Sprite sprite, int width, int height, int duration, Easing easing, 
         int startDelay) 
@@ -617,11 +584,9 @@ public final class Timeline extends Animation {
         animateTo(sprite.height, height, duration, easing, startDelay);
     }    
     
-    
     //
     // Scale as double convenience methods
     //
-    
     
     public void scale(Sprite sprite, double width1, double height1, double width2, double height2, 
         int duration) 
@@ -630,14 +595,12 @@ public final class Timeline extends Animation {
         animate(sprite.height, height1, height2, duration);
     }
     
-    
     public void scale(Sprite sprite, double width1, double height1, double width2, double height2, 
         int duration, Easing easing) 
     {
         animate(sprite.width, width1, width2, duration, easing);
         animate(sprite.height, height1, height2, duration, easing);
     }
-    
     
     public void scale(Sprite sprite, double width1, double height1, double width2, double height2, 
         int duration, Easing easing, int startDelay)
@@ -646,18 +609,15 @@ public final class Timeline extends Animation {
         animate(sprite.height, height1, height2, duration, easing, startDelay);
     }
     
-    
     public void scaleTo(Sprite sprite, double width, double height, int duration) {
         animateTo(sprite.width, width, duration);
         animateTo(sprite.height, height, duration);
     }
     
-    
     public void scaleTo(Sprite sprite, double width, double height, int duration, Easing easing) {
         animateTo(sprite.width, width, duration, easing);
         animateTo(sprite.height, height, duration, easing);
     }    
-    
     
     public void scaleTo(Sprite sprite, double width, double height, int duration, Easing easing, 
         int startDelay) 
@@ -665,5 +625,4 @@ public final class Timeline extends Animation {
         animateTo(sprite.width, width, duration, easing, startDelay);
         animateTo(sprite.height, height, duration, easing, startDelay);
     }            
-    
 }

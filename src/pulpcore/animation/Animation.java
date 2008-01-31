@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -28,10 +28,11 @@
 */
 
 package pulpcore.animation;
-import pulpcore.math.CoreMath;
+
+import pulpcore.Build;
 
 /**
-    An Animation changes a value over a specific duration.
+    An Animation changes an abstract state over time.
     <pre>
     |===================|
     0     duration     end
@@ -63,58 +64,47 @@ import pulpcore.math.CoreMath;
     ------------------------------------- time ------------------------------------->
     </pre>
 */
-public class Animation {
+public abstract class Animation {
     
-    public static final int LOOP_FOREVER = 0;
+    public static final int LOOP_FOREVER = -1;
     
-    protected static final int STATE_START_DELAY = 0;
-    protected static final int STATE_ACTIVE = 1;
-    protected static final int STATE_LOOP_DELAY = 2;
+    /* package-private */ static final int SECTION_START_DELAY = 0;
+    /* package-private */ static final int SECTION_ANIMATION = 1;
+    /* package-private */ static final int SECTION_LOOP_DELAY = 2;
     
-    protected final int fromValue;
-    protected final int toValue;
-    protected final Easing easing;
+    private final Easing easing;
     private final int startDelay;
-    
-    protected int duration;
+    private int duration;
     private int numLoops;
     private int loopDelay;
-      
-    protected int elapsedTime;
-    protected int value;
     
+    private int elapsedTime;
     
-    public Animation(int fromValue, int toValue, int duration) {
-        this(fromValue, toValue, duration, null, 0);
+    public Animation(int duration) {
+        this(duration, null, 0);
     }
     
-    
-    public Animation(int fromValue, int toValue, int duration, Easing easing) {
-        this(fromValue, toValue, duration, easing, 0);
+    public Animation(int duration, Easing easing) {
+        this(duration, easing, 0);
     }
     
-    
-    public Animation(int fromValue, int toValue, int duration, Easing easing, int startDelay) {
-        this.fromValue = fromValue;
-        this.toValue = toValue;
+    public Animation(int duration, Easing easing, int startDelay) {
+        if (Build.DEBUG) {
+            if (duration < 0) {
+                throw new IllegalArgumentException("Duration cannot be < 0");
+            }
+            if (startDelay < 0) {
+                throw new IllegalArgumentException("Start delay cannot be < 0");
+            }
+        }
         this.duration = duration;
         this.easing = easing;
         this.startDelay = startDelay;
-        this.numLoops = 1;
-        this.loopDelay = 0;
-        
-        elapsedTime = 0;
-        if (duration == 0 && startDelay == 0) {
-            value = toValue;
-        }
-        else {
-            value = fromValue;
-        }
+        loop(1, 0);
     }
     
-    
     /**
-        Causes this animation to loop indefinitely. Same as calling loop(0);
+        Causes this animation to loop indefinitely. Same as calling loop(LOOP_FOREVER, 0);
     */
     public final void loopForever() {
         loop(LOOP_FOREVER, 0);
@@ -122,217 +112,170 @@ public class Animation {
     
     
     /**
-        Causes this animation to loop indefinitely. Same as calling loop(0, loopDelay);
+        Causes this animation to loop indefinitely. Same as calling loop(LOOP_FOREVER, loopDelay);
     */
     public final void loopForever(int loopDelay) {
         loop(LOOP_FOREVER, loopDelay);
     }
     
-    
     /**
-        Sets the number of loops to play. A value of 0 causes this timeline
+        Sets the number of loops to play. A value of LOOP_FOREVER causes this timeline
         to play indefinitely.
     */
     public final void loop(int numLoops) {
         loop(numLoops, 0);
     }
     
-    
     /**
         Sets the number of loops to play. A value of 0 causes this timeline
         to play indefinitely.
     */
     public final void loop(int numLoops, int loopDelay) {
+        if (Build.DEBUG) {
+            if (!(numLoops == LOOP_FOREVER || numLoops > 0)) {
+                throw new IllegalArgumentException("numLoops must be > 0 or LOOP_FOREVER");
+            }
+            if (loopDelay < 0) {
+                throw new IllegalArgumentException("Loop delay cannot be < 0");
+            }
+            if (duration == 0 && numLoops != 1 && loopDelay == 0) {
+                throw new IllegalArgumentException("Loop delay cannot be 0 if duration is 0 and " +
+                    "numLoops != 1");
+            }
+        }
         this.numLoops = numLoops;
         this.loopDelay = loopDelay;
     }
-    
     
     public final int getStartDelay() {
         return startDelay;
     }
     
-    
     public final int getDuration() {
         return duration;
     }
     
+    /* package-private */ final void setDuration(int duration) {
+        this.duration = duration;
+    }
     
     public final int getNumLoops() {
         return numLoops;
     }
     
-    
     public final int getLoopDelay() {
         return loopDelay;
     }
-    
-    
-    public final int getTime() {
-        return elapsedTime;
-    }
-    
-    
-    public final int getValue() {
-        return value;
-    }
-    
-    
-    protected final void setValue(int value) {
-        this.value = value;
-    }
-    
     
     /**
         Returns the total duration including the start delay and loops.
     */
     public final int getTotalDuration() {
-        if (numLoops <= 0 || duration < 0) {
-            return -1;
+        if (numLoops == LOOP_FOREVER) {
+            return LOOP_FOREVER;
         }
         else {
             return startDelay + duration * numLoops + loopDelay * (numLoops - 1);
         }
     }
     
+    public final int getTime() {
+        return elapsedTime;
+    }
     
-    public final int getRemainingTime() {
-        int totalDuration = getTotalDuration();
-        if (totalDuration < 0) {
-            return -1;
+    private final int getAnimTime() {
+        return getAnimTime(elapsedTime);
+    }
+    
+    private final int getAnimTime(int elapsedTime) {
+        int animTime = elapsedTime - startDelay;
+        if (animTime >= 0 && numLoops != 1) {
+            animTime %= (duration + loopDelay);
+        }
+        return animTime;
+    }
+    
+    /* package-private */ final int getSection() {
+        return getSection(elapsedTime);
+    }
+    
+    /* package-private */ final int getSection(int elapsedTime) {
+        int animTime = getAnimTime(elapsedTime);
+        if (animTime < 0) {
+            return SECTION_START_DELAY;
+        }
+        else if (animTime < duration) {
+            return SECTION_ANIMATION;
         }
         else {
-            return Math.max(0, totalDuration - elapsedTime);
+            return SECTION_LOOP_DELAY;
+        }
+    }
+
+    public final boolean isFinished() {
+        if (numLoops == LOOP_FOREVER) {
+            return false;
+        }
+        else {
+            return elapsedTime >= getTotalDuration();
         }
     }
     
-    
     /**
-        Returns true if this animation has not yet finished. 
+        Sets the current time to the end of this animation. If this animation loop forever,
+        the time is set to the end of the current loop.
     */
-    public final boolean isAnimating() {
-        int totalDuration = getTotalDuration();
-        return (totalDuration < 0 || elapsedTime < totalDuration);
+    public final void fastForward() {
+        if (numLoops == LOOP_FOREVER) {
+            int loop = 0;
+            int animTime = elapsedTime - startDelay;
+            if (animTime >= 0) {
+                loop = animTime / (duration + loopDelay);
+            }
+            this.numLoops = loop;
+        }
+        setTime(getTotalDuration());
     }
-    
-    
-    public final boolean isFinished() {
-        return (getRemainingTime() == 0);
-    }
-    
     
     public final void rewind() {
         setTime(0);
     }
     
-    
-    /**
-        If this animation is not looping, the animation is fast-forwarded to its end.
-    */
-    public final boolean fastForward() {
-        int totalDuration = getTotalDuration();
-        if (totalDuration < 0) {
-            return false;
-        }
-        else {
-            return setTime(totalDuration);
-        }
-    }
-    
-    
-    protected final int getAnimTime(int elapsedTime) {
-        int animTime = elapsedTime - startDelay;
-        if (animTime >= 0 && duration > 0) {
-            if (numLoops != 1) {
-                animTime %= (duration + loopDelay);
-            }
-        }
-        return animTime;
-    }
-    
-    
-    protected final int getAnimState(int animTime) {
-        if (animTime < 0) {
-            return STATE_START_DELAY;
-        }
-        else if (duration < 0 || animTime < duration) {
-            return STATE_ACTIVE;
-        }
-        else {
-            return STATE_LOOP_DELAY;
-        }
-    }
-    
-
-    //
-    // These 4 methods may be overridden
-    //
-
-
-    /**
-        Returns true if the value changed.
-    */
     public boolean update(int elapsedTime) {
         return setTime(this.elapsedTime + elapsedTime);
     }
     
-
-    protected boolean setTime(int newTime) {
+    private final boolean setTime(int newTime) {
+        // Takes care of special case where elapsedTime, startDelay and duration are 0
+        int oldState = (elapsedTime <= 0) ? SECTION_START_DELAY : getSection();
+        this.elapsedTime = newTime;
+        int newState = getSection();
         
-        int totalDuration = getTotalDuration();
-        
-        if (newTime < 0) {
-            newTime = 0;
-        }
-        else if (totalDuration != -1 && newTime > totalDuration) {
-            newTime = totalDuration;
-        }
-        
-        if (newTime == elapsedTime) {
-            return false;
-        }
-        
-        boolean valueUpdated = false;
-        int animTime = getAnimTime(newTime);
-        int animState = getAnimState(animTime);
-        if (animState == STATE_ACTIVE) {
-            valueUpdated = true;
-            updateValue(animTime);
-        }
-        else {
-            int prevAnimState = getAnimState(getAnimTime(elapsedTime));
-            if (animState == STATE_LOOP_DELAY && prevAnimState != STATE_LOOP_DELAY) {
-                valueUpdated = true;
-                updateValue(duration);
-            }
-            else if (animState == STATE_START_DELAY && prevAnimState == STATE_ACTIVE) {
-                valueUpdated = true;
-                updateValue(duration);
-            }
-        }
-        
-        elapsedTime = newTime;
-        return valueUpdated;
-    }
-
-
-    protected void updateValue(int animTime) {
-        if (animTime >= duration) {
-            value = toValue;
-        }
-        else if (animTime <= 0) {
-            value = fromValue;
-        }
-        else {
+        if (newState == SECTION_ANIMATION) {
+            int animTime = getAnimTime();
             if (easing != null) {
                 animTime = easing.ease(animTime, duration);
-            }            
-            value = calcValue(animTime);
+            }
+            updateState(animTime);
+            return true;
+        }
+        else if ((newState == SECTION_LOOP_DELAY && oldState != SECTION_LOOP_DELAY) ||
+            (newState == SECTION_START_DELAY && oldState == SECTION_ANIMATION))
+        {
+            updateState(duration);
+            return true;
+        }
+        else {
+            return false;
         }
     }
     
-    
-    protected int calcValue(int animTime) {
-        return fromValue + CoreMath.mulDiv(toValue - fromValue, animTime, duration);
-    }
+    /**
+        Updates the state based on the animation time, typically from 0 to {@link #getDuration()}.
+        Note that the duration can be zero.
+        @param animTime The animation time, typically from 0 to {@link #getDuration()}, although
+        an {@link Easing} can cause the value to be outside those bounds.
+    */
+    protected abstract void updateState(int animTime);
+
 }

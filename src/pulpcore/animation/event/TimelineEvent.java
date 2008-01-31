@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -40,7 +40,7 @@ import pulpcore.animation.Animation;
     An anonymous inner class can be used in a Scene2D to create a code block 
     that is executed after a delay:
     <pre>
-    int delay = 1000;
+    int delay = 1000; // milliseconds
     addEvent(new TimelineEvent(delay) {
         public void run() {
             // Code to execute after the delay
@@ -50,36 +50,26 @@ import pulpcore.animation.Animation;
 */
 public abstract class TimelineEvent extends Animation implements Runnable {
 
-    
     private boolean hasExecuted;
     
-    
     public TimelineEvent(int delay) {
-        super(0, 1, 0, null, Math.max(1, delay));
+        super(0, null, Math.max(1, delay));
         hasExecuted = false;
     }
     
-    
-    protected final boolean setTime(int newTime) {
-        super.setTime(newTime);
-        
-        if (super.value == 1 && !hasExecuted) {
+    protected void updateState(int animTime) {
+        if (!hasExecuted) {
             hasExecuted = true;
             run();
-            
             synchronized (this) {
                 this.notify();
             }
-            return true;
         }
-        return false;
     }
-    
     
     public final boolean hasExecuted() {
         return hasExecuted;
     }
-    
     
     public abstract void run();
 }

@@ -26,20 +26,49 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
     POSSIBILITY OF SUCH DAMAGE.
 */
-
 package pulpcore.animation;
 
-/**
-    The PropertyListener is the listener interface for receiving notification
-    when a {@link Property}'s value has changed.
-*/
-public interface PropertyListener {
+import pulpcore.math.CoreMath;
 
-    /**
-        Notifies that a property's value has changed.
-        @param property the property whose value has changed.
-    */
-    public void propertyChange(Property property);
+/**
+    Helper class to facilitate property.bindTo() methods.
+*/
+/* package-private */ final class Binding implements Behavior {
+
+    /* package-private */ static final int FUNCTION_NONE = 0;
+    /* package-private */ static final int FUNCTION_TO_INT = 1;
+    /* package-private */ static final int FUNCTION_TO_FIXED = 2;
+    
+    private final Property source;
+    private final int function;
+    
+    /* package-private */ Binding(Property source) {
+        this(source, FUNCTION_NONE);
+    }
+    
+    /* package-private */ Binding(Property source, int function) {
+        this.source = source;
+        this.function = function;
+    }
+    
+    public boolean update(int elapsedTime) {
+        return true;
+    }
+    
+    public void fastForward() {
+        // Do nothing
+    }
+
+    public boolean isFinished() {
+        return false;
+    }
+    
+    public int getValue() {
+        switch (function) {
+            default: case FUNCTION_NONE: return source.getValue();
+            case FUNCTION_TO_INT: return CoreMath.toInt(source.getValue());
+            case FUNCTION_TO_FIXED: return CoreMath.toFixed(source.getValue());
+        }
+    }
     
 }
-  

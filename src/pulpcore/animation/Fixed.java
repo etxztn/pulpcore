@@ -38,107 +38,73 @@ import pulpcore.math.CoreMath;
 */
 public final class Fixed extends Property {
 
-    private int fValue;
-    
-    
     public Fixed() {
         this(null, 0);
     }
 
-    
     public Fixed(PropertyListener listener) {
         this(listener, 0);
     }
-    
     
     //
     // Constructors with setters - 2 methods
     //
     
-    
     public Fixed(int value) {
         this(null, value);
     }
-    
     
     public Fixed(double value) {
         this(null, value);
     }
     
-    
     //
     // Constructors with setters and listeners - 2 methods
     //
     
-    
     public Fixed(PropertyListener listener, int value) {
-        super(listener);
-        this.fValue = CoreMath.toFixed(value);
+        super(listener, CoreMath.toFixed(value));
     }
-    
     
     public Fixed(PropertyListener listener, double value) {
-        super(listener);
-        this.fValue = CoreMath.toFixed(value);
+        super(listener, CoreMath.toFixed(value));
     }
-    
     
     //
     // Getters
     //
-    
 
     public int getAsFixed() {
-        return fValue;
+        return super.getValue();
     }
     
     public int getAsInt() {
-        return CoreMath.toInt(fValue);
+        return CoreMath.toInt(super.getValue());
     }
-    
     
     public int getAsIntFloor() {
-        return CoreMath.toIntFloor(fValue);
+        return CoreMath.toIntFloor(super.getValue());
     }
-    
     
     public int getAsIntCeil() {
-        return CoreMath.toIntCeil(fValue);
+        return CoreMath.toIntCeil(super.getValue());
     }
-    
     
     public int getAsIntRound() {
-        return CoreMath.toIntRound(fValue);
+        return CoreMath.toIntRound(super.getValue());
     }
-    
     
     public double get() {
-        return CoreMath.toDouble(fValue);
+        return CoreMath.toDouble(super.getValue());
     }
-    
     
     public String toString() {
-        return CoreMath.toString(fValue, 7);
+        return CoreMath.toString(super.getValue(), 7);
     }
-    
-    
-    //
-    // Base set method
-    //
-    
-    
-    protected void setValue(int fValue) {
-        if (this.fValue != fValue) {
-            this.fValue = fValue;
-            notifyListener();
-        }
-    }
-    
     
     //
     // Setters - 3 methods
     //
-    
 
     /**
         Sets the value of this property. 
@@ -146,9 +112,8 @@ public final class Fixed extends Property {
     */
     public void setAsFixed(int fValue) {
         setValue(fValue);
-        this.anim = null;
+        setBehavior(null);
     }    
-    
     
     /**
         Sets the value of this property. 
@@ -158,7 +123,6 @@ public final class Fixed extends Property {
         setAsFixed(CoreMath.toFixed(value));
     }
     
-    
     /**
         Sets the value of this property. 
         Any previous animations are stopped.
@@ -167,11 +131,9 @@ public final class Fixed extends Property {
         setAsFixed(CoreMath.toFixed(value));
     }
     
-    
     //
     // Setters (with a delay) - 3 methods
     //
-    
     
     /**
         Sets the value of this property after a specific delay. 
@@ -181,7 +143,6 @@ public final class Fixed extends Property {
         animateToFixed(fValue, 0, null, delay);
     }
     
-
     /**
         Sets the value of this property after a specific delay. 
         Any previous animations are stopped.
@@ -190,7 +151,6 @@ public final class Fixed extends Property {
         animateTo(value, 0, null, delay);
     }
     
-    
     /**
         Sets the value of this property after a specific delay. 
         Any previous animations are stopped.
@@ -198,46 +158,34 @@ public final class Fixed extends Property {
     public void set(double value, int delay) {
         animateTo(value, 0, null, delay);
     }
-        
     
-    //
-    // Base animate method
-    //
-    
-    
-    public void animate(Animation anim) {
-        this.anim = anim;
-        if (anim.getStartDelay() == 0) {
-            setValue(anim.getValue());
-        }
+    public void bindTo(Fixed property) {
+        setBehavior(new Binding(property));
     }
     
+    public void bindTo(Int property) {
+        setBehavior(new Binding(property, Binding.FUNCTION_TO_FIXED));
+    }
     
-// CONVENIENCE METHODS - BELOW THIS LINE THAR BE DRAGONS 
-
-
     //
     // Animation convenience methods - fixed-point
     //
-    
     
     /**
         Animates this property from the one fixed-point value (fFromValue) to another (fToValue).
         Any previous animations are stopped.
     */
     public void animateAsFixed(int fFromValue, int fToValue, int duration) {
-        animate(new Animation(fFromValue, fToValue, duration));
+        setBehavior(new Tween(fFromValue, fToValue, duration));
     }
-    
     
     /**
         Animates this property from the one fixed-point value (fFromValue) to another (fToValue).
         Any previous animations are stopped.
     */
     public void animateAsFixed(int fFromValue, int fToValue, int duration, Easing easing) {
-        animate(new Animation(fFromValue, fToValue, duration, easing));
+        setBehavior(new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     /**
         Animates this property from the one fixed-point value (fFromValue) to another (fToValue).
@@ -246,41 +194,36 @@ public final class Fixed extends Property {
     public void animateAsFixed(int fFromValue, int fToValue, int duration, Easing easing,
         int startDelay) 
     {
-        animate(new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        setBehavior(new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }
-    
     
     /**
         Animates this property from the current value to the specified fixed-point value.
         Any previous animations are stopped.
     */
     public void animateToFixed(int fToValue, int duration) {
-        animate(new Animation(getAsFixed(), fToValue, duration));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration));
     }
-    
     
     /**
         Animates this property from the current value to the specified fixed-point value.
         Any previous animations are stopped.
     */
     public void animateToFixed(int fToValue, int duration, Easing easing) {
-        animate(new Animation(getAsFixed(), fToValue, duration, easing));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration, easing));
     }
-    
     
     /**
         Animates this property from the current value to the specified fixed-point value.
         Any previous animations are stopped.
     */
     public void animateToFixed(int fToValue, int duration, Easing easing, int startDelay) {
-        animate(new Animation(getAsFixed(), fToValue, duration, easing, startDelay));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration, easing, startDelay));
     }    
-
 
     //
     // Animation convenience methods - integer
     //
-    
     
     /**
         Animates this property from the one integer (fromValue) to another (toValue).
@@ -289,9 +232,8 @@ public final class Fixed extends Property {
     public void animate(int fromValue, int toValue, int duration) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(new Animation(fFromValue, fToValue, duration));
+        setBehavior(new Tween(fFromValue, fToValue, duration));
     }
-    
     
     /**
         Animates this property from the one integer (fromValue) to another (toValue).
@@ -300,9 +242,8 @@ public final class Fixed extends Property {
     public void animate(int fromValue, int toValue, int duration, Easing easing) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(new Animation(fFromValue, fToValue, duration, easing));
+        setBehavior(new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     /**
         Animates this property from the one integer (fromValue) to another (toValue).
@@ -311,9 +252,8 @@ public final class Fixed extends Property {
     public void animate(int fromValue, int toValue, int duration, Easing easing, int startDelay) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        setBehavior(new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }
-    
     
     /**
         Animates this property from the current value to the specified integer.
@@ -321,9 +261,8 @@ public final class Fixed extends Property {
     */
     public void animateTo(int toValue, int duration) {
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(getAsFixed(), fToValue, duration));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration));
     }
-    
     
     /**
         Animates this property from the current value to the specified integer.
@@ -331,9 +270,8 @@ public final class Fixed extends Property {
     */
     public void animateTo(int toValue, int duration, Easing easing) {
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(getAsFixed(), fToValue, duration, easing));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration, easing));
     }
-    
     
     /**
         Animates this property from the current value to the specified integer.
@@ -341,14 +279,12 @@ public final class Fixed extends Property {
     */
     public void animateTo(int toValue, int duration, Easing easing, int startDelay) {
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(getAsFixed(), fToValue, duration, easing, startDelay));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration, easing, startDelay));
     }    
-
 
     //
     // Animation convenience methods - double
     //
-    
     
     /**
         Animates this property from the one double (fromValue) to another (toValue).
@@ -357,9 +293,8 @@ public final class Fixed extends Property {
     public void animate(double fromValue, double toValue, int duration) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(new Animation(fFromValue, fToValue, duration));
+        setBehavior(new Tween(fFromValue, fToValue, duration));
     }
-    
     
     /**
         Animates this property from the one double (fromValue) to another (toValue).
@@ -368,9 +303,8 @@ public final class Fixed extends Property {
     public void animate(double fromValue, double toValue, int duration, Easing easing) {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue);
-        animate(new Animation(fFromValue, fToValue, duration, easing));
+        setBehavior(new Tween(fFromValue, fToValue, duration, easing));
     }
-    
     
     /**
         Animates this property from the one double (fromValue) to another (toValue).
@@ -381,9 +315,8 @@ public final class Fixed extends Property {
     {
         int fFromValue = CoreMath.toFixed(fromValue);
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(fFromValue, fToValue, duration, easing, startDelay));
+        setBehavior(new Tween(fFromValue, fToValue, duration, easing, startDelay));
     }
-    
     
     /**
         Animates this property from the current value to the specified double.
@@ -391,9 +324,8 @@ public final class Fixed extends Property {
     */
     public void animateTo(double toValue, int duration) {
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(getAsFixed(), fToValue, duration));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration));
     }
-    
     
     /**
         Animates this property from the current value to the specified double.
@@ -401,9 +333,8 @@ public final class Fixed extends Property {
     */
     public void animateTo(double toValue, int duration, Easing easing) {
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(getAsFixed(), fToValue, duration, easing));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration, easing));
     }
-    
     
     /**
         Animates this property from the current value to the specified double.
@@ -411,6 +342,6 @@ public final class Fixed extends Property {
     */
     public void animateTo(double toValue, int duration, Easing easing, int startDelay) {
         int fToValue = CoreMath.toFixed(toValue); 
-        animate(new Animation(getAsFixed(), fToValue, duration, easing, startDelay));
+        setBehavior(new Tween(getAsFixed(), fToValue, duration, easing, startDelay));
     }
 }

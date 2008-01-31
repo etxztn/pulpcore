@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,34 +34,25 @@ package pulpcore.animation;
 */
 public final class Bool extends Property {
 
-    private boolean value;
-    
-    
     public Bool() {
         this(null, false);
     }
-
     
     public Bool(PropertyListener listener) {
         this(listener, false);
     }
     
-    
     public Bool(boolean value) {
         this(null, value);
     }
     
-    
     public Bool(PropertyListener listener, boolean value) {
-        super(listener);
-        this.value = value;
+        super(listener, value ? 1 : 0);
     }
-    
     
     public boolean get() {
-        return value;
+        return getValue() == 0 ? false : true;
     }
-    
     
     /**
         Sets the value of this Bool. 
@@ -69,32 +60,22 @@ public final class Bool extends Property {
     */
     public void set(boolean value) {
         setValue(value?1:0);
-        this.anim = null;
+        setBehavior(null);
     }
-    
     
     /**
         Sets the value of this Bool after a specific delay. 
         Any previous animations are stopped.
     */
     public void set(boolean value, int delay) {
-        this.anim = new Animation(this.value?1:0, value?1:0, delay, null, delay);
-        if (anim.getStartDelay() == 0) {
-            setValue(anim.getValue());
-        }
+        setBehavior(new Tween(get()?1:0, value?1:0, delay, null, delay));
     }
     
-    
-    protected void setValue(int value) {
-        boolean newValue = (value != 0);
-        if (this.value != newValue) {
-            this.value = newValue;
-            notifyListener();
-        }
+    public void bindTo(Bool property) {
+        setBehavior(new Binding(property));
     }
-    
     
     public String toString() {
-        return value ? "true" : "false";
+        return get() ? "true" : "false";
     }
 }

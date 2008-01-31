@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,17 +34,17 @@ package pulpcore.animation;
 */
 public class Easing {
     
-    protected static final int TYPE_IN = 0;
-    protected static final int TYPE_OUT = 1;
-    protected static final int TYPE_IN_OUT = 2;
+    private static final int TYPE_IN = 0;
+    private static final int TYPE_OUT = 1;
+    private static final int TYPE_IN_OUT = 2;
     
-    protected static final int FUNCTION_LINEAR = 0;
-    protected static final int FUNCTION_QUADRADIC = 1;
-    protected static final int FUNCTION_CUBIC = 2;
-    protected static final int FUNCTION_QUARTIC = 3;
-    protected static final int FUNCTION_QUINTIC = 4;
-    protected static final int FUNCTION_BACK = 5;
-    protected static final int FUNCTION_ELASTIC = 6;
+    private static final int FUNCTION_LINEAR = 0;
+    private static final int FUNCTION_QUADRADIC = 1;
+    private static final int FUNCTION_CUBIC = 2;
+    private static final int FUNCTION_QUARTIC = 3;
+    private static final int FUNCTION_QUINTIC = 4;
+    private static final int FUNCTION_BACK = 5;
+    private static final int FUNCTION_ELASTIC = 6;
     
     public static final Easing NONE = new Easing(TYPE_IN, FUNCTION_LINEAR);
     
@@ -64,39 +64,33 @@ public class Easing {
     public static final Easing ELASTIC_OUT = new Easing(TYPE_OUT, FUNCTION_ELASTIC);
     public static final Easing ELASTIC_IN_OUT = new Easing(TYPE_IN_OUT, FUNCTION_ELASTIC);
     
-    
     private final int type;
     private final int function;
     private final float strength;
     
-    
     protected Easing() {
-        this(TYPE_OUT, FUNCTION_LINEAR);
+        this(TYPE_IN, FUNCTION_LINEAR);
     }
     
-    protected Easing(int type) {
+    private Easing(int type) {
         this(type, FUNCTION_LINEAR);
     }
     
-    
-    public Easing(int type, int function) {
+    private Easing(int type, int function) {
         this(type, function, 1);
     }
     
-    
-    public Easing(int type, int function, double stength) {
+    private Easing(int type, int function, double stength) {
         this.type = type;
         this.function = function;
         this.strength = (float)stength;
     }
     
-    
     public Easing(Easing easing, double strength) {
         this(easing.type, easing.function, strength);
     }
     
-    
-    public int ease(int time, int duration) { 
+    public final int ease(int time, int duration) { 
         if (time <= 0 || duration <= 0) {
             return 0;
         }
@@ -104,8 +98,8 @@ public class Easing {
             return duration;
         }
         
-        final float t = (float)time / duration;
-        float easedT;
+        final double t = (double)time / duration;
+        double easedT;
         
         switch (type) {
             
@@ -122,7 +116,7 @@ public class Easing {
                 break;
             
             case TYPE_IN_OUT: 
-                if (t < 0.5f) {
+                if (t < 0.5) {
                     easedT = ease(2*t)/2;
                 }
                 else {
@@ -135,14 +129,13 @@ public class Easing {
             easedT = strength * easedT + (1 - strength) * t;
         }
         
-        return Math.round(easedT * duration);
+        return (int)Math.round(easedT * duration);
     }
     
-    
-    protected float ease(float t) {
+    protected double ease(double t) {
         
-        float t2;
-        float t3;
+        double t2;
+        double t3;
         
         switch (function) {
             
@@ -172,13 +165,11 @@ public class Easing {
                 t2 = t * t;
                 t3 = t2 * t;
                 
-                float scale = t2 * (2*t3 + t2 - 4*t + 2);
-                float wave = (float)-Math.sin(t * 3.5 * Math.PI);
+                double scale = t2 * (2*t3 + t2 - 4*t + 2);
+                double wave = (float)-Math.sin(t * 3.5 * Math.PI);
                 
                 return scale * wave;
         }
-        
     }
-    
 }
 

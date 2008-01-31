@@ -30,29 +30,66 @@
 package pulpcore.animation;
 
 /**
-    The Property class is the base class for animating property values. 
+    The Property class is the base class for animating values. Properties have a value,
+    a behavior to control how the value changes, and listeners to alert when the value changes.
+    <p>
+    Properties have an abstract 32-bit value, and it's up to subclasses to interpret that value
+    with get and set methods.
 */
 public abstract class Property {
     
-    protected Animation anim;
+    private Behavior behavior;
     private PropertyListener listener;
-    
-    public Property() {
-        this(null);
-    }
-    
-    public Property(PropertyListener listener) {
-        this.listener = listener;
-    }
-    
-    protected abstract void setValue(int value);
+    private int value;
     
     /**
-        Returns an array of all the listeners registered on this Property.
-        @return all of this Property's PropertyListeners or an empty array if no listeners are 
-        currently registered.
+        Creates a property with the specified listener and initial value. The listener may be
+        {@code null}. The behavior is {@code null}.
     */
-    public PropertyListener[] getListeners() {
+    public Property(PropertyListener listener, int value) {
+        this.listener = listener;
+        this.value = value;
+    }
+    
+    /**
+        Sets the value for this property. If the new value is different from the old value,
+        any listeners are alerted.
+        @param value the new value.
+    */
+    protected final void setValue(int value) {
+        if (this.value != value) {
+            this.value = value;
+            if (listener != null) {
+                listener.propertyChange(this);
+            }
+        }
+    }
+    
+    /**
+        Gets the value for this property.
+        @return the value.
+    */
+    protected final int getValue() {
+        return value;
+    }
+    
+    /**
+        Sets the behavior for this property, which may be null. The value of this property is
+        immediately set if {@code behavior.update(0)} returns {@code true}.
+        @param behavior The new behavior.
+    */
+    public final void setBehavior(Behavior behavior) {
+        this.behavior = behavior;
+        // Set the value immediately
+        update(0);
+    }
+    
+    /**
+        Returns a newly allocated array of all the listeners registered on this Property.
+        @return all of this Property's {@link PropertyListener}s or an empty array if no 
+        listeners are registered.
+    */
+    public final PropertyListener[] getListeners() {
         if (listener == null) {
             return new PropertyListener[0];
         }
@@ -65,10 +102,11 @@ public abstract class Property {
     }
     
     /**
-        Adds the specified listener to receive events from this Property. If the listener is null, 
-        no exception is thrown and no action is performed.
+        Adds the specified listener to receive events from this Property. If the listener is 
+        {@code null}, no exception is thrown and no action is performed.
+        @param listener The listener to add.
     */
-    public void addListener(PropertyListener listener) {
+    public final void addListener(PropertyListener listener) {
         if (listener == null || this.listener == listener) {
             // Do nothing
         }
@@ -86,10 +124,11 @@ public abstract class Property {
     /**
         Removes the specified listener so that it no longer receives events from this Property.
         This method performs no function, nor does it throw an exception, if the listener specified 
-        by the argument was not previously added to this Property. If the listener is null, 
+        by the argument was not previously added to this Property. If the listener is {@code null}, 
         no exception is thrown and no action is performed.
+        @param listener The listener to remove.
     */
-    public void removeListener(PropertyListener listener) {
+    public final void removeListener(PropertyListener listener) {
         if (this.listener == listener) {
             this.listener = null;
         }
@@ -102,46 +141,46 @@ public abstract class Property {
         }
     }
     
-    protected void notifyListener() {
-        if (listener != null) {
-            listener.propertyChange(this);
-        }
-    }
-     
     /**
-        Updates this Property, possibly modifying its value if it has an
-        Animation attached. This method should be called once per frame.
-        Sprites typically handle property updating.
+        Updates this Property, possibly modifying its value if it has a {@link Behavior}.
+        This method should be called once per frame, and a {@link pulpcore.sprite.Sprite}
+        typically handles property updating.
+        @param elapsedTime Elapsed time since the last update, in milliseconds.
     */
-    public void update(int elapsedTime) {
-        if (anim == null) {
-            return;
-        }
-        
-        boolean isActive = anim.update(elapsedTime);
-        if (isActive) {
-            setValue(anim.getValue());
-        }
-        
-        if (anim != null && anim.isFinished()) {
-            anim = null;
+    public final void update(int elapsedTime) {
+        if (behavior != null) {
+            // Make a copy in case the behavior reference is changed in update() or setValue()
+            Behavior b = behavior;
+            boolean isActive = b.update(elapsedTime);
+            if (isActive) {
+                setValue(b.getValue());
+            }
+            if (behavior == b && b.isFinished()) {
+                behavior = null;
+            }
         }
     }
     
-    public boolean isAnimating() {
-        return (anim != null && anim.isAnimating());
+    /**
+        Checks if this property has a behavior and it is not finished animating.
+        @return true if this property has a behavior and it is not finished animating.
+    */
+    public final boolean isAnimating() {
+        return (behavior != null && !behavior.isFinished());
     }
     
     /**
-        @param gracefully if true and the animation is not 
-        looping, the animation is 
-        fastforwarded to its end before it is stopped.
+        Stops the behavior, if any.
+        @param gracefully if true, the behavior is fast-forwarded to it's end and the property's 
+        value is immediately set.
     */
-    public void stopAnimation(boolean gracefully) {
-        if (anim != null && gracefully) {
-            anim.fastForward();
-            setValue(anim.getValue());
+    public final void stopAnimation(boolean gracefully) {
+        if (behavior != null && gracefully) {
+            // Make a copy in case the behavior reference is changed in fastForward()
+            Behavior b = behavior;
+            b.fastForward();
+            setValue(b.getValue());
         }
-        anim = null;
+        behavior = null;
     }
 }
