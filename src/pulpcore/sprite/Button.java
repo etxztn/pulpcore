@@ -30,7 +30,7 @@
 package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
-import pulpcore.animation.ColorAnimation;
+import pulpcore.animation.Color;
 import pulpcore.image.AnimatedImage;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
@@ -477,36 +477,29 @@ public class Button extends ImageSprite {
         int cornerSize = 3;
         CoreImage image = new CoreImage(w, h);
         CoreGraphics g = image.createGraphics();
-        ColorAnimation topGradient, bottomGradient;
+        Color topGradient = new Color();
+        Color bottomGradient = new Color();
         
         // Web 2.0-style gradients
         if (type == 0 || type == 1) {
             // Normal, Hover
-            topGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x626365, 0x484848, h/2);
-            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x030303, 0x2e2e2e, h/2);
+            topGradient.animate(0xff626365, 0xff484848, h/2);
+            bottomGradient.animate(0xff030303, 0xff2e2e2e, h/2);
         }
         else if (type == 2) {
             // Pressed
-            topGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x2e2e2e, 0x484848, h/2);
-            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x030303, 0x2e2e2e, h/2);
+            topGradient.animate(0xff2e2e2e, 0xff484848, h/2);
+            bottomGradient.animate(0xff030303, 0xff2e2e2e, h/2);
         }
         else if (type == 3 || type == 4) {
             // Selected
-            topGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x3d4a8a, 0x3d4a8a, h/2);
-            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x11194f, 0x3d4a8a, h/2);
+            topGradient.animate(0xff3d4a8a, 0xff3d4a8a, h/2);
+            bottomGradient.animate(0xff11194f, 0xff3d4a8a, h/2);
         }
         else {
             // Selected & pressed
-            topGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x273271, 0x3d4a8a, h/2);
-            bottomGradient = new ColorAnimation(ColorAnimation.RGB,
-                0x11194f, 0x3d4a8a, h/2);
+            topGradient.animate(0xff273271, 0xff3d4a8a, h/2);
+            bottomGradient.animate(0xff11194f, 0xff3d4a8a, h/2);
         }
         
         for (int i = 0; i < h/2; i++) {
@@ -516,11 +509,11 @@ public class Button extends ImageSprite {
             int y2 = h - 1 - i;
             
             topGradient.update(1);
-            g.setColor(topGradient.getValue());
+            g.setColor(topGradient.get());
             g.fillRect(x, y1, lineWidth, 1);
             
             bottomGradient.update(1);
-            g.setColor(bottomGradient.getValue());
+            g.setColor(bottomGradient.get());
             g.fillRect(x, y2, lineWidth, 1);
         }
         

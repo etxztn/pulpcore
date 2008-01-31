@@ -415,9 +415,7 @@ public class Slider extends Sprite {
         Sets the internal data model for this Slider. The range of the value is set have a bounds
         of the specified minimum and maximum values. The extent is the inner range that this Slider
         covers, such that:
-        <code>
-        minimum <= value <= value+extent <= maximum
-        </code>
+        {@code minimum <= value <= value+extent <= maximum}
         <p>
         The minimum, maximum, and extent can be any integer, and do not 
         correspond to any pixel value. By default, the minimum is 0, the maximum is 100, and the

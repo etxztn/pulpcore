@@ -29,7 +29,7 @@
 
 package pulpcore.sprite;
 
-import pulpcore.animation.Int;
+import pulpcore.animation.Color;
 import pulpcore.image.CoreGraphics;
 import pulpcore.math.CoreMath;
 import pulpcore.Stage;
@@ -39,108 +39,38 @@ import pulpcore.Stage;
 */
 public class FilledSprite extends Sprite {
     
-    /** Fill color in ARGB format */
-    public final Int fillColor = new Int(this);
+    /** Fill color */
+    public final Color fillColor = new Color(this);
     
-    /** Border color in ARGB format */
-    public final Int borderColor = new Int(this);
+    /** Border color */
+    public final Color borderColor = new Color(this);
     
     // Fixed-point
-    protected int borderTop;
-    protected int borderLeft;
-    protected int borderBottom;
-    protected int borderRight;
-    
+    private int borderTop;
+    private int borderLeft;
+    private int borderBottom;
+    private int borderRight;
     
     public FilledSprite(int fillColor) {
-        this(0, 0, Stage.getWidth(), Stage.getHeight(), fillColor, false);
+        this(0, 0, Stage.getWidth(), Stage.getHeight(), fillColor);
     }
-    
-    
-    public FilledSprite(int fillColor, boolean hasAlpha) {
-        this(0, 0, Stage.getWidth(), Stage.getHeight(), fillColor, hasAlpha);
-    }
-    
     
     /**
-        @param fillColor Color of the FilledSprite in the RGB format.
+        @param fillColor Color of the FilledSprite in the ARGB format.
     */
     public FilledSprite(int x, int y, int w, int h, int fillColor) {
-        this(x, y, w, h, fillColor, false);
-    }
-    
-    
-    public FilledSprite(int x, int y, int w, int h, int fillColor, boolean hasAlpha) {
         super(x, y, w, h);
-        setFillColor(fillColor, hasAlpha);
+        this.fillColor.set(fillColor);
     }
-    
     
     public FilledSprite(double x, double y, double w, double h, int fillColor) {
-        this(x, y, w, h, fillColor, false);
-    }
-    
-    
-    public FilledSprite(double x, double y, double w, double h, int fillColor, boolean hasAlpha) {
         super(x, y, w, h);
-        setFillColor(fillColor, hasAlpha);
+        this.fillColor.set(fillColor);
     }
-    
-    
-    public void setFillColor(int r, int g, int b) {
-        setFillColor((r << 16) | (g << 8) | b, false);
-    }
-    
-    
-    public void setFillColor(int r, int g, int b, int a) {
-        setFillColor((a << 24) | (r << 16) | (g << 8) | b, true);
-    }
-    
-    
-    public void setFillColor(int rgbColor) {
-        setFillColor(rgbColor, false);
-    }
-    
-    
-    public void setFillColor(int argbColor, boolean hasAlpha) {
-        if (hasAlpha) {
-            fillColor.set(argbColor);
-        }
-        else {
-            fillColor.set(0xff000000 | argbColor);
-        }
-    }
-    
-    
-    public void setBorderColor(int r, int g, int b) {
-        setBorderColor((r << 16) | (g << 8) | b, false);
-    }
-    
-    
-    public void setBorderColor(int r, int g, int b, int a) {
-        setBorderColor((a << 24) | (r << 16) | (g << 8) | b, true);
-    }
-    
-    
-    public void setBorderColor(int rgbColor) {
-        setBorderColor(rgbColor, false);
-    }
-    
-    
-    public void setBorderColor(int argbColor, boolean hasAlpha) {
-        if (hasAlpha) {
-            borderColor.set(argbColor);
-        }
-        else {
-            borderColor.set(0xff000000 | argbColor);
-        }
-    }
-    
     
     public final void setBorderSize(int borderSize) {
         setBorderSize(borderSize, borderSize, borderSize, borderSize);
     }
-    
     
     public void setBorderSize(int top, int left, int bottom, int right) {
         top = CoreMath.toFixed(Math.max(0, top));
@@ -166,14 +96,12 @@ public class FilledSprite extends Sprite {
         }
     }
     
-    
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         
         fillColor.update(elapsedTime);
         borderColor.update(elapsedTime);
     }
-    
     
     // Override the center anchor since FilledRect is a vector object
     // (Raster objects need the center to be floor() so that centered images don't
@@ -188,7 +116,6 @@ public class FilledSprite extends Sprite {
         }
     }
     
-    
     protected int getAnchorY() {
         if ((getAnchor() & VCENTER) != 0) {
             return getNaturalHeight() / 2;
@@ -197,7 +124,6 @@ public class FilledSprite extends Sprite {
             return super.getAnchorY();
         }
     }
-    
     
     protected void drawSprite(CoreGraphics g) {
         
@@ -208,13 +134,13 @@ public class FilledSprite extends Sprite {
         
         // Inner fill
         if ((fillColor.get() >>> 24) != 0) {
-            g.setColor(fillColor.get(), true);
+            g.setColor(fillColor.get());
             g.fillRectFixedPoint(borderLeft, borderTop, innerWidth, innerHeight);
         }
         
         // Border fill
         if ((borderColor.get() >>> 24) != 0) {
-            g.setColor(borderColor.get(), true);
+            g.setColor(borderColor.get());
             if (borderTop > 0) {
                 g.fillRectFixedPoint(0, 0, w, borderTop);
             }
@@ -229,5 +155,4 @@ public class FilledSprite extends Sprite {
             }
         }
     }
-      
 }

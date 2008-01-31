@@ -60,8 +60,8 @@ public class Group extends Sprite {
     /** Use for children to check if this Group's transform has changed since the last update */
     private int transformModCount = 0;
     
-    protected int fNaturalWidth;
-    protected int fNaturalHeight;
+    private int fNaturalWidth;
+    private int fNaturalHeight;
     private int fInnerX;
     private int fInnerY;
     
@@ -111,7 +111,7 @@ public class Group extends Sprite {
     
     /**
         Returns the sprite at the specified position in this group. Returns null if the index is
-        out of range (<code>index < 0 || index >= size()</code>).
+        out of range ({@code index < 0 || index >= size()}).
     */
     public Sprite get(int index) {
         if (index < 0 || index >= size()) {

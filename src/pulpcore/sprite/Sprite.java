@@ -56,7 +56,7 @@ public abstract class Sprite implements PropertyListener {
     // Text anchors
     //
     
-        /** 
+    /** 
         Constant for positioning the anchor point at the "default" location
         of the Sprite, which is usually its upper-left corner. One exception is
         ImageSprite which uses the image's hotspot at the default anchor. 
@@ -203,7 +203,7 @@ public abstract class Sprite implements PropertyListener {
     private boolean transformDirty = true;
     
     /** Transform based on parent transform and this sprite's x, y, width, height, and angle. */
-    protected final Transform transform = new Transform();
+    private final Transform transform = new Transform();
     
     /** The draw bounding box used for directy rectangles in Scene2D */
     private Rect dirtyRect;
@@ -764,139 +764,6 @@ public abstract class Sprite implements PropertyListener {
             return false;
         }
     }
-    
-    //public final boolean intersects(Sprite sprite) {
-    //    sprite.updateTransform();
-    //    updateTransform();
-    //    
-    //    // Step 1: Get this sprite's points
-    //    int w1 = getNaturalWidth();
-    //    int h1 = getNaturalHeight();
-    //    V[] pointsA = {
-    //        new V(0, 0),
-    //        new V(w1, 0),
-    //        new V(w1, h1),
-    //        new V(0, h1),
-    //    };
-    //    
-    //    // Step 2: Get points of specified sprite (convert this Sprite's Local Space)
-    //    int w2 = sprite.getNaturalWidth();
-    //    int h2 = sprite.getNaturalHeight();
-    //    V[] pointsB = {
-    //        new V(sprite.transform.transformX(0, 0), sprite.transform.transformY(0, 0)),
-    //        new V(sprite.transform.transformX(w2, 0), sprite.transform.transformY(w2, 0)),
-    //        new V(sprite.transform.transformX(w2, h2), sprite.transform.transformY(w2, h2)),
-    //        new V(sprite.transform.transformX(0, h2), sprite.transform.transformY(0, h2)),
-    //    };
-    //    for (int i = 0; i < 4; i++) {
-    //        V p = pointsB[i];
-    //        int lx = transform.inverseTransformX(p.x, p.y);
-    //        int ly = transform.inverseTransformY(p.x, p.y);
-    //        if (lx == Integer.MAX_VALUE || ly == Integer.MAX_VALUE) {
-    //            return false;
-    //        }
-    //        p.x = lx;
-    //        p.y = ly;
-    //    }
-    //    
-    //    // Step 3: Use separating axis theorem (four tests)
-    //    // Line A: (0,0)->(w1,0)
-    //    // Line B: (0,0)->(0,h1)
-    //    // Line C: Perpendicular to (fx[0], fy[0])->(fx[1], fy[1])
-    //    // Line D: Perpendicular to (fx[0], fy[0])->(fx[3], fy[3])
-    //    V[][] vectors = { 
-    //        new V(w1, 0),
-    //        new V(0, h1),
-    //        new V(pointsB[1].y-pointsB[0].y, pointsB[0].x-pointsB[1].x),
-    //        new V(pointsB[3].y-pointsB[0].y, pointsB[0].x-pointsB[3].x)
-    //    };
-    //    for (int i = 0; i < vectors.length; i++) {
-    //        
-    //    }
-    //}
-        /*
-           Any corner point in A lies inside box B.
-           Any corner point in B lies inside box A.
-           Any segment in A intersects any segment in B (after first two checks, there would have to be 2 intersections)
-        */        //// Step 3: Check if any segment intersects the AABB (0,0)->(naturalWidth, naturalHeight)
-        //int width = getNaturalWidth();
-        //int height = getNaturalHeight();
-        //for (int i = 0; i < 4; i++) {
-        //    int j = (i+1)&3;
-        //    if (lineSegmentBoxIntersection(fx[i], fy[i], fx[j], fy[j], 0, 0, width, height)) {
-        //        return true;
-        //    }
-        //}
-        //return false;
-    //}
-    //
-    ///**
-    //    Returns true if a line segment intersects an axis-aligned bounding box.
-    //*/
-    //private static boolean lineSegmentBoxIntersection(
-    //    int lineX1, int lineY1, int lineX2, int lineY2,
-    //    int boxXmin, int boxYmin, int boxXmax, int boxYmax)
-    //{
-    //    int st, et;
-    //    int fst = 0;
-    //    int fet = CoreMath.ONE;
-    //    
-    //    // Check x
-    //    if (lineX1 < lineX2) {
-    //        if (lineX1 > boxXmax || lineX2 < boxXmin) {
-    //            return false;
-    //        }
-    //        int d = lineX2 - lineX1;
-    //        st = (lineX1 < boxXmin) ? CoreMath.div(boxXmin - lineX1, d) : 0;
-    //        et = (lineX2 > boxXmax) ? CoreMath.div(boxXmax - lineX1, d) : 1;
-    //    }
-    //    else {
-    //        if (lineX2 > boxXmax || lineX1 < boxXmin) {
-    //            return false;
-    //        }
-    //        int d = lineX2 - lineX1;
-    //        st = (lineX1 > boxXmax) ? CoreMath.div(boxXmax - lineX1, d) : 0;
-    //        et = (lineX2 < boxXmin) ? CoreMath.div(boxXmin - lineX1, d) : 1;
-    //    }
-    //    if (st > fst) {
-    //        fst = st;
-    //    }
-    //    if (et < fet) {
-    //        fet = et;
-    //    }
-    //    if (fet < fst) {
-    //        return false;
-    //    }
-    //    
-    //    // Check y
-    //    if (lineY1 < lineY2) {
-    //        if (lineY1 > boxYmax || lineY2 < boxYmin) {
-    //            return false;
-    //        }
-    //        int d = lineY2 - lineY1;
-    //        st = (lineY1 < boxYmin) ? CoreMath.div(boxYmin - lineY1, d) : 0;
-    //        et = (lineY2 > boxYmax) ? CoreMath.div(boxYmax - lineY1, d) : 1;
-    //    }
-    //    else {
-    //        if (lineY2 > boxYmax || lineY1 < boxYmin) {
-    //            return false;
-    //        }
-    //        int d = lineY2 - lineY1;
-    //        st = (lineY1 > boxYmax) ? CoreMath.div(boxYmax - lineY1, d) : 0;
-    //        et = (lineY2 < boxYmin) ? CoreMath.div(boxYmin - lineY1, d) : 1;
-    //    }
-    //    if (st > fst) {
-    //        fst = st;
-    //    }
-    //    if (et < fet) {
-    //        fet = et;
-    //    }
-    //    if (fet < fst) {
-    //        return false;
-    //    }
-    //    
-    //    return true;
-    //}
         
     /**
         Checks if this Sprite (and its parents) are enabled, and
@@ -905,7 +772,8 @@ public abstract class Sprite implements PropertyListener {
         @return true if the mouse is currently within the bounds of this Sprite.
     */
     public boolean isMouseOver() {
-        return Input.isMouseInside() && isEnabled() && contains(Input.getMouseX(), Input.getMouseY());
+        return Input.isMouseInside() && isEnabled() && 
+            contains(Input.getMouseX(), Input.getMouseY());
     }
     
     /**

@@ -29,9 +29,9 @@
 
 package pulpcore.sprite;
 
-import pulpcore.animation.Bool;
-import pulpcore.animation.Property;
+import pulpcore.animation.Color;
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.Input;
@@ -85,6 +85,10 @@ public class TextField extends Sprite {
     private static final int EXTRA_CARET_HEIGHT = 0;
     
     private static CoreFont systemSelectionFont;
+    
+    /** The highlight color to use when text is selected.
+        By default, the selection color is black. */
+    public final Color selectionColor = new Color(this, 0xff000000);
 
     private CoreFont font;
     private String text;
@@ -97,7 +101,6 @@ public class TextField extends Sprite {
     // Note: selectionLength is negative for selections to the left of the cursor
     private int selectionLength;
     private CoreFont selectionFont;
-    private int selectionColor;
     
     private boolean passwordMode;
     
@@ -216,7 +219,6 @@ public class TextField extends Sprite {
         caretPosition = text.length();
         timeUntilBlinkOff = BLINK_TIME;
         
-        setSelectionColor(0x000000);
         setCursor(Input.CURSOR_TEXT);
     }
     
@@ -260,7 +262,7 @@ public class TextField extends Sprite {
         setSelectionLength(0);
     }
     
-    protected void setSelectionLength(int length) {
+    private void setSelectionLength(int length) {
         if (selectionLength != length) {
             selectionLength = length;
             setDirty(true);
@@ -394,28 +396,6 @@ public class TextField extends Sprite {
             }
             return displayText.length();
         }
-    }
-    
-    public void setSelectionColor(int r, int g, int b) {
-        setSelectionColor((r << 16) | (g << 8) | b, false);
-    }
-    
-    public void setSelectionColor(int r, int g, int b, int a) {
-        setSelectionColor((a << 24) | (r << 16) | (g << 8) | b, true);
-    }
-    
-    public void setSelectionColor(int rgbColor) {
-        setSelectionColor(rgbColor, false);
-    }
-    
-    public void setSelectionColor(int argbColor, boolean hasAlpha) {
-        if (hasAlpha) {
-            selectionColor = argbColor;
-        }
-        else {
-            selectionColor = 0xff000000 | argbColor;
-        }
-        setDirty(true);
     }
     
     public void update(int elapsedTime) {
@@ -812,7 +792,7 @@ public class TextField extends Sprite {
             {
                 int caretX = font.getStringWidth(text, scrollPosition, caretPosition);
                 if (caretX >= 0 && caretX < maxWidth) {
-                    g.setColor(0x000000);
+                    g.setColor(Colors.BLACK);
                     g.fillRect(caretX, 0, 1, font.getHeight() + EXTRA_CARET_HEIGHT*2);
                 }
             }
@@ -833,7 +813,7 @@ public class TextField extends Sprite {
             selectionStart = Math.max(selectionStart, 0);
             int selX = font.getCharPosition(displayText, 0, selectionStart);
             int selWidth = selectionFont.getStringWidth(displayText, selectionStart, selectionEnd);
-            g.setColor(selectionColor, true);
+            g.setColor(selectionColor.get());
             g.fillRect(selX, 0, Math.min(selWidth, maxWidth-selX),
                 selectionFont.getHeight() + EXTRA_CARET_HEIGHT*2);
             
