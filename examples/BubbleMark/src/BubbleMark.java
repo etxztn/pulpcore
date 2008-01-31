@@ -1,4 +1,5 @@
 import pulpcore.animation.Fixed;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreImage;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
@@ -25,9 +26,9 @@ public class BubbleMark extends Scene2D {
     @Override
     public void load() {
         // Add background
-        FilledSprite background = new FilledSprite(0xffffff);
+        FilledSprite background = new FilledSprite(WHITE);
         background.setBorderSize(1);
-        background.setBorderColor(0x000000);
+        background.borderColor.set(BLACK);
         add(background);
         
         // Add balls. Optimization: Enable pixel-snapping if 64 balls or more

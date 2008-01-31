@@ -2,6 +2,7 @@
 // Shows word wrapping, animated text, accent chars, and font tinting.
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreFont;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
@@ -27,14 +28,14 @@ public class Text extends Scene2D {
     
     @Override
     public void load() {
-        add(new FilledSprite(0xffffff));
+        add(new FilledSprite(WHITE));
         
         // Add word-wrapped background text
         int x = 50;
         int y = 45;
         int startTime = 0;
         int maxWidth = Stage.getWidth() - x*2;
-        CoreFont bgFont = CoreFont.load("serif.font.png").tint(0x808080);
+        CoreFont bgFont = CoreFont.load("serif.font.png").tint(gray(128));
         String[] textLines = StringUtil.wordWrap(backgroundText, bgFont, maxWidth);
         for (String line : textLines) {
             // Add the sprite

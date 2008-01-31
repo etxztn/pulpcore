@@ -1,6 +1,7 @@
 // Sketch
 // Move your mouse to draw. Click to erase.
 import pulpcore.image.CoreGraphics;
+import static pulpcore.image.Colors.*;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene;
@@ -59,7 +60,7 @@ public class Sketch extends Scene {
     public void drawScene(CoreGraphics g) {
         if (erase) {
             erase = false;
-            g.setColor(CoreGraphics.BLACK);
+            g.setColor(BLACK);
             g.fill();
         }
         
@@ -73,7 +74,7 @@ public class Sketch extends Scene {
         if (nextFade <= 0) { 
             nextFade = 75;
             g.setComposite(CoreGraphics.COMPOSITE_SRC_OVER);
-            g.setColor(CoreGraphics.BLACK);
+            g.setColor(BLACK);
             g.setAlpha(0x06);
             g.fill();
         }
@@ -97,6 +98,7 @@ public class Sketch extends Scene {
         double velocityX, velocityY;
         double lastX, lastY;
         Particle attractor;
+        int color = gray(15);
 
         void init(double x, double y) {
             this.x = x;
@@ -129,7 +131,7 @@ public class Sketch extends Scene {
         
         void draw(CoreGraphics g) {
             if (alive) {
-                g.setColor(0x0f0f0f);
+                g.setColor(color);
                 g.drawLine(lastX, lastY, x, y);
                 lastX = x;
                 lastY = y;

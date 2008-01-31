@@ -3,6 +3,7 @@
 // Try clicking near the ear and far from the ear.
 import pulpcore.animation.Fixed;
 import pulpcore.CoreSystem;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.scene.Scene2D;
@@ -23,7 +24,7 @@ public class Sounds extends Scene2D {
         ear = new ImageSprite("ear.png", 300, 180);
         muteButton = new Button(CoreImage.load("mute.png").split(3,2), 600, 440, true);
         muteButton.setSelected(!CoreSystem.isMute());
-        add(new FilledSprite(0xffffff));
+        add(new FilledSprite(WHITE));
         add(ear);
         add(muteButton);
         setCursor(Input.CURSOR_CROSSHAIR);

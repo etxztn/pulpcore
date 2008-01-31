@@ -5,6 +5,7 @@
 // Tile images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -49,7 +50,7 @@ public class TileMap extends Scene2D {
     @Override
     public void load() {
         // Add the background (sky-blue)
-        add(new FilledSprite(0xB9D1FF));
+        add(new FilledSprite(rgb(185, 209, 255)));
         
         // Add the tileset
         tileMap = createTileMapSprite(tiles, map, 100, 80);
@@ -61,6 +62,8 @@ public class TileMap extends Scene2D {
         mapSprites.pixelSnapping.set(true);
         mapSprites.add(new ImageSprite(tree, 300, 280));
         mapSprites.add(new ImageSprite(tree, 1900, 440));
+        mapSprites.x.bindTo(tileMap.viewX);
+        mapSprites.y.bindTo(tileMap.viewY);
         add(mapSprites);
         
         // Add the cursor
@@ -72,7 +75,6 @@ public class TileMap extends Scene2D {
     
     @Override
     public void update(int elapsedTime) {
-        mapSprites.setLocation(tileMap.viewX.get(), tileMap.viewY.get());
         cursor.setLocation(Input.getMouseX(), Input.getMouseY());
         
         // When scrolling, disable dirty rectangles and hide the cursor

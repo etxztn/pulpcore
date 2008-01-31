@@ -3,7 +3,7 @@
 import pulpcore.animation.Easing;
 import pulpcore.animation.event.RemoveSpriteEvent;
 import pulpcore.animation.Timeline;
-import pulpcore.image.Colors;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -25,10 +25,13 @@ public class Particles extends Scene2D {
     
     @Override
     public void load() {
-        background = new FilledSprite(Colors.BLACK);
+        background = new FilledSprite(BLACK);
         images = CoreImage.load("particles.png").split(6, 1);
         
         particleLayer = new Group();
+        // Particles should ignore mouse input
+        particleLayer.enabled.set(false);
+        // Particles look good with additive blending
         particleLayer.setComposite(CoreGraphics.COMPOSITE_ADD);
         add(background);
         addLayer(particleLayer);
@@ -83,7 +86,7 @@ public class Particles extends Scene2D {
             timeline.animateTo(sprite.y, goalY, duration, Easing.REGULAR_OUT);
             timeline.animateTo(sprite.alpha, 0, duration - 100, Easing.REGULAR_OUT, 100);
             timeline.animate(sprite.angle, startAngle, endAngle, duration);
-            timeline.addEvent(new RemoveSpriteEvent(particleLayer, sprite, duration));
+            timeline.add(new RemoveSpriteEvent(particleLayer, sprite, duration));
         }
         
         addTimeline(timeline);

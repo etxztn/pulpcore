@@ -48,12 +48,12 @@ public class Ball {
             //this._vy += (this._y - walls.top)*elastity;
             this._vy = -this._vy;
         }
-        // left
+        // right
         if (this._x > model.walls.right - this._d && this._vx>0) {
             //this._vx += (this._x - walls.right + this._d)*elastity;
             this._vx = -this._vx;
         }
-        // top
+        // bottom
         if (this._y > model.walls.bottom - this._d && this._vy>0) {
             //this._vy += (this._y - walls.bottom + this._d)*elastity;
             this._vy = -this._vy;

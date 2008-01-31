@@ -2,8 +2,8 @@
 // Mouse over a stem to make it sway. Click to generate a new tree.
 // Shows how Scene2D internally uses a scene graph: Groups can have child Groups, and children
 // inherit their parent's transform.
-import pulpcore.animation.ColorAnimation;
-import pulpcore.image.Colors;
+import pulpcore.animation.Color;
+import static pulpcore.image.Colors.*;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene2D;
@@ -16,12 +16,12 @@ public class SceneGraph extends Scene2D {
     
     int maxDepth = 10;
     int startSize = 150;
-    int trunkColor = 0x3b2300;
-    int leafColor = 0x468207;
+    int trunkColor = rgb(0x3b2300);
+    int leafColor = rgb(0x468207);
     
     @Override
     public void load() {
-        add(new FilledSprite(Colors.BLACK));
+        add(new FilledSprite(BLACK));
         
         Group trunk = new Group(Stage.getWidth() / 2, Stage.getHeight());
         generateTree(trunk, 0);
@@ -41,8 +41,8 @@ public class SceneGraph extends Scene2D {
             return;
         }
         // Blend the color from trunk to stem
-        ColorAnimation color = new ColorAnimation(ColorAnimation.HSB, trunkColor, leafColor,
-            maxDepth);
+        Color color = new Color();
+        color.animate(trunkColor, leafColor, maxDepth);
         color.update(depth);
         
         // Create this stem
@@ -51,7 +51,7 @@ public class SceneGraph extends Scene2D {
         if (depth > 0) {
             h *= CoreMath.rand(0.8, 1.2);
         }
-        Stem stem = new Stem(0, 0, w, h, color.getValue());
+        Stem stem = new Stem(0, 0, w, h, color.get());
         stem.setAnchor(Sprite.SOUTH);
         parent.add(stem);
         

@@ -4,7 +4,7 @@
 import pulpcore.Input;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
-import pulpcore.image.Colors;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreFont;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.ImageSprite;
@@ -16,8 +16,8 @@ public class Easings extends Scene2D {
     // Ease t from 0 to 1.
     Easing customEasing = new Easing() {
         @Override
-        protected float ease(float t) {
-            return (float)Math.sin(t*2*Math.PI)/3+t;
+        protected double ease(double t) {
+            return Math.sin(t*2*Math.PI)/3+t;
         }   
     };
         
@@ -46,7 +46,7 @@ public class Easings extends Scene2D {
     
     @Override
     public void load() {
-        CoreFont font = CoreFont.getSystemFont().tint(Colors.WHITE);
+        CoreFont font = CoreFont.getSystemFont().tint(WHITE);
         icon = new ImageSprite("earth.png", 140, 240);
         icon.setAnchor(Sprite.CENTER);
         label = new Label(font, "", 320, 20);

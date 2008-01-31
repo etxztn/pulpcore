@@ -2,6 +2,7 @@
 // Shows various buttons and form fields.
 // All widgets work when transformed!
 import pulpcore.animation.Easing;
+import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -80,7 +81,7 @@ public class Widgets extends Scene2D {
         // Add background, answer message, and form to the scene
         answer = new Label("", 320, 400);
         answer.setAnchor(Sprite.CENTER);
-        add(new FilledSprite(0xffffff));
+        add(new FilledSprite(WHITE));
         add(answer);
         addLayer(form);
     }
@@ -88,9 +89,9 @@ public class Widgets extends Scene2D {
     public Sprite createTextFieldBackground(TextField field) {
         FilledSprite background = new FilledSprite(
             field.x.get() - 4, field.y.get(), 
-            field.width.get() + 8, field.height.get() + 8, 0xffffff);
+            field.width.get() + 8, field.height.get() + 8, WHITE);
         background.setBorderSize(1);
-        background.setBorderColor(0x000000);
+        background.borderColor.set(BLACK);
         background.setAnchor(Sprite.WEST);
         return background;
     }
