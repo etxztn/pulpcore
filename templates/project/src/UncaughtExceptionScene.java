@@ -20,7 +20,7 @@ public class UncaughtExceptionScene extends Scene2D {
     
     @Override
     public void load() {
-        add(new FilledSprite(0x0000aa));
+        add(new FilledSprite(Colors.rgb(0, 0, 170)));
         
         // Send the talkback fields via POST 
         if (!uploadedThisSession && "true".equals(CoreSystem.getAppProperty("talkback"))) {
@@ -28,7 +28,7 @@ public class UncaughtExceptionScene extends Scene2D {
             CoreSystem.uploadTalkBackFields("/talkback.py");
         }
         
-        CoreFont font = CoreFont.getSystemFont().tint(0xffffff);
+        CoreFont font = CoreFont.getSystemFont().tint(Colors.WHITE);
         Group message = Label.createMultilineLabel(font, "Oops! An error occurred.", 
             Stage.getWidth() / 2, 150, Stage.getWidth() - 20);
         message.setAnchor(Sprite.CENTER);
