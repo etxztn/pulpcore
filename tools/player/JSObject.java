@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -31,9 +31,11 @@ package netscape.javascript;
 
 import java.applet.Applet;
 import java.util.prefs.Preferences;
-import pulpcore.Build;
 
-// LiveConnect emulator for the PulpCore Player
+/**
+    LiveConnect emulator for the PulpCore Player. PulpCore's applet platform only uses the
+    getWindow() and call() methods.
+*/
 public class JSObject {
     
     private static final JSObject instance = new JSObject();
@@ -44,23 +46,15 @@ public class JSObject {
         prefs = Preferences.userNodeForPackage(pulpcore.player.PulpCorePlayer.class); 
     }
     
-    
     public static JSObject getWindow(Applet applet) {
         return instance;
     }
-    
     
     public Object call(String method, Object[] args) {
         try {
             if ("pulpcore_appletLoaded".equals(method)) {
                 // Do nothing
                 return null;
-            }
-            else if ("pulpcore_getBrowserName".equals(method)) {
-                return "PulpCore Player";
-            }
-            else if ("pulpcore_getBrowserVersion".equals(method)) {
-                return Build.VERSION;
             }
             else if ("pulpcore_setCookie".equals(method)) {
                 // Can throw IllegalArgumentException if name or value is too long

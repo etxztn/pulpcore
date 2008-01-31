@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2007, Interactive Pulp, LLC
+	Copyright (c) 2008, Interactive Pulp, LLC
 	All rights reserved.
 	
 	Redistribution and use in source and binary forms, with or without 
@@ -27,7 +27,7 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-// PulpCore 0.10
+// PulpCore 0.11
 
 // Global functions accessed via LiveConnect
 
@@ -215,7 +215,8 @@ var pulpCoreObject = {
 			'  <param name="boxfgcolor" value="' + fgcolor + '" />\n' +
 			'  <param name="boxmessage" value="" />\n' +
 			'  <param name="browsername" value="' + pulpCoreObject.browserName + '" />\n' +
-			'  <param name="browservalue" value="' + pulpCoreObject.browserVersion + '" />\n';
+			'  <param name="browserversion" value="' + pulpCoreObject.browserVersion + '" />\n' +
+			'  <param name="java_arguments" value="-Dsun.awt.noerasebackground=true" />\n';
 		if (codebase.length > 0) {
 			objectParams += '  <param name="codebase" value="' + codebase + '" />\n';
 		}
