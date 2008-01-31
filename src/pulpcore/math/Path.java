@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -32,7 +32,7 @@ package pulpcore.math;
 import java.text.ParseException;
 import java.util.StringTokenizer;
 import java.util.ArrayList;
-import pulpcore.animation.Animation;
+import pulpcore.animation.Tween;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
 import pulpcore.image.CoreGraphics;
@@ -423,12 +423,12 @@ public class Path {
             new PathAnimation(Y_AXIS, startP, endP, duration, easing, startDelay);
             
         if (timeline == null) {
-            sprite.x.animate(xAnimation);
-            sprite.y.animate(yAnimation);
+            sprite.x.setBehavior(xAnimation);
+            sprite.y.setBehavior(yAnimation);
         }
         else {
-            timeline.animate(sprite.x, xAnimation);
-            timeline.animate(sprite.y, yAnimation);
+            timeline.add(sprite.x, xAnimation);
+            timeline.add(sprite.y, yAnimation);
         }
     }
     
@@ -516,11 +516,11 @@ public class Path {
     }
 
 
-    class PathAnimation extends Animation {
+    class PathAnimation extends Tween {
         
-        private int axis;
-        private int startP;
-        private int endP;
+        private final int axis;
+        private final int startP;
+        private final int endP;
         
         
         PathAnimation(int axis, int startP, int endP, int duration, Easing easing, int startDelay) {
@@ -533,9 +533,14 @@ public class Path {
             this.endP = endP;
         }
         
-        
-        protected int calcValue(int animTime) {
-            return get(axis, startP + CoreMath.mulDiv(endP - startP, animTime, duration));
+        protected void updateState(int animTime) {
+            if (getDuration() == 0) {
+                super.updateState(animTime);
+            } 
+            else {
+                super.setValue(
+                    get(axis, startP + CoreMath.mulDiv(endP - startP, animTime, getDuration())));
+            }
         }
     }
     
