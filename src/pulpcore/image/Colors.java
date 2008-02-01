@@ -268,6 +268,7 @@ public class Colors {
     
     /**
         Checks if a 32-bit ARGB color is a gray color, from 0 (black) to 255 (white).
+        @param color a 32-bit ARGB color.
         @return true if the color is gray.
     */
     public static boolean isGray(int color) {
@@ -275,6 +276,36 @@ public class Colors {
         int g = (color >> 8) & 0xff;
         int b = color & 0xff;
         return (r == g && g == b);
+    }
+    
+    /**
+        Creates a brighter version of the specified color. The alpha is not modified.
+        @param color a 32-bit ARGB color.
+        @return a brighter version of the 32-bit ARGB color.
+    */
+    public static int brighter(int color) {
+        int alpha = color & 0xff000000;
+        if ((color & 0xffffff) == 0) {
+            return alpha | 0x010101;
+        }
+        else {
+            // If top bit is set for a component, the result if 0xff
+            int topBit = (color >> 7) & 0x010101;
+            int mask = (topBit << 8) - topBit;
+            
+            color = (color << 1) & 0xfefefe;
+            return alpha | mask | color;
+        }
+    }
+    
+    /**
+        Creates a darker version of the specified color. The alpha is not modified.
+        @param color a 32-bit ARGB color.
+        @return a darker version of the 32-bit ARGB color.
+    */
+    public static int darker(int color) {
+        int alpha = color & 0xff000000;
+        return alpha | ((color >> 1) & 0x7f7f7f);
     }
     
     /**
