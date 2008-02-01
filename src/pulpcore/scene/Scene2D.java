@@ -650,7 +650,7 @@ public class Scene2D extends Scene {
                 for (int i = 0; i < timelines.size(); i++) {
                     Timeline timeline = (Timeline)timelines.get(i);
                     timeline.update(elapsedTime);
-                    if (timeline.isFinished()) {
+                    if (timeline.isFinished() && timelines.get(i) == timeline) {
                         timelines.remove(i);
                         i--;
                     }
