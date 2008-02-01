@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -39,6 +39,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.scene.Scene;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.Button;
@@ -66,7 +67,7 @@ public class SceneSelector extends Scene2D {
             scenes = findSceneClasses();
         }
         
-        add(new FilledSprite(0xffffff));
+        add(new FilledSprite(Colors.WHITE));
         
         int x = 5;
         int y = 5;

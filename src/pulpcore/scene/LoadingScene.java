@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,11 +30,11 @@
 package pulpcore.scene;
 
 import java.io.IOException;
+import pulpcore.animation.Timeline;
+import pulpcore.Assets;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
-import pulpcore.Assets;
-import pulpcore.Stage;
-import pulpcore.animation.Timeline;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -46,6 +46,7 @@ import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Sprite;
+import pulpcore.Stage;
 import pulpcore.util.StringUtil;
 
 
@@ -65,8 +66,8 @@ public class LoadingScene extends Scene2D {
     
     private static final int FADE_OUT_DURATION = 300;
     
-    private static final int DEFAULT_BACKGROUND_COLOR = 0x000000;
-    private static final int DEFAULT_FONT_COLOR = 0xaaaaaa;
+    private static final int DEFAULT_BACKGROUND_COLOR = Colors.BLACK;
+    private static final int DEFAULT_FONT_COLOR = Colors.gray(170);
     
     private static final int PROGRESS_BAR_WIDTH = 100 + 4;
     private static final int PROGRESS_BAR_HEIGHT = 10;
@@ -124,8 +125,8 @@ public class LoadingScene extends Scene2D {
         int h = PROGRESS_BAR_HEIGHT;
         int x = Stage.getWidth() / 2 - w / 2;
         int y = Stage.getHeight() / 2;  
-        int progressBarColor = 0xffffff ^ backgroundColor;
-        int progressBarBackgroundColor = (progressBarColor >> 2) & 0x3f3f3f;
+        int progressBarColor = 0x00ffffff ^ backgroundColor;
+        int progressBarBackgroundColor = Colors.darker(Colors.darker(progressBarColor));
         progressBarBackground = new FilledSprite(x, y, w, h, progressBarBackgroundColor);
         progressBarBackground.visible.set(false);
         progressBar = new FilledSprite(x + 2, y + 2, w - 4, h - 4, progressBarColor);
