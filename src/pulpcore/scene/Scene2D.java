@@ -116,7 +116,6 @@ public class Scene2D extends Scene {
     
     private boolean stateSaved;
     private int desiredFPS;
-    private boolean isTextInputMode;
     
     /**
         Creates a new Scene2D with one layer and with dirty rectangles enabled.
@@ -131,7 +130,6 @@ public class Scene2D extends Scene {
     private void reset() {
         maxElapsedTime = DEFAULT_MAX_ELAPSED_TIME;
         desiredFPS = Stage.DEFAULT_FPS;
-        isTextInputMode = false;
         dirtyRectanglesEnabled = true;
         needsFullRedraw = true;
         stateSaved = false;
@@ -600,7 +598,6 @@ public class Scene2D extends Scene {
     public void showNotify() {
         if (stateSaved) {
             Stage.setFrameRate(desiredFPS);
-            Input.setTextInputMode(isTextInputMode);
             stateSaved = false;
         }
         redrawNotify();
@@ -614,7 +611,6 @@ public class Scene2D extends Scene {
     */
     public void hideNotify() {
         desiredFPS = Stage.getFrameRate();
-        isTextInputMode = Input.isTextInputMode();
         stateSaved = true;
     }
     

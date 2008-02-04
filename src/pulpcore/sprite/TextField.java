@@ -289,7 +289,6 @@ public class TextField extends Sprite {
             setDirty(true);
         }
         timeUntilBlinkOff = BLINK_TIME;
-        Input.setTextInputMode(hasFocus);
     }
     
     public void setCaretPosition(int position) {
@@ -402,10 +401,6 @@ public class TextField extends Sprite {
         super.update(elapsedTime);
         
         if (isEnabledAndVisible()) {
-            if (hasFocus && !Input.isTextInputMode()) {
-                Input.setTextInputMode(true);
-            }
-            
             handleInput(elapsedTime);
             
             timeUntilBlinkOff -= elapsedTime;
@@ -698,7 +693,7 @@ public class TextField extends Sprite {
             setCaretPosition(text.length(), Input.isShiftDown());
         }
         
-        String textInput = Input.getTextInput();
+        String textInput = Input.getTypedChars();
         
         if (textInput.length() > 0) {
             insertTextAtCaret(textInput);

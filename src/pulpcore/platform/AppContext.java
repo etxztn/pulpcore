@@ -70,7 +70,6 @@ public abstract class AppContext {
     private boolean mute = false;
     private double masterVolume = 1;
     
-    
     public AppContext() {
         getThreadGroup();
         
@@ -85,7 +84,6 @@ public abstract class AppContext {
         setTalkBackField("pulpcore.locale.country", getLocaleCountry());        
     }
     
-    
     public ThreadGroup getThreadGroup() {
         if (threadGroup == null || threadGroup.isDestroyed()) {
             threadGroup = new ThreadGroup("PulpCore-App" + nextContextID);
@@ -93,7 +91,6 @@ public abstract class AppContext {
         }
         return threadGroup;
     }
-    
     
     /**
         Creates a thread in this context's thread group. This method is useful for creating a new
@@ -114,7 +111,6 @@ public abstract class AppContext {
         }
     }
     
-    
     /**
         Runs a thread in this context's thread group. This method is useful for creating a new
         thread from the AWT event thread.
@@ -129,7 +125,6 @@ public abstract class AppContext {
             // Ignore
         }
     }
-    
     
     /**
         Runs a thread in this context's thread group. This method is useful for creating a new
@@ -148,27 +143,19 @@ public abstract class AppContext {
     
     public abstract String getAppProperty(String name);
     
-    
     public abstract Scene createFirstScene();
-    
     
     public abstract void start();
     
-    
     public abstract void stop();
-    
     
     public abstract void destroy();
     
-    
     public abstract void putUserData(String key, byte[] data);
-        
         
     public abstract byte[] getUserData(String key);
     
-    
     public abstract void removeUserData(String key);
-    
 
     /**
         Returns the local machine's language as a lowercase two-letter 
@@ -177,7 +164,6 @@ public abstract class AppContext {
     */
     public abstract String getLocaleLanguage();
     
-    
     /**
         Returns the local machine's country as an uppercase two-letter
         ISO-3166 code.
@@ -185,27 +171,27 @@ public abstract class AppContext {
     */
     public abstract String getLocaleCountry();
     
-    
     public abstract void showDocument(String url, String target);    
-    
  
     public abstract CoreImage loadImage(ByteArray in);
     
-    
     public abstract URL getBaseURL();
-    
-    
-    public abstract Input getInputSystem();
-    
     
     public abstract Stage getStage();      
   
-    
     public abstract Surface getSurface();
     
+    public abstract void pollInput();
+    
+    public abstract PolledInput getPolledInput();
+    
+    public abstract void requestKeyboardFocus();
+    
+    public abstract int getCursor();
+    
+    public abstract void setCursor(int cursor);
     
     public void notifyFrameComplete() { };
-  
   
     /**
         Gets a named TalkBack field.
@@ -213,7 +199,6 @@ public abstract class AppContext {
     public String getTalkBackField(String name) {
         return (String)talkbackFields.get(name);
     }
-    
     
     /**
         Adds a new TalkBack field, or replaces an exisiting field.
@@ -225,16 +210,13 @@ public abstract class AppContext {
         if (Build.DEBUG) print(name + ": " + value);
     }
 
-
     public void setTalkBackField(String name, Throwable t) {
         setTalkBackField(name, stackTraceToString(t));
     }
 
-
     public void clearTalkBackFields() {
         talkbackFields = new HashMap();
     }
-
 
     public Upload uploadTalkBackFields(String talkbackPath) {
         if (talkbackPath != null && talkbackPath.length() > 0) {
@@ -251,7 +233,6 @@ public abstract class AppContext {
         }
         return null;
     }
-
 
     /**
         Determines if this app is running from one of the specified
@@ -278,16 +259,13 @@ public abstract class AppContext {
         return false;
     }
 
-
     public void setConsoleOutputEnabled(boolean consoleOut) {
         this.consoleOut = consoleOut;
     }
 
-
     public boolean isConsoleOutputEnabled() {
         return consoleOut;
     }
-
 
     /**
         Each element in the List represents one line of text.
@@ -295,7 +273,6 @@ public abstract class AppContext {
     public LinkedList getLogLines() {
         return logLines;
     }
-
     
     public String getLogText() {
         StringBuffer buffer = new StringBuffer();
@@ -306,12 +283,10 @@ public abstract class AppContext {
         }
         return buffer.toString();
     }
-    
 
     public void clearLog() {
         logLines = new LinkedList();
     }
-
 
     /**
         Prints a line of text to the log.
@@ -345,7 +320,6 @@ public abstract class AppContext {
         }
     }
 
-
     /**
         Prints a line of text and a Throwable's stack trace to the log.
     */
@@ -353,7 +327,6 @@ public abstract class AppContext {
         print(statement);
         print(stackTraceToString(t));
     }
-
 
     private String stackTraceToString(Throwable t) {
         StringWriter writer = new StringWriter();
@@ -368,7 +341,6 @@ public abstract class AppContext {
         }
         return s.trim();
     }
-
 
     /**
         Prints the amount of current memory usage and the change in memory
@@ -402,11 +374,9 @@ public abstract class AppContext {
         lastMemory = currentMemory;
     }
     
-    
     public void setMute(boolean m) {
         mute = m;
     }
-
     
     public boolean isMute() {
         return mute;
@@ -419,5 +389,4 @@ public abstract class AppContext {
     public double getSoundVolume() {
         return masterVolume;
     }
-
 }

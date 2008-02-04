@@ -49,6 +49,7 @@ import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.platform.AppContext;
+import pulpcore.platform.PolledInput;
 import pulpcore.platform.Platform;
 import pulpcore.platform.Surface;
 import pulpcore.scene.Scene;
@@ -60,12 +61,11 @@ public final class AppletAppContext extends AppContext {
     
     private CoreApplet applet;
     private Surface surface;
-    private Input inputSystem;
+    private AppletInput inputSystem;
     private Stage stage;
     private Object jsObject;
     private boolean firstFrameDrawn = false;
     private boolean enableLiveConnect;
-    
     
     public AppletAppContext(CoreApplet app, SystemTimer timer) {
         this.applet = app;
@@ -97,7 +97,6 @@ public final class AppletAppContext extends AppContext {
         stage = new Stage(surface, this);
     }
     
-    
     private boolean isMozillaFamily() {
         String browserName = getAppProperty("browsername");
         if (browserName == null) {
@@ -107,7 +106,6 @@ public final class AppletAppContext extends AppContext {
             browserName.equals("Mozilla") || 
             browserName.equals("Netscape"));
     }
-    
     
     private boolean isVirtualHost() {
         String host = getBaseURL().getHost();
@@ -125,21 +123,17 @@ public final class AppletAppContext extends AppContext {
         return false;
     }
     
-    
-    CoreApplet getApplet() {
+    /* package-private */ CoreApplet getApplet() {
         return applet;
     }
-    
     
     public String getAppProperty(String name) {
         return applet.getParameter(name);
     }
     
-    
     public Scene createFirstScene() {
         return applet.createFirstScene();
     }
-    
     
     public void start() {
         if (stage != null) {
@@ -149,14 +143,12 @@ public final class AppletAppContext extends AppContext {
         if (Build.DEBUG) printMemory("App: start");
     }
     
-    
     public void stop() {
         if (stage != null) {
             stage.stop();
         }
         if (Build.DEBUG) printMemory("App: stop");
     }
-    
     
     public void destroy() {
         if (stage != null) {
@@ -169,7 +161,6 @@ public final class AppletAppContext extends AppContext {
         setMute(true);
         if (Build.DEBUG) printMemory("App: destroy");
     }
-    
     
     /**
         Returns true if calling JavaScript via LiveConnect is enabled.
@@ -186,7 +177,6 @@ public final class AppletAppContext extends AppContext {
         return enabled;
     }
 
-
     /**
         Calls a JavaScript method with no arguments.
     */
@@ -194,14 +184,12 @@ public final class AppletAppContext extends AppContext {
         return callJavaScript(method, (Object[])null);
     }
     
-    
     /**
         Calls a JavaScript method with one argument.
     */
     public Object callJavaScript(String method, Object arg) {
         return callJavaScript(method, new Object[] { arg });
     }
-    
     
     /**
         Calls a JavaScript method with a list of arguments.
@@ -224,7 +212,6 @@ public final class AppletAppContext extends AppContext {
         return null;
     }
     
-    
     public void notifyFrameComplete() {
         if (!firstFrameDrawn) {
             firstFrameDrawn = true;
@@ -244,9 +231,7 @@ public final class AppletAppContext extends AppContext {
         }
     }
     
-    
     private void createSurface(CoreApplet app) {
-        
         Component inputComponent = app;
         surface = null;
         boolean useBufferStrategy = false;
@@ -321,48 +306,37 @@ public final class AppletAppContext extends AppContext {
         inputSystem = new AppletInput(inputComponent);
     }
     
-    
-    public Input getInputSystem() {
-        return inputSystem;
-    }
-    
-    
     public Stage getStage() {
         return stage;
     }
-    
     
     public Surface getSurface() {
         return surface;
     }
     
+    public void pollInput() {
+        inputSystem.pollInput();
+    }
+           
+    public PolledInput getPolledInput() {
+        return inputSystem.getPolledInput();
+    }
+           
+    public void requestKeyboardFocus() {
+        inputSystem.requestKeyboardFocus();
+    }
+           
+    public int getCursor() {
+        return inputSystem.getCursor();
+    }
+           
+    public void setCursor(int cursor) {
+        inputSystem.setCursor(cursor);
+    }
     
     public URL getBaseURL() {
         return applet.getCodeBase();
-        ///*
-        //    Use the document base so we can check if applets are being hijacked in IE.
-        //    
-        //    For example, someone has a site: http://www.mygames.net/milpa/
-        //    
-        //    On this page they put the code: 
-        //    <base href="http://www.pulpgames.net/milpa/" />
-        //    
-        //    In IE, this makes the doc base http://www.mygames.net/milpa/
-        //    but the code base is http://www.pulpgames.net/milpa/
-        //    
-        //    In Firefox and Safari, but the doc base and the code base are
-        //    http://www.pulpgames.net/milpa/
-        //*/
-        //if (CoreSystem.isJava15orNewer()) {
-        //    return applet.getDocumentBase();
-        //}
-        //else {
-        //    // Java 1.4 and older reports the wrong doc base for framed sites.
-        //    // Just assume the site is legit and use the code base.
-        //    return applet.getCodeBase();
-        //}
     }
-    
     
     public void showDocument(String url, String target) {
         URL parsedURL;
@@ -378,7 +352,6 @@ public final class AppletAppContext extends AppContext {
         applet.getAppletContext().showDocument(parsedURL, target);
     }
     
-    
     public String getLocaleLanguage() {
         try {
             return applet.getLocale().getLanguage();
@@ -389,7 +362,6 @@ public final class AppletAppContext extends AppContext {
         
     }
     
-    
     public String getLocaleCountry() {
         try {
             return applet.getLocale().getCountry();
@@ -399,14 +371,12 @@ public final class AppletAppContext extends AppContext {
         }
     }
     
-    
     public void putUserData(String key, byte[] data) {
         String name = "pulpcore_" + key;
         String value = Base64.encodeURLSafe(data);
         
         callJavaScript("pulpcore_setCookie", new Object[] { name, value });
     }
-        
         
     public byte[] getUserData(String key) {
         String name = "pulpcore_" + key;
@@ -425,16 +395,13 @@ public final class AppletAppContext extends AppContext {
         }
     }
     
-    
     public void removeUserData(String key) {
         String name = "pulpcore_" + key;
         
         callJavaScript("pulpcore_deleteCookie", name);
     }
     
-      
     public CoreImage loadImage(ByteArray in) {
-        
         if (in == null) {
             return null;
         }

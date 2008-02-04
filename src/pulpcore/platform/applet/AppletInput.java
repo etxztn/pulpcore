@@ -46,22 +46,23 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import pulpcore.CoreSystem;
 import pulpcore.Input;
+import pulpcore.platform.PolledInput;
 
 /**
     An input manager for Applets.
 */
-public class AppletInput extends Input implements KeyListener, MouseListener,
+public class AppletInput implements KeyListener, MouseListener,
     MouseMotionListener, MouseWheelListener, FocusListener
 {
-    private Component comp;
+    private final Component comp;
+    private final Cursor invisibleCursor;
+    private final PolledInput polledInput = new PolledInput();
     
-    private boolean[] keyPressed = new boolean[NUM_KEY_CODES];
-    private boolean[] keyDown = new boolean[NUM_KEY_CODES];
+    private boolean[] keyPressed = new boolean[Input.NUM_KEY_CODES];
+    private boolean[] keyDown = new boolean[Input.NUM_KEY_CODES];
     
     private int cursorCode;
     private int awtCursorCode;
-    
-    private Cursor invisibleCursor;
     
     private int appletMouseX = -1;
     private int appletMouseY = -1;
@@ -76,11 +77,11 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
     private boolean appletIsMouseInside;
     private int focusCountdown;
     
-    private StringBuffer textInputSinceLastPoll = new StringBuffer();
+    private StringBuffer typedCharsSinceLastPoll = new StringBuffer();
     
     public AppletInput(Component comp) {
         appletHasKeyboardFocus = false;
-        cursorCode = CURSOR_DEFAULT;
+        cursorCode = Input.CURSOR_DEFAULT;
         
         this.comp = comp;
         comp.addKeyListener(this);
@@ -102,8 +103,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             invisibleCursor = Toolkit.getDefaultToolkit().createCustomCursor(
                 cursorImage, new Point(0, 0), "invisible");
         }
-        
-
+                  
         // This is a hack and probably won't work on all machines.
         // Firefox 2 + Windows XP + Java 5 + pulpcore.js appears to need a delay
         // before calling comp.requestFocus(). Calling it repeatedly does not focus
@@ -112,14 +112,11 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         focusCountdown = 30;
     }
     
+    /* package-private */ PolledInput getPolledInput() {
+        return polledInput;
+    }
     
-    //
-    // Input implementation
-    //
-    
-    
-    protected synchronized void pollImpl() {
-        
+    /* package-private */ synchronized void pollInput() {
         if (focusCountdown > 0) {
             if (appletHasKeyboardFocus) {
                 focusCountdown = 0;
@@ -128,98 +125,89 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
                 if (comp.getWidth() > 0 && comp.getHeight() > 0) {
                     focusCountdown--;
                     if (focusCountdown == 0) {
-                        requestKeyboardFocusImpl();
+                        requestKeyboardFocus();
                     }
                 }
             }
         }
         
-        for (int i = 0; i < NUM_KEY_CODES; i++) {
+        for (int i = 0; i < Input.NUM_KEY_CODES; i++) {
             
-            int currState = keyStates[i];
+            int oldState = polledInput.keyStates[i];
             
             if (keyPressed[i]) {
                 keyPressed[i] = false;
-                if (currState == RELEASED || currState == UP) {
-                    keyStates[i] = PRESSED;
+                if (oldState == Input.RELEASED || oldState == Input.UP) {
+                    polledInput.keyStates[i] = Input.PRESSED;
                 }
                 else {
-                    keyStates[i] = REPEATED;
+                    polledInput.keyStates[i] = Input.REPEATED;
                 }
             }
             else if (keyDown[i]) {
-                if (currState == PRESSED || currState == REPEATED) {
-                    keyStates[i] = DOWN;
+                if (oldState == Input.PRESSED || oldState == Input.REPEATED) {
+                    polledInput.keyStates[i] = Input.DOWN;
                 }
             }
-            else if (currState == PRESSED || currState == DOWN || currState == REPEATED) {
-                keyStates[i] = RELEASED;
+            else if (oldState == Input.PRESSED || oldState == Input.DOWN || 
+                oldState == Input.REPEATED) 
+            {
+                polledInput.keyStates[i] = Input.RELEASED;
             }
             else {
-                keyStates[i] = UP;
+                polledInput.keyStates[i] = Input.UP;
             }
         }
         
-        super.mouseMoving = (appletMouseX != super.mouseX || appletMouseY != super.mouseY);
-        super.mouseX = appletMouseX;
-        super.mouseY = appletMouseY;
-        super.mousePressX = appletMousePressX;
-        super.mousePressY = appletMousePressY;
-        super.mouseReleaseX = appletMouseReleaseX;
-        super.mouseReleaseY = appletMouseReleaseY;
-        super.mouseWheelX = appletMouseWheelX;
-        super.mouseWheelY = appletMouseWheelY;
-        super.mouseWheel = appletMouseWheel;
-        super.hasKeyboardFocus = appletHasKeyboardFocus;
-        super.isMouseInside = appletIsMouseInside && 
+        polledInput.isMouseMoving = (appletMouseX != polledInput.mouseX || 
+            appletMouseY != polledInput.mouseY);
+        polledInput.mouseX = appletMouseX;
+        polledInput.mouseY = appletMouseY;
+        polledInput.mousePressX = appletMousePressX;
+        polledInput.mousePressY = appletMousePressY;
+        polledInput.mouseReleaseX = appletMouseReleaseX;
+        polledInput.mouseReleaseY = appletMouseReleaseY;
+        polledInput.mouseWheelX = appletMouseWheelX;
+        polledInput.mouseWheelY = appletMouseWheelY;
+        polledInput.mouseWheelRotation = appletMouseWheel;
+        polledInput.hasKeyboardFocus = appletHasKeyboardFocus;
+        polledInput.isMouseInside = appletIsMouseInside && 
             appletMouseX >= 0 && appletMouseY >= 0 && 
             appletMouseX < comp.getWidth() && appletMouseY < comp.getHeight();
         
         appletMouseWheel = 0;
         
-        if (super.textInputMode) {
-            if (textInputSinceLastPoll.length() > 0) {
-                super.textInput = textInputSinceLastPoll.toString();
-                textInputSinceLastPoll = new StringBuffer();
-            }
-            else {
-                super.textInput = "";
-            }
+        if (typedCharsSinceLastPoll.length() > 0) {
+            polledInput.typedChars = typedCharsSinceLastPoll.toString();
+            typedCharsSinceLastPoll = new StringBuffer();
+        }
+        else {
+            polledInput.typedChars = "";
         }
     }
     
-    
-    protected void requestKeyboardFocusImpl() {
+    /* package-private */ void requestKeyboardFocus() {
         comp.requestFocus();
     }
     
-    
-    protected synchronized void clearImpl() {
-        for (int i = 0; i < NUM_KEY_CODES; i++) {
+    private synchronized void clear() {
+        for (int i = 0; i < Input.NUM_KEY_CODES; i++) {
             keyPressed[i] = false;
             keyDown[i] = false;
         }
         
-        textInputSinceLastPoll = new StringBuffer();
+        typedCharsSinceLastPoll = new StringBuffer();
     }
     
-    
-    protected void setCursorImpl(int cursorCode) {
+    /* package-private */ void setCursor(int cursorCode) {
         
-        int awtCursorCode;
-        //if (cursorCode == CURSOR_CUSTOM) {
-        //    awtCursorCode = Cursor.CUSTOM_CURSOR;
-        //}
-        //else {
-            awtCursorCode = getAWTCursorCode(cursorCode);
-        //}
-        
+        int awtCursorCode = getAWTCursorCode(cursorCode);
         if (awtCursorCode == Cursor.CUSTOM_CURSOR && invisibleCursor == null) {
             awtCursorCode = Cursor.DEFAULT_CURSOR;
         }
         
         if (awtCursorCode == Cursor.DEFAULT_CURSOR) {
-            cursorCode = CURSOR_DEFAULT;
+            cursorCode = Input.CURSOR_DEFAULT;
         }
         
         if (this.cursorCode != cursorCode || this.awtCursorCode != awtCursorCode) {
@@ -234,200 +222,191 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         }
     }
     
-    
-    protected int getCursorImpl() {
+    /* package-private */ int getCursor() {
         return cursorCode;
     }
         
-        
     private int getAWTCursorCode(int cursorCode) {
-        
         switch (cursorCode) {
-            case CURSOR_DEFAULT:   return Cursor.DEFAULT_CURSOR; 
-            case CURSOR_OFF:       return Cursor.CUSTOM_CURSOR; 
-            case CURSOR_CROSSHAIR: return Cursor.CROSSHAIR_CURSOR; 
-            case CURSOR_HAND:      return Cursor.HAND_CURSOR; 
-            case CURSOR_MOVE:      return Cursor.MOVE_CURSOR; 
-            case CURSOR_TEXT:      return Cursor.TEXT_CURSOR; 
-            case CURSOR_WAIT:      return Cursor.WAIT_CURSOR; 
-            case CURSOR_N_RESIZE:  return Cursor.N_RESIZE_CURSOR; 
-            case CURSOR_S_RESIZE:  return Cursor.S_RESIZE_CURSOR; 
-            case CURSOR_W_RESIZE:  return Cursor.W_RESIZE_CURSOR; 
-            case CURSOR_E_RESIZE:  return Cursor.E_RESIZE_CURSOR; 
-            case CURSOR_NW_RESIZE: return Cursor.NW_RESIZE_CURSOR; 
-            case CURSOR_NE_RESIZE: return Cursor.NE_RESIZE_CURSOR; 
-            case CURSOR_SW_RESIZE: return Cursor.SW_RESIZE_CURSOR; 
-            case CURSOR_SE_RESIZE: return Cursor.SE_RESIZE_CURSOR; 
             default:               return Cursor.DEFAULT_CURSOR; 
+            case Input.CURSOR_DEFAULT:   return Cursor.DEFAULT_CURSOR; 
+            case Input.CURSOR_OFF:       return Cursor.CUSTOM_CURSOR; 
+            case Input.CURSOR_HAND:      return Cursor.HAND_CURSOR; 
+            case Input.CURSOR_CROSSHAIR: return Cursor.CROSSHAIR_CURSOR; 
+            case Input.CURSOR_MOVE:      return Cursor.MOVE_CURSOR; 
+            case Input.CURSOR_TEXT:      return Cursor.TEXT_CURSOR; 
+            case Input.CURSOR_WAIT:      return Cursor.WAIT_CURSOR; 
+            case Input.CURSOR_N_RESIZE:  return Cursor.N_RESIZE_CURSOR;
+            case Input.CURSOR_S_RESIZE:  return Cursor.S_RESIZE_CURSOR;
+            case Input.CURSOR_W_RESIZE:  return Cursor.W_RESIZE_CURSOR;
+            case Input.CURSOR_E_RESIZE:  return Cursor.E_RESIZE_CURSOR;
+            case Input.CURSOR_NW_RESIZE: return Cursor.NW_RESIZE_CURSOR;
+            case Input.CURSOR_NE_RESIZE: return Cursor.NE_RESIZE_CURSOR;
+            case Input.CURSOR_SW_RESIZE: return Cursor.SW_RESIZE_CURSOR;
+            case Input.CURSOR_SE_RESIZE: return Cursor.SE_RESIZE_CURSOR;
         }
-        
     }
-    
     
     /**
         Translates the java.awt.event.KeyEvent to PulpCore's virtual key code.
     */
     private int getKeyCode(KeyEvent e) {
-        
         switch (e.getKeyCode()) {
-            case KeyEvent.VK_BACK_SPACE:   return KEY_BACK_SPACE;
-            case KeyEvent.VK_TAB:          return KEY_TAB;
-            case KeyEvent.VK_ENTER:        return KEY_ENTER;
-            case KeyEvent.VK_PAUSE:        return KEY_PAUSE;
-            case KeyEvent.VK_CAPS_LOCK:    return KEY_CAPS_LOCK;
-            case KeyEvent.VK_ESCAPE:       return KEY_ESCAPE;
-            case KeyEvent.VK_SPACE:        return KEY_SPACE;
-            case KeyEvent.VK_PAGE_UP:      return KEY_PAGE_UP;
-            case KeyEvent.VK_PAGE_DOWN:    return KEY_PAGE_DOWN;
-            case KeyEvent.VK_END:          return KEY_END;
-            case KeyEvent.VK_HOME:         return KEY_HOME;
-            case KeyEvent.VK_LEFT:         return KEY_LEFT;
-            case KeyEvent.VK_UP:           return KEY_UP;
-            case KeyEvent.VK_RIGHT:        return KEY_RIGHT;
-            case KeyEvent.VK_DOWN:         return KEY_DOWN;
-            case KeyEvent.VK_PRINTSCREEN:  return KEY_PRINT_SCREEN;
-            case KeyEvent.VK_INSERT:       return KEY_INSERT;
-            case KeyEvent.VK_DELETE:       return KEY_DELETE;
-            case KeyEvent.VK_SEMICOLON:    return KEY_SEMICOLON;
-            case KeyEvent.VK_EQUALS:       return KEY_EQUALS;
-            case KeyEvent.VK_COMMA:        return KEY_COMMA;
-            case KeyEvent.VK_MINUS:        return KEY_MINUS;
-            case KeyEvent.VK_PERIOD:       return KEY_PERIOD;
-            case KeyEvent.VK_SLASH:        return KEY_SLASH;
-            case KeyEvent.VK_BACK_QUOTE:   return KEY_BACK_QUOTE;
-            case KeyEvent.VK_OPEN_BRACKET: return KEY_OPEN_BRACKET;
-            case KeyEvent.VK_BACK_SLASH:   return KEY_BACK_SLASH;
-            case KeyEvent.VK_CLOSE_BRACKET:return KEY_CLOSE_BRACKET;
-            case KeyEvent.VK_QUOTE:        return KEY_QUOTE;
-            case KeyEvent.VK_0:            return KEY_0;
-            case KeyEvent.VK_1:            return KEY_1;
-            case KeyEvent.VK_2:            return KEY_2;
-            case KeyEvent.VK_3:            return KEY_3;
-            case KeyEvent.VK_4:            return KEY_4;
-            case KeyEvent.VK_5:            return KEY_5;
-            case KeyEvent.VK_6:            return KEY_6;
-            case KeyEvent.VK_7:            return KEY_7;
-            case KeyEvent.VK_8:            return KEY_8;
-            case KeyEvent.VK_9:            return KEY_9;
-            case KeyEvent.VK_A:            return KEY_A;
-            case KeyEvent.VK_B:            return KEY_B;
-            case KeyEvent.VK_C:            return KEY_C;
-            case KeyEvent.VK_D:            return KEY_D;
-            case KeyEvent.VK_E:            return KEY_E;
-            case KeyEvent.VK_F:            return KEY_F;
-            case KeyEvent.VK_G:            return KEY_G;
-            case KeyEvent.VK_H:            return KEY_H;
-            case KeyEvent.VK_I:            return KEY_I;
-            case KeyEvent.VK_J:            return KEY_J;
-            case KeyEvent.VK_K:            return KEY_K;
-            case KeyEvent.VK_L:            return KEY_L;
-            case KeyEvent.VK_M:            return KEY_M;
-            case KeyEvent.VK_N:            return KEY_N;
-            case KeyEvent.VK_O:            return KEY_O;
-            case KeyEvent.VK_P:            return KEY_P;
-            case KeyEvent.VK_Q:            return KEY_Q;
-            case KeyEvent.VK_R:            return KEY_R;
-            case KeyEvent.VK_S:            return KEY_S;
-            case KeyEvent.VK_T:            return KEY_T;
-            case KeyEvent.VK_U:            return KEY_U;
-            case KeyEvent.VK_V:            return KEY_V;
-            case KeyEvent.VK_W:            return KEY_W;
-            case KeyEvent.VK_X:            return KEY_X;
-            case KeyEvent.VK_Y:            return KEY_Y;
-            case KeyEvent.VK_Z:            return KEY_Z;
-            case KeyEvent.VK_NUMPAD0:      return KEY_NUMPAD0;
-            case KeyEvent.VK_NUMPAD1:      return KEY_NUMPAD1;
-            case KeyEvent.VK_NUMPAD2:      return KEY_NUMPAD2;
-            case KeyEvent.VK_NUMPAD3:      return KEY_NUMPAD3;
-            case KeyEvent.VK_NUMPAD4:      return KEY_NUMPAD4;
-            case KeyEvent.VK_NUMPAD5:      return KEY_NUMPAD5;
-            case KeyEvent.VK_NUMPAD6:      return KEY_NUMPAD6;
-            case KeyEvent.VK_NUMPAD7:      return KEY_NUMPAD7;
-            case KeyEvent.VK_NUMPAD8:      return KEY_NUMPAD8;
-            case KeyEvent.VK_NUMPAD9:      return KEY_NUMPAD9;
-            case KeyEvent.VK_MULTIPLY:     return KEY_MULTIPLY;
-            case KeyEvent.VK_ADD:          return KEY_ADD;
-            case KeyEvent.VK_SEPARATER:    return KEY_SEPARATOR;
-            case KeyEvent.VK_SUBTRACT:     return KEY_SUBTRACT;
-            case KeyEvent.VK_DECIMAL:      return KEY_DECIMAL;
-            case KeyEvent.VK_DIVIDE:       return KEY_DIVIDE;
-            case KeyEvent.VK_F1:           return KEY_F1;
-            case KeyEvent.VK_F2:           return KEY_F2;
-            case KeyEvent.VK_F3:           return KEY_F3;
-            case KeyEvent.VK_F4:           return KEY_F4;
-            case KeyEvent.VK_F5:           return KEY_F5;
-            case KeyEvent.VK_F6:           return KEY_F6;
-            case KeyEvent.VK_F7:           return KEY_F7;
-            case KeyEvent.VK_F8:           return KEY_F8;
-            case KeyEvent.VK_F9:           return KEY_F9;
-            case KeyEvent.VK_F10:          return KEY_F10;
-            case KeyEvent.VK_F11:          return KEY_F11;
-            case KeyEvent.VK_F12:          return KEY_F12;
-            case KeyEvent.VK_F13:          return KEY_F13;
-            case KeyEvent.VK_F14:          return KEY_F14;
-            case KeyEvent.VK_F15:          return KEY_F15;
-            case KeyEvent.VK_F16:          return KEY_F16;
-            case KeyEvent.VK_F17:          return KEY_F17;
-            case KeyEvent.VK_F18:          return KEY_F18;
-            case KeyEvent.VK_F19:          return KEY_F19;
-            case KeyEvent.VK_F20:          return KEY_F20;
-            case KeyEvent.VK_F21:          return KEY_F21;
-            case KeyEvent.VK_F22:          return KEY_F22;
-            case KeyEvent.VK_F23:          return KEY_F23;
-            case KeyEvent.VK_F24:          return KEY_F24;
-            case KeyEvent.VK_NUM_LOCK:     return KEY_NUM_LOCK;
-            case KeyEvent.VK_SCROLL_LOCK:  return KEY_SCROLL_LOCK;
+            case KeyEvent.VK_BACK_SPACE:   return Input.KEY_BACK_SPACE;
+            case KeyEvent.VK_TAB:          return Input.KEY_TAB;
+            case KeyEvent.VK_ENTER:        return Input.KEY_ENTER;
+            case KeyEvent.VK_PAUSE:        return Input.KEY_PAUSE;
+            case KeyEvent.VK_CAPS_LOCK:    return Input.KEY_CAPS_LOCK;
+            case KeyEvent.VK_ESCAPE:       return Input.KEY_ESCAPE;
+            case KeyEvent.VK_SPACE:        return Input.KEY_SPACE;
+            case KeyEvent.VK_PAGE_UP:      return Input.KEY_PAGE_UP;
+            case KeyEvent.VK_PAGE_DOWN:    return Input.KEY_PAGE_DOWN;
+            case KeyEvent.VK_END:          return Input.KEY_END;
+            case KeyEvent.VK_HOME:         return Input.KEY_HOME;
+            case KeyEvent.VK_LEFT:         return Input.KEY_LEFT;
+            case KeyEvent.VK_UP:           return Input.KEY_UP;
+            case KeyEvent.VK_RIGHT:        return Input.KEY_RIGHT;
+            case KeyEvent.VK_DOWN:         return Input.KEY_DOWN;
+            case KeyEvent.VK_PRINTSCREEN:  return Input.KEY_PRINT_SCREEN;
+            case KeyEvent.VK_INSERT:       return Input.KEY_INSERT;
+            case KeyEvent.VK_DELETE:       return Input.KEY_DELETE;
+            case KeyEvent.VK_SEMICOLON:    return Input.KEY_SEMICOLON;
+            case KeyEvent.VK_EQUALS:       return Input.KEY_EQUALS;
+            case KeyEvent.VK_COMMA:        return Input.KEY_COMMA;
+            case KeyEvent.VK_MINUS:        return Input.KEY_MINUS;
+            case KeyEvent.VK_PERIOD:       return Input.KEY_PERIOD;
+            case KeyEvent.VK_SLASH:        return Input.KEY_SLASH;
+            case KeyEvent.VK_BACK_QUOTE:   return Input.KEY_BACK_QUOTE;
+            case KeyEvent.VK_OPEN_BRACKET: return Input.KEY_OPEN_BRACKET;
+            case KeyEvent.VK_BACK_SLASH:   return Input.KEY_BACK_SLASH;
+            case KeyEvent.VK_CLOSE_BRACKET:return Input.KEY_CLOSE_BRACKET;
+            case KeyEvent.VK_QUOTE:        return Input.KEY_QUOTE;
+            case KeyEvent.VK_0:            return Input.KEY_0;
+            case KeyEvent.VK_1:            return Input.KEY_1;
+            case KeyEvent.VK_2:            return Input.KEY_2;
+            case KeyEvent.VK_3:            return Input.KEY_3;
+            case KeyEvent.VK_4:            return Input.KEY_4;
+            case KeyEvent.VK_5:            return Input.KEY_5;
+            case KeyEvent.VK_6:            return Input.KEY_6;
+            case KeyEvent.VK_7:            return Input.KEY_7;
+            case KeyEvent.VK_8:            return Input.KEY_8;
+            case KeyEvent.VK_9:            return Input.KEY_9;
+            case KeyEvent.VK_A:            return Input.KEY_A;
+            case KeyEvent.VK_B:            return Input.KEY_B;
+            case KeyEvent.VK_C:            return Input.KEY_C;
+            case KeyEvent.VK_D:            return Input.KEY_D;
+            case KeyEvent.VK_E:            return Input.KEY_E;
+            case KeyEvent.VK_F:            return Input.KEY_F;
+            case KeyEvent.VK_G:            return Input.KEY_G;
+            case KeyEvent.VK_H:            return Input.KEY_H;
+            case KeyEvent.VK_I:            return Input.KEY_I;
+            case KeyEvent.VK_J:            return Input.KEY_J;
+            case KeyEvent.VK_K:            return Input.KEY_K;
+            case KeyEvent.VK_L:            return Input.KEY_L;
+            case KeyEvent.VK_M:            return Input.KEY_M;
+            case KeyEvent.VK_N:            return Input.KEY_N;
+            case KeyEvent.VK_O:            return Input.KEY_O;
+            case KeyEvent.VK_P:            return Input.KEY_P;
+            case KeyEvent.VK_Q:            return Input.KEY_Q;
+            case KeyEvent.VK_R:            return Input.KEY_R;
+            case KeyEvent.VK_S:            return Input.KEY_S;
+            case KeyEvent.VK_T:            return Input.KEY_T;
+            case KeyEvent.VK_U:            return Input.KEY_U;
+            case KeyEvent.VK_V:            return Input.KEY_V;
+            case KeyEvent.VK_W:            return Input.KEY_W;
+            case KeyEvent.VK_X:            return Input.KEY_X;
+            case KeyEvent.VK_Y:            return Input.KEY_Y;
+            case KeyEvent.VK_Z:            return Input.KEY_Z;
+            case KeyEvent.VK_NUMPAD0:      return Input.KEY_NUMPAD0;
+            case KeyEvent.VK_NUMPAD1:      return Input.KEY_NUMPAD1;
+            case KeyEvent.VK_NUMPAD2:      return Input.KEY_NUMPAD2;
+            case KeyEvent.VK_NUMPAD3:      return Input.KEY_NUMPAD3;
+            case KeyEvent.VK_NUMPAD4:      return Input.KEY_NUMPAD4;
+            case KeyEvent.VK_NUMPAD5:      return Input.KEY_NUMPAD5;
+            case KeyEvent.VK_NUMPAD6:      return Input.KEY_NUMPAD6;
+            case KeyEvent.VK_NUMPAD7:      return Input.KEY_NUMPAD7;
+            case KeyEvent.VK_NUMPAD8:      return Input.KEY_NUMPAD8;
+            case KeyEvent.VK_NUMPAD9:      return Input.KEY_NUMPAD9;
+            case KeyEvent.VK_MULTIPLY:     return Input.KEY_MULTIPLY;
+            case KeyEvent.VK_ADD:          return Input.KEY_ADD;
+            case KeyEvent.VK_SEPARATER:    return Input.KEY_SEPARATOR;
+            case KeyEvent.VK_SUBTRACT:     return Input.KEY_SUBTRACT;
+            case KeyEvent.VK_DECIMAL:      return Input.KEY_DECIMAL;
+            case KeyEvent.VK_DIVIDE:       return Input.KEY_DIVIDE;
+            case KeyEvent.VK_F1:           return Input.KEY_F1;
+            case KeyEvent.VK_F2:           return Input.KEY_F2;
+            case KeyEvent.VK_F3:           return Input.KEY_F3;
+            case KeyEvent.VK_F4:           return Input.KEY_F4;
+            case KeyEvent.VK_F5:           return Input.KEY_F5;
+            case KeyEvent.VK_F6:           return Input.KEY_F6;
+            case KeyEvent.VK_F7:           return Input.KEY_F7;
+            case KeyEvent.VK_F8:           return Input.KEY_F8;
+            case KeyEvent.VK_F9:           return Input.KEY_F9;
+            case KeyEvent.VK_F10:          return Input.KEY_F10;
+            case KeyEvent.VK_F11:          return Input.KEY_F11;
+            case KeyEvent.VK_F12:          return Input.KEY_F12;
+            case KeyEvent.VK_F13:          return Input.KEY_F13;
+            case KeyEvent.VK_F14:          return Input.KEY_F14;
+            case KeyEvent.VK_F15:          return Input.KEY_F15;
+            case KeyEvent.VK_F16:          return Input.KEY_F16;
+            case KeyEvent.VK_F17:          return Input.KEY_F17;
+            case KeyEvent.VK_F18:          return Input.KEY_F18;
+            case KeyEvent.VK_F19:          return Input.KEY_F19;
+            case KeyEvent.VK_F20:          return Input.KEY_F20;
+            case KeyEvent.VK_F21:          return Input.KEY_F21;
+            case KeyEvent.VK_F22:          return Input.KEY_F22;
+            case KeyEvent.VK_F23:          return Input.KEY_F23;
+            case KeyEvent.VK_F24:          return Input.KEY_F24;
+            case KeyEvent.VK_NUM_LOCK:     return Input.KEY_NUM_LOCK;
+            case KeyEvent.VK_SCROLL_LOCK:  return Input.KEY_SCROLL_LOCK;
                 
             case KeyEvent.VK_SHIFT:
                 if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
-                    return KEY_RIGHT_SHIFT;
+                    return Input.KEY_RIGHT_SHIFT;
                 }
                 else {
-                    return KEY_LEFT_SHIFT;
+                    return Input.KEY_LEFT_SHIFT;
                 }
                 
             case KeyEvent.VK_CONTROL:
                 if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
-                    return KEY_RIGHT_CONTROL;
+                    return Input.KEY_RIGHT_CONTROL;
                 }
                 else {
-                    return KEY_LEFT_CONTROL;
+                    return Input.KEY_LEFT_CONTROL;
                 }
                 
             case KeyEvent.VK_ALT:
                 if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
-                    return KEY_RIGHT_ALT;
+                    return Input.KEY_RIGHT_ALT;
                 }
                 else {
-                    return KEY_LEFT_ALT;
+                    return Input.KEY_LEFT_ALT;
                 }
             
             case KeyEvent.VK_META:
                 if (e.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT) {
-                    return KEY_RIGHT_META;
+                    return Input.KEY_RIGHT_META;
                 }
                 else {
-                    return KEY_LEFT_META;
+                    return Input.KEY_LEFT_META;
                 }
         }
         
-     
         // Unknown key code
         return -1;
     }
     
-    
     private int getKeyCode(MouseEvent e) {
         switch (e.getButton()) {
             default: case MouseEvent.BUTTON1:
-                return KEY_MOUSE_BUTTON_1;
+                return Input.KEY_MOUSE_BUTTON_1;
             case MouseEvent.BUTTON2:
-                return KEY_MOUSE_BUTTON_2;
+                return Input.KEY_MOUSE_BUTTON_2;
             case MouseEvent.BUTTON3:
-                return KEY_MOUSE_BUTTON_3;
+                return Input.KEY_MOUSE_BUTTON_3;
         }
     }
-    
     
     private synchronized void keyEvent(int keyCode, boolean pressed) {
         if (keyCode == -1) {
@@ -443,35 +422,30 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         }
     }
     
-    
     //
-    // KeyListener interface
+    // Event listener implementations
     //
-    
     
     public void keyPressed(KeyEvent e) {
-        
         //pulpcore.CoreSystem.print(KeyEvent.getKeyText(e.getKeyCode()) + " = " + e.getKeyCode());
         
         int keyCode = getKeyCode(e);
         keyEvent(keyCode, true);
         e.consume();
         
-        if (keyCode == KEY_LEFT_META || keyCode == KEY_RIGHT_META) {
+        if (keyCode == Input.KEY_LEFT_META || keyCode == Input.KEY_RIGHT_META) {
             // On Mac OS X, press and release events are not sent if the meta key is down
             // Release all keys
-            for (int i = 0; i < NUM_KEY_CODES; i++) {
+            for (int i = 0; i < Input.NUM_KEY_CODES; i++) {
                 keyDown[i] = false;
             }
         }
     }
 
-
     public void keyReleased(KeyEvent e) {
         keyEvent(getKeyCode(e), false);
         e.consume();
     }
-
 
     public void keyTyped(KeyEvent e) {
         if (e.isMetaDown()) {
@@ -481,29 +455,24 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             keyEvent(keyCode, true);
             keyEvent(keyCode, false);
         }
-        else if (super.textInputMode) {
+        else {
             synchronized (this) {
                 char ch = e.getKeyChar();
                 if (ch == KeyEvent.VK_BACK_SPACE) {
-                    if (textInputSinceLastPoll.length() > 0) {
-                        textInputSinceLastPoll.setLength(textInputSinceLastPoll.length() - 1);
+                    if (typedCharsSinceLastPoll.length() > 0) {
+                        typedCharsSinceLastPoll.setLength(typedCharsSinceLastPoll.length() - 1);
                     }
                 }
                 else if (ch != KeyEvent.VK_DELETE && ch != KeyEvent.CHAR_UNDEFINED && 
                     !e.isActionKey() && ch >= ' ')
                 { 
-                    textInputSinceLastPoll.append(ch);
+                    typedCharsSinceLastPoll.append(ch);
                 }
             }
         }
         
         e.consume();
     }
-    
-    
-    //
-    // MouseListener
-    //
     
     public void mousePressed(MouseEvent e) {
         synchronized (this) {
@@ -519,7 +488,6 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             appletIsMouseInside = true;
         }
     }
-
 
     public void mouseReleased(MouseEvent e) {
         synchronized (this) {
@@ -542,62 +510,48 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         */
     }
 
-
     public void mouseClicked(MouseEvent e) {
-        
         int clickCount = e.getClickCount();
-        
-        if (clickCount <= 1) {
-            return;
-        }
-        
-        // Detect double- and triple-clicks
-        synchronized (this) {
-            int keyCode;
-            if (clickCount == 2) {
-                 keyCode = KEY_DOUBLE_MOUSE_BUTTON_1;
+        if (clickCount > 1) {
+            // Detect double- and triple-clicks
+            synchronized (this) {
+                int keyCode;
+                if (clickCount == 2) {
+                     keyCode = Input.KEY_DOUBLE_MOUSE_BUTTON_1;
+                }
+                else {
+                     keyCode = Input.KEY_TRIPLE_MOUSE_BUTTON_1;
+                }
+                
+                switch (e.getButton()) {
+                    case MouseEvent.BUTTON2: keyCode += 1; break;
+                    case MouseEvent.BUTTON3: keyCode += 2; break;
+                }
+                
+                keyPressed[keyCode] = true;
+                keyDown[keyCode] = false;
+                
+                appletMouseReleaseX = e.getX();
+                appletMouseReleaseY = e.getY();
+                appletIsMouseInside = true;
             }
-            else {
-                 keyCode = KEY_TRIPLE_MOUSE_BUTTON_1;
-            }
-            
-            switch (e.getButton()) {
-                case MouseEvent.BUTTON2: keyCode += 1; break;
-                case MouseEvent.BUTTON3: keyCode += 2; break;
-            }
-            
-            keyPressed[keyCode] = true;
-            keyDown[keyCode] = false;
-            
-            appletMouseReleaseX = e.getX();
-            appletMouseReleaseY = e.getY();
-            appletIsMouseInside = true;
         }
     }
-
 
     public void mouseEntered(MouseEvent e) {
         mouseMoved(e);
     }
-
 
     public void mouseExited(MouseEvent e) {
         mouseMoved(e);
         appletIsMouseInside = false;
     }
 
-
-    //
-    // MouseMouseListener
-    //
-    
     public void mouseDragged(MouseEvent e) {
         mouseMoved(e);
     }
 
-
     public void mouseMoved(MouseEvent e) {
-        
         synchronized (this) {
             appletMouseX = e.getX();
             appletMouseY = e.getY();
@@ -613,14 +567,7 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
             }
             */
         }
-
     }
-    
-    
-    //
-    // MouseWheelListener
-    //
-    
     
     public void mouseWheelMoved(MouseWheelEvent e) {
         synchronized (this) {
@@ -633,19 +580,12 @@ public class AppletInput extends Input implements KeyListener, MouseListener,
         }
     }
 
-    
-    //
-    // FocusListener
-    //
-    
     public void focusGained(FocusEvent e) {
         appletHasKeyboardFocus = true;
     }
     
-    
     public void focusLost(FocusEvent e) {
         appletHasKeyboardFocus = false;
-        clearImpl();
+        clear();
     }
-
 }

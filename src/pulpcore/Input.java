@@ -29,7 +29,7 @@
 
 package pulpcore;
 
-import pulpcore.image.CoreImage;
+import pulpcore.platform.PolledInput;
 
 /**
     The Input class provides an easy way to check the state of the keyboard
@@ -53,7 +53,7 @@ import pulpcore.image.CoreImage;
     the key state will be PRESSED, and on the next poll the key state will be 
     RELEASED.
 */
-public abstract class Input {
+public final class Input {
     
     /** 
         The virtual key state indicating that a key is up. 
@@ -89,24 +89,19 @@ public abstract class Input {
     
     public static final int CURSOR_DEFAULT   = 0;
     public static final int CURSOR_OFF       = 1;
-    // Set to private since it's not used right now (it didn't work with dirty rects)
-    private static final int CURSOR_CUSTOM    = 2;
+    public static final int CURSOR_HAND      = 2;
     public static final int CURSOR_CROSSHAIR = 3;
-    public static final int CURSOR_HAND      = 4;
-    public static final int CURSOR_MOVE      = 5;
-    public static final int CURSOR_TEXT      = 6;
-    public static final int CURSOR_WAIT      = 7;
-    public static final int CURSOR_N_RESIZE  = 8;
-    public static final int CURSOR_S_RESIZE  = 9;
-    public static final int CURSOR_W_RESIZE  = 10;
-    public static final int CURSOR_E_RESIZE  = 11;
-    public static final int CURSOR_NW_RESIZE = 12;
-    public static final int CURSOR_NE_RESIZE = 13;
-    public static final int CURSOR_SW_RESIZE = 14;
-    public static final int CURSOR_SE_RESIZE = 15;
-    
-    private static final int NUM_CURSORS     = 16;
-    
+    public static final int CURSOR_MOVE      = 4;
+    public static final int CURSOR_TEXT      = 5;
+    public static final int CURSOR_WAIT      = 6;
+    public static final int CURSOR_N_RESIZE  = 7;
+    public static final int CURSOR_S_RESIZE  = 8;
+    public static final int CURSOR_W_RESIZE  = 9;
+    public static final int CURSOR_E_RESIZE  = 10;
+    public static final int CURSOR_NW_RESIZE = 11;
+    public static final int CURSOR_NE_RESIZE = 12;
+    public static final int CURSOR_SW_RESIZE = 13;
+    public static final int CURSOR_SE_RESIZE = 14;
 
     // Same as Windows virtual key codes
     // Modifier keys (ctrl, alt, shift) are only represented by the left/right codes.
@@ -350,124 +345,36 @@ public abstract class Input {
     
     public static final int NUM_KEY_CODES      = 0x109;
 
-    
-    protected final int[] keyStates = new int[NUM_KEY_CODES];
-    protected int mouseX;
-    protected int mouseY;
-    protected int mousePressX;
-    protected int mousePressY;
-    protected int mouseReleaseX;
-    protected int mouseReleaseY;
-    protected int mouseWheelX;
-    protected int mouseWheelY;
-    protected int mouseWheel;
-    protected boolean hasKeyboardFocus;
-    protected boolean isMouseInside;
-    protected boolean mouseMoving;
-              
-    protected boolean textInputMode;
-    protected String textInput = "";
-    
-    protected CoreImage customCursor;
-    
-    
-    protected abstract void pollImpl();
-    
-    protected abstract void clearImpl();
-    
-    protected abstract void setCursorImpl(int cursorCode);
-    
-    protected abstract int getCursorImpl();
-    
-    protected abstract void requestKeyboardFocusImpl();
-    
-    
-    /* package-private */ void poll() {
-        pollImpl();
-    }
-    
-    
-    /* package-private */ void clear() {
-        
-        clearImpl();
-        
-        for (int i = 0; i < NUM_KEY_CODES; i++) {
-            keyStates[i] = UP;
-        }
-    }
-    
-    
     //
-    // Static convenience methods
+    // Access to AppContext
     //
     
-    
-    private static Input getThisInputSystem() {
-        return CoreSystem.getThisAppContext().getInputSystem();
+    private static PolledInput getThisPolledInput() {
+        return CoreSystem.getThisAppContext().getPolledInput();
     }
-    
-    
-    /**
-        Sets the cursor to a custom image. 
-        The Stage draws the cursor image at the mouse location and uses the 
-        image's hotspot. The cursor type is set to CURSOR_OFF which displays
-        the default cursor on applets.
-    */
-    /*
-    public static void setCustomCursor(CoreImage cursor) {
-        Input input = getThisInputSystem();
-        input.customCursor = cursor;
-        if (cursor == null) {
-            input.setCursorImpl(CURSOR_DEFAULT);
-        }
-        else {
-            input.setCursorImpl(CURSOR_CUSTOM);
-        }
-    }
-    
-    
-    public static CoreImage getCustomCursor() {
-        Input input = getThisInputSystem();
-        if (input.getCursorImpl() == CURSOR_CUSTOM) {
-            return input.customCursor;
-        }
-        else {
-            return null;
-        }
-    }
-    */
     
     /**
         Sets the cursor type.
     */
     public static void setCursor(int cursorCode) {
-        Input input = getThisInputSystem();
-        
-        if (cursorCode < 0 || cursorCode >= NUM_CURSORS) {
-            cursorCode = CURSOR_DEFAULT;
-        }
-        else if (cursorCode == CURSOR_CUSTOM && input.customCursor == null) {
-            cursorCode = CURSOR_DEFAULT;
-        }
-        
-       input.setCursorImpl(cursorCode);
+        CoreSystem.getThisAppContext().setCursor(cursorCode);
     }
-    
     
     public static int getCursor() {
-        return getThisInputSystem().getCursorImpl();
+        return CoreSystem.getThisAppContext().getCursor();
     }
-    
-    
-    public static boolean hasKeyboardFocus() {
-        return getThisInputSystem().hasKeyboardFocus;
-    }
-    
     
     public static void requestKeyboardFocus() {
-        getThisInputSystem().requestKeyboardFocusImpl();
+        CoreSystem.getThisAppContext().requestKeyboardFocus();
     }
     
+    //
+    // Access to polled input
+    //
+    
+    public static boolean hasKeyboardFocus() {
+        return getThisPolledInput().hasKeyboardFocus;
+    }
     
     /**
         @return the key code state (UP, PRESSED, DOWN, or RELEASED) since the 
@@ -477,9 +384,123 @@ public abstract class Input {
         if (keyCode < 0 || keyCode >= NUM_KEY_CODES) {
             return UP;
         }
-        return getThisInputSystem().keyStates[keyCode];
+        return getThisPolledInput().keyStates[keyCode];
     }
     
+    /**
+        Returns true if the mouse is inside the Stage.
+    */
+    public static boolean isMouseInside() {
+        return getThisPolledInput().isMouseInside;
+    }
+    
+    /**
+        @return true if the mouse moved since the last frame.
+    */
+    public static boolean isMouseMoving() {
+        return getThisPolledInput().isMouseMoving;
+    }
+    
+    /**
+        @return the current x location of the mouse.
+    */
+    public static int getMouseX() {
+        return getThisPolledInput().mouseX;
+    }
+    
+    /**
+        @return the current y location of the mouse.
+    */
+    public static int getMouseY() {
+        return getThisPolledInput().mouseY;
+    }
+    
+    /**
+        Gets the x location of the last mouse press. To check if the mouse was just pressed, use 
+        {@link #isMousePressed()}. 
+        @return the x location of the last mouse press.
+    */
+    public static int getMousePressX() {
+        return getThisPolledInput().mousePressX;
+    }
+    
+    /**
+        Gets the y location of the last mouse press. To check if the mouse was just pressed, use 
+        {@link #isMousePressed()}. 
+        @return the y location of the last mouse press.
+    */
+    public static int getMousePressY() {
+        return getThisPolledInput().mousePressY;
+    }
+    
+    /**
+        Gets the x location of the last mouse release. To check if the mouse was just relesaed, use 
+        {@link #isMouseReleased()}. 
+        @return the x location of the last mouse release.
+    */
+    public static int getMouseReleaseX() {
+        return getThisPolledInput().mouseReleaseX;
+    }
+    
+    /**
+        Gets the y location of the last mouse release. To check if the mouse was just relesaed, use 
+        {@link #isMouseReleased()}. 
+        @return the y location of the last mouse release.
+    */
+    public static int getMouseReleaseY() {
+        return getThisPolledInput().mouseReleaseY;
+    }
+    
+    /**
+        Gets the x location of the last mouse wheel rotation. To check if the mouse wheel was just
+        rotated, use {@link #getMouseWheelRotation()}. 
+        @return the x location of the last mouse wheel rotation.
+    */
+    public static int getMouseWheelX() {
+        return getThisPolledInput().mouseWheelX;
+    }
+    
+    /**
+        Gets the y location of the last mouse wheel rotation. To check if the mouse wheel was just
+        rotated, use {@link #getMouseWheelRotation()}. 
+        @return the y location of the last mouse wheel rotation.
+    */
+    public static int getMouseWheelY() {
+        return getThisPolledInput().mouseWheelY;
+    }
+    
+    /**
+        Returns the number of clicks the mouse wheel was rotated since the last poll.
+        <p>
+        For applets, mouse wheel input may not work all situations. For
+        example, the applet must first have focus, and some browsers (notably, Safari 
+        on Mac OS X) will not allow mouse wheel input at all.
+        
+        @return negative values if the mouse wheel was rotated up (away from the user), and 
+        positive values if the mouse wheel was rotated down (toward the user).
+        @see #getMouseWheelX()
+        @see #getMouseWheelY()
+    */
+    public static int getMouseWheelRotation() {
+        return getThisPolledInput().mouseWheelRotation;
+    }    
+    
+    /**
+        Returns the keyboard character input received since the last poll.
+    */
+    public static String getTypedChars() {
+        String chars = getThisPolledInput().typedChars;
+        if (chars == null) {
+            return "";
+        }
+        else {
+            return chars;
+        }
+    }
+
+    //
+    // Convenience methods
+    //
     
     /**
         @return true if the key with the specified key code is currently down or
@@ -500,12 +521,10 @@ public abstract class Input {
         return getState(keyCode) == PRESSED;
     }
     
-    
     public static boolean isTyped(int keyCode) {
         int state = getState(keyCode);
         return (state == PRESSED || state == REPEATED);
     }
-    
     
     /**
         @return true if the key with the specified key code has been released
@@ -515,7 +534,6 @@ public abstract class Input {
     public static boolean isReleased(int keyCode) {
         return getState(keyCode) == RELEASED;
     }
-    
     
     /**
         Checks a list of key codes and returns true if at least one key is 
@@ -540,7 +558,6 @@ public abstract class Input {
         return anyPressed;
     }
     
-    
     /**
         Checks a list of key codes and returns true if at least one key is 
         down. This is a convenience method to 
@@ -559,7 +576,6 @@ public abstract class Input {
         }
         return false;
     }
-    
     
     /**
         Checks a list of key codes and returns true if at least one key is 
@@ -584,7 +600,6 @@ public abstract class Input {
         return anyReleased;
     }
     
-    
     /**
         Checks if either the left control (CTRL) key or the right control key
         is currently down.
@@ -592,7 +607,6 @@ public abstract class Input {
     public static boolean isControlDown() {
         return isDown(KEY_LEFT_CONTROL) || isDown(KEY_RIGHT_CONTROL);
     }
-    
     
     /**
         Checks if either the left shift key or the right shift key
@@ -602,7 +616,6 @@ public abstract class Input {
         return isDown(KEY_LEFT_SHIFT) || isDown(KEY_RIGHT_SHIFT);
     }
     
-    
     /**
         Checks if either the left ALT key or the right ALT key
         is currently down.
@@ -611,7 +624,6 @@ public abstract class Input {
         return isDown(KEY_LEFT_ALT) || isDown(KEY_RIGHT_ALT);
     }
     
-    
     /**
         Checks if either the left meta key or the right meta key
         is currently down. The meta key is the Command key on Mac OS X.
@@ -619,15 +631,6 @@ public abstract class Input {
     public static boolean isMetaDown() {
         return isDown(KEY_LEFT_META) || isDown(KEY_RIGHT_META);
     }
-    
-    
-    /**
-        Returns true if the mouse is inside the Stage.
-    */
-    public static boolean isMouseInside() {
-        return getThisInputSystem().isMouseInside;
-    }
-    
     
     /**
         Returns true if the primary mouse button is pressed. 
@@ -638,7 +641,6 @@ public abstract class Input {
         return isPressed(KEY_MOUSE_BUTTON_1);
     }
     
-    
     /**
         Returns true if the primary mouse button is released.
         @see #getMouseReleaseX()
@@ -648,7 +650,6 @@ public abstract class Input {
         return isReleased(KEY_MOUSE_BUTTON_1);
     }
     
-    
     /**
         Returns true if the primary mouse button is down. 
         @see #getMouseX()
@@ -657,132 +658,4 @@ public abstract class Input {
     public static boolean isMouseDown() {
         return isDown(KEY_MOUSE_BUTTON_1);
     }
-    
-    
-    /**
-        @return true if the mouse moved since the last frame.
-    */
-    public static boolean isMouseMoving() {
-        return getThisInputSystem().mouseMoving;
-    }
-    
-    
-    /**
-        @return the current x location of the mouse.
-    */
-    public static int getMouseX() {
-        return getThisInputSystem().mouseX;
-    }
-    
-    
-    /**
-        @return the current y location of the mouse.
-    */
-    public static int getMouseY() {
-        return getThisInputSystem().mouseY;
-    }
-    
-    
-    /**
-        Gets the x location of the last mouse press. To check if the mouse was just pressed, use 
-        {@link #isMousePressed()}. 
-        @return the x location of the last mouse press.
-    */
-    public static int getMousePressX() {
-        return getThisInputSystem().mousePressX;
-    }
-    
-    
-    /**
-        Gets the y location of the last mouse press. To check if the mouse was just pressed, use 
-        {@link #isMousePressed()}. 
-        @return the y location of the last mouse press.
-    */
-    public static int getMousePressY() {
-        return getThisInputSystem().mousePressY;
-    }
-    
-    
-    /**
-        Gets the x location of the last mouse release. To check if the mouse was just relesaed, use 
-        {@link #isMouseReleased()}. 
-        @return the x location of the last mouse release.
-    */
-    public static int getMouseReleaseX() {
-        return getThisInputSystem().mouseReleaseX;
-    }
-    
-    
-    /**
-        Gets the y location of the last mouse release. To check if the mouse was just relesaed, use 
-        {@link #isMouseReleased()}. 
-        @return the y location of the last mouse release.
-    */
-    public static int getMouseReleaseY() {
-        return getThisInputSystem().mouseReleaseY;
-    }
-    
-    
-    /**
-        Gets the x location of the last mouse wheel rotation. To check if the mouse wheel was just
-        rotated, use {@link #getMouseWheelRotation()}. 
-        @return the x location of the last mouse wheel rotation.
-    */
-    public static int getMouseWheelX() {
-        return getThisInputSystem().mouseWheelX;
-    }
-    
-    
-    /**
-        Gets the y location of the last mouse wheel rotation. To check if the mouse wheel was just
-        rotated, use {@link #getMouseWheelRotation()}. 
-        @return the y location of the last mouse wheel rotation.
-    */
-    public static int getMouseWheelY() {
-        return getThisInputSystem().mouseWheelY;
-    }
-    
-    
-    /**
-        Returns the number of clicks the mouse wheel was rotated since the last poll.
-        <p>
-        For applets, mouse wheel input may not work all situations. For
-        example, the applet must first have focus, and some browsers (notably, Safari 
-        on Mac OS X) will not allow mouse wheel input at all.
-        
-        @return negative values if the mouse wheel was rotated up (away from the user), and 
-        positive values if the mouse wheel was rotated down (toward the user).
-        @see #getMouseWheelX()
-        @see #getMouseWheelY()
-    */
-    public static int getMouseWheelRotation() {
-        return getThisInputSystem().mouseWheel;
-    }
-    
-    
-    public static void setTextInputMode(boolean textInputMode) {
-        Input input = getThisInputSystem();
-        if (input.textInputMode != textInputMode) {
-            input.textInputMode = textInputMode;
-            input.textInput = "";
-        }
-    }
-    
-    
-    public static boolean isTextInputMode() {
-        return getThisInputSystem().textInputMode;
-    }
-    
-    
-    /**
-        Returns the keyboard character input received since the last poll.
-    */
-    public static String getTextInput() {
-        Input input = getThisInputSystem();
-        if (!input.textInputMode) {
-            input.textInput = "";
-        }
-        return input.textInput;
-    }
-    
 }

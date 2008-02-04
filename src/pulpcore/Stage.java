@@ -92,7 +92,6 @@ public class Stage implements Runnable {
     private static final int REPLACE_SCENE = 4;
     
     private AppContext appContext;
-    private Input input;
     
     // Dirty rectangles
     private Rect[] dirtyRectangles;
@@ -138,7 +137,6 @@ public class Stage implements Runnable {
     public Stage(Surface surface, AppContext appContext) {
         this.surface = surface;
         this.appContext = appContext;
-        this.input = appContext.getInputSystem();
     }
     
     
@@ -581,12 +579,12 @@ public class Stage implements Runnable {
             
             // Check if a new Scene should be shown
             if (Build.DEBUG) {
-                if (input.isControlDown() && input.isPressed(Input.KEY_C) && 
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_C) && 
                     !(currentScene instanceof ConsoleScene)) 
                 {
                     pushScene(new ConsoleScene());
                 }
-                if (input.isControlDown() && input.isPressed(Input.KEY_X) && 
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_X) && 
                     !(currentScene instanceof SceneSelector)) 
                 {
                     pushScene(new SceneSelector());
@@ -602,30 +600,29 @@ public class Stage implements Runnable {
                 return;
             }
             
-            boolean oldFocus = input.hasKeyboardFocus();
+            boolean oldFocus = Input.hasKeyboardFocus();
             
             // Capture input
-            input.poll();
+            appContext.pollInput();
             
             // Redraw if the focus changed
-            boolean focusedChanged = input.hasKeyboardFocus() != oldFocus;
+            boolean focusedChanged = Input.hasKeyboardFocus() != oldFocus;
             boolean needsFullRedraw = focusedChanged | renderingErrorOccurred;
             
             if (Build.DEBUG) {
-                if (input.isControlDown() && input.isPressed(Input.KEY_I)) {
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_I)) {
                     showInfoOverlay = !showInfoOverlay;
                     needsFullRedraw = true;
                 }
-                
-                if (input.isControlDown() && input.isPressed(Input.KEY_1)) {
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_1)) {
                     speed = SLOW_MOTION_SPEED;
                     elapsedTimeRemainder = 0;
                 }
-                if (input.isControlDown() && input.isPressed(Input.KEY_2)) {
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_2)) {
                     speed = 1;
                     elapsedTimeRemainder = 0;
                 }
-                if (input.isControlDown() && input.isPressed(Input.KEY_3)) {
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_3)) {
                     speed = FAST_MOTION_SPEED;
                     elapsedTimeRemainder = 0;
                 }
@@ -665,21 +662,6 @@ public class Stage implements Runnable {
                 appContext.setTalkBackField("pulpcore.platform.graphics.error", ex);
                 renderingErrorOccurred = true;
             }                
-                
-            
-            // Draw custom cursor
-            /*
-            CoreImage cursor = input.getCustomCursor();
-            if (cursor != null) {
-                cursor.update(elapsedTime);
-                
-                int x = input.getMouseX() - cursor.getHotspotX();
-                int y = input.getMouseY() - cursor.getHotspotY();
-                g.reset();
-                g.getTransform().concatenate(defaultTransform);
-                g.drawImage(cursor, x, y);
-            }
-            */
             
             // Draw frame rate and memory info (DEBUG only)
             if (Build.DEBUG) {
@@ -825,7 +807,6 @@ public class Stage implements Runnable {
         nextScene = null;
         nextSceneType = NO_NEXT_SCENE;
         setFrameRate(DEFAULT_FPS);
-        input.setTextInputMode(false);
         
         // Perform a garbage collection if no sounds are playing
         // (A GC causes sound distortion on some systems)
@@ -848,7 +829,7 @@ public class Stage implements Runnable {
         
         // Do an extra input poll clear any keypresses during the scene switch process.
         // (Note, the input is polled again after returning from this method)
-        input.poll();
+        appContext.pollInput();
         
         return true;
     }
