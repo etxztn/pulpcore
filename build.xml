@@ -353,12 +353,14 @@
         </javac>
         
         <java classname="org.junit.runner.JUnitCore" fork="true" dir="${basedir}/tests">
+            <arg value="AnimationTest"/>
             <arg value="CoreMathTest"/>
             <classpath>
                 <pathelement path="${basedir}/tests;${build}/${project.debug.jar.file};${junit.path}"/>
             </classpath>
         </java>
-       
+        
+        <delete dir="tests" includes="*.class" />
     </target>
     
     

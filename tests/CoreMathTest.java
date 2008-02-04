@@ -60,11 +60,21 @@ public class CoreMathTest {
     }
     
     
-    @Test public void sqrt() {
+    @Test public void sqrtGreaterThanOne() {
         for (int i = 0; i < NUM_TESTS; i++) {
-            double v = CoreMath.rand(0, CoreMath.MAX_DOUBLE_VALUE);
+            double v = CoreMath.rand(1.0, CoreMath.MAX_DOUBLE_VALUE);
             double expectedResult = Math.sqrt(v);
             double actualResult = CoreMath.toDouble(CoreMath.sqrt(CoreMath.toFixed(v)));
+            assertEquals("Bad result for " + v, expectedResult, actualResult, 0.00002);
+        }
+    }
+    
+    @Test public void sqrtLessThanOne() {
+        for (int i = 0; i < NUM_TESTS; i++) {
+            int f = CoreMath.rand(0, CoreMath.ONE);
+            double v = CoreMath.toDouble(f);
+            double expectedResult = Math.sqrt(v);
+            double actualResult = CoreMath.toDouble(CoreMath.sqrt(f));
             assertEquals("Bad result for " + v, expectedResult, actualResult, 0.00002);
         }
     }
