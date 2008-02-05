@@ -44,6 +44,7 @@ public abstract class Surface {
 
     private CoreGraphics g;
     protected CoreImage image;
+    private int[] imageData;
     protected boolean contentsLost;
     
     private int refreshRate = NO_LIMIT;
@@ -52,12 +53,7 @@ public abstract class Surface {
     private boolean canChangeRefreshRate = true;
     
     protected int[] getData() {
-        if (image == null) {
-            return null;
-        }
-        else {
-            return image.getData();
-        }
+        return imageData;
     }
     
     public boolean isReady() {
@@ -69,7 +65,8 @@ public abstract class Surface {
     }
     
     protected final void setSize(int w, int h) {
-        image = new CoreImage(w, h);
+        imageData = new int[w * h];
+        image = new CoreImage(w, h, true, imageData);
         g = image.createGraphics();
         notifyResized();
     }

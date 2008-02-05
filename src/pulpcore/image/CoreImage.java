@@ -45,8 +45,7 @@ import pulpcore.util.ByteArray;
     Methods like 
     {@link #crop(int, int, int, int)}, {@link #scale(double)}, and {@link #tint(int)} return new
     CoreImages. The image's raster data can be manipulated using the 
-    {@link #createGraphics() } method, or by directly modifying pixels retrieved
-    from the {@link #getData()} method.
+    {@link #createGraphics() } method.
 */
 public class CoreImage {
     
@@ -142,11 +141,11 @@ public class CoreImage {
         return height;
     }
     
-    public final int[] getData() {
+    /* package-private */ final int[] getData() {
         return data;
     }
     
-    /* package-private */ public final void setData(int[] data) {
+    /* package-private */ final void setData(int[] data) {
         this.data = data;
     }
     
