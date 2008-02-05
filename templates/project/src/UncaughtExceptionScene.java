@@ -1,5 +1,6 @@
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreFont;
 import pulpcore.platform.ConsoleScene;
 import pulpcore.scene.Scene2D;
