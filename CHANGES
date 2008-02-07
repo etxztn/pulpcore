@@ -1,4 +1,4 @@
-0.10.11 (January 27?, 2008):
+0.10.11 (February 7, 2008):
   * Tools: the contrib/ dir is now included in the distribution archive.
   * Fixed bug: Sprite.isMouseXXX() methods no longer return true if the mouse is outside the applet.
   * Fixed bug: Fixed typo, renamed Stage.AUTO_STETCH to Stage.AUTO_STRETCH.
