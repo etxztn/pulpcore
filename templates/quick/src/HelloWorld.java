@@ -1,13 +1,16 @@
 import pulpcore.scene.Scene2D;
+import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
+import static pulpcore.image.Colors.*;
 
 public class HelloWorld extends Scene2D {
 
     @Override
     public void load() {
-        add(new ImageSprite("background.png", 0, 0));
-        add(new Label("Hello World!", 50, 50));
+        add(new FilledSprite(WHITE));
+        add(new ImageSprite("success.png", 5, 5));
+        add(new Label("Hello World!", 26, 6));
     }
     
     @Override
