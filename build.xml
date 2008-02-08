@@ -427,7 +427,9 @@
             <target name="clean-temp"/>
         </subant>
         
-        <zip destfile="${build}/pulpcore-${version.full}.zip" basedir="${dist.temp}" />
+        <zip destfile="${build}/pulpcore-${version.full}.zip">
+            <zipfileset dir="${dist.temp}" prefix="pulpcore-${version.full}"/>
+        </zip>
         
         <!-- 
             Create the www folder used at interactivepulp.com
@@ -440,11 +442,9 @@
         <copy todir="${build}/www/api">
             <fileset dir="${dist.temp}/doc/api"/>
         </copy>
-        <!--
-        <copy todir="${build}/www/colors">
-            <fileset dir="${dist.temp}/examples/Colors/build"/>
+        <copy todir="${build}/www/compositing">
+            <fileset dir="${dist.temp}/examples/Compositing/build"/>
         </copy>
-        -->
         <copy todir="${build}/www/easing">
             <fileset dir="${dist.temp}/examples/Easings/build"/>
         </copy>
@@ -480,7 +480,7 @@
     <target name="update-example-build-files" 
         description="Updates the example build files from the 'quick' template">
         <subant target="copy-template" genericantfile="build.xml">
-            <property name="template.file" location="templates/quick/build.xml" />
+            <property name="template.dir" location="templates/quick" />
             <dirset dir="examples" includes="*"/>
         </subant>
         
@@ -509,8 +509,24 @@
             <flattenmapper/>
         </pathconvert>
         
-        <copy file="${template.file}" overwrite="true" tofile="build.xml" />
+        <copy file="${template.dir}/build.xml" overwrite="true" tofile="build.xml" />
         <replace file="build.xml" token="HelloWorld" value="${example.name}" />
+
+        <available file="src" property="src.present" />
+        <antcall target="new-template" />
+    </target>
+    
+    <!-- Called from copy-template -->
+    <target name="new-template" unless="src.present">
+        <echo>Creating new example: ${example.name}</echo>
+        <mkdir dir="src" />
+        <copy file="${template.dir}/src/HelloWorld.java" overwrite="true" 
+            tofile="src/${example.name}.java" />
+        <replace file="src/${example.name}.java" token="HelloWorld" value="${example.name}" />
+        
+        <copy todir="src">
+            <fileset dir="${template.dir}/src" excludes="*.java" />
+        </copy>
     </target>
     
     <target name="build-examples" description="Compile all examples and templates (for testing)">
