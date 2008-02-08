@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -52,7 +52,6 @@ public class PNGWriter {
     // CRC algorithm from http://www.w3.org/TR/PNG-CRCAppendix.html
     //
     
-    
     /** Table of CRCs of all 8-bit messages. */
     private static final int[] CRC_TABLE = new int[256];
    
@@ -72,10 +71,8 @@ public class PNGWriter {
         }
     }
     
-    
     // Prevent instantiation
     private PNGWriter() { }
-    
 
     private static int getCRC(byte[] buf, int offset, int length) {
         int crc = 0xffffffff;
@@ -84,7 +81,6 @@ public class PNGWriter {
         }
         return crc ^ 0xffffffff;
     }
-    
 
     /**
         Encodes the image as a PNG file and return the results as a byte array, or null if there
@@ -115,6 +111,9 @@ public class PNGWriter {
             idat.writeByte(0); // Filter type
             for (int j = 0; j < width; j++) {
                 int argbPixel = rgbData[index++];
+                if (CoreGraphics.PREMULTIPLIED_ALPHA) {
+                    argbPixel = Colors.unpremultiply(argbPixel);
+                }
                 idat.writeByte(((argbPixel >> 16) & 0xff)); // red
                 idat.writeByte(((argbPixel >> 8) & 0xff)); // green
                 idat.writeByte((argbPixel & 0xff)); // blue

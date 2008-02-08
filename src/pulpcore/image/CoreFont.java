@@ -58,7 +58,6 @@ public class CoreFont {
     private int[] bearingLeft;
     private int[] bearingRight;
     
-    
     public static CoreFont getSystemFont() {
         if (systemFont == null) {
             systemFont = load("system.font.png");
@@ -66,7 +65,6 @@ public class CoreFont {
         
         return systemFont;
     }
-    
     
     /**
         Loads a PNG-based image font from the asset catalog.
@@ -114,10 +112,8 @@ public class CoreFont {
         }
     }
     
-    
     private CoreFont() { }
      
-    
     public CoreFont(CoreFont font) {
         this.image = font.image;
         this.firstChar = font.firstChar;
@@ -167,7 +163,6 @@ public class CoreFont {
         this.image = image;
     }
     
-    
     public boolean canDisplay(char ch) {
         if (uppercaseOnly && ch >= 'a' && ch <= 'z') {
             ch += 'A' - 'a';
@@ -181,7 +176,6 @@ public class CoreFont {
         return (charWidth > 0);
     }
     
-    
     /**
         Gets the total width of all the characters in a string. Tracking between 
         characters is included.
@@ -192,7 +186,6 @@ public class CoreFont {
     public int getStringWidth(String s) {
         return getStringWidth(s, 0, s.length());
     }
-    
     
     /**
         Gets the total width of a range of characters in a string. Tracking 
@@ -221,14 +214,12 @@ public class CoreFont {
         return stringWidth;
     }
     
-    
     public int getCharPosition(String s, int beginIndex, int charIndex) {
         if (charIndex <= beginIndex) {
             return 0;
         }
         return getStringWidth(s, beginIndex, charIndex + 1) - getCharWidth(s.charAt(charIndex));
     }
-    
     
     /* package-private */ int getCharIndex(char ch) {
         if (uppercaseOnly && ch >= 'a' && ch <= 'z') {
@@ -240,7 +231,6 @@ public class CoreFont {
         return ch - firstChar;
     }
     
-    
     /**
         Gets the width of the specified character. Tracking and kerning is not included.
         If a character isn't valid for this font, the last character in the set is used.
@@ -250,11 +240,9 @@ public class CoreFont {
         return (charPositions[index+1] - charPositions[index]);
     }
     
-    
     public int getKerning(char left, char right) {
         return getKerning(getCharIndex(left), getCharIndex(right));
     }
-    
     
     /* package-private */ int getKerning(int leftIndex, int rightIndex) {
         // Future versions of this method might handle kerning pairs, like "WA" and "Yo"
@@ -268,16 +256,13 @@ public class CoreFont {
         }
     }
     
-    
     public int getHeight() {
         return image.getHeight();
     }
     
-    
     public CoreImage getImage() {
         return image;
     }
-    
     
     private boolean shouldIgnoreTracking(int index) {
         int width = (charPositions[index+1] - charPositions[index]);
@@ -286,7 +271,6 @@ public class CoreFont {
         int advance = width + lsb + rsb;
         return advance < width/2;
     }
-    
     
     //
     //

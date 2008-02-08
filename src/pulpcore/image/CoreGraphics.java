@@ -44,6 +44,9 @@ import pulpcore.math.Transform;
 */
 public class CoreGraphics {
     
+    /** If true, images have pre-multiplied alpha */
+    /* package-private */ static final boolean PREMULTIPLIED_ALPHA = false;
+    
     // Line drawing options
     private static final boolean CENTER_PIXEL = true;
     private static final boolean SWAP_POINTS = true;
@@ -135,7 +138,6 @@ public class CoreGraphics {
     private final Transform transform = new Transform();
     private Transform[] transformStack = new Transform[16];
     private int transformStackSize = 0;
-
     
     /* package-private */ CoreGraphics(CoreImage surface) {
         surfaceWidth = surface.getWidth();
@@ -149,26 +151,21 @@ public class CoreGraphics {
         reset();
     }
     
-    
     public int getSurfaceWidth() {
         return surfaceWidth;
     }
-    
     
     public int getSurfaceHeight() {
         return surfaceHeight;
     }
     
-    
     public int[] getSurfaceData() {
         return surfaceData;
     }
     
-    
     //
     // Rendering options
     //
-    
     
     /**
         Resets the rendering attributes for this CoreGraphics object to the 
@@ -186,7 +183,7 @@ public class CoreGraphics {
     public void reset() {
         removeClip();
         setAlpha(0xff);
-        setColor(0x000000);
+        setColor(Colors.BLACK);
         setComposite(COMPOSITE_SRC_OVER);
         bilinear = true;
         fractionalMetrics = true;
@@ -196,7 +193,6 @@ public class CoreGraphics {
         transform.clear();
     }
     
-    
     public void setComposite(int composite) {
         if (compositeIndex != composite) {
             compositeIndex = composite;
@@ -204,36 +200,29 @@ public class CoreGraphics {
         }
     }
     
-    
     public int getComposite() {
         return compositeIndex;
     }
-    
     
     public void setInterpolation(int interpolation) {
         this.bilinear = (interpolation == INTERPOLATION_BILINEAR);
     }
     
-    
     public int getInterpolation() {
         return bilinear ? INTERPOLATION_BILINEAR : INTERPOLATION_NEAREST_NEIGHBOR;
     }
-    
     
     public void setFractionalMetrics(boolean useFractionalMetrics) {
         this.fractionalMetrics = useFractionalMetrics;
     }
     
-    
     public boolean getFractionalMetrics() {
         return fractionalMetrics;
     }
     
-    
     public void setFont(CoreFont font) {
         this.font = font;
     }
-    
     
     public CoreFont getFont() {
         if (font == null) {
@@ -242,11 +231,9 @@ public class CoreGraphics {
         return font;
     }
 
-
     //
     // Transforms
     //
-    
     
     /**
         Adds (pushes) a copy of the current transform to the top of the transform stack. 
@@ -267,7 +254,6 @@ public class CoreGraphics {
         transformStackSize++;
     }
     
-    
     /**
         Removes (pops) the transform at the top of the transform stack and sets the 
         current transform to that popped transform.
@@ -281,7 +267,6 @@ public class CoreGraphics {
         transform.set(transformStack[transformStackSize]);
     }
     
-    
     /**
         Returns the current transform. The returned instance will always be
         the current transform of this graphics context.
@@ -289,7 +274,6 @@ public class CoreGraphics {
     public Transform getTransform() {
         return transform;
     }
-    
     
     /**
         Sets the current transform to a copy of the specified transform. If
@@ -300,19 +284,16 @@ public class CoreGraphics {
         transform.set(newTransform);
     }
     
-    
     /**
         Sets the current transform to the identiy matrix.
     */
     public void clearTransform() {
         transform.clear();
     }
-    
 
     //
     // Clipping
     //
-    
     
     public void removeClip() {
         clipX = 0;
@@ -321,14 +302,12 @@ public class CoreGraphics {
         clipHeight = surfaceHeight;
     }
     
-    
     /**
         The clip is not affected by the transform.
     */
     public void setClip(Rect r) {
         setClip(r.x, r.y, r.width, r.height);
     }
-    
     
     /**
         The clip is not affected by the transform.
@@ -338,14 +317,12 @@ public class CoreGraphics {
         clipRect(x, y, w, h);
     }
     
-    
     /**
         The clip is not affected by the transform.
     */
     public void clipRect(Rect r) {
         clipRect(r.x, r.y, r.width, r.height);
     }
-    
     
     /**
         The clip is not affected by the transform.
@@ -357,7 +334,6 @@ public class CoreGraphics {
         clipWidth = objectWidth;
         clipHeight = objectHeight;
     }
-    
     
     private void clipObject(int x, int y, int w, int h) {
         if (x < clipX) {
@@ -381,36 +357,29 @@ public class CoreGraphics {
         objectHeight = h;
     }
     
-    
     public int getClipX() {
         return clipX;
     }
-    
     
     public int getClipY() {
         return clipY;
     }
     
-    
     public int getClipWidth() {
         return clipWidth;
     }
-    
     
     public int getClipHeight() {
         return clipHeight;
     }
     
-    
     public void getClip(Rect rect) {
         rect.setBounds(clipX, clipY, clipWidth, clipHeight);
     }
     
-    
     // 
     // ARGB color
     // 
-    
     
     public void setAlpha(int alpha) {
         if (alpha <= 0) {
@@ -426,7 +395,6 @@ public class CoreGraphics {
             srcAlphaPremultiplied = ((srcColor >>> 24) * alpha) >> 8;
         }
     }
-    
     
     public int getAlpha() {
         return alpha;
@@ -459,7 +427,6 @@ public class CoreGraphics {
     // Primitive rendering
     //
     
-    
     /**
         Draws a line using the current color.
     */
@@ -475,7 +442,6 @@ public class CoreGraphics {
         fractionalMetrics = oldFractionalMetrics;
     }
     
-    
     /**
         Draws a line using the current color.
     */
@@ -487,14 +453,12 @@ public class CoreGraphics {
             CoreMath.toFixed(y2));
     }
     
-    
     /**
         Draws a line (at fixed-point coordinates) using the current color.
     */
     public void drawLineFixedPoint(int x1, int y1, int x2, int y2) {
         internalDrawLine(x1, y1, x2, y2);
     }
-
     
     /**
         Draws a rectangle using the current color. This method draws
@@ -510,7 +474,6 @@ public class CoreGraphics {
         fillRect(x, y, 1, h);
         fillRect(x + w - 1, y, 1, h);
     }
-
 
     /**
         Fills the entire surface with the current color. 
@@ -531,7 +494,6 @@ public class CoreGraphics {
         }
     }
     
-    
     /**
         Fills a rectangle with the current color. 
     */
@@ -540,7 +502,6 @@ public class CoreGraphics {
             CoreMath.toFixed(w), CoreMath.toFixed(h));
     }
     
-    
     /**
         Fills a rectangle with the current color. 
     */
@@ -548,7 +509,6 @@ public class CoreGraphics {
         fillRectFixedPoint(CoreMath.toFixed(x), CoreMath.toFixed(y),
             CoreMath.toFixed(w), CoreMath.toFixed(h));
     }
-    
     
     /**
         Fills a rectangle (at fixed-point coordinates) with the current color. 
@@ -586,7 +546,6 @@ public class CoreGraphics {
         popTransform();
     }
     
-    
     /**
         Draws the bounds of the current object. For debugging.
     */
@@ -603,7 +562,7 @@ public class CoreGraphics {
         
         // Draw
         clearTransform();
-        setColor(0x000000);
+        setColor(Colors.BLACK);
         setAlpha(0xff);
         drawRect(x, y, w, h);
         
@@ -617,14 +576,11 @@ public class CoreGraphics {
         objectHeight = h;
     }
     
-    
     //
     // String rendering
     //
     
-    
     public void drawString(String str) {
-        
         if (str == null || str.length() == 0 || alpha == 0) {
             return;
         }
@@ -652,7 +608,6 @@ public class CoreGraphics {
         popTransform();
     }
     
-    
     /**
         Internal method used to clip the TextField. 
         The problem is the clip is limited to View Space, but the 
@@ -661,7 +616,6 @@ public class CoreGraphics {
         CoreGraphics objects can be clipped in Local Space.
     */
     public void drawChar(char ch, int maxWidth) {
-        
         if (alpha == 0 || maxWidth <= 0) {
             return;
         }
@@ -678,7 +632,6 @@ public class CoreGraphics {
         drawImage(font.getImage(), pos, 0, w, font.getHeight());
     }
     
-    
     public void drawString(String str, int x, int y) {
         if (str == null || str.length() == 0 || alpha == 0) {
             return;
@@ -689,7 +642,6 @@ public class CoreGraphics {
         drawString(str);
         popTransform();
     }
-    
     
     public void drawScaledString(String str, int x, int y, int w, int h) {
         if (str == null || str.length() == 0 || w == 0 || h == 0 || alpha == 0) {
@@ -717,11 +669,9 @@ public class CoreGraphics {
         popTransform();
     }
     
-    
     public void drawRotatedString(String str, int x, int y, int w, int h, int angle) {
         drawRotatedString(str, x, y, w, h, CoreMath.cos(angle), CoreMath.sin(angle));
     }
-    
     
     public void drawRotatedString(String str, int x, int y, int w, int h, 
         int cosAngle, int sinAngle) 
@@ -760,11 +710,9 @@ public class CoreGraphics {
         popTransform();
     }
     
-    
     // 
     // Image rendering
     //
-    
     
     /**
         Checks if the image arguments are valid. The image must be non-null and
@@ -785,13 +733,11 @@ public class CoreGraphics {
         }
     }
     
-    
     public void drawImage(CoreImage image) {
         if (image != null) {
             drawImage(image, 0, 0, image.getWidth(), image.getHeight());
         }
     }
-    
     
     public void drawImage(CoreImage image, 
         int srcX, int srcY, int srcWidth, int srcHeight) 
@@ -821,7 +767,6 @@ public class CoreGraphics {
             internalDrawScaledImage(image, srcX, srcY, srcWidth, srcHeight);
         }
     }
-
     
     /**
         Draws an image at a specific location. The image is drawn using 
@@ -836,7 +781,6 @@ public class CoreGraphics {
             drawImage(image, x, y, 0, 0, image.getWidth(), image.getHeight());
         }
     }
-    
     
     public void drawImage(CoreImage image, int x, int y,
         int srcX, int srcY, int srcWidth, int srcHeight) 
@@ -858,13 +802,11 @@ public class CoreGraphics {
         popTransform();
     }
     
-    
     public void drawScaledImage(CoreImage image, int x, int y, int w, int h) {
         if (image != null) {
             drawScaledImage(image, x, y, w, h, 0, 0, image.getWidth(), image.getHeight());
         }
     }
-    
     
     public void drawScaledImage(CoreImage image, int x, int y, int w, int h,
         int srcX, int srcY, int srcWidth, int srcHeight) 
@@ -898,7 +840,6 @@ public class CoreGraphics {
         popTransform();
     }
     
-    
     /**
         Draws a rotated and scaled image. The image is rotated around it's center.
         @param angle a fixed-point angle, typically in the range from 0 to 
@@ -911,7 +852,6 @@ public class CoreGraphics {
         }
     }
     
-    
     /**
         Draws a rotated and scaled image. The image is rotated around it's center.
         @param angle a fixed-point angle, typically in the range from 0 to 
@@ -923,7 +863,6 @@ public class CoreGraphics {
         drawRotatedImage(image, x, y, w, h, CoreMath.cos(angle), CoreMath.sin(angle),
             srcX, srcY, srcWidth, srcHeight);
     }
-    
     
     /**
         Draws a rotated and scaled image using pre-computed cosine and sine
@@ -940,7 +879,6 @@ public class CoreGraphics {
         }
     }
      
-    
     /**
         Draws a rotated and scaled image using pre-computed cosine and sine
         of the angle. The image is rotated around it's center.
@@ -979,14 +917,12 @@ public class CoreGraphics {
         
         popTransform();
     }
-        
     
     //
     // Image rendering - internal. This is where actual rendering occurs.
     // (normal, scaled, and rotated/sheared)
     //
         
-
     private void internalDrawImage(CoreImage image,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
@@ -1048,7 +984,6 @@ public class CoreGraphics {
         }
     }
     
-    
     /**
         Draw scaled image by exact dimensions.
         
@@ -1075,7 +1010,6 @@ public class CoreGraphics {
             srcX, srcY, srcWidth, srcHeight);
     }
 
-    
     /**
         Draw scaled image by scale value.
     */
@@ -1115,7 +1049,6 @@ public class CoreGraphics {
         internalDrawScaledImage(image, fW, fH, du, dv,
             srcX, srcY, srcWidth, srcHeight);
     }
-        
         
     private void internalDrawScaledImage(CoreImage image,
         int fW, int fH, int du, int dv,
@@ -1172,7 +1105,6 @@ public class CoreGraphics {
             surfaceOffset += surfaceWidth;            
         }
     }
-    
     
     private void internalDrawRotatedImage(CoreImage image, 
         int srcX, int srcY, int srcWidth, int srcHeight) 
@@ -1406,11 +1338,9 @@ public class CoreGraphics {
         }
     }
     
-    
     //
     // Primitive filling - internal
     //
-    
     
     /**
         Draws a line (at fixed-point coordinates) using the current color.
@@ -1637,7 +1567,6 @@ public class CoreGraphics {
         }
     }
     
-    
     /**
         Draws a pixel at the specified integer (x,y) location using the current color.
         Ignores the transform. Respects the clip.
@@ -1650,7 +1579,6 @@ public class CoreGraphics {
             composite.blend(surfaceData, surfaceOffset, srcColor, srcAlphaPremultiplied);
         }
     }
-
     
     /*
         For Wu's line drawing algorithm.
@@ -1683,7 +1611,6 @@ public class CoreGraphics {
         }
     }
     
-    
     /*
         For Wu's line drawing algorithm.
         Ignores the transform, but respects the clip.
@@ -1715,7 +1642,6 @@ public class CoreGraphics {
         }
     }
     
-    
     private void internalFillRect(int fw, int fh) {
         if (srcAlphaPremultiplied == 0 || fw == 0 || fh == 0) {
             return;
@@ -1737,7 +1663,6 @@ public class CoreGraphics {
             offset+=surfaceWidth;
         }
     }
-    
     
     // Only called when fractionalMetrics is true or translations is guaranteed to be
     // an integer
@@ -1819,9 +1744,7 @@ public class CoreGraphics {
         }
     }
     
-    
     private void internalFillRotatedRect(int fw, int fh) { 
-        
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
         

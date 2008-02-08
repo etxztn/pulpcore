@@ -191,7 +191,6 @@ public class CoreImage {
     // Image Reading
     //
     
-    
     /**
         Loads a PNG or JPEG image from the asset catalog.
         If the PNG file has animation info, an {@link AnimatedImage} is returned.
@@ -209,7 +208,6 @@ public class CoreImage {
     public static CoreImage load(String imageAsset) {
         return load(imageAsset, null);
     }
-        
     
     static CoreImage load(String imageAsset, CoreFont font) {
         
@@ -249,6 +247,9 @@ public class CoreImage {
         if (image == null) {
             in.reset();
             image = CoreSystem.getThisAppContext().loadImage(in);
+            if (CoreGraphics.PREMULTIPLIED_ALPHA && !image.isOpaque()) {
+                Colors.premultiply(image.getData());
+            }
             if (image == null) {
                 if (Build.DEBUG) CoreSystem.print("Could not load image: " + imageAsset);
                 return getBrokenImage();
@@ -259,17 +260,14 @@ public class CoreImage {
         
         return image;
     }
-  
-
+    
     //
     // Image transforms
     //
     
-    
     public CoreImage[] split(int framesAcross) {
         return split(framesAcross, 1);
     }
-    
     
     public CoreImage[] split(int framesAcross, int framesDown) {
         
@@ -288,7 +286,6 @@ public class CoreImage {
         
         return frames;
     }
-    
     
     /**
         Create a new image with an expanded canvas size. The borders are filled with the 
@@ -309,6 +306,10 @@ public class CoreImage {
         boolean isOpaque = this.isOpaque && alpha == 0xff;
         int newWidth = width + left + right;
         int newHeight = height + top + bottom;
+        
+        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
+            argbColor = Colors.premultiply(argbColor);
+        }
 
         CoreImage newImage = new CoreImage(newWidth, newHeight, isOpaque);
         newImage.setHotspot(hotspotX + left, hotspotY + top);
@@ -323,7 +324,6 @@ public class CoreImage {
         g.drawImage(this, left, top);
         return newImage;
     }
-    
     
     /**
         Creates a cropped version of this image. The raster data is not shared.
@@ -347,7 +347,6 @@ public class CoreImage {
         
         return croppedImage;
     }
-    
 
     /**
         Creates a rotated version of this image. 
@@ -357,7 +356,6 @@ public class CoreImage {
     public CoreImage rotate(double angle) {
         return rotate(CoreMath.toFixed(angle), true);
     }
-    
     
     /**
         Creates a rotated version of this image.
@@ -369,7 +367,6 @@ public class CoreImage {
     public CoreImage rotate(double angle, boolean sizeAsNeeded) {
         return rotate(CoreMath.toFixed(angle), sizeAsNeeded);
     }
-    
 
     /**
         Creates a rotated version of this image. 
@@ -380,7 +377,6 @@ public class CoreImage {
     public CoreImage rotate(int angle) {
         return rotate(angle, true);
     }
-    
     
     /**
         Creates a rotated version of this image.
@@ -418,7 +414,6 @@ public class CoreImage {
         return rotatedImage;
     }
     
-    
     /**
         Returns a new CoreImage whose raster data represents a scaled version 
         of this image. The hotspot is scaled accordingly.
@@ -426,7 +421,6 @@ public class CoreImage {
     public CoreImage scale(double scale) {
         return scale((int)Math.round(scale * width), (int)Math.round(scale * height));
     }
-    
     
     /**
         Returns a new CoreImage whose raster data represents a scaled version 
@@ -448,7 +442,6 @@ public class CoreImage {
         
         return scaledImage;
     }
-    
     
     /**
         Returns a new CoreImage whose raster data represents a 50% scaled 
@@ -479,75 +472,74 @@ public class CoreImage {
                 int p2 = srcData[srcOffset + 1];
                 int p3 = srcData[srcOffset + srcWidth];
                 int p4 = srcData[srcOffset + srcWidth + 1];
-
-                int p1a = p1 >>> 24;
-                int p2a = p2 >>> 24;
-                int p3a = p3 >>> 24;
-                int p4a = p4 >>> 24;
                 
-                int r = 0;
-                int g = 0;
-                int b = 0;
-                int count = 0;
-                
-                if (p1a != 0) {
-                    r += (p1 >> 16) & 0xff;
-                    g += (p1 >> 8) & 0xff;
-                    b += p1 & 0xff;
-                    count++;
-                }
-                
-                if (p2a != 0) {
-                    r += (p2 >> 16) & 0xff;
-                    g += (p2 >> 8) & 0xff;
-                    b += p2 & 0xff;
-                    count++;
-                }
-                
-                if (p3a != 0) {
-                    r += (p3 >> 16) & 0xff;
-                    g += (p3 >> 8) & 0xff;
-                    b += p3 & 0xff;
-                    count++;
-                }
-                
-                if (p4a != 0) {
-                    r += (p4 >> 16) & 0xff;
-                    g += (p4 >> 8) & 0xff;
-                    b += p4 & 0xff;
-                    count++;
-                }
-                
-                if (count > 0) {
-                    int a = (p1a + p2a + p3a + p4a) >> 2;
-                    r /= count;
-                    g /= count;
-                    b /= count;
+                if (CoreGraphics.PREMULTIPLIED_ALPHA) {
+                    // TODO: test. This will yield different results than non-premultiplied version.
+                    // Need to unpremultiply first?
+                    int a = ((p1 >>> 24) + (p2 >>> 24) + (p3 >>> 24) + (p4 >>> 24)) >> 2;
+                    int r = (((p1 >> 16) & 0xff) + ((p2 >> 16) & 0xff) + 
+                            ((p3 >> 16) & 0xff) + ((p4 >> 16) & 0xff)) >> 2;
+                    int g = (((p1 >> 8) & 0xff) + ((p2 >> 8) & 0xff) + 
+                            ((p3 >> 8) & 0xff) + ((p4 >> 8) & 0xff)) >> 2;
+                    int b = ((p1 & 0xff) + (p2 & 0xff) + (p3 & 0xff) + (p4 & 0xff)) >> 2;
+                    
                     destData[destOffset] = (a << 24) | (r << 16) | (g << 8) | b;
                 }
-                
-                /*
-                // Old method (doesn't apply alpha correctly)
-                int a = ((p1 >>> 24) + (p2 >>> 24) + (p3 >>> 24) + (p4 >>> 24)) >> 2;
-                int r = (((p1 >> 16) & 0xff) + ((p2 >> 16) & 0xff) + 
-                        ((p3 >> 16) & 0xff) + ((p4 >> 16) & 0xff)) >> 2;
-                int g = (((p1 >> 8) & 0xff) + ((p2 >> 8) & 0xff) + 
-                        ((p3 >> 8) & 0xff) + ((p4 >> 8) & 0xff)) >> 2;
-                int b = ((p1 & 0xff) + (p2 & 0xff) + (p3 & 0xff) + (p4 & 0xff)) >> 2;
-                
-                destData[destOffset] = (a << 24) | (r << 16) | (g << 8) | b;
-                */
+                else {
+                    int p1a = p1 >>> 24;
+                    int p2a = p2 >>> 24;
+                    int p3a = p3 >>> 24;
+                    int p4a = p4 >>> 24;
+                    
+                    int r = 0;
+                    int g = 0;
+                    int b = 0;
+                    int count = 0;
+                    
+                    if (p1a != 0) {
+                        r += (p1 >> 16) & 0xff;
+                        g += (p1 >> 8) & 0xff;
+                        b += p1 & 0xff;
+                        count++;
+                    }
+                    
+                    if (p2a != 0) {
+                        r += (p2 >> 16) & 0xff;
+                        g += (p2 >> 8) & 0xff;
+                        b += p2 & 0xff;
+                        count++;
+                    }
+                    
+                    if (p3a != 0) {
+                        r += (p3 >> 16) & 0xff;
+                        g += (p3 >> 8) & 0xff;
+                        b += p3 & 0xff;
+                        count++;
+                    }
+                    
+                    if (p4a != 0) {
+                        r += (p4 >> 16) & 0xff;
+                        g += (p4 >> 8) & 0xff;
+                        b += p4 & 0xff;
+                        count++;
+                    }
+                    
+                    if (count > 0) {
+                        int a = (p1a + p2a + p3a + p4a) >> 2;
+                        r /= count;
+                        g /= count;
+                        b /= count;
+                        destData[destOffset] = (a << 24) | (r << 16) | (g << 8) | b;
+                    }
+                }
                 
                 srcOffset += 2;
                 destOffset++;
             }
-            
-            
         }
         
         return scaledImage;
     }
-    
     
     /**
         Returns a new CoreImage whose raster data represents a mirrored version 
@@ -571,7 +563,6 @@ public class CoreImage {
         return mirroredImage;
     }
     
-    
     /**
         Returns a new CoreImage whose raster data represents a flipped version 
         of this image. The hotspot is flipped accordingly.
@@ -592,7 +583,6 @@ public class CoreImage {
         
         return flippedImage;
     }
-    
     
     /**
         Returns a new CoreImage whose raster data represents this image 
@@ -622,7 +612,6 @@ public class CoreImage {
         return rotImage;
     }
     
-    
     /**
         Returns a new CoreImage whose raster data represents this image 
         rotated to the right (clockwise 90 degrees).
@@ -651,7 +640,6 @@ public class CoreImage {
         return rotImage;
     }
     
-    
     /**
         Returns a new CoreImage whose raster data represents this image 
         rotated 180 degrees.
@@ -677,11 +665,9 @@ public class CoreImage {
         return rotImage;
     }
     
-    
     //
     // ARGB filters 
     //
-    
     
     /**
         Returns a new CoreImage with every color set to the specified color,
@@ -696,18 +682,26 @@ public class CoreImage {
         
         int[] srcData = data;
         int[] destData = tintedImage.getData();
+        
         for (int i = 0; i < srcData.length; i++) {
-            destData[i] = (srcData[i] & 0xff000000) | (rgbColor & 0x00ffffff);
+            int color = (srcData[i] & 0xff000000) | (rgbColor & 0x00ffffff);
+            if (CoreGraphics.PREMULTIPLIED_ALPHA) {
+                color = Colors.premultiply(color);
+            }
+            destData[i] = color;
         }
         
         return tintedImage;
     }
     
-    
     public CoreImage background(int argbColor) {
         CoreImage newImage = new CoreImage(width, height, 
             isOpaque || (argbColor >>> 24) == 0xff);
         newImage.setHotspot(hotspotX, hotspotY);
+        
+        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
+            argbColor = Colors.premultiply(argbColor);
+        }
         
         int[] destData = newImage.getData();
         for (int i = 0; i < destData.length; i++) {

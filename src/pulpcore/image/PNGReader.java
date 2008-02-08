@@ -247,7 +247,12 @@ class PNGReader {
             if (a < 0xff) {
                 image.setOpaque(false);
             }
-            palette[i] = (a << 24) | (palette[i] & 0xffffff);
+            if (CoreGraphics.PREMULTIPLIED_ALPHA) {
+                palette[i] = Colors.premultiply((a << 24) | (palette[i] & 0xffffff));
+            }
+            else {
+                palette[i] = (a << 24) | (palette[i] & 0xffffff);
+            }
         }
     }
     
@@ -373,6 +378,13 @@ class PNGReader {
             byte[] temp = currScanline;
             currScanline = prevScanline;
             prevScanline = temp;
+        }
+        
+        if (CoreGraphics.PREMULTIPLIED_ALPHA && 
+            (colorType == COLOR_TYPE_GRAYSCALE_WITH_ALPHA || 
+            colorType == COLOR_TYPE_RGB_WITH_ALPHA))
+        {
+            Colors.premultiply(dataARGB);
         }
         
         inflater.end();
