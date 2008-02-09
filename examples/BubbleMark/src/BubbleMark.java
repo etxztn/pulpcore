@@ -1,42 +1,32 @@
+// PulpCore BubbleMark implementation. See http://www.bubblemark.com/
+// - Cap frame rate: Caps the frame rate to the platform default (60 fps on Windows).
+// - Pixel Snapping: Draws images at integer locations (increasing performance).
+// - Dirty Rectangles: Only draws areas of the screen that have changed (increases performance 
+//   when changed areas don't cover a large area of the screen).
+import pulpcore.animation.Bool;
 import pulpcore.animation.Fixed;
-import static pulpcore.image.Colors.*;
-import pulpcore.image.CoreImage;
+import pulpcore.image.Colors;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
 import pulpcore.Stage;
 
-/**
-    PulpCore BubbleMark implementation. See http://www.bubblemark.com/
-    
-    There are a few more possible optimizations:
-    * Always enable pixel snapping.
-    * For large number of balls, use a Scene instead of a Scene2D
-    * There might be some optimizations in the Ball class provided from BubbleMark
-*/
 public class BubbleMark extends Scene2D {
     
-    int numBalls = 16;
-    Ball[] balls;
-    boolean running = true;
-    boolean capFrameRate = true;
+    Ball[] balls = new Ball[16];
+    Bool pixelSnapping = new Bool(false);
     Fixed frameRate = new Fixed();
     
     @Override
     public void load() {
         // Add background
-        FilledSprite background = new FilledSprite(WHITE);
-        background.setBorderSize(1);
-        background.borderColor.set(BLACK);
-        add(background);
+        add(new FilledSprite(Colors.WHITE));
         
-        // Add balls. Optimization: Enable pixel-snapping if 64 balls or more
-        CoreImage ballImage = CoreImage.load("ball.png");
-        balls = new Ball[numBalls];
+        // Add balls
         for (int i = 0; i < balls.length; i++) {
-            BallSprite ballSprite = new BallSprite(ballImage);
-            ballSprite.pixelSnapping.set(balls.length >= 64);
+            BallSprite ballSprite = new BallSprite("ball.png");
+            ballSprite.pixelSnapping.bindTo(pixelSnapping);
             add(ballSprite);
             balls[i] = ballSprite.ball;
         }
@@ -45,30 +35,14 @@ public class BubbleMark extends Scene2D {
         Label frameRateLabel = new Label("%.1f fps", 5, 5);
         frameRateLabel.setFormatArg(frameRate);
         add(frameRateLabel);
-        
-        // Optimization: Use dirty rectangles if there are 16 balls or fewer
-        setDirtyRectanglesEnabled(balls.length <= 16);
     }
     
     @Override
-    public void update(int elapsedTime) {
-        // Reload if ball count has changed
-        if (numBalls != balls.length) {
-            getMainLayer().removeAll();
-            load();
-        }
-        
-        if (!running) {
-            Stage.setFrameRate(5);
-        }
-        else {
-            Stage.setFrameRate(capFrameRate ? Stage.DEFAULT_FPS : Stage.MAX_FPS);
-        
-            // Check collisions
-            for (int i = 0; i < balls.length; i++) {
-                for (int j = i+1; j < balls.length; j++) {
-                    balls[i].doCollide(balls[j]);
-                }
+    public synchronized void update(int elapsedTime) {
+        // Check collisions
+        for (int i = 0; i < balls.length; i++) {
+            for (int j = i+1; j < balls.length; j++) {
+                balls[i].doCollide(balls[j]);
             }
         }
             
@@ -79,23 +53,34 @@ public class BubbleMark extends Scene2D {
         }
     }
     
-    public void setNumBalls(int numBalls) {
-        this.numBalls = numBalls;
+    // Methods called from JavaScript
+    
+    public synchronized void setNumBalls(final int numBalls) {
+        if (numBalls != balls.length) {
+            balls = new Ball[numBalls];
+            reload();
+        }
     }
     
-    public void setRunning(boolean running) {
-        this.running = running;
+    public void setCapFrameRate(final boolean capFrameRate) {
+        invokeLater(new Runnable() {
+            public void run() {
+                Stage.setFrameRate(capFrameRate ? Stage.DEFAULT_FPS : Stage.MAX_FPS);
+            }
+        });
     }
     
-    public void setCapFrameRate(boolean capFrameRate) {
-        this.capFrameRate = capFrameRate;
+    public synchronized void setPixelSnapping(boolean pixelSnapping) {
+        this.pixelSnapping.set(pixelSnapping);
     }
+    
+    // The Ball sprite
     
     class BallSprite extends ImageSprite {
         
         Ball ball;
         
-        public BallSprite(CoreImage image) {
+        public BallSprite(String image) {
             super(image, 0, 0);
             ball = new Ball();
             x.set(ball._x);
@@ -104,11 +89,10 @@ public class BubbleMark extends Scene2D {
         
         @Override
         public void update(int elpasedTime) {
-            if (running) {
-                ball.move();
-                x.set(ball._x);
-                y.set(ball._y);
-            }
+            super.update(elpasedTime);
+            ball.move();
+            x.set(ball._x);
+            y.set(ball._y);
         }
     }
 }

@@ -3,12 +3,12 @@
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-    <title>Balls animation test - Created with PulpCore</title>
+    <title>@TITLE@ - Created with PulpCore</title>
 </head>
   
-<body>
-  
-<div style="width: 500px">
+<body style="background: @BGCOLOR@; color: @FGCOLOR@; font-family: sans-serif; text-align: center; margin-top: 5em">
+
+<div id="game">
 <script type="text/javascript"><!--
 @APPLET_PARAMS@
 //--> 
@@ -17,21 +17,38 @@
 <noscript><p>To play, enable JavaScript from the Options or Preferences menu.</p></noscript>
 </div>
 
-<div id="demoControls">
-        <a href="#" onclick="pulpcore_object.getCurrentScene().setRunning(true); return false;">start</a> | 
-        <a href="#" onclick="pulpcore_object.getCurrentScene().setRunning(false); return false;">stop</a> |
-        # of balls: <select onchange="pulpcore_object.getCurrentScene().setNumBalls(this.value);">
-            <option value="1" >1</option>
-            <option value="8">8</option>
-            <option value="16" selected="selected">16</option>
-            <option value="32">32</option>
-            <option value="64">64</option>
-            <option value="128">128</option>
-            <option value="512">512</option>
-        </select><br />
+<div id="demoControls" style="margin-top: .5em">
         <label for="cap"><input id="cap" type="checkbox" checked="checked" 
         onclick="pulpcore_object.getCurrentScene().setCapFrameRate(this.checked);"/>Cap 
-        frame rate</label>
-    </div>
+        frame rate</label> &nbsp;&nbsp;&nbsp;
+        <label for="pixelsnap"><input id="pixelsnap" type="checkbox" 
+        onclick="pulpcore_object.getCurrentScene().setPixelSnapping(this.checked);"/>Pixel
+        Snapping</label> &nbsp;&nbsp;&nbsp;
+        <label for="dirtyrects"><input id="dirtyrects" type="checkbox" checked="checked" 
+        onclick="pulpcore_object.getCurrentScene().setDirtyRectanglesEnabled(this.checked);"/>Dirty
+        Rectangles</label> &nbsp;&nbsp;&nbsp;
+        <select onchange="pulpcore_object.getCurrentScene().setNumBalls(this.value);">
+            <option value="1" >1 Ball</option>
+            <option value="2">2 Balls</option>
+            <option value="4">4 Balls</option>
+            <option value="8">8 Balls</option>
+            <option value="16" selected="selected">16 Balls</option>
+            <option value="32">32 Balls</option>
+            <option value="64">64 Balls</option>
+            <option value="128">128 Balls</option>
+            <option value="256">256 Balls</option>
+            <option value="512">512 Balls</option>
+        </select><br />
+       
+</div>
+
+<div id="source" style="margin: 5em auto 0 auto;">
+    Created with <a style="color: #F88113" 
+    href="http://www.interactivepulp.com/pulpcore/">PulpCore</a>.
+    <blockquote style="text-align: left">
+        <pre class="prettyprint">@SRC@</pre>
+    </blockquote>
+</div>
+
 </body>
 </html>

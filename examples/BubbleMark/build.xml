@@ -227,9 +227,13 @@
                 <!-- Keep the special method that can be accessed via JavaScript -->
                 <method name="getCurrentScene" />
             </keep>
+            
+            <!-- Special case for BubbleMark: keep these methods available for JavaScript -->
             <keep name="${project.scene}">
-                <!-- Special case for BubbleMark: keep these methods available for JavaScript -->
                 <method access="public" />
+            </keep>
+            <keep name="pulpcore.Scene2D">
+                <method name="setDirtyRectanglesEnabled" />
             </keep>
         </proguard>
         
