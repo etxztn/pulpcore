@@ -54,18 +54,23 @@ import pulpcore.Stage;
     Note the updateScene() method cannot be overridden,
     and subclasses should override the {@link #update(int) } method instead.
     <p>
-    Scene2D (like most of PulpCore) is not thread-safe. For mult-threaded apps (for example, 
+    Scene2D and {@link pulpcore.sprite.Group} are thread-safe, but in general, Sprites and 
+    Properties are not thread-safe. For multi-threaded apps (for example, 
     network-enabled apps), use the {@link #addEvent(TimelineEvent)}, 
     {@link #addEventAndWait(TimelineEvent)}, {@link #invokeLater(Runnable)}, or
-    {@link #invokeAndWait(Runnable)} methods to ensure code runs in the 
-    animation thread. For example:
+    {@link #invokeAndWait(Runnable)} methods to make sure Sprites and Properties are 
+    modified on the animation thread. For example:
     <pre>
     // Called from the network thread.
     public void receiveNetworkMessage(String message) {
-        // Run the code that modifies the scene in the animation thread.
+        // It is safe to add and remove sprites. 
+        scene.add(myLabel);
+        
+        // Modify Sprites and properties in the animation thread.
         scene.invokeLater(new Runnable() {
             public void run() {
-                scene.addSprite(new Label(message, 0, 0));
+                myLabel.setText(message);
+                myLabel.visible.set(true);
             }
         });
     }
@@ -78,6 +83,7 @@ public class Scene2D extends Scene {
     rects are union'ed. */
     private static final int MAX_NON_DIRTY_AREA = 2048;
     private static final int NUM_DIRTY_RECTANGLES = 64;
+    //private static final int MAX_PERCENT_DIRTY_RECTANGLE_COVERAGE = 80;
     
     private static final int DEFAULT_MAX_ELAPSED_TIME = 100;
     
@@ -94,7 +100,11 @@ public class Scene2D extends Scene {
     
     // Layers
     
-    private Group layers;
+    private final Group layers = new Group() {
+        public Scene2D getScene2D() {
+            return Scene2D.this;
+        }
+    };
     
     // Timelines
     
@@ -124,20 +134,21 @@ public class Scene2D extends Scene {
         dirtyRectangles = new RectList(NUM_DIRTY_RECTANGLES);
         subRects = new RectList(NUM_DIRTY_RECTANGLES);
         
-        reset();
-    }
-    
-    private void reset() {
+        // Initial settings 
+        dirtyRectanglesEnabled = true;
         maxElapsedTime = DEFAULT_MAX_ELAPSED_TIME;
         desiredFPS = Stage.DEFAULT_FPS;
-        dirtyRectanglesEnabled = true;
-        needsFullRedraw = true;
         stateSaved = false;
         paused = false;
         isUnloading = false;
         
-        layers = new Group();
+        reset();
+    }
+    
+    private void reset() {
+        needsFullRedraw = true;
         timelines = new ArrayList();
+        layers.removeAll();
         addLayer(new Group()); 
     }
     
@@ -145,7 +156,7 @@ public class Scene2D extends Scene {
         Sets the paused state of this Scene2D. A paused Scene2D does not update sprites or 
         timelines, but update() is called as usual. By default, a Scene2D is not paused.
     */
-    public void setPaused(boolean paused) {
+    public synchronized void setPaused(boolean paused) {
         this.paused = paused;
     }
     
@@ -154,7 +165,7 @@ public class Scene2D extends Scene {
         @return true if this Scene2D is paused.
         @see #setPaused(boolean)
     */
-    public boolean isPaused() {
+    public synchronized boolean isPaused() {
         return paused;
     }
     
@@ -163,7 +174,7 @@ public class Scene2D extends Scene {
         @see pulpcore.Input
         @see #getCursor()
     */
-    public final void setCursor(int cursor) {
+    public final synchronized void setCursor(int cursor) {
         layers.setCursor(cursor);
     }
     
@@ -172,7 +183,7 @@ public class Scene2D extends Scene {
         @see pulpcore.Input
         @see #setCursor(int)
     */
-    public final int getCursor() {
+    public final synchronized int getCursor() {
         int cursor = layers.getCursor();
         if (cursor == -1) {
             return Input.CURSOR_DEFAULT;
@@ -187,7 +198,7 @@ public class Scene2D extends Scene {
         enabled, but some apps may have better performance with
         dirty rectangles disabled.
     */
-    public void setDirtyRectanglesEnabled(boolean dirtyRectanglesEnabled) {
+    public final synchronized void setDirtyRectanglesEnabled(boolean dirtyRectanglesEnabled) {
         if (this.dirtyRectanglesEnabled != dirtyRectanglesEnabled) {
             this.dirtyRectanglesEnabled = dirtyRectanglesEnabled;
             needsFullRedraw = true;
@@ -202,7 +213,7 @@ public class Scene2D extends Scene {
         @return true if dirty rectangles are enabled.
         @see #setDirtyRectanglesEnabled(boolean)
     */
-    public boolean isDirtyRectanglesEnabled() {
+    public final synchronized boolean isDirtyRectanglesEnabled() {
         return dirtyRectanglesEnabled;
     }
     
@@ -219,7 +230,7 @@ public class Scene2D extends Scene {
         <p>
         By default, the maximum elapsed time is 100. 
     */
-    public void setMaxElapsedTime(int maxElapsedTime) {
+    public synchronized void setMaxElapsedTime(int maxElapsedTime) {
         this.maxElapsedTime = maxElapsedTime;
     }
     
@@ -228,7 +239,7 @@ public class Scene2D extends Scene {
         Gets the maximum elapsed time used to update this Scene2D.
         @see #setMaxElapsedTime(int)
     */
-    public int getMaxElapsedTime() {
+    public synchronized int getMaxElapsedTime() {
         return maxElapsedTime;
     }
     
@@ -244,11 +255,9 @@ public class Scene2D extends Scene {
         <p>
         This method is safe to call from any thread.
     */
-    public void addTimeline(Timeline timeline) {
-        synchronized (timelines) {
-            if (!timelines.contains(timeline)) {
-                timelines.add(timeline);
-            }
+    public synchronized void addTimeline(Timeline timeline) {
+        if (!timelines.contains(timeline)) {
+            timelines.add(timeline);
         }
     }
     
@@ -258,16 +267,14 @@ public class Scene2D extends Scene {
         @param gracefully if true and the timeline is not looping, the timeline is 
         fast-forwarded to its end before it is removed.
     */
-    public void removeTimeline(Timeline timeline, boolean gracefully) {
+    public synchronized void removeTimeline(Timeline timeline, boolean gracefully) {
         if (timeline == null) {
             return;
         }
         if (gracefully) {
             timeline.fastForward();
         }
-        synchronized (timelines) {
-            timelines.remove(timeline);
-        }
+        timelines.remove(timeline);
     }
     
     
@@ -276,23 +283,21 @@ public class Scene2D extends Scene {
         @param gracefully if true, all non-looping timelines are 
         fastforwarded to their end before they are removed.
     */
-    public void removeAllTimelines(boolean gracefully) {
-        synchronized (timelines) {
-            if (gracefully) {
-                for (int i = 0; i < timelines.size(); i++) {
-                    Timeline t = (Timeline)timelines.get(i);
-                    t.fastForward();
-                }
+    public synchronized void removeAllTimelines(boolean gracefully) {
+        if (gracefully) {
+            for (int i = 0; i < timelines.size(); i++) {
+                Timeline t = (Timeline)timelines.get(i);
+                t.fastForward();
             }
-            timelines.clear();
         }
+        timelines.clear();
     }
     
     
     /**
         Gets the number of currently animating timelines. 
     */
-    public int getNumTimelines() {
+    public synchronized int getNumTimelines() {
         return timelines.size();
     }
 
@@ -306,7 +311,7 @@ public class Scene2D extends Scene {
         <p>
         This method is safe to call from any thread.
     */
-    public void addEvent(TimelineEvent event) {
+    public synchronized void addEvent(TimelineEvent event) {
         Timeline timeline = new Timeline();
         timeline.add(event);
         addTimeline(timeline);
@@ -347,7 +352,7 @@ public class Scene2D extends Scene {
         <p>
         This method is safe to call from any thread.
     */
-    public void invokeLater(final Runnable runnable) {
+    public synchronized void invokeLater(final Runnable runnable) {
         addEvent(new TimelineEvent(0) {
             public void run() {
                 runnable.run();
@@ -383,14 +388,14 @@ public class Scene2D extends Scene {
     /**
         Returns the main (bottom) layer. This layer cannot be removed.
     */
-    public Group getMainLayer() {
+    public synchronized Group getMainLayer() {
         return (Group)layers.get(0);
     }
     
     /**
         Adds the specified Group as the top-most layer.
     */
-    public void addLayer(Group layer) {
+    public synchronized void addLayer(Group layer) {
         layers.add(layer);
     }
     
@@ -398,7 +403,7 @@ public class Scene2D extends Scene {
         Removes the specified layer. If the specified layer is the main layer, this method
         does nothing.
     */
-    public void removeLayer(Group layer) {
+    public synchronized void removeLayer(Group layer) {
         if (layer != getMainLayer()) {
             layers.remove(layer);
         }
@@ -407,14 +412,14 @@ public class Scene2D extends Scene {
     /**
         Returns the total number of sprites in all layers.
     */
-    public int getNumSprites() {
+    public synchronized int getNumSprites() {
         return layers.getNumSprites();
     }
 
     /**
         Returns the total number of visible sprites in all layers.
     */
-    public int getNumVisibleSprites() {
+    public synchronized int getNumVisibleSprites() {
         return layers.getNumVisibleSprites();
     }
         
@@ -425,14 +430,14 @@ public class Scene2D extends Scene {
     /**
         Adds a sprite to the main (bottom) layer.
     */
-    public void add(Sprite sprite) {
+    public synchronized void add(Sprite sprite) {
         getMainLayer().add(sprite);
     }
     
     /**
         Removes a sprite from the main (bottom) layer.
     */
-    public void remove(Sprite sprite) {
+    public synchronized void remove(Sprite sprite) {
         getMainLayer().remove(sprite);
     }
     
@@ -464,6 +469,15 @@ public class Scene2D extends Scene {
                 dirtyRectangles.overflow();
             }
         }
+        
+        // If covering too much area, don't use dirty rectangles
+        // *** Disabled because I didn't see any improvement in the BubbleMark example
+        //if (!dirtyRectangles.isOverflowed()) {
+        //    int maxArea = drawBounds.getArea() * MAX_PERCENT_DIRTY_RECTANGLE_COVERAGE / 100;
+        //    if (dirtyRectangles.getArea() >= maxArea) {
+        //        dirtyRectangles.overflow();
+        //    }
+        //}
     }
     
     private void addDirtyRectangle(int x, int y, int w, int h, int maxNonDirtyArea) {
@@ -576,16 +590,15 @@ public class Scene2D extends Scene {
         Forces all invokeAndWait() and addEventAndWait() calls to return, and 
         removes all layers, sprites, and timelines. 
     */
-    public void unload() {
+    public synchronized void unload() {
         isUnloading = true;
         
-        synchronized (timelines) {
-            for (int i = 0; i < timelines.size(); i++) {
-                Timeline timeline = (Timeline)timelines.get(i);
-                timeline.notifyChildren();
-            }
+        for (int i = 0; i < timelines.size(); i++) {
+            Timeline timeline = (Timeline)timelines.get(i);
+            timeline.notifyChildren();
         }
         
+        isUnloading = false;
         reset();
     }
     
@@ -641,15 +654,18 @@ public class Scene2D extends Scene {
         // Update timelines, layers, and sprites
         if (!paused) {
             layers.update(elapsedTime);
-            
-            synchronized (timelines) {
-                for (int i = 0; i < timelines.size(); i++) {
-                    Timeline timeline = (Timeline)timelines.get(i);
-                    timeline.update(elapsedTime);
-                    if (timeline.isFinished() && timelines.get(i) == timeline) {
-                        timelines.remove(i);
-                        i--;
-                    }
+            // Update timelines
+            for (int i = 0; i < timelines.size(); i++) {
+                Timeline timeline = (Timeline)timelines.get(i);
+                timeline.update(elapsedTime);
+            }
+            // Remove finished timelines (seperate in case any timeline updates actually
+            // modify the list of timelines)
+            for (int i = 0; i < timelines.size(); i++) {
+                Timeline timeline = (Timeline)timelines.get(i);
+                if (timeline.isFinished()) {
+                    timelines.remove(i);
+                    i--;
                 }
             }
         }
@@ -751,9 +767,9 @@ public class Scene2D extends Scene {
         
         parentDirty |= group.isDirty();
         
-        Iterator e = group.getRemovedSprites();
-        while (e != null && e.hasNext()) {
-            notifyRemovedSprite((Sprite)e.next());
+        Iterator iterator = group.getRemovedSprites();
+        while (iterator != null && iterator.hasNext()) {
+            notifyRemovedSprite((Sprite)iterator.next());
         }
         
         for (int i = 0; i < group.size(); i++) {
@@ -851,7 +867,15 @@ public class Scene2D extends Scene {
             for (int i = 0; i < capacity; i++) {
                 rects[i] = new Rect();
             }
-            size = 0;
+            clear();
+        }
+        
+        public int getArea() {
+            int area = 0;
+            for (int i = 0; i < size; i++) {
+                area += rects[i].getArea();
+            }
+            return area;
         }
         
         public int size() {

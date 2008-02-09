@@ -3,6 +3,8 @@ The version's inital focus is going to be on the animation framework and the sce
 To use the new version, edit your build.xml file to set "pulpcore.version" to "0.11".
 Source code compatibility issues are highlighted with (!!!)
 
+  * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
+    their parent. No more ConcurrentModificationExceptions!
   * API: Added Color property. FilledSprite now uses this property for it's fill color and border
     color. (!!!) Change filledSprite.setFillColor(color) to filledSprite.fillColor.set(color)
   * API: (!!!) Moved color constants (BLACK, RED, etc) from CoreGraphics to pulpcore.image.Colors.
@@ -22,7 +24,7 @@ Source code compatibility issues are highlighted with (!!!)
   
 == Version 0.10 ==
 
-0.10.11 (February 1?, 2008):
+0.10.11 (February 7, 2008):
   * Tools: the contrib/ dir is now included in the distribution archive.
   * Fixed bug: Sprite.isMouseXXX() methods no longer return true if the mouse is outside the applet.
   * Fixed bug: Fixed typo, renamed Stage.AUTO_STETCH to Stage.AUTO_STRETCH.

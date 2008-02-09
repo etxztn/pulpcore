@@ -29,16 +29,17 @@
 
 package pulpcore.sprite;
 
+import java.lang.UnsupportedOperationException;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreGraphics;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
-import pulpcore.scene.Scene2D;
 import pulpcore.Stage;
 
 /**
@@ -46,18 +47,12 @@ import pulpcore.Stage;
 */
 public class Group extends Sprite {
     
-    private static final int MOD_NONE = 0;
-    private static final int MOD_ADDED = 1;
-    private static final int MOD_REMOVED = 2;
-    private static final int MOD_REORDERED = 4;
+    /** Immuatable list of sprites. A new array is created when the list changes. */
+    private Sprite[] sprites = new Sprite[0];
+    /** The list of sprites at the last call to getRemovedSprites() */
+    private Sprite[] previousSprites = null;
     
-    private ArrayList sprites = new ArrayList();
-    private ArrayList previousSprites = null;
-    private int modCount = 0;
-    // Modification actions since the last call to getRemovedSprites()
-    private int modActions = MOD_NONE;
-    
-    /** Use for children to check if this Group's transform has changed since the last update */
+    /** Used for children to check if this Group's transform has changed since the last update */
     private int transformModCount = 0;
     
     private int fNaturalWidth;
@@ -96,28 +91,55 @@ public class Group extends Sprite {
     /* package-private */ void updateTransformModCount() {
         transformModCount++;
     }
+
+    private Object getTreeLock() {
+        Object lock = getScene2D();
+        if (lock == null) {
+            lock = this;
+        }
+        return lock;
+    }
     
     //
     // Sprite list queries
     //
     
     /**
+        Returns an Iterator of the Sprites in this Group (in proper sequence). The iterator 
+        provides a snapshot of the state of the list when the iterator was constructed. 
+        No synchronization is needed while traversing the iterator. 
+        The iterator does NOT support the {@code remove}, {@code set}, or {@code add} methods.
+        @return The iterator.
+    */
+    public ListIterator iterator() {
+        return new ArrayIterator(sprites);
+    }
+    
+    /**
         Returns the number of sprites in this group. This includes child groups but not
         the children of those groups.
     */
     public int size() {
-        return sprites.size();
+        return sprites.length;
     }
     
     /**
-        Returns the sprite at the specified position in this group. Returns null if the index is
-        out of range ({@code index < 0 || index >= size()}).
+        Returns the sprite at the specified position in this group. Returns {@code null } if
+        the index is out of range ({@code index < 0 || index >= size()}).
     */
     public Sprite get(int index) {
-        if (index < 0 || index >= size()) {
+        Sprite[] snapshot = sprites;
+        if (index < 0 || index >= snapshot.length) {
             return null;
         }
-        return (Sprite)sprites.get(index);
+        return snapshot[index];
+    }
+    
+    /**
+        Returns {@code true} if this Group contains the specified Sprite. 
+    */
+    public boolean contains(Sprite sprite) {
+        return indexOf(sprites, sprite) != -1;
     }
     
     /**
@@ -129,8 +151,9 @@ public class Group extends Sprite {
         @return The top-most sprite at the specified location, or null if none is found.
     */
     public Sprite pick(int viewX, int viewY) {
-        for (int i = size() - 1; i >= 0; i--) {
-            Sprite child = get(i);
+        Sprite[] snapshot = sprites;
+        for (int i = snapshot.length - 1; i >= 0; i--) {
+            Sprite child = snapshot[i];
             if (child instanceof Group) {
                 child = ((Group)child).pick(viewX, viewY);
                 if (child != null) {
@@ -160,8 +183,9 @@ public class Group extends Sprite {
         if none is found.
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
-        for (int i = size() - 1; i >= 0; i--) {
-            Sprite child = get(i);
+        Sprite[] snapshot = sprites;
+        for (int i = snapshot.length - 1; i >= 0; i--) {
+            Sprite child = snapshot[i];
             if (child.enabled.get() == true && child.visible.get() == true && 
                 child.alpha.get() > 0) 
             {
@@ -179,28 +203,15 @@ public class Group extends Sprite {
         return null;
     }
     
-    /*
-        Using a custom method because list.indexOf() uses .equals(), which could cause problems
-    */
-    private int getIndex(Sprite s) {
-        if (s != null) {
-            for (int i = 0; i < sprites.size(); i++) {
-                if (s == sprites.get(i)) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-    
     /**
         Returns the number of sprites in this group and all child groups (not counting child
         Groups themselves).
     */
     public int getNumSprites() {
+        Sprite[] snapshot = sprites;
         int count = 0;
-        for (int i = 0; i < size(); i++) {
-            Sprite s = get(i);
+        for (int i = 0; i < snapshot.length; i++) {
+            Sprite s = snapshot[i];
             if (s instanceof Group) {
                 count += ((Group)s).getNumSprites();
             }
@@ -216,13 +227,14 @@ public class Group extends Sprite {
         Groups themselves).
     */
     public int getNumVisibleSprites() {
+        Sprite[] snapshot = sprites;
         if (visible.get() == false || alpha.get() == 0) {
             return 0;
         }
         
         int count = 0;
-        for (int i = 0; i < size(); i++) {
-            Sprite s = get(i);
+        for (int i = 0; i < snapshot.length; i++) {
+            Sprite s = snapshot[i];
             if (s instanceof Group) {
                 count += ((Group)s).getNumVisibleSprites();
             }
@@ -238,36 +250,21 @@ public class Group extends Sprite {
     //
     
     /**
-        Check to see if the current thread is the animation thread.
-    */
-    private boolean isModificationAllowed() {
-        // Only check in DEBUG mode
-        if (Build.DEBUG && !Stage.isAnimationThread()) {
-            CoreSystem.print("Use Scene2D.invokeLater() or Scene2D.invokeAndWait().",
-                new IllegalStateException("Could not modify group from thread " + 
-                    Thread.currentThread().getName()));
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-    
-    /**
         Adds a Sprite to this Group. The Sprite is added so it appears above all other sprites in
         this Group. If this Sprite already belongs to a Group, it is first removed from that 
         Group before added to this one.
     */
     public void add(Sprite sprite) {
-        if (sprite != null && isModificationAllowed()) {
-            Group parent = sprite.getParent();
-            if (parent != null) {
-                parent.remove(sprite);
+        if (sprite != null) {
+            synchronized (getTreeLock()) {
+                Sprite[] snapshot = sprites;
+                Group parent = sprite.getParent();
+                if (parent != null) {
+                    parent.remove(sprite);
+                }
+                sprites = add(snapshot, sprite, snapshot.length);
+                sprite.setParent(this);
             }
-            modActions |= MOD_ADDED;
-            modCount++;
-            sprite.setParent(this);
-            sprites.add(sprite);
         }
     }
     
@@ -275,12 +272,14 @@ public class Group extends Sprite {
         Removes a Sprite from this Group.
     */
     public void remove(Sprite sprite) {
-        if (sprite != null && isModificationAllowed()) {
-            boolean wasContained = sprites.remove(sprite);
-            if (wasContained) {
-                sprite.setParent(null);
-                modActions |= MOD_REMOVED;
-                modCount++;
+        if (sprite != null) {
+            synchronized (getTreeLock()) {
+                Sprite[] snapshot = sprites;
+                int index = indexOf(snapshot, sprite);
+                if (index != -1) {
+                    sprites = remove(snapshot, index);
+                    sprite.setParent(null);
+                }
             }
         }
     }
@@ -289,13 +288,35 @@ public class Group extends Sprite {
         Removes all Sprites from this Group.
     */
     public void removeAll() {
-        if (isModificationAllowed() && size() > 0) {
-            for (int i = 0; i < size(); i++) {
-                get(i).setParent(null);
+        synchronized (getTreeLock()) {
+            Sprite[] snapshot = sprites;
+            for (int i = 0; i < snapshot.length; i++) {
+                snapshot[i].setParent(null);
             }
-            modActions |= MOD_REMOVED;
-            modCount++;
-            sprites.clear();
+            sprites = new Sprite[0];
+        }
+    }
+    
+    private void move(Sprite sprite, int position, boolean relative) {
+        synchronized (getTreeLock()) {
+            Sprite[] snapshot = sprites;
+            int oldPosition = indexOf(snapshot, sprite);
+            if (oldPosition != -1) {
+                if (relative) {
+                    position += oldPosition;
+                }
+                if (position < 0) {
+                    position = 0;
+                }
+                else if (position > snapshot.length - 1) {
+                    position = snapshot.length - 1;
+                }
+                if (oldPosition != position) {
+                    snapshot = remove(snapshot, oldPosition);
+                    sprites = add(snapshot, sprite, position);
+                    sprite.setDirty(true);
+                }
+            }
         }
     }
     
@@ -305,7 +326,7 @@ public class Group extends Sprite {
         or the Sprite is already at the top, this method does nothing.
     */
     public void moveToTop(Sprite sprite) {
-        moveTo(sprite, sprites.size() - 1);
+        move(sprite, Integer.MAX_VALUE, false);
     }
     
     /**
@@ -314,7 +335,7 @@ public class Group extends Sprite {
         or the Sprite is already at the bottom, this method does nothing.
     */
     public void moveToBottom(Sprite sprite) {
-        moveTo(sprite, 0);
+        move(sprite, 0, false);
     }
     
     /**
@@ -323,8 +344,7 @@ public class Group extends Sprite {
         at the top, this method does nothing.
     */
     public void moveUp(Sprite sprite) {
-        int position = getIndex(sprite);
-        swap(position, Math.min(position + 1, sprites.size() - 1));
+        move(sprite, +1, true);
     }
     
     /**
@@ -333,92 +353,58 @@ public class Group extends Sprite {
         at the bottom, this method does nothing.
     */
     public void moveDown(Sprite sprite) {
-        int position = getIndex(sprite);
-        swap(position, Math.max(position - 1, 0));
+        move(sprite, -1, true);
     }
     
-    private void moveTo(Sprite sprite, int goalPosition) {
-        int position = getIndex(sprite);
-        if (position != -1 && position != goalPosition && isModificationAllowed()) {
-            sprites.remove(position);
-            sprites.add(goalPosition, sprite);
-            sprite.setDirty(true);
-            modActions |= MOD_REORDERED;
-            modCount++;
-        }
-    }
-    
-    private void swap(int positionA, int positionB) {
-        if (positionA != -1 && positionB != -1 && positionA != positionB && 
-            isModificationAllowed()) 
-        {
-            Sprite a = (Sprite)sprites.get(positionA);
-            Sprite b = (Sprite)sprites.get(positionB);
-            sprites.set(positionA, b);
-            sprites.set(positionB, a);
-            // Doesn't matter which one is set to dirty
-            a.setDirty(true);
-            modActions |= MOD_REORDERED;
-            modCount++;
-        }
-    }
-
     /**
         Gets an iterator of all of the Sprites in this Group that were
-        removed since the last call to this method. 
+        removed since the last call to this method.
+        <p>
         This method is used by Scene2D to implement dirty rectangles.
     */
     public Iterator getRemovedSprites() {
-        
-        if (modActions == MOD_NONE) {
-            return null;
-        }
-        else if (previousSprites == null) {
+        Iterator iterator = null;
+        if (previousSprites == null) {
             // First call from Scene2D - no remove notifications needed
-            previousSprites = new ArrayList(sprites);
-            modActions = MOD_NONE;
-            return null;
+            previousSprites = sprites;
         }
-        else if ((modActions & MOD_REMOVED) == 0) {
-            // There were modifications, but nothing was removed
-            previousSprites.clear();
-            previousSprites.addAll(sprites);
-            modActions = MOD_NONE;
-            return null;
-        }
-        else {
-            // There were removed sprites
+        else if (previousSprites != sprites) {
+            // Modifications occured - get list of all removed sprites
             // NOTE: we make the list here, rather than in remove(), because if the list was
             // creating in remove() and this method was never called (non-Scene2D implementation)
             // the removedSprites list would continue to grow, resulting in a memory leak.
-            ArrayList removedSprites = new ArrayList();
-            
-            for (int i = 0; i < previousSprites.size(); i++) {
-                Sprite sprite = (Sprite)previousSprites.get(i);
-                if (sprite.getParent() != this) {
-                    removedSprites.add(sprite);
+            ArrayList removedSprites = null;
+            for (int i = 0; i < previousSprites.length; i++) {
+                if (previousSprites[i].getParent() != this) {
+                    if (removedSprites == null) {
+                        removedSprites = new ArrayList();
+                    }
+                    removedSprites.add(previousSprites[i]);
                 }
             }
-            previousSprites.clear();
-            previousSprites.addAll(sprites);
-            modActions = MOD_NONE;
-            return removedSprites.iterator();
+            if (removedSprites != null) {
+                iterator = removedSprites.iterator();
+            }
+            previousSprites = sprites;
         }
+        return iterator;
     }
     
     /**
         Packs this group so that its dimensions match the area covered by its children. 
     */
     public void pack() {
-        if (size() > 0) {
+        Sprite[] snapshot = sprites;
+        
+        if (snapshot.length > 0) {
             // Integers
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
             int maxX = Integer.MIN_VALUE;
             int maxY = Integer.MIN_VALUE;
             
-            for (int i = 0; i < size(); i++) {
-                Sprite sprite = get(i);
+            for (int i = 0; i < snapshot.length; i++) {
+                Sprite sprite = snapshot[i];
                 if (sprite instanceof Group) {
                     ((Group)sprite).pack();
                 }
@@ -446,15 +432,6 @@ public class Group extends Sprite {
         setDirty(true);
     }
     
-    /*
-    public void setNaturalSize(int fNaturalWidth, int fNaturalHeight) {
-        this.fNaturalWidth = fNaturalWidth;
-        this.fNaturalHeight = fNaturalHeight;
-        width.set(fNaturalWidth);
-        height.set(fNaturalHeight);
-    }
-    */
-   
     //
     // Sprite class implementation
     // 
@@ -485,31 +462,114 @@ public class Group extends Sprite {
         return super.getAnchorY() - fInnerY;
     }
     
-    // Listed here as a seperate method for HotSpot.
-    // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5103956
-    private void throwModificationException() {
-        throw new ConcurrentModificationException("Group modified during iteration.");
-    }
-    
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         
-        int lastModCount = modCount;
-        for (int i = 0; i < size(); i++) {
-            get(i).update(elapsedTime);
-            if (lastModCount != modCount) {
-                throwModificationException();
-            }
+        Sprite[] snapshot = sprites;
+        for (int i = 0; i < snapshot.length; i++) {
+            snapshot[i].update(elapsedTime);
         }
     }
     
     protected void drawSprite(CoreGraphics g) {
-        int lastModCount = modCount;
-        for (int i = 0; i < size(); i++) {
-            get(i).draw(g);
-            if (lastModCount != modCount) {
-                throwModificationException();
+        Sprite[] snapshot = sprites;
+        for (int i = 0; i < snapshot.length; i++) {
+            snapshot[i].draw(g);
+        }
+    }
+    
+    //
+    // Static convenience methods for working with immutable Sprite arrays
+    //
+    
+    private static int indexOf(Sprite[] snapshot, Sprite s) {
+        for (int i = 0; i < snapshot.length; i++) {
+            if (s == snapshot[i]) {
+                return i;
             }
+        }
+        return -1;
+    }
+    
+    private static Sprite[] remove(Sprite[] snapshot, int index) {
+        if (index >= 0 && index < snapshot.length) {
+            Sprite[] newSprites = new Sprite[snapshot.length - 1];
+            System.arraycopy(snapshot, 0, newSprites, 0, index);
+            System.arraycopy(snapshot, index + 1, newSprites, index, 
+                newSprites.length - index);
+            snapshot = newSprites;
+        }
+        return snapshot;
+    }
+    
+    private static Sprite[] add(Sprite[] snapshot, Sprite sprite, int index) {
+        if (index < 0) {
+            index = 0;
+        }
+        else if (index > snapshot.length) {
+            index = snapshot.length;
+        }
+        Sprite[] newSprites = new Sprite[snapshot.length + 1];
+        System.arraycopy(snapshot, 0, newSprites, 0, index);
+        newSprites[index] = sprite;
+        System.arraycopy(snapshot, index, newSprites, index + 1, snapshot.length - index);
+        return newSprites;
+    }
+    
+    private static class ArrayIterator implements ListIterator {
+        
+        private final Object[] snapshot;
+        private int index = 0;
+
+        private ArrayIterator(Object[] snapshot) {
+            this.snapshot = snapshot;
+        }
+
+        public boolean hasNext() {
+            return index < snapshot.length;
+        }
+
+        public boolean hasPrevious() {
+            return index > 0;
+        }
+
+        public Object next() {
+            if (index < 0 || index >= snapshot.length) {
+                throw new NoSuchElementException();
+            }
+            else {
+                return snapshot[index++];
+            }
+        }
+
+        public Object previous() {
+            index--;
+            if (index < 0 || index >= snapshot.length) {
+                throw new NoSuchElementException();
+            }
+            else {
+                return snapshot[index];
+            }
+        }
+
+        public int nextIndex() {
+            return index;
+        }
+
+        public int previousIndex() {
+            return index-1;
+        }
+
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        public void set(Object e) {
+            throw new UnsupportedOperationException();
+        }
+
+        public void add(Object e) {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -39,7 +39,7 @@ import pulpcore.image.CoreGraphics;
     <p>For Applets, the first Scene is defined by the "scene" applet parameter:
     <pre>&lt;param name=&quot;scene&quot; value=&quot;MyFirstScene&quot; /&gt;</pre>
     <p>The {@link pulpcore.Stage} is responsible for invoking the 
-    Scene's methods and other Scene management.
+    Scene's methods, with the exception of {@link #reload()}.
     
     @see pulpcore.Stage#setScene(Scene)
     @see pulpcore.Stage#replaceScene(Scene)
@@ -63,6 +63,14 @@ public abstract class Scene {
     public void unload() { }
     
     /**
+        Reloads the scene. This method calls {@code unload()} followed by {@code load()}.
+    */
+    public synchronized void reload() {
+        unload();
+        load();
+    }
+    
+    /**
         Notifies that this scene has been shown after another Scene is hidden
         or immediately after a call to start(). Note, this method is not called 
         if the OS shows the app. By default, this method does nothing.
@@ -83,19 +91,24 @@ public abstract class Scene {
     public void redrawNotify() { }
     
     /**
-        Updates the scene. This method is peridocally called by 
-        Stage while this Scene is active. A scene will typically update
+        Updates the scene. This method is periodically called by the
+        {@link pulpcore.Stage} while this Scene is active. A scene will typically update
         sprites and handle input.
         <p>
-        When a Scene is first shown (after a call to showNotify), the 
-        elapsedTime is zero.
+        When a Scene is first shown (after a call to showNotify), the elapsedTime is zero.
+        <p>
+        The Stage starts a synchronized block on this Scene before calling this method and ends
+        the block after {@link #drawScene(CoreGraphics) } returns.
         @param elapsedTime time, in milliseconds, since the last call to updateScene().
     */
     public abstract void updateScene(int elapsedTime);
 
     /**
         Draws to the surface's graphics context. The Stage calls this  
-        method after calling updateScene().
+        method after calling {@link #updateScene(int) }.
+        <p>
+        The Stage starts a synchronized block on this Scene before calling 
+        {@link #updateScene(int) } and ends the block after this method returns.
         @param g the CoreGraphics object to draw to. The CoreGraphics clip is 
         set to the entire display area.
     */

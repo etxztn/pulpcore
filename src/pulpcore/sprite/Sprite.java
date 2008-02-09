@@ -41,6 +41,7 @@ import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
+import pulpcore.scene.Scene2D;
 import pulpcore.Stage;
 
 /**
@@ -244,6 +245,21 @@ public abstract class Sprite implements PropertyListener {
                 currRoot = nextRoot;
                 nextRoot = nextRoot.getParent();
             }
+        }
+    }
+    
+    /**
+        Gets the {@link pulpcore.scene.Scene2D } this Sprite belongs to, or {@code null} if 
+        this Sprite is not in a Scene2D.
+    */
+    public Scene2D getScene2D() {
+        Group root = getRoot();
+        if (root != null) {
+            // Scene2D's root overrides the getScene2D() method.
+            return root.getScene2D();
+        }
+        else {
+            return null;
         }
     }
     

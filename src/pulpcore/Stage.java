@@ -639,29 +639,31 @@ public class Stage implements Runnable {
                 currentScene.redrawNotify();
             }
             
-            // Update Scene
-            currentScene.updateScene(elapsedTime);
-            
-            // Draw Scene
             CoreGraphics g = surface.getGraphics();
-            g.reset();
             
-            // Don't set the default transform for a Scene2D - it already handles the transform.
-            if (!(currentScene instanceof Scene2D)) {
-                g.getTransform().concatenate(defaultTransform);
+            // Update and draw scene
+            synchronized (currentScene) {
+                currentScene.updateScene(elapsedTime);
+                
+                // Set the transform
+                // (Don't set the default transform for a Scene2D - it already handles it)
+                g.reset();
+                if (!(currentScene instanceof Scene2D)) {
+                    g.getTransform().concatenate(defaultTransform);
+                }
+                
+                try {
+                    currentScene.drawScene(g);
+                    renderingErrorOccurred = false;
+                }
+                catch (ArrayIndexOutOfBoundsException ex) {
+                    // The CoreGraphics system can still throw some ArrayIndexOutOfBoundsExceptions 
+                    // in some rare cases. It may be from scaling a sprite to 
+                    // have a width and height < 1.
+                    appContext.setTalkBackField("pulpcore.platform.graphics.error", ex);
+                    renderingErrorOccurred = true;
+                }
             }
-            
-            try {
-                currentScene.drawScene(g);
-                renderingErrorOccurred = false;
-            }
-            catch (ArrayIndexOutOfBoundsException ex) {
-                // The CoreGraphics system can still throw some ArrayIndexOutOfBoundsExceptions 
-                // in some rare cases. It may be from scaling a sprite to 
-                // have a width and height < 1.
-                appContext.setTalkBackField("pulpcore.platform.graphics.error", ex);
-                renderingErrorOccurred = true;
-            }                
             
             // Draw frame rate and memory info (DEBUG only)
             if (Build.DEBUG) {
@@ -721,9 +723,7 @@ public class Stage implements Runnable {
             long elapsedTimeMicros = currTimeMicros - lastTimeMicros + remainderMicros;
             elapsedTime = (int)(elapsedTimeMicros / 1000);
             remainderMicros = elapsedTimeMicros - elapsedTime * 1000;
-            //
             lastTimeMicros = currTimeMicros;
-            //lastTimeMicros += elapsedTime * 1000;
             
             if (Build.DEBUG && speed != 1) {
                 float e = elapsedTime * speed + elapsedTimeRemainder;
@@ -923,7 +923,7 @@ public class Stage implements Runnable {
         overlaySleepTime = 0;
         overlayCreationTime = CoreSystem.getTimeMillis();
         
-        String fps = CoreMath.toString(fixedFPS, 1) + "fps";
+        String fps = CoreMath.toString(fixedFPS, 1) + " fps";
         if (sleepTime > 0) {
             fps += " (" + CoreMath.toString(sleepTime, 1) + "ms sleep)";
         }

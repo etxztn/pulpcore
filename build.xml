@@ -442,6 +442,9 @@
         <copy todir="${build}/www/api">
             <fileset dir="${dist.temp}/doc/api"/>
         </copy>
+        <copy todir="${build}/www/clock">
+            <fileset dir="${dist.temp}/examples/Clock/build"/>
+        </copy>
         <copy todir="${build}/www/compositing">
             <fileset dir="${dist.temp}/examples/Compositing/build"/>
         </copy>
@@ -491,9 +494,13 @@
         </replace>
         <replace file="examples/BubbleMark/build.xml">
             <replacetoken><![CDATA[<keep name="${project.scene}" />]]></replacetoken>
-            <replacevalue><![CDATA[<keep name="${project.scene}">
-                <!-- Special case for BubbleMark: keep these methods available for JavaScript -->
+            <replacevalue><![CDATA[
+            <!-- Special case for BubbleMark: keep these methods available for JavaScript -->
+            <keep name="${project.scene}">
                 <method access="public" />
+            </keep>
+            <keep name="pulpcore.Scene2D">
+                <method name="setDirtyRectanglesEnabled" />
             </keep>]]></replacevalue>
         </replace>
         <replace file="examples/BubbleMark/build.xml">
