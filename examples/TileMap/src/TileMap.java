@@ -5,7 +5,6 @@
 // Tile images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
-import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -17,6 +16,7 @@ import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
+import static pulpcore.image.Colors.*;
 
 public class TileMap extends Scene2D {
     
@@ -57,11 +57,10 @@ public class TileMap extends Scene2D {
         add(tileMap);
         
         // Add some trees
-        CoreImage tree = CoreImage.load("Tree Tall.png");
         mapSprites = new Group();
         mapSprites.pixelSnapping.set(true);
-        mapSprites.add(new ImageSprite(tree, 300, 280));
-        mapSprites.add(new ImageSprite(tree, 1900, 440));
+        mapSprites.add(new ImageSprite("Tree Tall.png", 300, 280));
+        mapSprites.add(new ImageSprite("Tree Tall.png", 1900, 440));
         mapSprites.x.bindTo(tileMap.viewX);
         mapSprites.y.bindTo(tileMap.viewY);
         add(mapSprites);

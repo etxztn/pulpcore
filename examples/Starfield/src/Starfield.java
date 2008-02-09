@@ -1,13 +1,10 @@
 // Starfield
 // Scroll the mouse wheel or press the arrow keys to travel through the cosmos
-
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreGraphics;
-import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene2D;
-import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.Stage;
 
@@ -24,13 +21,9 @@ public class Starfield extends Scene2D {
     public void load() {
         add(new ImageSprite("bg.jpg", 0, 0));
         
-        CoreImage[] starImages = new CoreImage[numStarImages];
-        for (int i = 0; i < numStarImages; i++) {
-            starImages[i] = CoreImage.load("star" + i + ".png");
-        }
         for (int i = 0; i < numStars; i++) {
             int r = CoreMath.rand(numStarImages - 1);
-            add(new Star(starImages[r]));
+            add(new Star("star" + r + ".png"));
         }
     }
     
@@ -64,7 +57,7 @@ public class Starfield extends Scene2D {
         
         double z;
         
-        public Star(CoreImage image) {
+        public Star(String image) {
             super(image, CoreMath.rand(0, Stage.getWidth()), CoreMath.rand(0, Stage.getHeight()));
             setZ(CoreMath.rand(1.0, 4.0));
             setComposite(CoreGraphics.COMPOSITE_ADD);
