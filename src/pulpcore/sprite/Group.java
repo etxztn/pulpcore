@@ -29,18 +29,14 @@
 
 package pulpcore.sprite;
 
-import java.lang.UnsupportedOperationException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
 import pulpcore.Build;
-import pulpcore.CoreSystem;
 import pulpcore.image.CoreGraphics;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
-import pulpcore.math.Transform;
-import pulpcore.Stage;
 
 /**
     A container of Sprites.
@@ -108,11 +104,11 @@ public class Group extends Sprite {
         Returns an Iterator of the Sprites in this Group (in proper sequence). The iterator 
         provides a snapshot of the state of the list when the iterator was constructed. 
         No synchronization is needed while traversing the iterator. 
-        The iterator does NOT support the {@code remove}, {@code set}, or {@code add} methods.
+        The iterator does NOT support the {@code remove} method.
         @return The iterator.
     */
-    public ListIterator iterator() {
-        return new ArrayIterator(sprites);
+    public Iterator iterator() {
+        return Collections.unmodifiableList(Arrays.asList(sprites)).iterator();
     }
     
     /**
@@ -357,23 +353,22 @@ public class Group extends Sprite {
     }
     
     /**
-        Gets an iterator of all of the Sprites in this Group that were
+        Gets a list of all of the Sprites in this Group that were
         removed since the last call to this method.
         <p>
         This method is used by Scene2D to implement dirty rectangles.
     */
-    public Iterator getRemovedSprites() {
-        Iterator iterator = null;
+    public ArrayList getRemovedSprites() {
+        ArrayList removedSprites = null;
         if (previousSprites == null) {
             // First call from Scene2D - no remove notifications needed
             previousSprites = sprites;
         }
         else if (previousSprites != sprites) {
-            // Modifications occured - get list of all removed sprites
+            // Modifications occured - get list of all removed sprites.
             // NOTE: we make the list here, rather than in remove(), because if the list was
             // creating in remove() and this method was never called (non-Scene2D implementation)
             // the removedSprites list would continue to grow, resulting in a memory leak.
-            ArrayList removedSprites = null;
             for (int i = 0; i < previousSprites.length; i++) {
                 if (previousSprites[i].getParent() != this) {
                     if (removedSprites == null) {
@@ -382,12 +377,9 @@ public class Group extends Sprite {
                     removedSprites.add(previousSprites[i]);
                 }
             }
-            if (removedSprites != null) {
-                iterator = removedSprites.iterator();
-            }
             previousSprites = sprites;
         }
-        return iterator;
+        return removedSprites;
     }
     
     /**
@@ -514,62 +506,5 @@ public class Group extends Sprite {
         newSprites[index] = sprite;
         System.arraycopy(snapshot, index, newSprites, index + 1, snapshot.length - index);
         return newSprites;
-    }
-    
-    private static class ArrayIterator implements ListIterator {
-        
-        private final Object[] snapshot;
-        private int index = 0;
-
-        private ArrayIterator(Object[] snapshot) {
-            this.snapshot = snapshot;
-        }
-
-        public boolean hasNext() {
-            return index < snapshot.length;
-        }
-
-        public boolean hasPrevious() {
-            return index > 0;
-        }
-
-        public Object next() {
-            if (index < 0 || index >= snapshot.length) {
-                throw new NoSuchElementException();
-            }
-            else {
-                return snapshot[index++];
-            }
-        }
-
-        public Object previous() {
-            index--;
-            if (index < 0 || index >= snapshot.length) {
-                throw new NoSuchElementException();
-            }
-            else {
-                return snapshot[index];
-            }
-        }
-
-        public int nextIndex() {
-            return index;
-        }
-
-        public int previousIndex() {
-            return index-1;
-        }
-
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        public void set(Object e) {
-            throw new UnsupportedOperationException();
-        }
-
-        public void add(Object e) {
-            throw new UnsupportedOperationException();
-        }
     }
 }

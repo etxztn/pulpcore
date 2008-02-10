@@ -767,9 +767,11 @@ public class Scene2D extends Scene {
         
         parentDirty |= group.isDirty();
         
-        Iterator iterator = group.getRemovedSprites();
-        while (iterator != null && iterator.hasNext()) {
-            notifyRemovedSprite((Sprite)iterator.next());
+        ArrayList removedSprites = group.getRemovedSprites();
+        if (removedSprites != null) {
+            for (int i = 0; i < removedSprites.size(); i++) {
+                notifyRemovedSprite((Sprite)removedSprites.get(i));
+            }
         }
         
         for (int i = 0; i < group.size(); i++) {
