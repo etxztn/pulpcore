@@ -253,11 +253,11 @@ public class Group extends Sprite {
     public void add(Sprite sprite) {
         if (sprite != null) {
             synchronized (getTreeLock()) {
-                Sprite[] snapshot = sprites;
                 Group parent = sprite.getParent();
                 if (parent != null) {
                     parent.remove(sprite);
                 }
+                Sprite[] snapshot = sprites;
                 sprites = add(snapshot, sprite, snapshot.length);
                 sprite.setParent(this);
             }
