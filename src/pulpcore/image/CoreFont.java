@@ -320,7 +320,6 @@ public class CoreFont {
         CoreImage scaledImage = new CoreImage(position, 
             (int)Math.round(getHeight() * scale), false);
         CoreGraphics g = scaledImage.createGraphics();
-        g.setComposite(CoreGraphics.COMPOSITE_SRC);
         for (int i = 0; i < numChars; i++) {
             int oldWidth = charPositions[i+1] - charPositions[i];
             int newWidth = scaledCharPositions[i+1] - scaledCharPositions[i];

@@ -450,7 +450,7 @@ public class Colors {
         int r = (argbColor >> 16) & 0xff;
         int g = (argbColor >> 8) & 0xff;
         int b = argbColor & 0xff;
-
+    
         r = (a * r + 127) / 255;
         g = (a * g + 127) / 255;
         b = (a * b + 127) / 255;
@@ -458,18 +458,16 @@ public class Colors {
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
     
-    /* package-private */ static int rgbaPremultipled(int pmColor, int renderAlpha) {
+    /* package-private */ static int premultiply(int rgbColor, int alpha) {
+        int r = (rgbColor >> 16) & 0xff;
+        int g = (rgbColor >> 8) & 0xff;
+        int b = rgbColor & 0xff;
+    
+        r = (alpha * r + 127) / 255;
+        g = (alpha * g + 127) / 255;
+        b = (alpha * b + 127) / 255;
         
-        int a = ((pmColor >>> 24) * renderAlpha + 0xff) >> 8; 
-        int r = pmColor & 0xff0000;
-        int g = pmColor & 0x00ff00;
-        int b = pmColor & 0x0000ff;
-        
-        r = ((r * renderAlpha + 0xff0000) >> 8) & 0xff0000;
-        g = ((g * renderAlpha + 0x00ff00) >> 8) & 0x00ff00;
-        b = ((b * renderAlpha + 0x0000ff) >> 8);
-        
-        return (a << 24) | r | g | b;
+        return (alpha << 24) | (r << 16) | (g << 8) | b;
     }
     
     /* package-private */ static int unpremultiply(int pmColor) {
@@ -488,4 +486,5 @@ public class Colors {
             return (a << 24) | (r << 16) | (g << 8) | b;
         }
     }
+
 }

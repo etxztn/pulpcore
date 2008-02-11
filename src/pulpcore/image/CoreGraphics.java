@@ -38,14 +38,14 @@ import pulpcore.math.Transform;
 /**
     Graphics rendering routines onto a CoreImage surface. 
     <p>
-    The default composite is {@link #COMPOSITE_SRC_OVER} and the surface is assumed to be opaque.
+    The default composite is {@link #COMPOSITE_SRC_OVER}.
     <p>
     The clip is in view-space - not affected by the Transform.
 */
 public class CoreGraphics {
     
     /** If true, images have pre-multiplied alpha */
-    /* package-private */ static final boolean PREMULTIPLIED_ALPHA = false;
+    /* package-private */ static final boolean PREMULTIPLIED_ALPHA = true;
     
     // Line drawing options
     private static final boolean CENTER_PIXEL = true;
@@ -59,25 +59,18 @@ public class CoreGraphics {
     public static final int COMPOSITE_SRC_OVER = 0;
     
     /** 
-        The source is copied to the destination (Porter-Duff Source rule). 
-        The destination is not used as input. 
         @see #setComposite(int) 
     */
-    public static final int COMPOSITE_SRC = 1;
+    public static final int COMPOSITE_ADD = 1;
     
     /** 
         @see #setComposite(int) 
     */
-    public static final int COMPOSITE_ADD = 2;
-    
-    /** 
-        @see #setComposite(int) 
-    */
-    public static final int COMPOSITE_MULT = 3;
+    public static final int COMPOSITE_MULT = 2;
     
     // For the software renderer
     private static final Composite[] COMPOSITES = {
-        new CompositeSrcOver(), new CompositeSrc(), new CompositeAdd(), new CompositeMult(), 
+        new CompositeSrcOver(), new CompositeAdd(), new CompositeMult(), 
     };
     
     /**
@@ -102,6 +95,7 @@ public class CoreGraphics {
     private final int surfaceWidth;
     private final int surfaceHeight;
     private final int[] surfaceData;
+    private final boolean surfaceHasAlpha;
     
     // The clip rectangle
     private int clipX;
@@ -130,8 +124,10 @@ public class CoreGraphics {
     /** The current color (ARGB). */
     private int srcColor;
     
-    /** The alpha value of the source color multiplied by the current alpha. */
-    private int srcAlphaPremultiplied;
+    /** The current color blended with the current alpha. */
+    private int srcColorBlended;
+    
+    private boolean isSrcColorTransparent;
     
     private CoreFont font;
     
@@ -143,6 +139,7 @@ public class CoreGraphics {
         surfaceWidth = surface.getWidth();
         surfaceHeight = surface.getHeight();
         surfaceData = surface.getData();
+        surfaceHasAlpha = !surface.isOpaque();
         compositeIndex = -1;
         
         for (int i = 0; i < transformStack.length; i++) {
@@ -157,10 +154,6 @@ public class CoreGraphics {
     
     public int getSurfaceHeight() {
         return surfaceHeight;
-    }
-    
-    public int[] getSurfaceData() {
-        return surfaceData;
     }
     
     //
@@ -384,16 +377,15 @@ public class CoreGraphics {
     public void setAlpha(int alpha) {
         if (alpha <= 0) {
             this.alpha = 0;
-            srcAlphaPremultiplied = 0;
         }
         else if (alpha >= 0xff) {
             this.alpha = 0xff;
-            srcAlphaPremultiplied = srcColor >>> 24;
         }
         else {
             this.alpha = alpha;
-            srcAlphaPremultiplied = ((srcColor >>> 24) * alpha) >> 8;
         }
+        // Update srcColorBlended, isSrcColorTransparent
+        setColor(srcColor);
     }
     
     public int getAlpha() {
@@ -407,12 +399,13 @@ public class CoreGraphics {
     public void setColor(int argbColor) {
         srcColor = argbColor;
         
-        if (alpha == 0xff) {
-            srcAlphaPremultiplied = srcColor >>> 24;
+        int newAlpha = ((srcColor >>> 24) * alpha + 127) / 255;
+        srcColorBlended = Colors.rgba(srcColor, newAlpha);
+        
+        if (PREMULTIPLIED_ALPHA) {
+            srcColorBlended = Colors.premultiply(srcColorBlended);
         }
-        else {
-            srcAlphaPremultiplied = ((srcColor >>> 24) * alpha) >> 8;
-        }
+        isSrcColorTransparent = (srcColorBlended >>> 24) == 0;
     }
     
     /**
@@ -495,6 +488,23 @@ public class CoreGraphics {
     }
     
     /**
+        Fills the area defined by the clip with the background color of the current drawing 
+        surface. For opaque surfaces, the background color is black. For surfaces with alpha,
+        the background color is transparent. The current compositing mode is ignored - the area
+        if filled using the Porter-Duff Source rule.
+    */
+    public void clear() {
+        int backgroundColor = surfaceHasAlpha ? Colors.TRANSPARENT : Colors.BLACK;
+        int offset = clipX + clipY * surfaceWidth;
+        for (int y = 0; y < clipHeight; y++) {
+            for (int x = 0; x < clipWidth; x++) {
+                surfaceData[offset++] = backgroundColor;
+            }
+            offset += surfaceWidth - clipWidth;
+        }
+    }
+    
+    /**
         Fills a rectangle with the current color. 
     */
     public void fillRect(int x, int y, int w, int h) {
@@ -514,7 +524,7 @@ public class CoreGraphics {
         Fills a rectangle (at fixed-point coordinates) with the current color. 
     */
     public void fillRectFixedPoint(int fx, int fy, int fw, int fh) {
-        if (srcAlphaPremultiplied == 0 || fw == 0 || fh == 0) {
+        if (isSrcColorTransparent || fw == 0 || fh == 0) {
             return;
         }
         
@@ -947,9 +957,7 @@ public class CoreGraphics {
         int v = ((objectY - y) << 16);          
         int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
 
-        if ((alpha == 0xff) && (compositeIndex == COMPOSITE_SRC || 
-            (compositeIndex == COMPOSITE_SRC_OVER && image.isOpaque())))
-        {
+        if ((alpha == 0xff) && (compositeIndex == COMPOSITE_SRC_OVER && image.isOpaque())) {
             // Fatest case - don't use the compositor.
             // Great optimization for background rendering.
             for (int j = 0; j < objectHeight; j++) {
@@ -1347,7 +1355,7 @@ public class CoreGraphics {
         OPTIMIZE: currently there is a virtual call per pixel
     */
     private void internalDrawLine(int ox1, int oy1, int ox2, int oy2) {
-        if (srcAlphaPremultiplied == 0) {
+        if (isSrcColorTransparent) {
             return;
         }
         
@@ -1511,17 +1519,14 @@ public class CoreGraphics {
                 if (dxabs < CoreMath.ONE && CoreMath.floor(x1) == CoreMath.floor(x2)) { 
                     // One pixel
                     currAlpha = dxabs >> 8;
-                    currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                     drawWuPixelHorizontal(x1, y1, currAlpha);
                 }
                 else {
                     // First pixel and last pixel
                     if (fractionalMetrics) {
                         currAlpha = 0xff - ((x1 >> 8) & 0xff);
-                        currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                         drawWuPixelHorizontal(x1, y1, currAlpha);
                         currAlpha = ((x2 >> 8) & 0xff);
-                        currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                         drawWuPixelHorizontal(x2, y2, currAlpha);
                     }
                     // Line
@@ -1531,7 +1536,7 @@ public class CoreGraphics {
                     for (int i = 0; i < limit; i++) {
                         x1 += d;
                         y1 += grad;
-                        drawWuPixelHorizontal(x1, y1, srcAlphaPremultiplied);
+                        drawWuPixelHorizontal(x1, y1, 0xff);
                     }
                 }
             }
@@ -1540,17 +1545,14 @@ public class CoreGraphics {
                 if (dyabs < CoreMath.ONE && CoreMath.floor(y1) == CoreMath.floor(y2)) { 
                     // One pixel
                     currAlpha = dyabs >> 8;
-                    currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                     drawWuPixelVertical(x1, y1, currAlpha);
                 }
                 else {
                     // First first and last pixel
                     if (fractionalMetrics) {
                         currAlpha = 0xff - ((y1 >> 8) & 0xff);
-                        currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                         drawWuPixelVertical(x1, y1, currAlpha);
                         currAlpha = ((y2 >> 8) & 0xff);
-                        currAlpha = (srcAlphaPremultiplied * currAlpha + 0xff) >> 8;
                         drawWuPixelVertical(x2, y2, currAlpha);
                     }
                     // Line
@@ -1560,7 +1562,7 @@ public class CoreGraphics {
                     for (int i = 0; i < limit; i++) {
                         x1 += grad;
                         y1 += d;
-                        drawWuPixelVertical(x1, y1, srcAlphaPremultiplied);
+                        drawWuPixelVertical(x1, y1, 0xff);
                     }
                 }
             }
@@ -1576,7 +1578,7 @@ public class CoreGraphics {
             y >= clipY && y < clipY + clipHeight)
         {
             int surfaceOffset = x + y * surfaceWidth;
-            composite.blend(surfaceData, surfaceOffset, srcColor, srcAlphaPremultiplied);
+            composite.blend(surfaceData, surfaceOffset, srcColorBlended);
         }
     }
     
@@ -1585,8 +1587,8 @@ public class CoreGraphics {
         Ignores the transform. Respects the clip.
         Draws two pixels, one at (fx, floor(fy)) and another at (fx, ceil(fy))
     */
-    private void drawWuPixelHorizontal(int fx, int fy, int srcAlpha) {
-        if (srcAlpha <= 0) {
+    private void drawWuPixelHorizontal(int fx, int fy, int extraAlpha) {
+        if (extraAlpha <= 0) {
             return;
         }
         int x = CoreMath.toIntFloor(fx);
@@ -1598,15 +1600,16 @@ public class CoreGraphics {
             int surfaceOffset = x + y1 * surfaceWidth;
             if (y1 >= clipY && y1 < clipY + clipHeight) {
                 int wuAlpha = 0xff - ((fy >> 8) & 0xff);
-                int pixelAlpha = (srcAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset, srcColor, pixelAlpha);
+                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset, srcColorBlended, extraAlpha);
             }
             
             int y2 = CoreMath.toIntCeil(fy);
             if (y1 != y2 && y2 >= clipY && y2 < clipY + clipHeight) {
                 int wuAlpha = ((fy >> 8) & 0xff);
-                int pixelAlpha = (srcAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset + surfaceWidth, srcColor, pixelAlpha);
+                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset + surfaceWidth, srcColorBlended, 
+                    extraAlpha);
             }
         }
     }
@@ -1616,8 +1619,8 @@ public class CoreGraphics {
         Ignores the transform, but respects the clip.
         Draws two pixels, one at (floor(fx), fy) and another at (ceil(fx), fy)
     */
-    private void drawWuPixelVertical(int fx, int fy, int srcAlpha) {
-        if (srcAlpha <= 0) {
+    private void drawWuPixelVertical(int fx, int fy, int extraAlpha) {
+        if (extraAlpha <= 0) {
             return;
         }
         int y = CoreMath.toIntFloor(fy);
@@ -1629,21 +1632,21 @@ public class CoreGraphics {
             int surfaceOffset = x1 + y * surfaceWidth;
             if (x1 >= clipX && x1 < clipX + clipWidth) {
                 int wuAlpha = 0xff - ((fx >> 8) & 0xff);
-                int pixelAlpha = (srcAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset, srcColor, pixelAlpha);
+                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset, srcColorBlended, extraAlpha);
             }
             
             int x2 = CoreMath.toIntCeil(fx);
             if (x1 != x2 && x2 >= clipX && x2 < clipX + clipWidth) {
                 int wuAlpha = ((fx >> 8) & 0xff);
-                int pixelAlpha = (srcAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset + 1, srcColor, pixelAlpha);
+                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset + 1, srcColorBlended, extraAlpha);
             }
         }
     }
     
     private void internalFillRect(int fw, int fh) {
-        if (srcAlphaPremultiplied == 0 || fw == 0 || fh == 0) {
+        if (isSrcColorTransparent || fw == 0 || fh == 0) {
             return;
         }
         
@@ -1659,7 +1662,7 @@ public class CoreGraphics {
         
         int offset = objectX + objectY * surfaceWidth;
         for (int j = 0; j < objectHeight; j++) {
-            composite.blendRow(surfaceData, offset, srcColor, srcAlphaPremultiplied, objectWidth);
+            composite.blendRow(surfaceData, offset, srcColorBlended, objectWidth);
             offset+=surfaceWidth;
         }
     }
@@ -1706,7 +1709,7 @@ public class CoreGraphics {
             int lastAlpha = -1;
             int runLength = 0;
             for (int x = 0; x < objectWidth; x++) {
-                int rectAlpha = srcAlphaPremultiplied;
+                int rectAlpha = 0xff;
                 if (u < 0) {
                     rectAlpha = (rectAlpha * ((u >> 8) & 0xff)) >> 8;
                 }
@@ -1726,7 +1729,7 @@ public class CoreGraphics {
                 else {
                     if (runLength > 0) {
                         composite.blendRow(surfaceData, surfaceOffset + x - runLength, 
-                            srcColor, lastAlpha, runLength);
+                            srcColorBlended, lastAlpha, runLength);
                     }
                     lastAlpha = rectAlpha;
                     runLength = 1;
@@ -1736,7 +1739,7 @@ public class CoreGraphics {
             }
             if (runLength > 0) {
                 composite.blendRow(surfaceData, surfaceOffset + objectWidth - runLength, 
-                    srcColor, lastAlpha, runLength);
+                    srcColorBlended, lastAlpha, runLength);
             }
             
             surfaceOffset += surfaceWidth;
@@ -1961,7 +1964,7 @@ public class CoreGraphics {
             int lastAlpha = -1;
             int runLength = 0;
             for (int x = startX; x <= endX; x++) {
-                int rectAlpha = srcAlphaPremultiplied;
+                int rectAlpha = 0xff;
                 if (u < 0) {
                     rectAlpha = (rectAlpha * ((u >> 8) & 0xff)) >> 8;
                 }
@@ -1992,7 +1995,7 @@ public class CoreGraphics {
                 else {
                     if (runLength > 0) {
                         composite.blendRow(surfaceData, surfaceOffset + x - runLength, 
-                            srcColor, lastAlpha, runLength);
+                            srcColorBlended, lastAlpha, runLength);
                     }
                     lastAlpha = rectAlpha;
                     runLength = 1;
@@ -2004,12 +2007,12 @@ public class CoreGraphics {
             
             if (runLength > 0) {
                 composite.blendRow(surfaceData, surfaceOffset + endX + 1 - runLength, 
-                    srcColor, lastAlpha, runLength);
+                    srcColorBlended, lastAlpha, runLength);
             }
             
             // No anti-aliasing
-            //composite.blendRow(surfaceData, surfaceOffset + startX, srcColor, 
-            //    srcAlphaPremultiplied, endX - startX + 1);
+            //composite.blendRow(surfaceData, surfaceOffset + startX, srcColorBlended, 
+            //    endX - startX + 1);
         }
     }
 }

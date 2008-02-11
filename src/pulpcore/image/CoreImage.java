@@ -407,7 +407,6 @@ public class CoreImage {
             CoreMath.toIntRound(x * sin + y * cos) + newHeight / 2);
         
         CoreGraphics g = rotatedImage.createGraphics();
-        g.setComposite(CoreGraphics.COMPOSITE_SRC);
         g.drawRotatedImage(this, (newWidth - width) / 2, (newHeight - height) / 2, 
             width, height, angle);
         
@@ -437,9 +436,7 @@ public class CoreImage {
             hotspotY * scaledHeight / height);
         
         CoreGraphics g = scaledImage.createGraphics();
-        g.setComposite(CoreGraphics.COMPOSITE_SRC);
         g.drawScaledImage(this, 0, 0, scaledWidth, scaledHeight);
-        
         return scaledImage;
     }
     
@@ -720,7 +717,6 @@ public class CoreImage {
         fadeImage.setHotspot(hotspotX, hotspotY);
         
         CoreGraphics g = fadeImage.createGraphics();
-        g.setComposite(CoreGraphics.COMPOSITE_SRC);
         g.setAlpha(alpha);
         g.drawImage(this);
         return fadeImage;

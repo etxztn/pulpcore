@@ -451,17 +451,7 @@ public class Button extends ImageSprite {
             
             CoreGraphics g = textImages[i].createGraphics();
             g.setFont(font);
-            
-            // Draw the text outside the button
-            g.setComposite(CoreGraphics.COMPOSITE_SRC);
-            g.drawString(text, textX-bounds.x + offsetX, textY-bounds.y + offsetY);
-            
-            // Draw the button image
-            g.setClip(-bounds.x, -bounds.y, images[i].getWidth(), images[i].getHeight());
             g.drawImage(images[i], -bounds.x, -bounds.y);
-            
-            // Draw the text inside the button
-            g.setComposite(CoreGraphics.COMPOSITE_SRC_OVER);
             g.drawString(text, textX-bounds.x + offsetX, textY-bounds.y + offsetY);
         }
     
