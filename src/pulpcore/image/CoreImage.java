@@ -247,9 +247,6 @@ public class CoreImage {
         if (image == null) {
             in.reset();
             image = CoreSystem.getThisAppContext().loadImage(in);
-            if (CoreGraphics.PREMULTIPLIED_ALPHA && !image.isOpaque()) {
-                Colors.premultiply(image.getData());
-            }
             if (image == null) {
                 if (Build.DEBUG) CoreSystem.print("Could not load image: " + imageAsset);
                 return getBrokenImage();

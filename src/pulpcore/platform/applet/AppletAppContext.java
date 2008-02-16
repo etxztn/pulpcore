@@ -30,27 +30,26 @@
 package pulpcore.platform.applet;
 
 import java.awt.Component;
-import java.awt.Container;
-import java.awt.Image;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
+import java.awt.image.DataBufferInt;
 import java.awt.image.DirectColorModel;
-import java.awt.image.PixelGrabber;
-import java.awt.MediaTracker;
-import java.awt.Panel;
-import java.awt.Toolkit;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import javax.imageio.ImageIO;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.platform.AppContext;
-import pulpcore.platform.PolledInput;
 import pulpcore.platform.Platform;
+import pulpcore.platform.PolledInput;
 import pulpcore.platform.Surface;
 import pulpcore.scene.Scene;
 import pulpcore.Stage;
@@ -406,38 +405,33 @@ public final class AppletAppContext extends AppContext {
             return null;
         }
         
-        Image image = Toolkit.getDefaultToolkit().createImage(in.getData());
-        
-        MediaTracker tracker = new MediaTracker(applet);
-        tracker.addImage(image, 0);
         try {
-            tracker.waitForAll();
-        }
-        catch (InterruptedException ex) { }
-            
-        int width = image.getWidth(null);
-        int height = image.getHeight(null);
-        if (width <= 0 || height <= 0) {
-            return null;
-        }
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(in.getData()));
         
-        int[] data = new int[width * height];
-        PixelGrabber pixelGrabber = new PixelGrabber(image, 0, 0, width, height, data, 0, width);
-        boolean success = false;
-        try {
-            success = pixelGrabber.grabPixels();
-        }
-        catch (InterruptedException ex) { }
-        
-        if (success) {
             boolean isOpaque = true;
-            ColorModel model = pixelGrabber.getColorModel();
+            ColorModel model = image.getColorModel();
             if (model instanceof DirectColorModel) {
                 isOpaque = ((DirectColorModel)model).getAlphaMask() == 0;
             }
-            return new CoreImage(width, height, isOpaque, data);
+            
+            // Convert to TYPE_INT_RGB or TYPE_INT_ARGB_PRE 
+            if (image.getType() != BufferedImage.TYPE_INT_RGB &&
+                image.getType() != BufferedImage.TYPE_INT_ARGB_PRE)
+            {
+                int type = isOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB_PRE;
+                BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(),
+                    type);
+                Graphics g = newImage.getGraphics();
+                g.drawImage(image, 0, 0, null);
+                image = newImage;
+            }
+            
+            // Convert to CoreImage
+            return new CoreImage(image.getWidth(), image.getHeight(), isOpaque, 
+                ((DataBufferInt)image.getRaster().getDataBuffer()).getData());
         }
-        else {
+        catch (Exception ex) {
+            if (Build.DEBUG) CoreSystem.print("ImageIO", ex);
             return null;
         }
     }
