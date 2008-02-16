@@ -180,6 +180,24 @@ public final class Timeline extends Animation {
     //
     
     /**
+        Creates a child timeline that starts at the specified time relative to the start of this
+        timeline.
+        <p>
+        This method provides an alternative syntax for delayed animations:
+        <pre>
+        timeline.at(500).animate(sprite.alpha, 0, 255, 500);
+        timeline.at(1000).set(sprite.enabled, true);
+        </pre>
+        @param time Time in milliseconds.
+        @return the child timeline.
+    */
+    public Timeline at(int time) {
+        Timeline child = new Timeline(Easing.NONE, time);
+        add(child);
+        return child;
+    }
+    
+    /**
         @deprecated Replaced by {@link #add(Animation) } 
     */
     public void addEvent(TimelineEvent event) {
@@ -258,6 +276,26 @@ public final class Timeline extends Animation {
     //
     // Set convenience methods
     //
+    
+    public void set(Bool property, boolean value) {
+        set(property, value, 0);
+    }
+    
+    public void set(Int property, int value) {
+        set(property, value, 0);
+    }
+    
+    public void setAsFixed(Fixed property, int value) {
+        set(property, value, 0);
+    }
+    
+    public void set(Fixed property, int value) {
+        set(property, value, 0);
+    }
+    
+    public void set(Fixed property, double value) {
+        set(property, value, 0);
+    }
     
     public void set(Bool property, boolean value, int delay) {
         add(property, new Tween(property.get()?1:0, value?1:0, 0, null, delay));

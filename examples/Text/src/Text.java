@@ -66,10 +66,10 @@ public class Text extends Scene2D {
             add(label);
             
             // Animate (zoom)
-            timeline.animate(label.alpha, 0, 255, 500, Easing.NONE, startTime);
-            timeline.animate(label.alpha, 255, 0, 250, Easing.NONE, startTime + 1750);
-            timeline.animate(label.height, 10, 102, 1500, Easing.STRONG_OUT, startTime);
-            timeline.animate(label.angle, -0.1, 0.1, 2000, Easing.NONE, startTime);
+            timeline.at(startTime).animate(label.alpha, 0, 255, 500);
+            timeline.at(startTime).animate(label.height, 10, 102, 1500, Easing.STRONG_OUT);
+            timeline.at(startTime).animate(label.angle, -0.1, 0.1, 2000);
+            timeline.at(startTime + 1750).animate(label.alpha, 255, 0, 250);
             startTime += 2000;
         }
         timeline.loopForever();

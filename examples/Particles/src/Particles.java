@@ -84,8 +84,8 @@ public class Particles extends Scene2D {
             
             timeline.animateTo(sprite.x, goalX, duration, Easing.REGULAR_OUT);
             timeline.animateTo(sprite.y, goalY, duration, Easing.REGULAR_OUT);
-            timeline.animateTo(sprite.alpha, 0, duration - 100, Easing.REGULAR_OUT, 100);
             timeline.animate(sprite.angle, startAngle, endAngle, duration);
+            timeline.at(100).animateTo(sprite.alpha, 0, duration - 100, Easing.REGULAR_OUT);
             timeline.add(new RemoveSpriteEvent(particleLayer, sprite, duration));
         }
         
