@@ -758,12 +758,13 @@ public class CoreGraphics {
             return;
         }
         
+        boolean currFractional = fractionalMetrics & bilinear;
         int type = transform.getType();
         
         if (type == Transform.TYPE_IDENTITY || type == Transform.TYPE_TRANSLATE) {
             int x = transform.getTranslateX();
             int y = transform.getTranslateY();
-            if (fractionalMetrics && (CoreMath.fracPart(x) != 0 || CoreMath.fracPart(y) != 0)) { 
+            if (currFractional && (CoreMath.fracPart(x) != 0 || CoreMath.fracPart(y) != 0)) { 
                 internalDrawScaledImage(image, srcX, srcY, srcWidth, srcHeight);
             }
             else {
@@ -1033,12 +1034,13 @@ public class CoreGraphics {
             return;
         }
         
+        boolean currFractional = fractionalMetrics & bilinear;
         int fW = sx * srcWidth;
         int fH = sy * srcHeight;
         int du;
         int dv;
         
-        if (!fractionalMetrics) {
+        if (!currFractional) {
             fW = CoreMath.floor(fW);
             fH = CoreMath.floor(fH);
             
@@ -1068,10 +1070,11 @@ public class CoreGraphics {
             return;
         }
         
+        boolean currFractional = fractionalMetrics & bilinear;
         int fX = transform.getTranslateX();
         int fY = transform.getTranslateY();
         
-        if (!fractionalMetrics) {
+        if (!currFractional) {
             fX = CoreMath.floor(fX);
             fY = CoreMath.floor(fY);
         }
@@ -1123,10 +1126,11 @@ public class CoreGraphics {
             return;
         }
         
+        boolean currFractional = fractionalMetrics & bilinear;
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
         
-        if (!fractionalMetrics) {
+        if (!currFractional) {
             x1 = CoreMath.floor(x1);
             y1 = CoreMath.floor(y1);
         }
