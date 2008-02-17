@@ -141,7 +141,7 @@ public class CoreImage {
         return height;
     }
     
-    /* package-private */ final int[] getData() {
+    public final int[] getData() {
         return data;
     }
     
@@ -662,6 +662,28 @@ public class CoreImage {
     //
     // ARGB filters 
     //
+    
+    /**
+        Returns a new CoreImage with all the opaque pixels of the specified color set to 
+        transparent.
+        @param rgbColor The color to convert to transparent. The alpha component is ignored.
+        @return the new image.
+    */
+    public CoreImage setTransparentColor(int rgbColor) {
+        // Only convert opaque pixels
+        rgbColor |= 0xff000000;
+        
+        CoreImage newImage = new CoreImage(width, height, false);
+        newImage.setHotspot(hotspotX, hotspotY);
+        
+        int[] srcData = data;
+        int[] destData = newImage.getData();
+        for(int i = 0; i < destData.length; i++) {
+            int srcColor = srcData[i];
+            destData[i] = (srcColor == rgbColor ? Colors.TRANSPARENT : srcColor);
+        }
+        return newImage;
+    }
     
     /**
         Returns a new CoreImage with every color set to the specified color,
