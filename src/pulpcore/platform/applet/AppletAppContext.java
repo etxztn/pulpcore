@@ -236,7 +236,9 @@ public final class AppletAppContext extends AppContext {
         boolean useBufferStrategy = false;
         
         /*
-            On Windows/Linux, currently only use BufferStrategy on Java 6.
+            On Java 6, use BufferStrategy on all platforms.
+            
+            On Java 5, use BufferedImageSurface on Windows and Linux
             
             BufferStrategy has a problem on:
             * Mac OS X 10.5 (Leopard) - uses lots of CPU. Cannot reach 60fps (55fps max).
@@ -246,9 +248,14 @@ public final class AppletAppContext extends AppContext {
               when moving the mouse over the applet.
             * Mac OS X (all) - cannot reach 60fps (55fps max).
             
-            TODO: re-evaluate this once Max OS X Java 6 is finalized
+            TODO: Test again when 32-bit Java 6 on Mac is available. BufferStrategy still seems to
+            use more processor in some cases, but it's hard to judge because of the different
+            arch.
         */
-        if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
+        if (CoreSystem.isJava16orNewer()) {
+            useBufferStrategy = true;
+        }
+        else if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
             if (CoreSystem.isMacOSXLeopardOrNewer()) {
                 // For Mac OS X 10.5:
                 // Only use BufferStrategy on Firefox (the "apple.awt.MyCPanel" peer)
@@ -264,9 +271,6 @@ public final class AppletAppContext extends AppContext {
                 // Before Mac OS X 10.5, BufferStrategy was perfect.
                 useBufferStrategy = true;
             }
-        }
-        else if (CoreSystem.isJava16orNewer()) {
-            useBufferStrategy = true;
         }
         else {
             useBufferStrategy = false;

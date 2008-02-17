@@ -83,7 +83,7 @@ public class BufferStrategySurface extends Surface {
         canvas.setSize(1, 1);
         container.add(canvas);
         canvas.setLocation(0, 0);
-        if (CoreSystem.isMacOSXLeopardOrNewer()) {
+        if (CoreSystem.isMacOSXLeopardOrNewer() && !CoreSystem.isJava16orNewer()) {
             setHighestRefreshRate(55);
         }
         // Try to create the surface for the sake of toString(), below

@@ -68,7 +68,7 @@ public class BufferedImageSurface extends Surface {
     
     public BufferedImageSurface(Component component) {
         this.component = component;
-        if (CoreSystem.isMacOSXLeopardOrNewer()) {
+        if (CoreSystem.isMacOSXLeopardOrNewer() && !CoreSystem.isJava16orNewer()) {
             setHighestRefreshRate(55);
         }
     }
