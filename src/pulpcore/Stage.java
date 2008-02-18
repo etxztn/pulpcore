@@ -643,6 +643,7 @@ public class Stage implements Runnable {
             
             // Update and draw scene
             synchronized (currentScene) {
+                appContext.runEvents();
                 currentScene.updateScene(elapsedTime);
                 
                 // Set the transform

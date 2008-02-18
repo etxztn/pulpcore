@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -56,6 +57,7 @@ public abstract class AppContext {
     
     private ThreadGroup threadGroup;
     private Map talkbackFields = new HashMap();
+    private ArrayList runnables = new ArrayList();
 
     // Logging
 
@@ -112,33 +114,27 @@ public abstract class AppContext {
     }
     
     /**
-        Runs a thread in this context's thread group. This method is useful for creating a new
-        thread from the AWT event thread.
+        Causes {@code runnable} to have its {@code run} method called in the animation thread.
+        This will happen immediately before calling {@link pulpcore.scene.Scene.updateScene(int)}.
+        The runnable is not guaranteed to execute if the app is exited by the user.
     */
-    public void invokeAndWait(String threadName, Runnable runnable) {
-        Thread thread = createThread(threadName, runnable);
-        thread.start();
-        try {
-            thread.join();
-        }
-        catch (InterruptedException ex) {
-            // Ignore
-        }
+    public final void invokeLater(Runnable runnable) {
+        runnables.add(runnable);
     }
     
     /**
-        Runs a thread in this context's thread group. This method is useful for creating a new
-        thread from the AWT event thread.
+        Runs the events stored in invokeLater(). This method is called by the Stage.
     */
-    public void invokeAndWait(String threadName, int maxWaitTime, Runnable runnable) {
-        Thread thread = createThread(threadName, runnable);
-        thread.start();
-        try {
-            thread.join(maxWaitTime);
+    public final void runEvents() {
+        for (int i = 0; i < runnables.size(); i++) {
+            try {
+                ((Runnable)runnables.get(i)).run();
+            }
+            catch (Exception ex) {
+                if (Build.DEBUG) CoreSystem.print("Error running event", ex);
+            }
         }
-        catch (InterruptedException ex) {
-            // Ignore
-        }
+        runnables.clear();
     }
     
     public abstract String getAppProperty(String name);

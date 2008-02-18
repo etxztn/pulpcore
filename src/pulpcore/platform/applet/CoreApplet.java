@@ -59,7 +59,6 @@ public final class CoreApplet extends Applet {
     
     private AppletAppContext context;
 
-    
     public final void init() {
         String bgColor = getParameter("boxbgcolor");
         if (bgColor != null) {
@@ -75,20 +74,17 @@ public final class CoreApplet extends Applet {
         context = (AppletAppContext)AppletPlatform.getInstance().registerApp(this);
     }
     
-    
     public final void start() {
         if (context != null) {
             context.start();
         }
     }
     
-    
     public final void stop() {
         if (context != null) {
             context.stop();
         }
     }
-    
     
     public final void destroy() {
         if (context != null) {
@@ -97,7 +93,6 @@ public final class CoreApplet extends Applet {
             context = null;
         }
     }
-    
     
     public final void update(Graphics g) {
         // App-triggered painting
@@ -112,7 +107,6 @@ public final class CoreApplet extends Applet {
         }
     }
     
-    
     public final void paint(Graphics g) {
         // System-triggered painting
         if (context == null) {
@@ -124,7 +118,6 @@ public final class CoreApplet extends Applet {
             surface.notifyOSRepaint();
         }
     }
-    
     
     /**
         Creates a Scene object from the named "scene" applet parameter.
@@ -158,7 +151,6 @@ public final class CoreApplet extends Applet {
         }
     }
     
-    
     /**
         Gets the current active scene. This method is provided for calls from JavaScript.
         {@code pulpcore_object.getCurrentScene().callMyMethod()}.
@@ -169,6 +161,18 @@ public final class CoreApplet extends Applet {
         }
         else {
             return null;
+        }
+    }
+    
+    /**
+        Causes {@code runnable} to have its {@code run} method called in the animation thread.
+        This will happen immediately before calling {@link pulpcore.scene.Scene.updateScene(int)}.
+        The runnable is not guaranteed to execute if the app is exited by the user.
+    */
+    public void invokeLater(Runnable runnable) {
+        AppletAppContext c = context;
+        if (c != null) {
+            c.invokeLater(runnable);
         }
     }
     
