@@ -37,6 +37,7 @@ import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.Rect;
+import pulpcore.sprite.Group;
 
 /**
     The Button is a Sprite that behaves like a common UI push button. A
@@ -65,6 +66,7 @@ public class Button extends ImageSprite {
     private int state;
     private boolean isSelected;
     private boolean isClicked;
+    private Group rootWhenClicked;
     
     /**
         @param images an array of three images: normal, hover, and pressed. 
@@ -216,6 +218,7 @@ public class Button extends ImageSprite {
         }
         
         isClicked = isClickedImpl();
+        rootWhenClicked = isClicked ? getRoot() : null;
     }
     
     /**
@@ -223,7 +226,7 @@ public class Button extends ImageSprite {
         @return true if this button was clicked since the last frame.
     */
     public boolean isClicked() {
-        return isClicked;
+        return isClicked && getRoot() == rootWhenClicked;
     }
     
     private boolean isClickedImpl() {
