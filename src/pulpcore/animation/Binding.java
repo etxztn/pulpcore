@@ -33,22 +33,36 @@ import pulpcore.math.CoreMath;
 /**
     Helper class to facilitate property.bindTo() methods.
 */
-/* package-private */ final class Binding implements Behavior {
+/* package-private */ final class Binding implements Behavior, PropertyListener {
 
     /* package-private */ static final int FUNCTION_NONE = 0;
     /* package-private */ static final int FUNCTION_TO_INT = 1;
     /* package-private */ static final int FUNCTION_TO_FIXED = 2;
     
+    private final Property target;
     private final Property source;
     private final int function;
     
-    /* package-private */ Binding(Property source) {
-        this(source, FUNCTION_NONE);
+    /* package-private */ Binding(Property target, Property source) {
+        this(target, source, FUNCTION_NONE);
     }
     
-    /* package-private */ Binding(Property source, int function) {
+    /* package-private */ Binding(Property target, Property source, int function) {
+        this.target = target;
         this.source = source;
         this.function = function;
+        if (source != target) {
+            source.addListener(this);
+        }
+    }
+    
+    public void propertyChange(Property property) {
+        if (target.getBehavior() != this) {
+            target.removeListener(this);
+        }
+        else {
+            target.setValue(getValue());
+        }
     }
     
     public boolean update(int elapsedTime) {

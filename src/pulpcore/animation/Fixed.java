@@ -160,11 +160,11 @@ public final class Fixed extends Property {
     }
     
     public void bindTo(Fixed property) {
-        setBehavior(new Binding(property));
+        setBehavior(new Binding(this, property));
     }
     
     public void bindTo(Int property) {
-        setBehavior(new Binding(property, Binding.FUNCTION_TO_FIXED));
+        setBehavior(new Binding(this, property, Binding.FUNCTION_TO_FIXED));
     }
     
     //

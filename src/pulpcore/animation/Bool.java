@@ -72,7 +72,7 @@ public final class Bool extends Property {
     }
     
     public void bindTo(Bool property) {
-        setBehavior(new Binding(property));
+        setBehavior(new Binding(this, property));
     }
     
     public String toString() {

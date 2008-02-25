@@ -94,11 +94,11 @@ public class Int extends Property {
     //
     
     public void bindTo(Int property) {
-        setBehavior(new Binding(property));
+        setBehavior(new Binding(this, property));
     }
     
     public void bindTo(Fixed property) {
-        setBehavior(new Binding(property, Binding.FUNCTION_TO_INT));
+        setBehavior(new Binding(this, property, Binding.FUNCTION_TO_INT));
     }
     
     /**

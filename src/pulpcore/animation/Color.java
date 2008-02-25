@@ -86,7 +86,7 @@ public class Color extends Property {
     // 
     
     public void bindTo(Color property) {
-        setBehavior(new Binding(property));
+        setBehavior(new Binding(this, property));
     }
     
     /**

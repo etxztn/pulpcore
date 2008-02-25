@@ -85,6 +85,15 @@ public abstract class Property {
     }
     
     /**
+        Gets the behavior for this property, or null if this property currently does not have
+        a behavior.
+        @return the behavior.
+    */
+    public final Behavior getBehavior() {
+        return behavior;
+    }
+    
+    /**
         Returns a newly allocated array of all the listeners registered on this Property.
         @return all of this Property's {@link PropertyListener}s or an empty array if no 
         listeners are registered.
