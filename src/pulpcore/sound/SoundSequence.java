@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,28 +30,20 @@
 package pulpcore.sound;
 
 import java.util.ArrayList;
-import java.util.List;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
-
 
 /**
     A SoundSequence is a immutable sequence of sampled sounds that can be played together
     smoothly with no skips or breaks between sounds. The sounds can be a mix of mono and
-    stereo SoundClips, or other SoundSequences. 
+    stereo Sounds, or other SoundSequences. 
     <p>
     All sounds in a sequence must have the sample sample rate.
 */
 public final class SoundSequence extends Sound {
     
-    private List children = new ArrayList();
+    private ArrayList children = new ArrayList();
     private int numFrames;
-    
-    
-    public SoundSequence(Sound sound) {
-        this(new Sound[] { sound });
-    }
-    
     
     /**
         @throws IllegalArgumentException if not all sounds in the sequence have the same 
@@ -81,11 +73,9 @@ public final class SoundSequence extends Sound {
         }
     }
     
-    
     public int getNumFrames() {
         return numFrames;
     }
-    
     
     public void getSamples(byte[] dest, int destOffset, int destChannels,
         int srcFrame, int numFrames)

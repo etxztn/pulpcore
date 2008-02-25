@@ -105,7 +105,7 @@ public abstract class Playback {
         no longer exists), the playback will automatically stop, and data will no longer be sent to 
         the sound engine. For example:
         <pre>
-        SoundClip music = SoundClip.load("music.wav");
+        Sound music = Sound.load("music.wav");
         Playback musicPlayback = music.play();
         ...
         // Playback is paused, but still active and ready to be unpaused.

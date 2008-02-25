@@ -114,7 +114,7 @@ public class CoreFont {
     
     private CoreFont() { }
      
-    public CoreFont(CoreFont font) {
+    private CoreFont(CoreFont font) {
         this.image = font.image;
         this.firstChar = font.firstChar;
         this.lastChar = font.lastChar;
