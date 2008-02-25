@@ -1,5 +1,5 @@
 /*
-    SoundClip loader for JOrbis' OGG Vorbis decoder. Requires PulpCore 0.10.10.
+    Sound loader for JOrbis' OGG Vorbis decoder. Requires PulpCore 0.11.0.
     
     To use:
     1. Get JOrbis here: http://www.jcraft.com/jorbis/
@@ -8,10 +8,10 @@
     3. Drop this file in your src/ directory. 
     4. Load sounds like normal:
     
-    SoundClip sound = SoundClip.load("mysound.ogg");
+    Sound sound = Sound.load("mysound.ogg");
     
     Ogg Vorbis is fully integrated with PulpCore, so you can pause playback and set the 
-    level and pan in realtime, just like with regular SoundClips.
+    level and pan in realtime, just like with regular Sounds.
 */
 
 // NOTE: Don't change the package name! This class is called via reflection.
@@ -30,10 +30,10 @@ import pulpcore.animation.Fixed;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.sound.Playback;
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 import pulpcore.util.ByteArray;
 
-public class JOrbisAdapter extends SoundClip {
+public class JOrbisAdapter extends Sound {
     
     /**
         The decompress threshold, in seconds. Sounds with a duration less than or equal to this
@@ -43,7 +43,7 @@ public class JOrbisAdapter extends SoundClip {
     private static final float DECOMPRESS_THRESHOLD = 4;
     
     // NOTE: Don't change the method name! This method is called via reflection.
-    public static SoundClip decode(ByteArray input, String soundAsset) {
+    public static Sound decode(ByteArray input, String soundAsset) {
         VorbisFile file;
         try {
             file = new VorbisFile(input.getData());
@@ -89,15 +89,19 @@ public class JOrbisAdapter extends SoundClip {
         return false;
     }
         
-    // SoundClip interface
+    // Sound interface
     
     private String filename;
     private VorbisFile file;
     
     JOrbisAdapter(String filename, VorbisFile file) {
-        super(file.getSampleRate(), (file.getNumChannels() == 2), file.getNumFrames());
+        super(file.getSampleRate());
         this.filename = filename;
         this.file = file;
+    }
+    
+    public int getNumFrames() {
+        return file.getNumFrames();
     }
     
     public void getSamples(byte[] dest, int destOffset, int destChannels,
@@ -130,10 +134,10 @@ public class JOrbisAdapter extends SoundClip {
         }
     }
     
-    public SoundClip decompress() {
+    public Sound decompress() {
         byte[] dest = new byte[2 * file.getNumChannels() * file.getNumFrames()];
         getSamples(dest, 0, file.getNumChannels(), 0, file.getNumFrames());
-        return new SoundClip(dest, file.getSampleRate(), (file.getNumChannels() == 2));
+        return Sound.load(dest, file.getSampleRate(), (file.getNumChannels() == 2));
     }
     
     public Playback play(Fixed level, Fixed pan, boolean loop) {

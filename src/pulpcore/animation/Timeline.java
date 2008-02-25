@@ -36,7 +36,7 @@ import pulpcore.animation.event.TimelineEvent;
 import pulpcore.Build;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene;
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 import pulpcore.sprite.Sprite;
 
 /**
@@ -269,7 +269,7 @@ public final class Timeline extends Animation {
         add(new SceneChangeEvent(scene, delay, true));
     }
     
-    public void playSound(SoundClip sound, int delay) {
+    public void playSound(Sound sound, int delay) {
         add(new SoundEvent(sound, delay));
     }
     
