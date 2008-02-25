@@ -7,7 +7,9 @@ Source code compatibility issues are highlighted with (*)
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
     their parent. No more ConcurrentModificationExceptions!
+  * API: (*) SoundClip is no longer available. To load sounds, use Sound.load() 
   * API: Added Timeline.at(time) as an alternative for delayed animations. 
+  * API: Properties can now be bound to other properties, or to functions.
   * API: Added Color property. FilledSprite now uses this property for it's fill color and border
     color. (*) Change filledSprite.setFillColor(color) to filledSprite.fillColor.set(color)
   * API: (*) Moved color constants (BLACK, RED, etc) from CoreGraphics to pulpcore.image.Colors.
@@ -24,6 +26,9 @@ Source code compatibility issues are highlighted with (*)
   * Core: Images, fonts, and sounds are cached (using WeakReferences) which will speed up loading
     and reduce memory when loading the same asset multiple times. 
   * Core: In a stack of Buttons, only the top-most button accepts mouse input.
+  * Core: If a Button is removed from the Scene, its isClicked() method no longer returns true.
+  * Fixed Bug: nearest-neighbor interpolation when fractional metrics was enabled was throwing
+    Exceptions.
   
 == Version 0.10 ==
 
