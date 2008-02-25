@@ -57,6 +57,10 @@ public class Color extends Property {
     // Set
     //
     
+    protected void setValue(Number value) {
+        setValue(value.intValue());
+    }
+    
     public void set(int argbColor) {
         setValue(argbColor);
         setBehavior(null);
@@ -87,6 +91,10 @@ public class Color extends Property {
     
     public void bindTo(Color property) {
         setBehavior(new Binding(this, property));
+    }
+    
+    public void bindTo(BindFunction function) {
+        setBehavior(new Binding(this, function));
     }
     
     /**

@@ -53,7 +53,14 @@ public abstract class Property {
     
     /**
         Sets the value for this property. If the new value is different from the old value,
-        any listeners are alerted.
+        any listeners are alerted. The behavior, if any, is not changed.
+        @param value the new value.
+    */
+    protected abstract void setValue(Number value);
+    
+    /**
+        Sets the value for this property. If the new value is different from the old value,
+        any listeners are alerted. The behavior, if any, is not changed.
         @param value the new value.
     */
     protected final void setValue(int value) {

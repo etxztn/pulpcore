@@ -38,10 +38,19 @@ import pulpcore.math.CoreMath;
     /* package-private */ static final int FUNCTION_NONE = 0;
     /* package-private */ static final int FUNCTION_TO_INT = 1;
     /* package-private */ static final int FUNCTION_TO_FIXED = 2;
+    /* package-private */ static final int FUNCTION_CUSTOM = 3;
     
     private final Property target;
     private final Property source;
+    private final BindFunction customFunction;
     private final int function;
+    
+    /* package-private */ Binding(Property target, BindFunction function) {
+        this.target = target;
+        this.source = null;
+        this.customFunction = function;
+        this.function = FUNCTION_CUSTOM;
+    }
     
     /* package-private */ Binding(Property target, Property source) {
         this(target, source, FUNCTION_NONE);
@@ -50,6 +59,7 @@ import pulpcore.math.CoreMath;
     /* package-private */ Binding(Property target, Property source, int function) {
         this.target = target;
         this.source = source;
+        this.customFunction = null;
         this.function = function;
         if (source != target) {
             source.addListener(this);
@@ -82,6 +92,9 @@ import pulpcore.math.CoreMath;
             default: case FUNCTION_NONE: return source.getValue();
             case FUNCTION_TO_INT: return CoreMath.toInt(source.getValue());
             case FUNCTION_TO_FIXED: return CoreMath.toFixed(source.getValue());
+            case FUNCTION_CUSTOM: 
+                target.setValue(customFunction.f());
+                return target.getValue();
         }
     }
     

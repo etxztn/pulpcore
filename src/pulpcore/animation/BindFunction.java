@@ -26,64 +26,20 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
     POSSIBILITY OF SUCH DAMAGE.
 */
-
 package pulpcore.animation;
 
 /**
-    An Bool is an boolean value that can be animated over time.
+    The BindFunction class allows Properties to be bound to a function. 
+    @see Int#bindTo(BindFunction)
+    @see Fixed#bindTo(BindFunction)
 */
-public final class Bool extends Property {
-
-    public Bool() {
-        this(null, false);
-    }
-    
-    public Bool(PropertyListener listener) {
-        this(listener, false);
-    }
-    
-    public Bool(boolean value) {
-        this(null, value);
-    }
-    
-    public Bool(PropertyListener listener, boolean value) {
-        super(listener, value ? 1 : 0);
-    }
-    
-    public boolean get() {
-        return getValue() == 0 ? false : true;
-    }
-    
-    protected void setValue(Number value) {
-        setValue(value.intValue());
-    }
+public interface BindFunction {
     
     /**
-        Sets the value of this Bool. 
-        Any previous animations are stopped.
+        The function.
+        @return a Number used to set the value of the property this function is bound to. 
+        The {@link Fixed} property will use the Number's double value; all other properties use
+        the Number's integer value.
     */
-    public void set(boolean value) {
-        setValue(value?1:0);
-        setBehavior(null);
-    }
-    
-    /**
-        Sets the value of this Bool after a specific delay. 
-        Any previous animations are stopped.
-    */
-    public void set(boolean value, int delay) {
-        setBehavior(new Tween(get()?1:0, value?1:0, delay, null, delay));
-    }
-    
-    public void bindTo(Bool property) {
-        setBehavior(new Binding(this, property));
-    }
-    
-    public void bindTo(BindFunction function) {
-        setBehavior(new Binding(this, function));
-    }
-    
-    public String toString() {
-        return get() ? "true" : "false";
-    }
+    public Number f();
 }

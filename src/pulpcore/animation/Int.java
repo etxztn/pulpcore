@@ -72,6 +72,10 @@ public class Int extends Property {
         return Integer.toString(get());
     }
     
+    protected void setValue(Number value) {
+        setValue(value.intValue());
+    }
+    
     /**
         Sets the value of this Int. 
         Any previous animations are stopped.
@@ -99,6 +103,10 @@ public class Int extends Property {
     
     public void bindTo(Fixed property) {
         setBehavior(new Binding(this, property, Binding.FUNCTION_TO_INT));
+    }
+    
+    public void bindTo(BindFunction function) {
+        setBehavior(new Binding(this, function));
     }
     
     /**

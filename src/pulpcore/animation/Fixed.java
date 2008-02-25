@@ -105,6 +105,10 @@ public final class Fixed extends Property {
     //
     // Setters - 3 methods
     //
+    
+    protected void setValue(Number value) {
+        setValue(CoreMath.toFixed(value.doubleValue()));
+    }
 
     /**
         Sets the value of this property. 
@@ -165,6 +169,10 @@ public final class Fixed extends Property {
     
     public void bindTo(Int property) {
         setBehavior(new Binding(this, property, Binding.FUNCTION_TO_FIXED));
+    }
+    
+    public void bindTo(BindFunction function) {
+        setBehavior(new Binding(this, function));
     }
     
     //
