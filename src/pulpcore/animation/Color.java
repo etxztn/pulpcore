@@ -148,13 +148,6 @@ public class Color extends Property {
     
     /* package-private */ static class ColorTween extends Tween {
         
-        private static final int RGB = 0;
-        private static final int HSB = 1;
-        
-        private final int colorSpace;
-        private final int fromHSB;
-        private final int toHSB;
-        
         public ColorTween(int fromARGB, int toARGB, int duration) {
             this(fromARGB, toARGB, duration, null, 0);
         }
@@ -165,17 +158,6 @@ public class Color extends Property {
         
         public ColorTween(int fromARGB, int toARGB, int duration, Easing easing, int startDelay) { 
             super(fromARGB, toARGB, duration, easing, startDelay);
-            
-            if (Colors.isGray(fromARGB) || Colors.isGray(toARGB)) {
-                this.colorSpace = RGB;
-                fromHSB = 0;
-                toHSB = 0;
-            }
-            else {
-                this.colorSpace = HSB;
-                fromHSB = Colors.RGBtoHSB(fromARGB);
-                toHSB = Colors.RGBtoHSB(toARGB);
-            }
         }
         
         protected void updateState(int animTime) {
@@ -190,17 +172,8 @@ public class Color extends Property {
                 setValue(getToValue());
             }
             else {
-                int v1;
-                int v2;
-                
-                if (colorSpace == HSB) {
-                    v1 = fromHSB;
-                    v2 = toHSB;
-                }
-                else {
-                    v1 = getFromValue();
-                    v2 = getToValue();
-                }
+                int v1 = getFromValue();
+                int v2 = getToValue();
                 
                 int a1 = v1 >>> 24;
                 int b1 = (v1 >> 16) & 0xff;
@@ -211,15 +184,6 @@ public class Color extends Property {
                 int b2 = (v2 >> 16) & 0xff;
                 int c2 = (v2 >> 8) & 0xff;
                 int d2 = v2 & 0xff;
-                
-                if (colorSpace == HSB && Math.abs(b1 - b2) >= 128) {
-                    if (b1 > b2) {
-                        b2 += 0x100;
-                    }
-                    else {
-                        b1 += 0x100;
-                    }
-                }
                 
                 int a = a1 + CoreMath.mulDiv(a2 - a1, animTime, dur);
                 int b = b1 + CoreMath.mulDiv(b2 - b1, animTime, dur);
@@ -236,14 +200,7 @@ public class Color extends Property {
                 if (c > 255) c = 255;
                 if (d > 255) d = 255;
                 
-                int newValue = (a << 24) | (b << 16) | (c << 8) | d;
-                
-                if (colorSpace == HSB) {
-                    setValue(Colors.HSBtoRGB(newValue));
-                }
-                else {
-                    setValue(newValue);
-                }
+                setValue((a << 24) | (b << 16) | (c << 8) | d);
             }
         }
     }
