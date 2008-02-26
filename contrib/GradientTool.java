@@ -13,8 +13,8 @@ import static pulpcore.image.Colors.*;
     ...
     CoreImage dusk = GradientTool.create(GradientTool.VERTICAL, w, h, BLACK, BLUE);
     CoreImage rainbow = GradientTool.create(GradientTool.HORIZONTAL, w, h, 
-        new double[] { 0, .25, .5, .75, 1 }, 
-        new int[] { hue(0), hue(64), hue(128), hue(192), hue(255) });
+        new double[] { 0, 1/6.0, 2/6.0, 3/6.0, 4/6.0, 5/6.0, 1 }, 
+        new int[] { hue(0), hue(43), hue(85), hue(128), hue(170), hue(213), hue(255) });
     </pre>
 */
 public class GradientTool {
