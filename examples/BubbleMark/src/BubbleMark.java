@@ -1,5 +1,5 @@
 // PulpCore BubbleMark implementation. See http://www.bubblemark.com/
-// - Cap frame rate: Caps the frame rate to the platform default (60 fps on Windows).
+// - Cap Frame Rate: Caps the frame rate to the platform default (60 fps on Windows).
 // - Pixel Snapping: Draws images at integer locations (increasing performance).
 // - Dirty Rectangles: Only draws areas of the screen that have changed (increases performance 
 //   when changed areas don't cover a large area of the screen).
@@ -74,7 +74,7 @@ public class BubbleMark extends Scene2D {
         this.pixelSnapping.set(pixelSnapping);
     }
     
-    // The Ball sprite
+    // The Ball sprite, wrapper for Ball.java by rbair
     
     class BallSprite extends ImageSprite {
         
