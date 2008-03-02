@@ -86,9 +86,16 @@ public class TextField extends Sprite {
     
     private static CoreFont systemSelectionFont;
     
-    /** The highlight color to use when text is selected.
-        By default, the selection color is black. */
-    public final Color selectionColor = new Color(this, 0xff000000);
+    /** 
+        The highlight color to use when text is selected.
+        By default, the selection color is black. 
+    */
+    public final Color selectionColor = new Color(this, Colors.BLACK);
+    
+    /**
+        The caret color. By default, the caret color is black.
+    */
+    public final Color caretColor = new Color(this, Colors.BLACK);
 
     private CoreFont font;
     private String text;
@@ -399,6 +406,9 @@ public class TextField extends Sprite {
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
+        
+        selectionColor.update(elapsedTime);
+        caretColor.update(elapsedTime);
         
         if (isEnabledAndVisible()) {
             handleInput(elapsedTime);
@@ -787,7 +797,7 @@ public class TextField extends Sprite {
             {
                 int caretX = font.getStringWidth(text, scrollPosition, caretPosition);
                 if (caretX >= 0 && caretX < maxWidth) {
-                    g.setColor(Colors.BLACK);
+                    g.setColor(caretColor.get());
                     g.fillRect(caretX, 0, 1, font.getHeight() + EXTRA_CARET_HEIGHT*2);
                 }
             }
