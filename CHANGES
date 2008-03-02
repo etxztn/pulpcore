@@ -1,25 +1,23 @@
 0.11 (Alpha, in progress)
 The version's inital focus is going to be on the animation framework and the scene graph.
 To use the new version, edit your build.xml file to set "pulpcore.version" to "0.11".
-Source code compatibility issues are highlighted with (*)
 
   * Core: CoreImages now have premultiplied alpha (this will not affect the vast majority of users).
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
     their parent. No more ConcurrentModificationExceptions!
-  * API: (*) SoundClip is no longer available. To load sounds, use Sound.load() 
+  * API: SoundClip is no longer available. To load sounds, use Sound.load() 
   * API: Added Timeline.at(time) as an alternative for delayed animations. 
   * API: Properties can now be bound to other properties, or to functions.
   * API: Added Color property. FilledSprite now uses this property for it's fill color and border
-    color. (*) Change filledSprite.setFillColor(color) to filledSprite.fillColor.set(color)
-  * API: (*) Moved color constants (BLACK, RED, etc) from CoreGraphics to pulpcore.image.Colors.
+    color.
+  * API: Moved color constants (BLACK, RED, etc) from CoreGraphics to pulpcore.image.Colors.
   * API: Added sprite.getParent() (Sprites now know their parent, which allows many new features).
   * API: The 'enabled' Property (in Button, TextField, and Slider) is now in the Sprite class.
   * API: The setCursor() method (in Button and TextField) is now in the Sprite class.
     Any Sprite can now have it's own cursor, and Scene2D handles cursor mangement. This also
     means there will be no more odd cursor display bugs. If a Sprite doesn't have a cursor defined,
-    the parent cursor is used. The setCursor() method is also added to Scene2D - 
-    (*) change Input.setCursor() calls to either scene.setCursor() or sprite.setCursor().
+    the parent cursor is used. The setCursor() method is also added to Scene2D.
   * API: Sprites no longer take input if their parent is not enabled. So, an entire Group of 
     widgets can be disabled by using group.enabled.set(false);
   * API: Added Group.pick() and Group.pickEnabledAndVisible().
@@ -27,6 +25,8 @@ Source code compatibility issues are highlighted with (*)
     and reduce memory when loading the same asset multiple times. 
   * Core: In a stack of Buttons, only the top-most button accepts mouse input.
   * Core: If a Button is removed from the Scene, its isClicked() method no longer returns true.
+  * Tools: SVG -> PNG conversion is automatic.
+  * Fixed Bug: Ant script didn't include all of the Retroweaver runtime classes.
   * Fixed Bug: nearest-neighbor interpolation when fractional metrics was enabled was throwing
     Exceptions.
   

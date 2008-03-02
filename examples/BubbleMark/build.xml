@@ -59,7 +59,7 @@
     <property name="pulpcore.platform" value="applet" />
     <property name="autoload.assets.zip" value="${project.assets.zip}" />
     
-    <!-- Java laungage to use. May be 1.4 or 1.5. If the value is 1.5, Retroweaver is used. -->
+    <!-- Java language to use. May be 1.4 or 1.5. If the value is 1.5, Retroweaver is used. -->
     <property name="pulpcore.java.language" value="1.5" />
     
     <!-- Project paths -->
@@ -68,6 +68,8 @@
     <property name="build.temp" value="${build}/temp" />
     <property name="build.classes" value="${build.temp}/classes" />
     <property name="build.res" value="${build.temp}" />
+    
+    <property name="display.src" value="${src}/${project.scene}.java" />
     
     <!-- PulpCore paths -->
     <property name="core.jar.file" value="${pulpcore.path}/pulpcore-${pulpcore.platform}-${pulpcore.build}-${pulpcore.version}.jar" />
@@ -198,9 +200,19 @@
         <copy file="${build}/${project.jar}" tofile="${build}/in.jar"/>
         
         <retroweaver inputjar="${basedir}/${build}/in.jar" 
-            outputjar="${basedir}/${build}/${project.jar}" />
+            outputjar="${basedir}/${build}/in2.jar" />
+            
+        <jar destfile="${build}/${project.jar}">
+            <zipfileset src="${basedir}/${build}/in2.jar" />
+            <zipfileset src="${retroweaver.jar.file}">
+                <include name="net/sourceforge/retroweaver/runtime/**/*"/>
+                <include name="org/objectweb/asm/**/*"/>
+                <exclude name="org/objectweb/asm/commons/**/*"/>
+            </zipfileset>
+        </jar>
             
         <delete file="${build}/in.jar" />
+        <delete file="${build}/in2.jar" />
     </target>
 
     
@@ -251,7 +263,7 @@
             scene="${project.scene}"
             assets="${autoload.assets.zip}"
             params="${project.params}"
-            displaySource="${src}/${project.scene}.java"/>
+            displaySource="${display.src}"/>
     </target>
 
     

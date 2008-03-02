@@ -193,7 +193,7 @@
                 target="1.5"
                 debug="on"
                 deprecation="off"
-                classpath="${ant.jar}">
+                classpath="${ant.jar};${salamander.path}">
                 
                 <src path="${src}"/>
                 <src path="${tools.src}/assettools"/>
@@ -228,6 +228,7 @@
         <jar destfile="${build}/${assettools.jar.file}">
             <fileset dir="${build.temp}/assettools" includes="**/*.class"/>
             <fileset dir="${tools.src}/assettools" excludes="**/*.java"/>
+            <zipfileset src="${salamander.path}" includes="**/*.class"/>
         </jar>
         
         <delete file="${build}/${player.jar.file}" failonerror="no" />
@@ -421,6 +422,7 @@
             <property name="proguard.path" location="${proguard.path}"/>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
             <property name="do.obfuscate" value="true"/>
+            <property name="display.src" value="" />
             <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
             <fileset dir="${dist.temp}/templates" includes="*/build.xml"/>
             <target name="build"/>
@@ -428,19 +430,33 @@
         </subant>
         
         <zip destfile="${build}/pulpcore-${version.full}.zip">
-            <zipfileset dir="${dist.temp}" prefix="pulpcore-${version.full}"/>
+            <zipfileset dir="${dist.temp}" prefix="pulpcore-${version.full}" />
         </zip>
+        
+        <!-- Compile examples again, but don't clear display.src. -->
+        <subant>
+            <property name="library.path" location="${library.path}"/>
+            <property name="proguard.path" location="${proguard.path}"/>
+            <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="do.obfuscate" value="true"/>
+            <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
+            <target name="build"/>
+            <target name="clean-temp"/>
+        </subant>
         
         <!-- 
             Create the www folder used at interactivepulp.com
             
-            Ignoring BubbleMark and ImagesAndFonts. Renaming the Easings example. 
+            Ignoring ImagesAndFonts. Renaming the Easings example. 
             
             NOTE: explore using subant once Mac OS X has Java 6 (So the uppercase dir names can be
             converted to lowercase using a scriptmapper)
         -->
         <copy todir="${build}/www/api">
             <fileset dir="${dist.temp}/doc/api"/>
+        </copy>
+        <copy todir="${build}/www/bubblemark">
+            <fileset dir="${dist.temp}/examples/BubbleMark/build"/>
         </copy>
         <copy todir="${build}/www/clock">
             <fileset dir="${dist.temp}/examples/Clock/build"/>
@@ -539,6 +555,7 @@
     <target name="build-examples" description="Compile all examples and templates (for testing)">
         <subant>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="display.src" value="" />
             <fileset dir="examples" includes="*/build.xml"/>
             <fileset dir="templates" includes="*/build.xml"/>
             <target name="build"/>

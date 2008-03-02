@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,6 +29,8 @@
 
 package pulpcore.assettools;
 
+import com.kitfox.svg.app.beans.SVGIcon;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,31 +55,25 @@ public class ConvertImageTask extends Task {
     private byte[] fontData;
     private int optimizationLevel = PNGWriter.DEFAULT_OPTIMIZATION_LEVEL;
     
-    
     public void setSrcFile(File srcFile) {
         this.srcFile = srcFile;
     }
-    
     
     public void setSrcPropertyFile(File srcPropertyFile) {
         this.srcPropertyFile = srcPropertyFile;
     }
     
-    
     public void setDestFile(File destFile) {
         this.destFile = destFile;
     }
-    
     
     public void setFontData(byte[] fontData) {
         this.fontData = fontData;
     }
     
-    
     public void setOptimizationLevel(int level) {
         this.optimizationLevel = level;
     }
-    
     
     public void execute() throws BuildException {
         if (srcFile == null) {
@@ -101,19 +97,22 @@ public class ConvertImageTask extends Task {
         }
     }
     
-    //
-    //
-    //
-    
     private void convert() throws IOException {
         
         long startTime = System.nanoTime();
         
-        //
-        // Read the image and the optional properties file
-        //
+        String filename = srcFile.getName().toLowerCase();
         
-        BufferedImage image = ImageIO.read(srcFile);
+        // Load the image 
+        BufferedImage image;
+        if (filename.endsWith(".svg") || filename.endsWith(".svgz")) {
+            image = loadSVG(srcFile);
+        }
+        else {
+            image = ImageIO.read(srcFile);
+        }
+        
+        // Get the image pixels
         int w = image.getWidth();
         int h = image.getHeight();
         int[] data = new int[w * h];
@@ -122,6 +121,7 @@ public class ConvertImageTask extends Task {
         int hotspotY = 0;
         byte[] animData = null;
         
+        // Load the optional properties file
         AnimProperties animProperties = AnimProperties.read(this, srcPropertyFile);
         if (animProperties != null) {
             hotspotX = animProperties.hotspotX;
@@ -139,16 +139,10 @@ public class ConvertImageTask extends Task {
             }
         }
         
-        
-        //
         // Write
-        //
-        
         DataOutputStream out = new DataOutputStream(
             new BufferedOutputStream(
             new FileOutputStream(destFile)));
-        
-        
         PNGWriter writer = new PNGWriter();
         writer.setOptimizationLevel(optimizationLevel);
         String imageDescription = writer.write(w, h, data, hotspotX, hotspotY,
@@ -156,10 +150,7 @@ public class ConvertImageTask extends Task {
             
         out.close();
         
-        //
         // Log diagnostic info
-        //
-        
         long time = (System.nanoTime() - startTime) / 1000000;
         
         //String description = srcFile + " (" + time + "ms): " + imageDescription;
@@ -174,6 +165,23 @@ public class ConvertImageTask extends Task {
         log("Created: " + description, Project.MSG_INFO);
     }
     
+    /**
+        Load an SVG file, and rasterize it. Uses the SVG Salamander library.
+    */
+    private static BufferedImage loadSVG(File file) {
+        SVGIcon icon = new SVGIcon();
+        icon.setSvgURI(file.toURI());
+        icon.setAntiAlias(true);
+        icon.setInterpolation(SVGIcon.INTERP_BILINEAR);
+        
+        BufferedImage image = new BufferedImage(icon.getIconWidth(), 
+            icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        icon.paintIcon(null, g, 0, 0);
+        g.dispose();
+        
+        return image;
+    }
     
     public static class AnimProperties {
         
@@ -232,7 +240,6 @@ public class ConvertImageTask extends Task {
             return data;
         }
         
-        
         public byte[] createData() {
             
             if (!hasAnimation) {
@@ -277,7 +284,6 @@ public class ConvertImageTask extends Task {
             return bos.toByteArray();
         }
         
-        
         private String toString(int[] list) {
             if (list == null) {
                 return null;
@@ -293,7 +299,6 @@ public class ConvertImageTask extends Task {
             
             return retVal;
         }
-        
         
         public String toString() {
             
@@ -317,5 +322,4 @@ public class ConvertImageTask extends Task {
             return retVal;
         }
     }
-        
 }

@@ -3,10 +3,23 @@
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
+    <style type="text/css">
+    body {
+        background: @BGCOLOR@; 
+        color: @FGCOLOR@; 
+        font-family: sans-serif; 
+        text-align: center; 
+        margin-top: 5em;
+    }
+    a:link {color: #F88113; text-decoration: none}
+    a:visited {color: #ad5a0d; text-decoration: none}
+    a:active {color: #F88113; text-decoration: none}
+    a:hover {color: #F88113; text-decoration: underline}
+    </style>
     <title>@TITLE@ - Created with PulpCore</title>
 </head>
   
-<body style="background: @BGCOLOR@; color: @FGCOLOR@; font-family: sans-serif; text-align: center; margin-top: 5em">
+<body>
 
 <div id="game">
 <script type="text/javascript"><!--
@@ -18,13 +31,11 @@
 </div>
 
 <div id="source" style="margin: 5em auto 0 auto;">
-    Created with <a style="color: #F88113" 
-    href="http://www.interactivepulp.com/pulpcore/">PulpCore</a>.
+    Created with <a href="http://www.interactivepulp.com/pulpcore/">PulpCore</a>.
     <blockquote style="text-align: left">
-        <pre class="prettyprint">@SRC@</pre>
+        <div>@SRC@</div>
     </blockquote>
 </div>
 
-    
 </body>
 </html>

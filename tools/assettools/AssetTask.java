@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -38,94 +38,18 @@ import org.apache.tools.ant.taskdefs.Copy;
 
 public class AssetTask extends Task {
     
-/*    
-    private static void printUsage() {
-        System.out.println("Usage: java ImageConvert [-R] [-d dir] src1...srcN");
-        System.out.println("       -R       Recurse directories (if src is a directory).");
-        System.out.println("       -d dir   Destination directory. If not specified, the current directory is used.");
-        System.out.println("       src      Either an image file or a directory containing image files. PNG, BMP, and GIF are accepted.");
-    }
-    
-    
-    public static void main(String[] args) throws IOException {
-        
-        boolean recurseDirectories = false;
-        File destDir = new File(".");
-        List<File> src = new ArrayList<File>();
-        
-        if (args.length == 0) {
-            printUsage();
-            return;
-        }
-        
-        // Check options
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            
-            if (arg.equals("-R")) {
-                recurseDirectories = true;
-            }
-            else if (arg.equals("-d")) {
-                if (i == args.length - 1) {
-                    printUsage();
-                    return;
-                }
-                destDir = new File(args[i + 1]);
-                if (destDir.isDirectory()) {
-                    System.out.println(args[i + 1] + " is not a directory.");
-                    printUsage();
-                    return;
-                }
-            }
-            else if (arg.startsWith("-")) {
-                System.out.println("Unrecognized option: " + arg);
-                printUsage();
-                return;
-            }
-            else {
-                File file = new File(arg);
-                if (file.exists()) {
-                    src.add(file);
-                }
-                else {
-                    System.out.println("File " + arg + " does not exist.");
-                }
-            }
-        }
-        
-        if (src.size() == 0) {
-            printUsage();
-            return;
-        }
-        
-        // Do it
-        for (File file : src) {
-            if (file.isFile() && isImageFile(file)) {
-                convert(file, destDir);
-            }
-            else if (file.isDirectory()) {
-                handleDirectory(file, destDir, recurseDirectories);
-            }
-            else {
-                System.out.println("Ignoring " + file.getName() + ". ");
-            }
-        }
-    }
-*/    
+    public static final String[] IMAGE_TYPES = { "png", "gif", "bmp", "svg", "svgz" };
     
     private File srcDir;
     private File destDir;
-    
     
     public void setSrcDir(File srcDir) {
         this.srcDir = srcDir;
     }
     
-    
     public void setDestDir(File destDir) {
         this.destDir = destDir;
     }
-    
     
     public void execute() throws BuildException {
         if (srcDir == null) {
@@ -153,28 +77,27 @@ public class AssetTask extends Task {
         }
     }
     
-    
     private boolean isImageFile(File file) {
         String name = file.getName().toLowerCase();
-        return 
-            file.isFile() && 
-            (name.endsWith(".png") ||
-            name.endsWith(".bmp") ||
-            name.endsWith(".gif"));
+        if (file.isFile()) {
+            for (String type : IMAGE_TYPES) {
+                if (name.endsWith("." + type)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
-    
     
     private boolean isImagePropertyFile(File file) {
         String name = file.getName().toLowerCase();
         return file.isFile() && name.endsWith(".properties") && !name.endsWith(".font.properties");
     }
     
-    
     private boolean isFontFile(File file) {
         String name = file.getName().toLowerCase();
         return (file.isFile() && name.endsWith(".font.properties"));
     }
-    
     
     private boolean isSoundFile(File file) {
         String name = file.getName().toLowerCase();
@@ -183,7 +106,6 @@ public class AssetTask extends Task {
             (name.endsWith(".wav") ||
             name.endsWith(".au"));
     }
-    
     
     private boolean isOtherAsset(File file) {
         String name = file.getName();
@@ -194,8 +116,7 @@ public class AssetTask extends Task {
             !isIgnoredAsset(file));
     }
     
-    
-    private boolean isIgnoredAsset(File file) {
+    public static boolean isIgnoredAsset(File file) {
         String name = file.getName();
         String lowerCaseName = name.toLowerCase();
         
@@ -210,14 +131,12 @@ public class AssetTask extends Task {
             name.equals("vssver.scc"));
     }
     
-    
     private boolean isTraverseableDirectory(File dir) {
         String name = dir.getName();
         
         return (dir.isDirectory() && !name.equals("CVS") && !name.equals("SCCS") &&
             !name.equals(".svn"));
     }
-    
     
     private void traverseDirectory(File dir, File destDir, boolean recurse) throws IOException {
         
@@ -262,10 +181,9 @@ public class AssetTask extends Task {
                 }
             }
             else if (isImagePropertyFile(file)) {
-                String[] types = { "png", "gif", "bmp" };
                 boolean imageExists = false;
-                for (int i = 0; i < types.length; i++) {
-                     File imageFile = new File(removeExtension(file.getPath()) + "." + types[i]);
+                for (String type : IMAGE_TYPES) {
+                     File imageFile = new File(removeExtension(file.getPath()) + "." + type);
                      if (imageFile.exists()) {
                          imageExists = true;
                          break;
@@ -295,18 +213,15 @@ public class AssetTask extends Task {
         }
     }
     
-    
     private void initSubTask(Task task) {
         task.setProject(getProject());
         task.setTaskName(getTaskName());
     }
     
-    
     private boolean needsUpdate(String type, File destFile, File srcFile) {
         return needsUpdate(type, destFile, srcFile, null);
     }
     
-        
     private boolean needsUpdate(String type, File destFile, File srcFile, File srcMetaFile) {
         if (!destFile.exists()) {
             return true;
@@ -331,7 +246,6 @@ public class AssetTask extends Task {
             }
         }
     }
-    
     
     public static String removeExtension(String name) {
         int index = name.lastIndexOf('.');

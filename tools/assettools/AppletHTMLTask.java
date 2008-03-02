@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -44,6 +44,7 @@ import java.io.IOException;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
+import org.apache.tools.ant.taskdefs.Copy;
 
 public class AppletHTMLTask extends Task {
     
@@ -76,76 +77,61 @@ public class AppletHTMLTask extends Task {
     private int width = DEFAULT_WIDTH;
     private int height = DEFAULT_HEIGHT;
     
-    
     public void setDestDir(File destDir) {
         this.destDir = destDir;
     }
-    
     
     public void setDisplaySource(File displaySource) {
         this.displaySource = displaySource;
     }
     
-    
     public void setTemplate(File template) {
         this.template = template;
     }
-    
     
     public void setSplash(String splash) {
         this.splash = splash;
     }
     
-    
     public void setClassName(String className) {
         this.className = className;
     }
-    
     
     public void setScene(String scene) {
         this.scene = scene;
     }
     
-    
     public void setParams(String params) {
         this.params = params;
     }
-    
     
     public void setCodebase(String codebase) {
         this.codebase = codebase;
     }
     
-    
     public void setAssets(String assets) {
         this.assets = assets;
     }
-    
     
     public void setArchive(String archive) {
         this.archive = archive;
     }
     
-    
     public void setBgColor(String bgcolor) {
         this.bgcolor = bgcolor;
     }
-    
     
     public void setFgColor(String fgcolor) {
         this.fgcolor = fgcolor;
     }
     
-    
     public void setWidth(int width) {
         this.width = width;
     }
     
-    
     public void setHeight(int height) {
         this.height = height;
     }
-    
     
     public void execute() throws BuildException {
         if (destDir == null) {
@@ -166,7 +152,6 @@ public class AppletHTMLTask extends Task {
         }
     }
     
-    
     public static boolean equals(String arg1, String arg2) {
         if (arg1 == null || arg2 == null) {
             return (arg1 == arg2);
@@ -175,7 +160,6 @@ public class AppletHTMLTask extends Task {
             return arg1.equals(arg2);
         }
     }
-    
     
     private void createHTML() throws IOException {
         String appletParams = "";
@@ -215,12 +199,41 @@ public class AppletHTMLTask extends Task {
         appletParams = appletParams.trim();
         
         String src = "";
-        if (displaySource != null && displaySource.exists()) {
-            src = readTextFile(new FileInputStream(displaySource));
-            src = src.replace("&", "&amp;");
-            src = src.replace("\"", "&quot;");
-            src = src.replace("<", "&lt;");
-            src = src.replace(">", "&gt;");
+        if (displaySource != null && displaySource.exists() && displaySource.isFile()) {
+            
+            File dir = new File(destDir, "src");
+            for (File srcFile : displaySource.getParentFile().listFiles()) {
+                
+                String filename = srcFile.getName();
+                
+                if (srcFile.isFile() && !AssetTask.isIgnoredAsset(srcFile)) {
+                    
+                    dir.mkdir();
+                    
+                    // Use the Ant copy task
+                    Copy copyTask = new Copy();
+                    copyTask.setProject(getProject());
+                    copyTask.setTaskName(getTaskName());
+                    copyTask.setFile(srcFile);
+                    copyTask.setTofile(new File(dir, filename));
+                    copyTask.execute();
+                    
+                    // Setup the hyperlink
+                    src += "<a target=\"pulpcore_src\" href=\"src/" + filename + "\">" + 
+                        filename + "</a> &nbsp; ";
+                }
+            }
+            if (src.length() > 0) {
+                src = "<p>View: " + src + "</p>";
+            }
+            
+            String sourceCode = readTextFile(new FileInputStream(displaySource));
+            sourceCode = sourceCode.replace("&", "&amp;");
+            sourceCode = sourceCode.replace("\"", "&quot;");
+            sourceCode = sourceCode.replace("<", "&lt;");
+            sourceCode = sourceCode.replace(">", "&gt;");
+            
+            src += "<pre class=\"prettyprint\">" + sourceCode + "</pre>";
         }
         
         String appletHTML;
@@ -245,7 +258,6 @@ public class AppletHTMLTask extends Task {
             readBinaryFile(getClass().getResourceAsStream("/splash.gif")));        
     }
     
-    
     private String getProjectTitle() {
         String title = "Project";
         // The project title is displayed in the HTML title.
@@ -259,7 +271,6 @@ public class AppletHTMLTask extends Task {
         title = title.replace("-", " ");
         return title;
     }
-    
     
     private String readTextFile(InputStream in) throws IOException {
         String text = "";
@@ -276,13 +287,11 @@ public class AppletHTMLTask extends Task {
         }
     }
     
-    
     private void writeTextFile(File file, String text) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
         writer.append(text);
         writer.close();
     }
-    
     
     private byte[] readBinaryFile(InputStream in) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -299,7 +308,6 @@ public class AppletHTMLTask extends Task {
             out.write(buffer, 0, bytesRead);
         }
     }
-    
     
     private void writeBinaryFile(File file, byte[] data) throws IOException {
         BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
