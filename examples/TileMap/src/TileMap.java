@@ -170,28 +170,15 @@ public class TileMap extends Scene2D {
         
         @Override
         protected void drawSprite(CoreGraphics g) {
-            // Sprite drawing: keep everything in fixed-point
-            int fViewX = viewX.getAsFixed();
-            int fViewY = viewY.getAsFixed();
-            int fTileWidth = CoreMath.toFixed(tileWidth);
-            int fTileHeight = CoreMath.toFixed(tileHeight);
-            
-            if (pixelSnapping.get()) {
-                fViewX = CoreMath.floor(fViewX);
-                fViewY = CoreMath.floor(fViewY);
-            }
-            
-            Transform t = g.getTransform();
-            g.pushTransform();
-            t.translate(fViewX, fViewY);
+            int y = viewY.getAsIntFloor();
             for (int j = 0; j < numTilesDown; j++) {
+                int x = viewX.getAsIntFloor();
                 for (int i = 0; i < numTilesAcross; i++) {
-                    g.drawImage(tileMap[i][j]);
-                    t.translate(fTileWidth, 0);
+                    g.drawImage(tileMap[i][j], x, y);
+                    x += tileWidth;
                 }
-                t.translate(-numTilesAcross*fTileWidth, fTileHeight);
+                y += tileHeight;
             }
-            g.popTransform();
         }
     }
 }
