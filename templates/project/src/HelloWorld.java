@@ -2,7 +2,7 @@ import pulpcore.CoreSystem;
 import pulpcore.image.CoreFont;
 import pulpcore.Input;
 import pulpcore.scene.Scene2D;
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Sprite;
@@ -20,7 +20,7 @@ public class HelloWorld extends Scene2D {
         label.setAnchor(Sprite.CENTER);
         add(label);
         
-        SoundClip sound = SoundClip.load("sound.wav");
+        Sound sound = Sound.load("sound.wav");
         sound.play();
     }
     

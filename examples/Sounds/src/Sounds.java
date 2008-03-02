@@ -7,7 +7,7 @@ import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.scene.Scene2D;
-import pulpcore.sound.SoundClip;
+import pulpcore.sound.Sound;
 import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.ImageSprite;
@@ -15,7 +15,7 @@ import pulpcore.Stage;
 
 public class Sounds extends Scene2D {
     
-    SoundClip boopSound, wooshSound;
+    Sound boopSound, wooshSound;
     ImageSprite ear;
     Button muteButton;
     
@@ -30,8 +30,8 @@ public class Sounds extends Scene2D {
         setCursor(Input.CURSOR_CROSSHAIR);
         ear.setCursor(Input.CURSOR_HAND);
         
-        boopSound = SoundClip.load("boop.wav");
-        wooshSound = SoundClip.load("stereo.wav");
+        boopSound = Sound.load("boop.wav");
+        wooshSound = Sound.load("stereo.wav");
         wooshSound.play();
     }
     
