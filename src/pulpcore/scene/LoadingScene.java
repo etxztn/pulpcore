@@ -173,7 +173,7 @@ public class LoadingScene extends Scene2D {
         int y = Stage.getHeight()/4;
         for (int i = 0; i < strings.length; i++) {
             Label label = new Label(font, strings[i], Stage.getWidth() / 2, y);
-            label.setAnchor(Sprite.HCENTER);
+            label.setAnchor(Sprite.NORTH);
             y += label.height.getAsInt() + 2;
             errorLayer.add(label);
         }
@@ -181,7 +181,7 @@ public class LoadingScene extends Scene2D {
         tryAgainButton = Button.createLabeledButton(retryButtonText,  
             Stage.getWidth() / 2,
             Stage.getHeight() * 3 / 4);
-        tryAgainButton.setAnchor(Sprite.HCENTER | Sprite.BOTTOM);
+        tryAgainButton.setAnchor(Sprite.SOUTH);
         // Hack: must set to invisible so a click isn't detected
         tryAgainButton.visible.set(false);
         

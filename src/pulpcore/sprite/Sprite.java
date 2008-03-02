@@ -66,38 +66,35 @@ public abstract class Sprite implements PropertyListener {
     public static final int DEFAULT = 0;
     
     /** Constant for positioning the anchor point on the left side of the sprite. */
-    public static final int LEFT = 1;
+    /* package-private */ static final int LEFT = 1;
     
     /** Constant for positioning the anchor point on the right side of the sprite. */
-    public static final int RIGHT = 2;
+    /* package-private */ static final int RIGHT = 2;
     
     /** Constant for positioning the anchor point in the horizontal center of the sprite. */
-    public static final int HCENTER = 4;
+    /* package-private */ static final int HCENTER = 4;
     
     /** Constant for positioning the anchor point on the upper side of the sprite. */
-    public static final int TOP = 8;
+    /* package-private */ static final int TOP = 8;
     
     /** Constant for positioning the anchor point on the lower side of the sprite. */
-    public static final int BOTTOM = 16;
+    /* package-private */ static final int BOTTOM = 16;
     
     /** Constant for positioning the anchor point in the vertical center of the sprite. */
-    public static final int VCENTER = 32;
+    /* package-private */ static final int VCENTER = 32;
     
     /** 
         Constant for positioning the anchor point in the upper center of the sprite.
-        Equivalent to TOP | HCENTER.
     */
     public static final int NORTH = TOP | HCENTER;
     
     /** 
         Constant for positioning the anchor point in the lower center of the sprite.
-        Equivalent to BOTTOM | HCENTER.
     */
     public static final int SOUTH = BOTTOM | HCENTER;
     
     /** 
         Constant for positioning the anchor point in the left center of the sprite.
-        Equivalent to LEFT | VCENTER.
     */
     public static final int WEST = LEFT | VCENTER;
     
@@ -109,7 +106,6 @@ public abstract class Sprite implements PropertyListener {
     
     /** 
         Constant for positioning the anchor point in the upper left corner of the sprite.
-        Equivalent to TOP | LEFT.
     */
     public static final int NORTH_WEST = TOP | LEFT;
     
@@ -121,7 +117,6 @@ public abstract class Sprite implements PropertyListener {
     
     /** 
         Constant for positioning the anchor point in the lower left corner of the sprite.
-        Equivalent to BOTTOM | LEFT.
     */
     public static final int SOUTH_WEST = BOTTOM | LEFT;
     
@@ -133,7 +128,6 @@ public abstract class Sprite implements PropertyListener {
     
     /** 
         Constant for positioning the anchor point in the center of the sprite.
-        Equivalent to VCENTER | HCENTER.
     */
     public static final int CENTER = VCENTER | HCENTER;
     
