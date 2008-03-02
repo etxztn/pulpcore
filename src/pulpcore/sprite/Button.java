@@ -468,7 +468,7 @@ public class Button extends ImageSprite {
         int w = buttonWidth * 2;
         int h = buttonHeight * 2;
         int cornerSize = 3;
-        CoreImage image = new CoreImage(w, h);
+        CoreImage image = new CoreImage(w, h, false);
         CoreGraphics g = image.createGraphics();
         Color topGradient = new Color();
         Color bottomGradient = new Color();
