@@ -560,6 +560,14 @@
             <target name="build"/>
         </subant>
     </target>
+    
+    <target name="clean-examples" description="Removes all built examples">
+        <subant>
+            <fileset dir="examples" includes="*/build.xml"/>
+            <fileset dir="templates" includes="*/build.xml"/>
+            <target name="clean"/>
+        </subant>
+    </target>
 
 </project>
 
