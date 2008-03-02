@@ -35,6 +35,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -201,30 +202,50 @@ public class AppletHTMLTask extends Task {
         String src = "";
         if (displaySource != null && displaySource.exists() && displaySource.isFile()) {
             
+            String links = "";
+            
+            FileFilter filter = new FileFilter() {
+                public boolean accept(File pathname) {
+                    String filename = pathname.getName();
+                    
+                    if (pathname.isFile()) {
+                        if (filename.endsWith(".java") || !AssetTask.isIgnoredAsset(pathname)) {
+                            return true;
+                        }
+                    }
+                    
+                    return false;
+                }
+            };
+            
             File dir = new File(destDir, "src");
-            for (File srcFile : displaySource.getParentFile().listFiles()) {
+            for (File srcFile : displaySource.getParentFile().listFiles(filter)) {
                 
                 String filename = srcFile.getName();
+                dir.mkdir();
                 
-                if (srcFile.isFile() && !AssetTask.isIgnoredAsset(srcFile)) {
-                    
-                    dir.mkdir();
-                    
-                    // Use the Ant copy task
-                    Copy copyTask = new Copy();
-                    copyTask.setProject(getProject());
-                    copyTask.setTaskName(getTaskName());
-                    copyTask.setFile(srcFile);
-                    copyTask.setTofile(new File(dir, filename));
-                    copyTask.execute();
-                    
-                    // Setup the hyperlink
-                    src += "<a target=\"pulpcore_src\" href=\"src/" + filename + "\">" + 
-                        filename + "</a> &nbsp; ";
+                // Use the Ant copy task
+                Copy copyTask = new Copy();
+                copyTask.setProject(getProject());
+                copyTask.setTaskName(getTaskName());
+                copyTask.setFile(srcFile);
+                copyTask.setTofile(new File(dir, filename));
+                copyTask.execute();
+                
+                // Setup the hyperlink
+                String link = "<a target=\"pulpcore_src\" href=\"src/" + filename + "\">" +
+                    filename + "</a>&nbsp; ";
+                if (filename.endsWith(".java")) {
+                    // First
+                    links = link + links;
+                }
+                else {
+                    // Last
+                    links += link;
                 }
             }
-            if (src.length() > 0) {
-                src = "<p>View: " + src + "</p>";
+            if (links.length() > 0) {
+                links = "<p>" + links + "</p>";
             }
             
             String sourceCode = readTextFile(new FileInputStream(displaySource));
@@ -233,7 +254,18 @@ public class AppletHTMLTask extends Task {
             sourceCode = sourceCode.replace("<", "&lt;");
             sourceCode = sourceCode.replace(">", "&gt;");
             
-            src += "<pre class=\"prettyprint\">" + sourceCode + "</pre>";
+            src = links + "<pre class=\"prettyprint\">" + sourceCode + "</pre>";
+            
+            /*
+            String sourceCode = readFirstComments(new FileInputStream(displaySource));
+            sourceCode = sourceCode.replace("&", "&amp;");
+            sourceCode = sourceCode.replace("\"", "&quot;");
+            sourceCode = sourceCode.replace("<", "&lt;");
+            sourceCode = sourceCode.replace(">", "&gt;");
+            sourceCode = sourceCode.replace("\n", "<br />");
+            
+            src = links + "<p>" + sourceCode + "</p>";
+            */
         }
         
         String appletHTML;
@@ -270,6 +302,21 @@ public class AppletHTMLTask extends Task {
         // Replace dashes with spaces, so "HelloWorld-1.0" becomes "HelloWorld 1.0".
         title = title.replace("-", " ");
         return title;
+    }
+    
+    private String readFirstComments(InputStream in) throws IOException {
+        String text = "";
+        
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(in));
+        while (true) {
+            String line = reader.readLine();
+            if (line == null || !line.startsWith("//")) {
+                reader.close();
+                return text;
+            }
+            text += line.substring(2).trim() + '\n';
+        }
     }
     
     private String readTextFile(InputStream in) throws IOException {
