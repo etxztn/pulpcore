@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,17 +29,23 @@
 
 package pulpcore.image;
 
-/**
-    Multiplicative blending. In OpenGL, it is equivilent to:
-    Premultiplied alpha:
+/*
+    Multiplicative (for premultiplied images)
+    
+    Multiplicative rule:
+        Ar = As*Ad + Ad*(1-As) = Ad
+        Cr = Cs*Cd + Cd*(1-As)
+    
+    Multiplicative rule with extra alpha:
+        Ar = As*Ae*Ad + Ad*(1-As*Ae) = Ad
+        Cr = Cs*Ae*Cd + Cd*(1-As*Ae)
+    
+    OpenGL equivilent:
         glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-    Straight alpha:
-        - not possible?
 */
 final class CompositeMult extends Composite {
     
-    private void blendInternalOpaque(int[] destData, int destOffset, int srcRGB) {
-        // Same for both premultiplied and straight alpha
+    private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
         int destRGB = destData[destOffset];
         int destR = (destRGB & 0xff0000) >> 16;
         int destG = (destRGB & 0x00ff00) >> 8;
@@ -48,14 +54,14 @@ final class CompositeMult extends Composite {
         int srcG = (srcRGB & 0x00ff00) >> 8;
         int srcB = srcRGB & 0x0000ff;
         
-        destR = ((destR * srcR + 0xff) << 8) & 0xff0000;
-        destG = (destG * srcG + 0xff) & 0xff00;
-        destB = (destB * srcB + 0xff) >> 8;
+        destR = ((destR * srcR) << 8) & 0xff0000;
+        destG = (destG * srcG) & 0xff00;
+        destB = (destB * srcB) >> 8;
         
         destData[destOffset] = 0xff000000 | destR | destG | destB;
     }
     
-    private void blendInternalOpaque(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
+    private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
         int destRGB = destData[destOffset];
         int destR = (destRGB >> 16) & 0xff;
         int destG = (destRGB >> 8) & 0xff;
@@ -64,117 +70,96 @@ final class CompositeMult extends Composite {
         int srcG = (srcRGB >> 8) & 0xff;
         int srcB = srcRGB & 0xff;
         
-        // Same for both premultiplied and straight alpha
-        // Premultply the alpha
-        srcR = (srcR * extraAlpha + 0xff) >> 8;
-        srcG = (srcG * extraAlpha + 0xff) >> 8;
-        srcB = (srcB * extraAlpha + 0xff) >> 8;
+        srcR = (srcR * extraAlpha) >> 8;
+        srcG = (srcG * extraAlpha) >> 8;
+        srcB = (srcB * extraAlpha) >> 8;
         
-        // dest = srcAlpha*src*dest + (1-srcAlpha)*dest
-        int oneMinusAlpha =  0xff - extraAlpha;
-        destR = ((destR * (srcR + oneMinusAlpha) + 0xff) << 8) & 0xff0000;
-        destG =  (destG * (srcG + oneMinusAlpha) + 0xff) & 0xff00;
-        destB =  (destB * (srcB + oneMinusAlpha) + 0xff) >> 8;
+        // dest = src*dest + (1-srcA)*dest
+        // dest = dest*(src + 1 - srcA)
+        int oneMinusSrcA = 0xff - extraAlpha;
+        destR = ((destR * (srcR + oneMinusSrcA)) << 8) & 0xff0000;
+        destG =  (destG * (srcG + oneMinusSrcA)) & 0xff00;
+        destB =  (destB * (srcB + oneMinusSrcA)) >> 8;
         
         destData[destOffset] = 0xff000000 | destR | destG | destB;
     }
     
-    private void blendInternal(int[] destData, int destOffset, int srcARGB) {
+    private void blendPixel(int[] destData, int destOffset, int srcARGB) {
         int destRGB = destData[destOffset];
-        int destAlpha;
+        int destA = destRGB & 0xff000000;
         int destR = (destRGB >> 16) & 0xff;
         int destG = (destRGB >> 8) & 0xff;
         int destB = destRGB & 0xff;
-        int srcAlpha = srcARGB >>> 24;
+        int srcA = srcARGB >>> 24;
         int srcR = (srcARGB >> 16) & 0xff;
         int srcG = (srcARGB >> 8) & 0xff;
         int srcB = srcARGB & 0xff;
         
-        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-            destAlpha = destRGB & 0xff000000;
-        }
-        else {
-            // Premultply the alpha
-            srcR = (srcR * srcAlpha + 0xff) >> 8;
-            srcG = (srcG * srcAlpha + 0xff) >> 8;
-            srcB = (srcB * srcAlpha + 0xff) >> 8;
-            destAlpha = 0xff000000;
-        }
+        // dest = src*dest + (1-srcA)*dest
+        // dest = dest*(src + 1 - srcA)
+        int oneMinusSrcA =  0xff - srcA;
+        destR = ((destR * (srcR + oneMinusSrcA)) << 8) & 0xff0000;
+        destG =  (destG * (srcG + oneMinusSrcA)) & 0xff00;
+        destB =  (destB * (srcB + oneMinusSrcA)) >> 8;
         
-        // dest = src*dest + (1-srcAlpha)*dest
-        // dest = dest*(src + 1 - srcAlpha)
-        int oneMinusAlpha =  0xff - srcAlpha;
-        destR = ((destR * (srcR + oneMinusAlpha) + 0xff) << 8) & 0xff0000;
-        destG =  (destG * (srcG + oneMinusAlpha) + 0xff) & 0xff00;
-        destB =  (destB * (srcB + oneMinusAlpha) + 0xff) >> 8;
-        
-        destData[destOffset] = destAlpha | destR | destG | destB;
+        destData[destOffset] = destA | destR | destG | destB;
 
     }
     
-    private void blendInternal(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
+    private void blendPixel(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
         int destRGB = destData[destOffset];
-        int destAlpha;
+        int destA = destRGB & 0xff000000;
         int destR = (destRGB >> 16) & 0xff;
         int destG = (destRGB >> 8) & 0xff;
         int destB = destRGB & 0xff;
+        int srcA = srcARGB >>> 24;
         int srcR = (srcARGB >> 16) & 0xff;
         int srcG = (srcARGB >> 8) & 0xff;
         int srcB = srcARGB & 0xff;
-        int srcAlpha = ((srcARGB >>> 24) * extraAlpha) >> 8;
         
-        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-            // Premultply the alpha
-            srcR = (srcR * extraAlpha + 0xff) >> 8;
-            srcG = (srcG * extraAlpha + 0xff) >> 8;
-            srcB = (srcB * extraAlpha + 0xff) >> 8;
-            destAlpha = destRGB & 0xff000000;
-        }
-        else {
-            // Premultply the alpha
-            srcR = (srcR * srcAlpha + 0xff) >> 8;
-            srcG = (srcG * srcAlpha + 0xff) >> 8;
-            srcB = (srcB * srcAlpha + 0xff) >> 8;
-            destAlpha = 0xff000000;
-        }
-            
-        // dest = src*dest + (1-srcAlpha)*dest
-        int oneMinusAlpha =  0xff - srcAlpha;
-        destR = ((destR * (srcR + oneMinusAlpha) + 0xff) << 8) & 0xff0000;
-        destG =  (destG * (srcG + oneMinusAlpha) + 0xff) & 0xff00;
-        destB =  (destB * (srcB + oneMinusAlpha) + 0xff) >> 8;
+        srcA = (srcA * extraAlpha) >> 8;
+        srcR = (srcR * extraAlpha) >> 8;
+        srcG = (srcG * extraAlpha) >> 8;
+        srcB = (srcB * extraAlpha) >> 8;
         
-        destData[destOffset] = destAlpha | destR | destG | destB;
+        // dest = src*dest + (1-srcA)*dest
+        // dest = dest*(src + 1 - srcA)
+        int oneMinusSrcA = 0xff - srcA;
+        destR = ((destR * (srcR + oneMinusSrcA)) << 8) & 0xff0000;
+        destG =  (destG * (srcG + oneMinusSrcA)) & 0xff00;
+        destB =  (destB * (srcB + oneMinusSrcA)) >> 8;
+        
+        destData[destOffset] = destA | destR | destG | destB;
     }
     
     /*
         DO NOT EDIT BELOW HERE
         The blend() methods need to be identical in all subclasses of Composite. Ideally, the 
         blend() methods belong in the parent class Composite. However, if that were the case, 
-        calls to blendInternal() would result in an virtual method call - dramatically slowing 
+        calls to blendPixel() would result in an virtual method call - dramatically slowing 
         down the rendering.
         
         The blend() code is cut-and-pasted in each subclass of Composite to get HotSpot to inline 
-        calls to blendInternal()
+        calls to blendPixel()
     */
     
     void blend(int[] destData, int destOffset, int srcARGB) {
-        blendInternal(destData, destOffset, srcARGB);
+        blendPixel(destData, destOffset, srcARGB);
     }
     
     void blend(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
-        blendInternal(destData, destOffset, srcARGB, extraAlpha);
+        blendPixel(destData, destOffset, srcARGB, extraAlpha);
     }
     
     void blendRow(int[] destData, int destOffset, int srcARGB, int numPixels) {
         if ((srcARGB >>> 24) == 0xff) {
             for (int i = 0; i < numPixels; i++) {
-                blendInternalOpaque(destData, destOffset++, srcARGB);
+                blendOpaquePixel(destData, destOffset++, srcARGB);
             }
         }
         else {
             for (int i = 0; i < numPixels; i++) {
-                blendInternal(destData, destOffset++, srcARGB);
+                blendPixel(destData, destOffset++, srcARGB);
             }
         }
     }
@@ -256,10 +241,10 @@ final class CompositeMult extends Composite {
                                 srcScanSize, srcX, srcY, srcWidth, srcHeight, u, v);
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
-                            blendInternalOpaque(destData, destOffset, srcARGB);
+                            blendOpaquePixel(destData, destOffset, srcARGB);
                         }
                         else if (srcAlpha != 0) {
-                            blendInternal(destData, destOffset, srcARGB);
+                            blendPixel(destData, destOffset, srcARGB);
                         }
                         destOffset++;
                         u += du;
@@ -272,10 +257,10 @@ final class CompositeMult extends Composite {
                         int srcARGB = srcData[srcOffset + (u >> 16) + (v >> 16) * srcScanSize];
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
-                            blendInternalOpaque(destData, destOffset, srcARGB);
+                            blendOpaquePixel(destData, destOffset, srcARGB);
                         }
                         else if (srcAlpha != 0) {
-                            blendInternal(destData, destOffset, srcARGB);
+                            blendPixel(destData, destOffset, srcARGB);
                         }
                         destOffset++;
                         u += du;
@@ -288,7 +273,7 @@ final class CompositeMult extends Composite {
                     for (int i = 0; i < numPixels; i++) {
                         int srcARGB = getPixelBilinearOpaque(srcData, 
                             offsetTop, offsetBottom, u, v, srcWidth);
-                        blendInternalOpaque(destData, destOffset, srcARGB);
+                        blendOpaquePixel(destData, destOffset, srcARGB);
                         destOffset++;
                         u += du;
                     }
@@ -299,10 +284,10 @@ final class CompositeMult extends Composite {
                             offsetTop, offsetBottom, u, v, srcWidth);
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
-                            blendInternalOpaque(destData, destOffset, srcARGB);
+                            blendOpaquePixel(destData, destOffset, srcARGB);
                         }
                         else if (srcAlpha != 0) {
-                            blendInternal(destData, destOffset, srcARGB);
+                            blendPixel(destData, destOffset, srcARGB);
                         }
                         destOffset++;
                         u += du;
@@ -316,7 +301,7 @@ final class CompositeMult extends Composite {
                         if (srcOpaque) {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + (offset >> 16)];
-                                blendInternalOpaque(destData, destOffset + i, srcARGB);
+                                blendOpaquePixel(destData, destOffset + i, srcARGB);
                                 offset += du;
                             }
                         }
@@ -325,10 +310,10 @@ final class CompositeMult extends Composite {
                                 int srcARGB = srcData[srcOffset + (offset >> 16)];
                                 int srcAlpha = srcARGB >>> 24;
                                 if (srcAlpha == 0xff) {
-                                    blendInternalOpaque(destData, destOffset + i, srcARGB);
+                                    blendOpaquePixel(destData, destOffset + i, srcARGB);
                                 }
                                 else if (srcAlpha != 0) {
-                                    blendInternal(destData, destOffset + i, srcARGB);
+                                    blendPixel(destData, destOffset + i, srcARGB);
                                 }
                                 offset += du;
                             }
@@ -338,7 +323,7 @@ final class CompositeMult extends Composite {
                         if (srcOpaque) {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + i];
-                                blendInternalOpaque(destData, destOffset + i, srcARGB);
+                                blendOpaquePixel(destData, destOffset + i, srcARGB);
                             }
                         }
                         else {
@@ -346,10 +331,10 @@ final class CompositeMult extends Composite {
                                 int srcARGB = srcData[srcOffset + i];
                                 int srcAlpha = srcARGB >>> 24;
                                 if (srcAlpha == 0xff) {
-                                    blendInternalOpaque(destData, destOffset + i, srcARGB);
+                                    blendOpaquePixel(destData, destOffset + i, srcARGB);
                                 }
                                 else if (srcAlpha != 0) {
-                                    blendInternal(destData, destOffset + i, srcARGB);
+                                    blendPixel(destData, destOffset + i, srcARGB);
                                 }
                             }
                         }
@@ -372,7 +357,7 @@ final class CompositeMult extends Composite {
                         int srcARGB = getPixelBilinearTranslucent(srcData, 
                                 srcScanSize, srcX, srcY, srcWidth, srcHeight, u, v);
                         if ((srcARGB >>> 24) > 0) {
-                            blendInternal(destData, destOffset, srcARGB, renderAlpha);
+                            blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
                         destOffset++;
                         u += du;
@@ -384,7 +369,7 @@ final class CompositeMult extends Composite {
                     for (int i = 0; i < numPixels; i++) {
                         int srcARGB = srcData[srcOffset + (u >> 16) + (v >> 16) * srcScanSize];
                         if ((srcARGB >>> 24) > 0) {
-                            blendInternal(destData, destOffset, srcARGB, renderAlpha);
+                            blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
                         destOffset++;
                         u += du;
@@ -397,7 +382,7 @@ final class CompositeMult extends Composite {
                     for (int i = 0; i < numPixels; i++) {
                         int srcARGB = getPixelBilinearOpaque(srcData, 
                             offsetTop, offsetBottom, u, v, srcWidth);
-                        blendInternalOpaque(destData, destOffset, srcARGB, renderAlpha);
+                        blendOpaquePixel(destData, destOffset, srcARGB, renderAlpha);
                         destOffset++;
                         u += du;
                     }
@@ -407,7 +392,7 @@ final class CompositeMult extends Composite {
                         int srcARGB = getPixelBilinearTranslucent(srcData,
                             offsetTop, offsetBottom, u, v, srcWidth);
                         if ((srcARGB >>> 24) > 0) {
-                            blendInternal(destData, destOffset, srcARGB, renderAlpha);
+                            blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
                         destOffset++;
                         u += du;
@@ -421,7 +406,7 @@ final class CompositeMult extends Composite {
                         if (srcOpaque) {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + (offset >> 16)];
-                                blendInternalOpaque(destData, destOffset + i, srcARGB, renderAlpha);
+                                blendOpaquePixel(destData, destOffset + i, srcARGB, renderAlpha);
                                 offset += du;
                             }
                         }
@@ -429,7 +414,7 @@ final class CompositeMult extends Composite {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + (offset >> 16)];
                                 if ((srcARGB >>> 24) > 0) {
-                                    blendInternal(destData, destOffset + i, srcARGB, renderAlpha);
+                                    blendPixel(destData, destOffset + i, srcARGB, renderAlpha);
                                 }
                                 offset += du;
                             }
@@ -439,14 +424,14 @@ final class CompositeMult extends Composite {
                         if (srcOpaque) {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + i];
-                                blendInternalOpaque(destData, destOffset + i, srcARGB, renderAlpha);
+                                blendOpaquePixel(destData, destOffset + i, srcARGB, renderAlpha);
                             }
                         }
                         else {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + i];
                                 if ((srcARGB >>> 24) > 0) {
-                                    blendInternal(destData, destOffset + i, srcARGB, renderAlpha);
+                                    blendPixel(destData, destOffset + i, srcARGB, renderAlpha);
                                 }
                             }
                         }

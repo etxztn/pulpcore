@@ -44,9 +44,6 @@ import pulpcore.math.Transform;
 */
 public class CoreGraphics {
     
-    /** If true, images have pre-multiplied alpha */
-    /* package-private */ static final boolean PREMULTIPLIED_ALPHA = true;
-    
     // Line drawing options
     private static final boolean CENTER_PIXEL = true;
     private static final boolean SWAP_POINTS = true;
@@ -69,8 +66,11 @@ public class CoreGraphics {
     public static final int COMPOSITE_MULT = 2;
     
     // For the software renderer
-    private static final Composite[] COMPOSITES = {
-        new CompositeSrcOver(), new CompositeAdd(), new CompositeMult(), 
+    private static final Composite[] COMPOSITES_OPAQUE = {
+        new CompositeSrcOver(true), new CompositeAdd(true), new CompositeMult(), 
+    };
+    private static final Composite[] COMPOSITES_ALPHA = {
+        new CompositeSrcOver(false), new CompositeAdd(false), new CompositeMult(), 
     };
     
     /**
@@ -189,7 +189,12 @@ public class CoreGraphics {
     public void setComposite(int composite) {
         if (compositeIndex != composite) {
             compositeIndex = composite;
-            this.composite = COMPOSITES[compositeIndex];
+            if (surfaceHasAlpha) {
+                this.composite = COMPOSITES_ALPHA[compositeIndex];
+            }
+            else {
+                this.composite = COMPOSITES_OPAQUE[compositeIndex];
+            }
         }
     }
     
@@ -401,10 +406,7 @@ public class CoreGraphics {
         
         int newAlpha = ((srcColor >>> 24) * alpha + 127) / 255;
         srcColorBlended = Colors.rgba(srcColor, newAlpha);
-        
-        if (PREMULTIPLIED_ALPHA) {
-            srcColorBlended = Colors.premultiply(srcColorBlended);
-        }
+        srcColorBlended = Colors.premultiply(srcColorBlended);
         isSrcColorTransparent = (srcColorBlended >>> 24) == 0;
     }
     

@@ -39,7 +39,7 @@ import pulpcore.math.CoreMath;
 import pulpcore.util.ByteArray;
 
 /**
-    The CoreImage class contains 32-bit, ARGB raster data and provides 
+    The CoreImage class contains raster data and provides 
     methods for creating transformed copies of the image. 
     <p>
     Methods like 
@@ -71,26 +71,32 @@ public class CoreImage {
     */
     private int hotspotY;
     
-    CoreImage() { }
-    
     /**
-        Creates a blank, opaque image.
+        Creates an opaque image, initially black.
     */
     public CoreImage(int width, int height) {
         this(width, height, true);
     }
 
     /**
-        Creates a blank image.
+        Creates a blank image. For opaque images, the initial image is black, otherwise the
+        initial image is transparent.
     */
     public CoreImage(int width, int height, boolean isOpaque) {
         this(width, height, isOpaque, new int[width * height]);
+        if (isOpaque) {
+            for (int i = 0; i < data.length; i++) {
+                data[i] = 0xff000000;
+            }
+        }
     }
     
     /**
         Creates a new image using the specified pixel data. The length of the 
         data must be greater than or equal to width * height.
         <p>
+        The raster format is premultiplied ARGB (the same as 
+        {@link java.awt.image.BufferedImage#TYPE_INT_ARGB_PRE BufferedImage.TYPE_INT_ARGB_PRE}).
         The raster data array is assumed to be unique to this CoreImage, and not used
         in any other CoreImages.
     */
@@ -127,18 +133,31 @@ public class CoreImage {
         this.isOpaque = isOpaque;
     }
     
+    /**
+        Returns true if the image is opaque.
+    */
     public final boolean isOpaque() {
         return isOpaque;
     }
     
+    /**
+        Gets the width of the image.
+    */
     public final int getWidth() {
         return width;
     }
 
+    /**
+        Gets the height of the image.
+    */
     public final int getHeight() {
         return height;
     }
     
+    /**
+        Gets the underlying raster data array. The raster format is premultiplied ARGB (the same as 
+        {@link java.awt.image.BufferedImage#TYPE_INT_ARGB_PRE BufferedImage.TYPE_INT_ARGB_PRE}).
+    */
     public final int[] getData() {
         return data;
     }
@@ -147,15 +166,34 @@ public class CoreImage {
         this.data = data;
     }
     
+    /**
+        Sets the hotspot of the image. The hotspot a the point within the image where the 
+        rendering is anchored. For photographs, the hotspot is typically the upper-left corner
+        (0, 0). For cursor images, the hotspot the point that tracks the cursor's 
+        position. An {@link pulpcore.sprite.ImageSprite } also uses the hotspot as the
+        point around which rotation occurs.
+        @see #getHotspotX()
+        @see #getHotspotY()
+    */
     public final void setHotspot(int x, int y) {
         hotspotX = x;
         hotspotY = y;
     }
     
+    /**
+        Gets the x component of the hotspot.
+        @see #getHotspotY()
+        @see #setHotspot(int, int)
+    */
     public final int getHotspotX() {
         return hotspotX; 
     }
     
+    /**
+        Gets the y component of the hotspot.
+        @see #getHotspotX()
+        @see #setHotspot(int, int)
+    */
     public final int getHotspotY() {
         return hotspotY; 
     }
@@ -169,6 +207,10 @@ public class CoreImage {
         return false;
     }
     
+    /**
+        Gets the "broken" image, which is the image the system may use when a specified image
+        could not be loaded.
+    */
     public static CoreImage getBrokenImage() {
         if (brokenImage == null) {
             brokenImage = new CoreImage(16, 16, true);
@@ -260,10 +302,16 @@ public class CoreImage {
     // Image transforms
     //
     
+    /**
+        Splits the image into several tiles.
+    */
     public CoreImage[] split(int framesAcross) {
         return split(framesAcross, 1);
     }
     
+    /**
+        Splits the image into several tiles.
+    */
     public CoreImage[] split(int framesAcross, int framesDown) {
         
         int numFrames = framesAcross * framesDown;
@@ -302,9 +350,7 @@ public class CoreImage {
         int newWidth = width + left + right;
         int newHeight = height + top + bottom;
         
-        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-            argbColor = Colors.premultiply(argbColor);
-        }
+        argbColor = Colors.premultiply(argbColor);
 
         CoreImage newImage = new CoreImage(newWidth, newHeight, isOpaque);
         newImage.setHotspot(hotspotX + left, hotspotY + top);
@@ -465,65 +511,14 @@ public class CoreImage {
                 int p3 = srcData[srcOffset + srcWidth];
                 int p4 = srcData[srcOffset + srcWidth + 1];
                 
-                if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-                    // TODO: test. This will yield different results than non-premultiplied version.
-                    // Need to unpremultiply first?
-                    int a = ((p1 >>> 24) + (p2 >>> 24) + (p3 >>> 24) + (p4 >>> 24)) >> 2;
-                    int r = (((p1 >> 16) & 0xff) + ((p2 >> 16) & 0xff) + 
-                            ((p3 >> 16) & 0xff) + ((p4 >> 16) & 0xff)) >> 2;
-                    int g = (((p1 >> 8) & 0xff) + ((p2 >> 8) & 0xff) + 
-                            ((p3 >> 8) & 0xff) + ((p4 >> 8) & 0xff)) >> 2;
-                    int b = ((p1 & 0xff) + (p2 & 0xff) + (p3 & 0xff) + (p4 & 0xff)) >> 2;
-                    
-                    destData[destOffset] = (a << 24) | (r << 16) | (g << 8) | b;
-                }
-                else {
-                    int p1a = p1 >>> 24;
-                    int p2a = p2 >>> 24;
-                    int p3a = p3 >>> 24;
-                    int p4a = p4 >>> 24;
-                    
-                    int r = 0;
-                    int g = 0;
-                    int b = 0;
-                    int count = 0;
-                    
-                    if (p1a != 0) {
-                        r += (p1 >> 16) & 0xff;
-                        g += (p1 >> 8) & 0xff;
-                        b += p1 & 0xff;
-                        count++;
-                    }
-                    
-                    if (p2a != 0) {
-                        r += (p2 >> 16) & 0xff;
-                        g += (p2 >> 8) & 0xff;
-                        b += p2 & 0xff;
-                        count++;
-                    }
-                    
-                    if (p3a != 0) {
-                        r += (p3 >> 16) & 0xff;
-                        g += (p3 >> 8) & 0xff;
-                        b += p3 & 0xff;
-                        count++;
-                    }
-                    
-                    if (p4a != 0) {
-                        r += (p4 >> 16) & 0xff;
-                        g += (p4 >> 8) & 0xff;
-                        b += p4 & 0xff;
-                        count++;
-                    }
-                    
-                    if (count > 0) {
-                        int a = (p1a + p2a + p3a + p4a) >> 2;
-                        r /= count;
-                        g /= count;
-                        b /= count;
-                        destData[destOffset] = (a << 24) | (r << 16) | (g << 8) | b;
-                    }
-                }
+                int a = ((p1 >>> 24) + (p2 >>> 24) + (p3 >>> 24) + (p4 >>> 24)) >> 2;
+                int r = (((p1 >> 16) & 0xff) + ((p2 >> 16) & 0xff) + 
+                        ((p3 >> 16) & 0xff) + ((p4 >> 16) & 0xff)) >> 2;
+                int g = (((p1 >> 8) & 0xff) + ((p2 >> 8) & 0xff) + 
+                        ((p3 >> 8) & 0xff) + ((p4 >> 8) & 0xff)) >> 2;
+                int b = ((p1 & 0xff) + (p2 & 0xff) + (p3 & 0xff) + (p4 & 0xff)) >> 2;
+                
+                destData[destOffset] = (a << 24) | (r << 16) | (g << 8) | b;
                 
                 srcOffset += 2;
                 destOffset++;
@@ -699,9 +694,7 @@ public class CoreImage {
         
         for (int i = 0; i < srcData.length; i++) {
             int color = (srcData[i] & 0xff000000) | (rgbColor & 0x00ffffff);
-            if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-                color = Colors.premultiply(color);
-            }
+            color = Colors.premultiply(color);
             destData[i] = color;
         }
         
@@ -713,9 +706,7 @@ public class CoreImage {
             isOpaque || (argbColor >>> 24) == 0xff);
         newImage.setHotspot(hotspotX, hotspotY);
         
-        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-            argbColor = Colors.premultiply(argbColor);
-        }
+        argbColor = Colors.premultiply(argbColor);
         
         int[] destData = newImage.getData();
         for (int i = 0; i < destData.length; i++) {

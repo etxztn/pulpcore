@@ -247,12 +247,7 @@ class PNGReader {
             if (a < 0xff) {
                 image.setOpaque(false);
             }
-            if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-                palette[i] = Colors.premultiply((a << 24) | (palette[i] & 0xffffff));
-            }
-            else {
-                palette[i] = (a << 24) | (palette[i] & 0xffffff);
-            }
+            palette[i] = Colors.premultiply((a << 24) | (palette[i] & 0xffffff));
         }
     }
     
@@ -380,9 +375,8 @@ class PNGReader {
             prevScanline = temp;
         }
         
-        if (CoreGraphics.PREMULTIPLIED_ALPHA && 
-            (colorType == COLOR_TYPE_GRAYSCALE_WITH_ALPHA || 
-            colorType == COLOR_TYPE_RGB_WITH_ALPHA))
+        if (colorType == COLOR_TYPE_GRAYSCALE_WITH_ALPHA || 
+            colorType == COLOR_TYPE_RGB_WITH_ALPHA)
         {
             Colors.premultiply(dataARGB);
         }

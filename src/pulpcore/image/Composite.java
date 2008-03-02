@@ -30,8 +30,7 @@
 package pulpcore.image;
 
 /* package-private */ abstract class Composite {
-        
-  
+    
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB);
     
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB, 
@@ -43,7 +42,10 @@ package pulpcore.image;
     /* package-private */ void blendRow(int[] destData, int destOffset, int srcARGB, 
         int extraAlpha, int numPixels) 
     {
-        blendRow(destData, destOffset, multAlpha(srcARGB, extraAlpha), numPixels);
+        int newAlpha = ((srcARGB >>> 24) * extraAlpha) << 16;
+        srcARGB = Colors.premultiply(srcARGB, extraAlpha);
+        srcARGB = (newAlpha & 0xff000000) | (srcARGB & 0x00ffffff);
+        blendRow(destData, destOffset, srcARGB, numPixels);
     }
     
     /**
@@ -58,24 +60,6 @@ package pulpcore.image;
         boolean rotation,
         boolean renderBilinear, int renderAlpha,
         int[] destData, int destScanSize, int destOffset, int numPixels, int numRows);
-    
-    
-    protected int multAlpha(int srcARGB, int extraAlpha) {
-        int newAlpha = ((srcARGB >>> 24) * extraAlpha) << 16;
-        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-            srcARGB = Colors.premultiply(srcARGB, extraAlpha);
-        }
-        return (newAlpha & 0xff000000) | (srcARGB & 0x00ffffff);
-    }
-    
-    protected int multAlphaOpaque(int srcRGB, int extraAlpha) {
-        if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-            return Colors.premultiply(srcRGB, extraAlpha);
-        }
-        else {
-            return (extraAlpha << 24) | (srcRGB & 0x00ffffff);
-        }
-    }
     
     //
     // Bilinear filtering 
@@ -322,53 +306,6 @@ package pulpcore.image;
             bottomRightFactor * a4
         ) << 16;
         
-        if (!CoreGraphics.PREMULTIPLIED_ALPHA) {
-            // If a pixel has an alpha of zero, don't consider that pixel's color.
-            if (a1 == 0 || a2 == 0 || a3 == 0 || a4 == 0) {
-                  
-                int factor = 0;
-                int count = 0;
-                if (a1 == 0) {
-                    factor += topLeftFactor;
-                    topLeftFactor = 0;
-                    count++;
-                }
-                if (a2 == 0) {
-                    factor += topRightFactor;
-                    topRightFactor = 0;
-                    count++;
-                }
-                if (a3 == 0) {
-                    factor += bottomLeftFactor;
-                    bottomLeftFactor = 0;
-                    count++;
-                }
-                if (a4 == 0) {
-                    factor += bottomRightFactor;
-                    bottomRightFactor = 0;
-                    count++;
-                }
-                
-                if (count == 4) {
-                    return 0;
-                }
-                
-                factor /= (4 - count);
-                if (a1 != 0) {
-                    topLeftFactor += factor;
-                }
-                if (a2 != 0) {
-                    topRightFactor += factor;
-                }
-                if (a3 != 0) {
-                    bottomLeftFactor += factor;
-                }
-                if (a4 != 0) {
-                    bottomRightFactor += factor;
-                }
-            }
-        }
-            
         int redChannel = (
                 topLeftFactor * ((topLeftPixel >> 16) & 0xff) +
                 topRightFactor * ((topRightPixel >> 16) & 0xff) +

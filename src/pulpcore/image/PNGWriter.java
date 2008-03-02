@@ -111,14 +111,17 @@ public class PNGWriter {
             idat.writeByte(0); // Filter type
             for (int j = 0; j < width; j++) {
                 int argbPixel = rgbData[index++];
-                if (CoreGraphics.PREMULTIPLIED_ALPHA) {
-                    argbPixel = Colors.unpremultiply(argbPixel);
-                }
-                idat.writeByte(((argbPixel >> 16) & 0xff)); // red
-                idat.writeByte(((argbPixel >> 8) & 0xff)); // green
-                idat.writeByte((argbPixel & 0xff)); // blue
                 if (colorType == COLOR_TYPE_RGB_WITH_ALPHA) {
+                    argbPixel = Colors.unpremultiply(argbPixel);
+                    idat.writeByte(((argbPixel >> 16) & 0xff)); // red
+                    idat.writeByte(((argbPixel >> 8) & 0xff)); // green
+                    idat.writeByte((argbPixel & 0xff)); // blue
                     idat.writeByte((argbPixel >>> 24)); // alpha
+                }
+                else {
+                    idat.writeByte(((argbPixel >> 16) & 0xff)); // red
+                    idat.writeByte(((argbPixel >> 8) & 0xff)); // green
+                    idat.writeByte((argbPixel & 0xff)); // blue
                 }
             }
         }
