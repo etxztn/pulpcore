@@ -1,7 +1,7 @@
 // Starfield
 // Scroll the mouse wheel or press the arrow keys to travel through the cosmos
 import pulpcore.CoreSystem;
-import pulpcore.image.CoreGraphics;
+import pulpcore.image.BlendMode;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.scene.Scene2D;

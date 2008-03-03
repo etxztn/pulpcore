@@ -68,13 +68,13 @@ public final class BlendMode {
         if (ADD == null) {
             ADD = new BlendMode(new CompositeAdd(true), new CompositeAdd(false));
         }
-        return SRC_OVER;
+        return ADD;
     }
     
     public static BlendMode Multiply() {
         if (MULT == null) {
             MULT = new BlendMode(new CompositeMult(), new CompositeMult());
         }
-        return SRC_OVER;
+        return MULT;
     }
 }

@@ -161,12 +161,12 @@ public class CoreGraphics {
     
     public void setBlendMode(BlendMode blendMode) {
         if (this.blendMode != blendMode) {
-            blendMode = blendMode;
+            this.blendMode = blendMode;
             if (surfaceHasAlpha) {
-                this.composite = blendMode.alpha;
+                this.composite = this.blendMode.alpha;
             }
             else {
-                this.composite = blendMode.opaque;
+                this.composite = this.blendMode.opaque;
             }
         }
     }

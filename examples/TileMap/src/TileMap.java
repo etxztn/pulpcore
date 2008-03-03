@@ -5,6 +5,7 @@
 // Tile images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
+import pulpcore.image.BlendMode;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;

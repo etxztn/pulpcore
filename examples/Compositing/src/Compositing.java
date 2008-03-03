@@ -37,7 +37,7 @@ public class Compositing extends Scene2D {
             background.fillColor.animateTo(BLACK, 500);
             particleLayer.setBlendMode(nextBlendMode);
             prevBackgroundColor = BLACK;
-            nextBlendMode = BlendMode.Mult();
+            nextBlendMode = BlendMode.Multiply();
         }
         else {
             background = new FilledSprite(prevBackgroundColor);
