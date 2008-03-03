@@ -1,11 +1,13 @@
 0.11 (Alpha, in progress)
-The version's inital focus is going to be on the animation framework and the scene graph.
 To use the new version, edit your build.xml file to set "pulpcore.version" to "0.11".
 
   * Core: CoreImages now have premultiplied alpha (this will not affect the vast majority of users).
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
     their parent. No more ConcurrentModificationExceptions!
+  * API: Added BlendMode enum-factory which allows ProGuard to remove unused blending modes.
+    This means PulpCore will get several new blend modes in the future, since it won't increase 
+    an app's jar size (unless a jar uses every blend mode).
   * API: SoundClip is no longer available. To load sounds, use Sound.load() 
   * API: Added Timeline.at(time) as an alternative for delayed animations. 
   * API: Properties can now be bound to other properties, or to functions.

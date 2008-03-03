@@ -60,7 +60,7 @@ public class Starfield extends Scene2D {
         public Star(String image) {
             super(image, CoreMath.rand(0, Stage.getWidth()), CoreMath.rand(0, Stage.getHeight()));
             setZ(CoreMath.rand(1.0, 4.0));
-            setComposite(CoreGraphics.COMPOSITE_ADD);
+            setBlendMode(BlendMode.Add());
         }
         
         @Override

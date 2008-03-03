@@ -37,6 +37,7 @@ import pulpcore.animation.Property;
 import pulpcore.animation.PropertyListener;
 import pulpcore.Build;
 import pulpcore.image.CoreGraphics;
+import pulpcore.image.BlendMode;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
@@ -188,7 +189,7 @@ public abstract class Sprite implements PropertyListener {
     
     private int cursor = -1;
     private int anchor = DEFAULT;
-    private int composite = -1;
+    private BlendMode blendMode = null;
     private int cosAngle = CoreMath.ONE;
     private int sinAngle = 0;
     
@@ -574,20 +575,19 @@ public abstract class Sprite implements PropertyListener {
     }
     
     /**
-        Sets the compositing method used to draw this Sprite. By default, the compositing 
-        method is -1, which means the compositing method of this Sprite's parent is used. 
-        Valid values are -1, CoreGraphics.COMPOSITE_SRC_OVER, CoreGraphics.COMPOSITE_SRC, and
-        CoreGraphics.COMPOSITE_ADD.
+        Sets the blend mode used to draw this Sprite. By default, the blend mode 
+        method is null, which means the blend mode of this Sprite's parent is used. 
+        @see pulpcore.image.BlendMode
     */
-    public final void setComposite(int composite) {
-        if (this.composite != composite) {
-            this.composite = composite;
+    public final void setBlendMode(BlendMode blendMode) {
+        if (this.blendMode != blendMode) {
+            this.blendMode = blendMode;
             setDirty(true);
         }
     }
     
-    public final int getComposite() {
-        return composite;
+    public final BlendMode getBlendMode() {
+        return blendMode;
     }    
     
     /**
@@ -634,10 +634,10 @@ public abstract class Sprite implements PropertyListener {
         }
         g.setAlpha(newAlpha);
         
-        // Set composite
-        int oldComposite = g.getComposite();
-        if (composite != -1) {
-            g.setComposite(composite);
+        // Set blend mode
+        BlendMode oldBlendMode = g.getBlendMode();
+        if (blendMode != null) {
+            g.setBlendMode(blendMode);
         }
         
         // Set transform
@@ -650,7 +650,7 @@ public abstract class Sprite implements PropertyListener {
         // Undo changes
         g.popTransform();
         g.setAlpha(oldAlpha);
-        g.setComposite(oldComposite);
+        g.setBlendMode(oldBlendMode);
     }
     
     /**

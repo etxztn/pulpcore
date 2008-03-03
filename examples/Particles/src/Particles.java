@@ -4,7 +4,7 @@ import pulpcore.animation.Easing;
 import pulpcore.animation.event.RemoveSpriteEvent;
 import pulpcore.animation.Timeline;
 import static pulpcore.image.Colors.*;
-import pulpcore.image.CoreGraphics;
+import pulpcore.image.BlendMode;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
@@ -32,7 +32,7 @@ public class Particles extends Scene2D {
         // Particles should ignore mouse input
         particleLayer.enabled.set(false);
         // Particles look good with additive blending
-        particleLayer.setComposite(CoreGraphics.COMPOSITE_ADD);
+        particleLayer.setBlendMode(BlendMode.Add());
         add(background);
         addLayer(particleLayer);
         

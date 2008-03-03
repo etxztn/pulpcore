@@ -68,7 +68,7 @@ public class TileMap extends Scene2D {
         // Add the cursor
         setCursor(Input.CURSOR_OFF);
         cursor = new ImageSprite("cursor.png", 0, 0);
-        cursor.setComposite(CoreGraphics.COMPOSITE_ADD);
+        cursor.setBlendMode(BlendMode.Add());
         add(cursor);
     }
     

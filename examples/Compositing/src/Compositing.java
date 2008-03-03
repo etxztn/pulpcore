@@ -9,6 +9,7 @@ import pulpcore.animation.PropertyListener;
 import pulpcore.animation.Timeline;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
+import pulpcore.image.BlendMode;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
@@ -20,30 +21,30 @@ import static pulpcore.math.CoreMath.rand;
 
 public class Compositing extends Scene2D {
     
+    BlendMode nextBlendMode = BlendMode.Add();
     int prevBackgroundColor = BLACK;
-    int nextComposite = CoreGraphics.COMPOSITE_ADD;
     int border = 100;
     int particles = 4;
     int moves = 4;
     
     @Override 
     public void load() {
-        // Add background and set up composite
+        // Add background and set up blend mode
         FilledSprite background;
         Group particleLayer = new Group();
-        if (nextComposite == CoreGraphics.COMPOSITE_ADD) {
+        if (nextBlendMode == BlendMode.Add()) {
             background = new FilledSprite(prevBackgroundColor);
             background.fillColor.animateTo(BLACK, 500);
-            particleLayer.setComposite(nextComposite);
+            particleLayer.setBlendMode(nextBlendMode);
             prevBackgroundColor = BLACK;
-            nextComposite = CoreGraphics.COMPOSITE_MULT;
+            nextBlendMode = BlendMode.Mult();
         }
         else {
             background = new FilledSprite(prevBackgroundColor);
             background.fillColor.animateTo(WHITE, 500);
-            particleLayer.setComposite(nextComposite);
+            particleLayer.setBlendMode(nextBlendMode);
             prevBackgroundColor = WHITE;
-            nextComposite = CoreGraphics.COMPOSITE_ADD;
+            nextBlendMode = BlendMode.Add();
         }
         add(background);
         particleLayer.alpha.set(0);
@@ -96,7 +97,7 @@ public class Compositing extends Scene2D {
             particleLayer.add(mirror);
         }
         
-        // Transition to the next compositing mode
+        // Transition to the next blend mode
         int changeTime = 30000;
         Timeline timeline = new Timeline();
         timeline.at(500).animate(particleLayer.alpha, 0, 255, 2000);

@@ -38,7 +38,7 @@ import pulpcore.math.Transform;
 /**
     Graphics rendering routines onto a CoreImage surface. 
     <p>
-    The default composite is {@link #COMPOSITE_SRC_OVER}.
+    The default blend mode is {@link BlendMode#SrcOver()}.
     <p>
     The clip is in view-space - not affected by the Transform.
 */
@@ -47,31 +47,6 @@ public class CoreGraphics {
     // Line drawing options
     private static final boolean CENTER_PIXEL = true;
     private static final boolean SWAP_POINTS = true;
-    
-    /** 
-        The source is composited over the destination (Porter-Duff Source Over Destination rule).
-        This is the default composite type.
-        @see #setComposite(int) 
-    */
-    public static final int COMPOSITE_SRC_OVER = 0;
-    
-    /** 
-        @see #setComposite(int) 
-    */
-    public static final int COMPOSITE_ADD = 1;
-    
-    /** 
-        @see #setComposite(int) 
-    */
-    public static final int COMPOSITE_MULT = 2;
-    
-    // For the software renderer
-    private static final Composite[] COMPOSITES_OPAQUE = {
-        new CompositeSrcOver(true), new CompositeAdd(true), new CompositeMult(), 
-    };
-    private static final Composite[] COMPOSITES_ALPHA = {
-        new CompositeSrcOver(false), new CompositeAdd(false), new CompositeMult(), 
-    };
     
     /**
         Nearest neighbor interpolation method (used for image scaling).
@@ -109,9 +84,8 @@ public class CoreGraphics {
     private int objectWidth;
     private int objectHeight;
     
-    /** The composite method. */
     private Composite composite;
-    private int compositeIndex;
+    private BlendMode blendMode;
     
     /** If true, bilinear filtering is used when scaling images. */
     private boolean bilinear;
@@ -140,7 +114,6 @@ public class CoreGraphics {
         surfaceHeight = surface.getHeight();
         surfaceData = surface.getData();
         surfaceHasAlpha = !surface.isOpaque();
-        compositeIndex = -1;
         
         for (int i = 0; i < transformStack.length; i++) {
             transformStack[i] = new Transform();
@@ -168,7 +141,7 @@ public class CoreGraphics {
             <li>Identity transform (and the transform stack is cleared)</li>
             <li>color = BLACK</li>
             <li>alpha = 255</li>
-            <li>composite = COMPOSITE_SRC_OVER</li>
+            <li>blendMode = BlendMode.SrcOver()</li>
             <li>interpolation = INTERPOLATION_BILINEAR</li>
             <li>font = null</li>
         </ul>
@@ -177,7 +150,7 @@ public class CoreGraphics {
         removeClip();
         setAlpha(0xff);
         setColor(Colors.BLACK);
-        setComposite(COMPOSITE_SRC_OVER);
+        setBlendMode(BlendMode.SrcOver());
         bilinear = true;
         fractionalMetrics = true;
         font = null;
@@ -186,20 +159,20 @@ public class CoreGraphics {
         transform.clear();
     }
     
-    public void setComposite(int composite) {
-        if (compositeIndex != composite) {
-            compositeIndex = composite;
+    public void setBlendMode(BlendMode blendMode) {
+        if (this.blendMode != blendMode) {
+            blendMode = blendMode;
             if (surfaceHasAlpha) {
-                this.composite = COMPOSITES_ALPHA[compositeIndex];
+                this.composite = blendMode.alpha;
             }
             else {
-                this.composite = COMPOSITES_OPAQUE[compositeIndex];
+                this.composite = blendMode.opaque;
             }
         }
     }
     
-    public int getComposite() {
-        return compositeIndex;
+    public BlendMode getBlendMode() {
+        return blendMode;
     }
     
     public void setInterpolation(int interpolation) {
@@ -492,7 +465,7 @@ public class CoreGraphics {
     /**
         Fills the area defined by the clip with the background color of the current drawing 
         surface. For opaque surfaces, the background color is black. For surfaces with alpha,
-        the background color is transparent. The current compositing mode is ignored - the area
+        the background color is transparent. The current blend mode is ignored - the area
         if filled using the Porter-Duff Source rule.
     */
     public void clear() {
@@ -783,7 +756,7 @@ public class CoreGraphics {
     
     /**
         Draws an image at a specific location. The image is drawn using 
-        the current clip, transform, alpha value, and composite method.
+        the current clip, transform, alpha value, and blend mode.
         If the image is null, no action is taken and no exception is thrown.
         @param image the image to draw. 
         @param x the x coordinate.
@@ -960,7 +933,7 @@ public class CoreGraphics {
         int v = ((objectY - y) << 16);          
         int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
 
-        if ((alpha == 0xff) && (compositeIndex == COMPOSITE_SRC_OVER && image.isOpaque())) {
+        if ((alpha == 0xff) && (blendMode == BlendMode.SrcOver() && image.isOpaque())) {
             // Fatest case - don't use the compositor.
             // Great optimization for background rendering.
             for (int j = 0; j < objectHeight; j++) {

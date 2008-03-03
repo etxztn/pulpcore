@@ -1,6 +1,7 @@
 // Sketch
 // Move your mouse to draw. Click to erase.
 import pulpcore.image.CoreGraphics;
+import pulpcore.image.BlendMode;
 import static pulpcore.image.Colors.*;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
@@ -65,7 +66,7 @@ public class Sketch extends Scene {
         }
         
         // Draw particles to surface
-        g.setComposite(CoreGraphics.COMPOSITE_ADD);
+        g.setBlendMode(BlendMode.Add());
         for (Particle particle : particles) {
             particle.draw(g);
         }
@@ -73,7 +74,7 @@ public class Sketch extends Scene {
         // Slowly fade
         if (nextFade <= 0) { 
             nextFade = 75;
-            g.setComposite(CoreGraphics.COMPOSITE_SRC_OVER);
+            g.setBlendMode(BlendMode.SrcOver());
             g.setColor(BLACK);
             g.setAlpha(0x06);
             g.fill();
