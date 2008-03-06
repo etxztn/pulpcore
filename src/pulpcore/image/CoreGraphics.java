@@ -1579,16 +1579,16 @@ public class CoreGraphics {
             int surfaceOffset = x + y1 * surfaceWidth;
             if (y1 >= clipY && y1 < clipY + clipHeight) {
                 int wuAlpha = 0xff - ((fy >> 8) & 0xff);
-                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset, srcColorBlended, extraAlpha);
+                int pixelAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset, srcColorBlended, pixelAlpha);
             }
             
             int y2 = CoreMath.toIntCeil(fy);
             if (y1 != y2 && y2 >= clipY && y2 < clipY + clipHeight) {
                 int wuAlpha = ((fy >> 8) & 0xff);
-                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                int pixelAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
                 composite.blend(surfaceData, surfaceOffset + surfaceWidth, srcColorBlended, 
-                    extraAlpha);
+                    pixelAlpha);
             }
         }
     }
@@ -1611,15 +1611,15 @@ public class CoreGraphics {
             int surfaceOffset = x1 + y * surfaceWidth;
             if (x1 >= clipX && x1 < clipX + clipWidth) {
                 int wuAlpha = 0xff - ((fx >> 8) & 0xff);
-                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset, srcColorBlended, extraAlpha);
+                int pixelAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset, srcColorBlended, pixelAlpha);
             }
             
             int x2 = CoreMath.toIntCeil(fx);
             if (x1 != x2 && x2 >= clipX && x2 < clipX + clipWidth) {
                 int wuAlpha = ((fx >> 8) & 0xff);
-                extraAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
-                composite.blend(surfaceData, surfaceOffset + 1, srcColorBlended, extraAlpha);
+                int pixelAlpha = (extraAlpha * wuAlpha + 0xff) >> 8;
+                composite.blend(surfaceData, surfaceOffset + 1, srcColorBlended, pixelAlpha);
             }
         }
     }
