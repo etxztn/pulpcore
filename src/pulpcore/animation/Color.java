@@ -89,10 +89,16 @@ public class Color extends Property {
     // Convenience methods
     // 
     
+    /**
+        Binds this property to the specified property.
+    */
     public void bindTo(Color property) {
         setBehavior(new Binding(this, property));
     }
     
+    /**
+        Binds this property to the specified function.
+    */
     public void bindTo(BindFunction function) {
         setBehavior(new Binding(this, function));
     }

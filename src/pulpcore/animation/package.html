@@ -1,6 +1,23 @@
 <html>
 <head></head>
 <body>
-Provides classes for properties, property animation, and timelines.
+<p>Provides classes for properties, property animation, and timelines.</p>
+
+<p>There are four properties (each extends the <a href="Property.html">Property</a> class):
+<a href="Bool.html">Bool</a> (boolean), <a href="Int.html">Int</a> (32-bit integer), 
+<a href="Fixed.html">Fixed</a> (16:16 fixed-point value), and 
+<a href="Color.html">Color</a> (ARGB color).</p>
+
+<p>A property may have a <a href="Behavior.html">Behavior</a> which controls
+how its value changes over time. A common behavior is a <a href="Tween.html">Tween</a>, which 
+animates a property from one value to another over time, optionally with an 
+<a href="Easing.html">Easing</a> to make the tween look more natural.</p>
+
+<p>A property may have a <a href="PropertyListener.html">PropertyListener</a> that is notified
+when the property's value changes.</p>
+
+<p>A <a href="Timeline.html">Timeline</a> is a collection of Property/Behavior pairs,
+<a href="event/TimelineEvent.html">TimelineEvent</a>s, other Timelines, or other subclasses
+of <a href="Animation.html">Animation</a>.</p>
 </body>
 </html>

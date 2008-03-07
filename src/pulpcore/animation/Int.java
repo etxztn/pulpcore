@@ -97,14 +97,23 @@ public class Int extends Property {
     // Convenience methods
     //
     
+    /**
+        Binds this property to the specified property.
+    */
     public void bindTo(Int property) {
         setBehavior(new Binding(this, property));
     }
     
+    /**
+        Binds this property to the specified property.
+    */
     public void bindTo(Fixed property) {
         setBehavior(new Binding(this, property, Binding.FUNCTION_TO_INT));
     }
     
+    /**
+        Binds this property to the specified function.
+    */
     public void bindTo(BindFunction function) {
         setBehavior(new Binding(this, function));
     }

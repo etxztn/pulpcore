@@ -38,6 +38,7 @@ package pulpcore.image;
     The BlendMode class is designed for lazy-creation of blend modes so that 
     code shrinkers (ProGuard) can remove blend modes that an app does not use. 
     @see CoreGraphics#setBlendMode(BlendMode) 
+    @see pulpcore.sprite.Sprite#setBlendMode(BlendMode) 
 */
 public final class BlendMode {
     
@@ -54,6 +55,7 @@ public final class BlendMode {
     }
     
     /** 
+        Gets the SrcOver blend mode.
         The source is composited over the destination (Porter-Duff Source Over Destination rule).
         This is the default blend mode.
     */
@@ -64,6 +66,10 @@ public final class BlendMode {
         return SRC_OVER;
     }
     
+    /**
+        Gets the Add blend mode. Color components from the source are added to those
+        of the surface.
+    */
     public static BlendMode Add() {
         if (ADD == null) {
             ADD = new BlendMode(new CompositeAdd(true), new CompositeAdd(false));
@@ -71,6 +77,10 @@ public final class BlendMode {
         return ADD;
     }
     
+    /**
+        Gets the Multiply blend mode. Color components from the source are multiplied by those
+        of the surface.
+    */
     public static BlendMode Multiply() {
         if (MULT == null) {
             MULT = new BlendMode(new CompositeMult(), new CompositeMult());

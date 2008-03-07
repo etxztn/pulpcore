@@ -163,14 +163,23 @@ public final class Fixed extends Property {
         animateTo(value, 0, null, delay);
     }
     
+    /**
+        Binds this property to the specified property.
+    */
     public void bindTo(Fixed property) {
         setBehavior(new Binding(this, property));
     }
     
+    /**
+        Binds this property to the specified property.
+    */
     public void bindTo(Int property) {
         setBehavior(new Binding(this, property, Binding.FUNCTION_TO_FIXED));
     }
     
+    /**
+        Binds this property to the specified function.
+    */
     public void bindTo(BindFunction function) {
         setBehavior(new Binding(this, function));
     }

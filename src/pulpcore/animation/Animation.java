@@ -32,7 +32,13 @@ package pulpcore.animation;
 import pulpcore.Build;
 
 /**
-    An Animation changes an abstract state over time.
+    An Animation changes state over a specific duration. It is up to subclasses to
+    implement the {@link #updateState(int)} method to change the state as the Animation is updated
+    over time. An Animation is updated over time with its {@link #update(int)} method, which is
+    typically called by a {@link Timeline} or, in the case of a {@link Tween}, by the 
+    {@link Property} it is attached to.
+    <p>
+    A simple Animation starts immediately:
     <pre>
     |===================|
     0     duration     end
@@ -63,9 +69,15 @@ import pulpcore.Build;
                                       delay                   delay
     ------------------------------------- time ------------------------------------->
     </pre>
+    <p>Also, Animations can have an {@link Easing} to make the Animation look more smooth.
 */
 public abstract class Animation {
     
+    /**
+        Value indicating that the Animation loops forever.
+        @see #loopForever()
+        @see #getTotalDuration()
+    */
     public static final int LOOP_FOREVER = -1;
     
     /* package-private */ static final int SECTION_START_DELAY = 0;
@@ -104,31 +116,51 @@ public abstract class Animation {
     }
     
     /**
-        Causes this animation to loop indefinitely. Same as calling loop(LOOP_FOREVER, 0);
+        Causes this animation to loop indefinitely. Same as {@code loop(LOOP_FOREVER, 0)}.
+        <p>
+        If the duration is 0 this call is ignored.
+        @throws IllegalArgumentException if duration is 0
     */
     public final void loopForever() {
         loop(LOOP_FOREVER, 0);
     }
     
-    
     /**
-        Causes this animation to loop indefinitely. Same as calling loop(LOOP_FOREVER, loopDelay);
+        Causes this animation to loop indefinitely. Same as {@code loop(LOOP_FOREVER, loopDelay)}.
+        <p>
+        If the duration is 0 and loopDelay is 0, this call is ignored.
+        @param loopDelay The delay between the end of a duration and the start of a new one.
+        @throws IllegalArgumentException if loopDelay is negative.
+        @throws IllegalArgumentException if duration is 0 and loopDelay is 0.
     */
     public final void loopForever(int loopDelay) {
         loop(LOOP_FOREVER, loopDelay);
     }
     
     /**
-        Sets the number of loops to play. A value of LOOP_FOREVER causes this timeline
+        Sets the number of loops to play. A value of {@link #LOOP_FOREVER} causes this timeline
         to play indefinitely.
+        <p>
+        If looping (numLoops != 1), and the duration is 0, this call is ignored.
+        @param numLoops The number of times to loop the duration. A value of 1 means the duration
+        is played exactly once.
+        @throws IllegalArgumentException if numLoops is not LOOP_FOREVER but is < 1.
     */
     public final void loop(int numLoops) {
         loop(numLoops, 0);
     }
     
     /**
-        Sets the number of loops to play. A value of 0 causes this timeline
+        Sets the number of loops to play. A value of {@link #LOOP_FOREVER} causes this timeline
         to play indefinitely.
+        <p>
+        If looping (numLoops != 1), and the duration is 0, and loopDelay is 0, this call is ignored.
+        @param numLoops The number of times to loop the duration. A value of 1 means the duration
+        is played exactly once.
+        @param loopDelay The delay between the end of one duration and the start of the next one.
+        @throws IllegalArgumentException if numLoops is not LOOP_FOREVER but is < 1.
+        @throws IllegalArgumentException if loopDelay is negative.
+        @throws IllegalArgumentException if looping (numLoops != 1), duration is 0, and loopDelay is 0.
     */
     public final void loop(int numLoops, int loopDelay) {
         if (Build.DEBUG) {
@@ -138,13 +170,17 @@ public abstract class Animation {
             if (loopDelay < 0) {
                 throw new IllegalArgumentException("Loop delay cannot be < 0");
             }
-            if (duration == 0 && numLoops != 1 && loopDelay == 0) {
-                throw new IllegalArgumentException("Loop delay cannot be 0 if duration is 0 and " +
-                    "numLoops != 1");
-            }
         }
-        this.numLoops = numLoops;
-        this.loopDelay = loopDelay;
+        if (duration == 0 && numLoops != 1 && loopDelay == 0) {
+            // Can't loop!
+            this.numLoops = 1;
+            //throw new IllegalArgumentException("Loop delay cannot be 0 if duration is 0 and " +
+            //    "numLoops != 1");
+        }
+        else {
+            this.numLoops = numLoops;
+            this.loopDelay = loopDelay;
+        }
     }
     
     public final int getStartDelay() {

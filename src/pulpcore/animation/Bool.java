@@ -75,10 +75,16 @@ public final class Bool extends Property {
         setBehavior(new Tween(get()?1:0, value?1:0, delay, null, delay));
     }
     
+    /**
+        Binds this property to the specified property.
+    */
     public void bindTo(Bool property) {
         setBehavior(new Binding(this, property));
     }
     
+    /**
+        Binds this property to the specified function.
+    */
     public void bindTo(BindFunction function) {
         setBehavior(new Binding(this, function));
     }
