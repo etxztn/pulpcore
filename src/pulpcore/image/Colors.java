@@ -309,6 +309,25 @@ public class Colors {
     }
     
     /**
+        Returns a string representation of the specified color.
+        @param color a 32-bit ARGB color.
+        @return a string representation of the color.
+    */
+    public static String RGBtoString(int color) {
+        int a = color >>> 24;
+        int r = (color >> 16) & 0xff;
+        int g = (color >> 8) & 0xff;
+        int b = color & 0xff;
+        
+        if (a == 0xff) {
+            return "rgb(" + r + ", " + g + ", " + b + ")";
+        }
+        else {
+            return "rgba(" + r + ", " + g + ", " + b + ", " + a + ")";
+        }
+    }
+    
+    /**
         Converts a a packed, 32-bit RGB (red, green, blue) color to HSB (hue, saturation, 
         brightness). The hue, saturation, and brightness are in the range
         0 - 255. The alpha value, if any, is not modified.
