@@ -116,18 +116,6 @@ public abstract class Sound {
     //
     
     /**
-        Loops this sound clip. The Sound is played at full volume with no panning.
-        @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
-        @see pulpcore.animation.event.SoundEvent
-        @see pulpcore.CoreSystem#setMute(boolean)
-        @see pulpcore.CoreSystem#isMute()
-    */
-    public final Playback loop() {
-        return play(new Fixed(1.0), new Fixed(0), true);
-    }
-    
-    /**
         Plays this sound clip. The Sound is played at full volume with no panning.
         @return a Playback object for this unique sound playback (one Sound can have many 
         simultaneous Playback objects)
@@ -195,6 +183,44 @@ public abstract class Sound {
             playback.stop();
         }
         return playback;
+    }
+
+    /**
+        Loops this sound clip. The Sound is played at full volume with no panning.
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
+        @see pulpcore.animation.event.SoundEvent
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
+    */
+    public final Playback loop() {
+        return play(new Fixed(1.0), new Fixed(0), true);
+    }
+    
+    /**
+        Loops this sound clip with the specified volume level (0.0 to 1.0). 
+        The level may have a property animation attached.
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
+        @see pulpcore.animation.event.SoundEvent
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
+    */
+    public final Playback loop(Fixed level) {
+        return play(level, new Fixed(0), true);
+    }
+    
+    /**
+        Loops this sound clip with the specified volume level (0.0 to 1.0) and pan (-1.0 to 1.0).
+        The level and pan may have a property animation attached. 
+        @return a Playback object for this unique sound playback (one Sound can have many 
+        simultaneous Playback objects)
+        @see pulpcore.animation.event.SoundEvent
+        @see pulpcore.CoreSystem#setMute(boolean)
+        @see pulpcore.CoreSystem#isMute()
+    */
+    public final Playback loop(Fixed level, Fixed pan) {
+        return play(level, pan, true);
     }
 
     //
