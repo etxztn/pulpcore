@@ -995,11 +995,12 @@ public class Stage implements Runnable {
         int activityTextY = activityY + 9;
         
         if (infoOverlay == null || infoOverlay.width.get() != getWidth()) {
-            CoreImage image = new CoreImage(getWidth(), height); 
+            CoreImage image = new CoreImage(getWidth(), height, false); 
             infoOverlay = new ImageSprite(image, 0, 0);
         }
         CoreGraphics g = infoOverlay.getImage().createGraphics();
-        g.setColor(Colors.WHITE);
+        g.clear();
+        g.setColor(0xccffffff);
         g.fillRect(0, 0, getWidth(), height);
         g.drawString(currentSceneName, activityX, 2);
         
