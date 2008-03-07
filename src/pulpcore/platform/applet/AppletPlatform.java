@@ -427,6 +427,13 @@ public final class AppletPlatform implements Platform {
     }
     
     
+    public void updateSoundEngine(int timeUntilNextUpdate) {
+        if (soundEngine != null) {
+            soundEngine.update(timeUntilNextUpdate);
+        }
+    }
+    
+    
     //
     // Browser
     //

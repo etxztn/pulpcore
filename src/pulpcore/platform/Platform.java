@@ -88,6 +88,9 @@ public interface Platform {
     public SoundEngine getSoundEngine();
     
     
+    public void updateSoundEngine(int timeUntilNextUpdate);
+    
+    
     /**
         Returns true if this platform is hosted in a browser (Applets)
     */

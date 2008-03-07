@@ -1,6 +1,4 @@
 0.11 (Alpha, in progress)
-To use the new version, edit your build.xml file to set "pulpcore.version" to "0.11".
-
   * Core: CoreImages now have premultiplied alpha (this will not affect the vast majority of users).
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
@@ -23,11 +21,13 @@ To use the new version, edit your build.xml file to set "pulpcore.version" to "0
   * API: Sprites no longer take input if their parent is not enabled. So, an entire Group of 
     widgets can be disabled by using group.enabled.set(false);
   * API: Added Group.pick() and Group.pickEnabledAndVisible().
+  * Core: Refactoring so that ProGuard can remove the SoundEngine if an app doesn't use sound.
   * Core: Images, fonts, and sounds are cached (using WeakReferences) which will speed up loading
     and reduce memory when loading the same asset multiple times. 
   * Core: In a stack of Buttons, only the top-most button accepts mouse input.
   * Core: If a Button is removed from the Scene, its isClicked() method no longer returns true.
   * Tools: SVG -> PNG conversion is automatic.
+  * Tools: Updated to Retroweaver 2.0.5
   * Fixed Bug: Ant script didn't include all of the Retroweaver runtime classes.
   * Fixed Bug: nearest-neighbor interpolation when fractional metrics was enabled was throwing
     Exceptions.

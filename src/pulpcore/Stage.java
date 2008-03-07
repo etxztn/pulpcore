@@ -679,11 +679,8 @@ public class Stage implements Runnable {
             // Send pending sound data to sound system
             // (Don't create the sound engine if it's not already created)
             if (CoreSystem.getPlatform().isSoundEngineCreated()) {
-                SoundEngine soundEngine = CoreSystem.getPlatform().getSoundEngine();
-                if (soundEngine != null) {
-                    int estimatedTimeUntilNextUpdate = Math.max(elapsedTime, 1000 / desiredFPS);
-                    soundEngine.update(estimatedTimeUntilNextUpdate);
-                }
+                int estimatedTimeUntilNextUpdate = Math.max(elapsedTime, 1000 / desiredFPS);
+                CoreSystem.getPlatform().updateSoundEngine(estimatedTimeUntilNextUpdate);
             }
             
             // Show surface (blocks until surface is updated)
@@ -968,13 +965,14 @@ public class Stage implements Runnable {
                 info += numDirtyRectangles + " dirty rects";
             }
             
-            int numSounds = CoreSystem.getNumSoundsPlaying();
-            if (numSounds > 0) {
-                if (info.length() > 0) {
-                    info += ", ";
-                }
-                info += numSounds + " sounds";
-            }
+            // Removed - this prevents ProGuard from removing sound code
+            //int numSounds = CoreSystem.getNumSoundsPlaying();
+            //if (numSounds > 0) {
+            //    if (info.length() > 0) {
+            //        info += ", ";
+            //    }
+            //    info += numSounds + " sounds";
+            //}
             
             if (info.length() > 0) {
                 currentSceneName += " (" + info + ")";
