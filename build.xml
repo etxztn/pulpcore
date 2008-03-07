@@ -356,8 +356,9 @@
         <java classname="org.junit.runner.JUnitCore" fork="true" dir="${basedir}/tests">
             <arg value="AnimationTest"/>
             <arg value="CoreMathTest"/>
+            <arg value="PNGTest"/>
             <classpath>
-                <pathelement path="${basedir}/tests;${build}/${project.debug.jar.file};${junit.path}"/>
+                <pathelement path="${basedir}/tests;${build}/${project.debug.jar.file};${build}/${assettools.jar.file};${junit.path}"/>
             </classpath>
         </java>
         
@@ -378,6 +379,11 @@
         
         <property name="dist.temp" value="${build}/dist.temp" />
         <delete dir="${dist.temp}" failonerror="false" />
+	
+	<fail message="Please delete: ${dist.temp}">
+            <condition><available file="${dist.temp}" /></condition>
+        </fail>
+	
         <mkdir dir="${dist.temp}" />
         <mkdir dir="${dist.temp}/templates" />
         <mkdir dir="${dist.temp}/examples" />
@@ -394,6 +400,7 @@
         
         <copy todir="${dist.temp}/examples">
             <fileset dir="examples">
+                <exclude name="*/build" />
                 <exclude name="*/build/**/*" />
             </fileset>
         </copy>        
@@ -405,7 +412,10 @@
         </copy>
         
         <copy todir="${dist.temp}/doc">
-            <fileset dir="doc"/>
+            <fileset dir="doc">
+                <exclude name="dev" />
+                <exclude name="dev/**/*" />
+            </fileset>
         </copy>
         
         <copy todir="${dist.temp}/contrib">
@@ -416,14 +426,14 @@
         <copy todir="${dist.temp}" file="LICENSE" />
         <copy todir="${dist.temp}" file="CHANGES" />
         
-        <!-- Compile templates and examples -->
+        <!-- Compile templates for distribution -->
         <subant>
-            <property name="library.path" location="${library.path}"/>
+            <property name="pulpcore.path" location="${build}" />
+	    <property name="library.path" location="${library.path}"/>
             <property name="proguard.path" location="${proguard.path}"/>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
             <property name="do.obfuscate" value="true"/>
-            <property name="display.src" value="" />
-            <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
+            <property name="include.src" value="false" />
             <fileset dir="${dist.temp}/templates" includes="*/build.xml"/>
             <target name="build"/>
             <target name="clean-temp"/>
@@ -433,12 +443,14 @@
             <zipfileset dir="${dist.temp}" prefix="pulpcore-${version.full}" />
         </zip>
         
-        <!-- Compile examples again, but don't clear display.src. -->
+        <!-- Compile examples for www -->
         <subant>
-            <property name="library.path" location="${library.path}"/>
-            <property name="proguard.path" location="${proguard.path}"/>
+	    <property name="pulpcore.path" location="${build}" />
+            <property name="library.path" location="${library.path}" />
+            <property name="proguard.path" location="${proguard.path}" />
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
             <property name="do.obfuscate" value="true"/>
+            <property name="include.src" value="true" />
             <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
             <target name="build"/>
             <target name="clean-temp"/>
@@ -492,7 +504,7 @@
             <fileset dir="${dist.temp}/examples/Widgets/build"/>
         </copy>
             
-        <delete dir="${dist.temp}" /> 
+        <delete dir="${dist.temp}" failonerror="false" />
     </target>
     
     <!-- Use this task to keep the example build files up to date -->
