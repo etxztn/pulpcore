@@ -21,20 +21,20 @@
     
 <!-- Normal -->
 <g>
-<rect x="1" y="1" rx="15" ry="15" width="98" height="40" fill="url(#button-fill)" />
+<rect x="1" y="1" rx="10" ry="10" width="98" height="40" fill="url(#button-fill)" />
 <text x="50" y="27" style="font-family: Myriad Pro; font-size: 24px; text-anchor: middle; fill: white; opacity:.8;">Ok</text>
 </g>
 
 <!-- Hover -->
 <g transform="translate(100, 0)">
-<rect x="1" y="1" rx="15" ry="15" width="98" height="40" fill="url(#button-fill)" 
+<rect x="1" y="1" rx="10" ry="10" width="98" height="40" fill="url(#button-fill)" 
     stroke-width="2" stroke="url(#hover-stroke)" />
 <text x="50" y="27" style="font-family: Myriad Pro; font-size: 24px; text-anchor: middle; fill: white; opacity:.9;">Ok</text>
 </g>
 
 <!-- Pressed -->
 <g transform="translate(200, 0)">
-<rect x="1" y="1" rx="15" ry="15" width="98" height="40" fill="url(#button-fill)" 
+<rect x="1" y="1" rx="10" ry="10" width="98" height="40" fill="url(#button-fill)" 
     stroke-width="2" stroke="url(#pressed-stroke)"/>
 <text x="50" y="27.5" style="font-family: Myriad Pro; font-size: 24px; text-anchor: middle; fill: white; opacity:.9;">Ok</text>
 </g>
