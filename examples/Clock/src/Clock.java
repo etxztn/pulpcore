@@ -3,7 +3,6 @@ import java.util.Calendar;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.ImageSprite;
-import pulpcore.Stage;
 import static pulpcore.image.Colors.*;
 
 public class Clock extends Scene2D {
@@ -13,11 +12,9 @@ public class Clock extends Scene2D {
     @Override
     public void load() {
         // Load clock hands
-        int x = Stage.getWidth()/2;
-        int y = Stage.getHeight()/2;
-        secondHand = new ImageSprite("SecondHand.png", x, y);
-        minuteHand = new ImageSprite("MinuteHand.png", x, y);
-        hourHand = new ImageSprite("HourHand.png", x, y);
+        secondHand = new ImageSprite("SecondHand.png", 320, 240);
+        minuteHand = new ImageSprite("MinuteHand.png", 320, 240);
+        hourHand = new ImageSprite("HourHand.png", 320, 240);
         
         // Add the sprites to the scene
         add(new FilledSprite(BLACK));
