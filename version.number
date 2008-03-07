@@ -1,6 +1,6 @@
 version.major=0
 version.minor=11
-version.revision=0
+version.revision=1
 
 version=${version.major}.${version.minor}
 version.full=${version}.${version.revision}

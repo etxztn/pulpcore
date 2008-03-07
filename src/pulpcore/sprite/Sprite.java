@@ -775,69 +775,120 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    // Marked as private because this method isn't finished yet.
-    private final boolean intersects(Sprite sprite) {
+    /**
+        Checks if the specified sprite intersects this sprite. This method checks if this
+        sprite's OBB (oriented bounding box) intersects with the specified sprite's OBB.
+        The OBBs can be parallelograms in some cases.
+        <p>
+        The two sprites do no have to be in the same Group.
+        @param sprite the sprite to test against.
+        @return true if the two sprites' OBBs intersect.
+    */
+    public final boolean intersects(Sprite sprite) {
         Sprite a = this;
         Sprite b = sprite;
         Transform at = a.getTransform();
         Transform bt = b.getTransform();
-        Rect ab = at.getBounds(a.getNaturalWidth(), a.getNaturalHeight());
-        Rect bb = bt.getBounds(b.getNaturalWidth(), b.getNaturalHeight());
+        int aw = a.getNaturalWidth();
+        int ah = a.getNaturalHeight();
+        int bw = b.getNaturalWidth();
+        int bh = b.getNaturalHeight();
         
+        // First, test the bounding box of the two sprites
+        Rect ab = at.getBounds(aw, ah);
+        Rect bb = bt.getBounds(bw, bh);
         if (!ab.intersects(bb)) {
             return false;
         }
-        else if ((at.getType() & Transform.TYPE_ROTATE) == 0 &&
-                 (bt.getType() & Transform.TYPE_ROTATE) == 0)
+        
+        // If the transforms aren't rotated, no further tests are needed
+        if ((at.getType() & Transform.TYPE_ROTATE) == 0 &&
+            (bt.getType() & Transform.TYPE_ROTATE) == 0)
         {
-            // Simple case - no further tests needed
             return true;
         }
-        else {
-            // Complex case - use separating axis theorem
-            // TODO
-            return true;
-        }
-            /*
+        
+        // One or both sprites are rotated. Use the separating axis theorem on the two
+        // sprite's OBB (which is actually a parallelogram)
+      
+        // Step 1: Get sprite A's points
+        V[] ap = {
+            new V(0, 0),
+            new V(aw, 0),
+            new V(aw, ah),
+            new V(0, ah)
+        };
             
-            // Step 1: Get points of specified sprite (convert this Sprite's Local Space)
-            int w2 = sprite.getNaturalWidth();
-            int h2 = sprite.getNaturalHeight();
-            V[] o = {
-                new V(sprite.transform.transformX(0, 0), sprite.transform.transformY(0, 0)),
-                new V(sprite.transform.transformX(w2, 0), sprite.transform.transformY(w2, 0)),
-                new V(sprite.transform.transformX(w2, h2), sprite.transform.transformY(w2, h2)),
-                new V(sprite.transform.transformX(0, h2), sprite.transform.transformY(0, h2)),
-            };
-            for (int i = 0; i < 4; i++) {
-                V p = o[i];
-                int lx = transform.inverseTransformX(p.x, p.y);
-                int ly = transform.inverseTransformY(p.x, p.y);
-                if (lx == Integer.MAX_VALUE || ly == Integer.MAX_VALUE) {
-                    return false;
+        // Step 2: Get sprite B's points and convert them to sprite A's local space
+        V[] bp = {
+            new V(0, 0),
+            new V(bw, 0),
+            new V(bw, bh),
+            new V(0, bh)
+        };
+        for (int i = 0; i < 4; i++) {
+            V p = bp[i];
+            int x1 = bt.transformX(p.x, p.y);
+            int y1 = bt.transformY(p.x, p.y);
+            int x2 = at.inverseTransformX(x1, y1);
+            int y2 = at.inverseTransformY(x1, y1);
+            if (x2 == Integer.MAX_VALUE || y2 == Integer.MAX_VALUE) {
+                return false;
+            }
+            p.x = x2;
+            p.y = y2;
+        }
+        
+        // Step 3: Get perpendiculars of each edge
+        V[] perps = { 
+            new V(ap[1].y - ap[0].y, ap[0].x - ap[1].x),
+            new V(ap[3].y - ap[0].y, ap[0].x - ap[3].x),
+            new V(bp[1].y - bp[0].y, bp[0].x - bp[1].x),
+            new V(bp[3].y - bp[0].y, bp[0].x - bp[3].x)
+        };
+        int[] perpLengths = {
+            aw,
+            ah,
+            perps[2].getLength(),
+            perps[3].getLength()
+        };
+        
+        // Step 4: Project points onto each perp
+        for (int i = 0; i < perps.length; i++) {
+            int amin = Integer.MAX_VALUE;
+            int amax = Integer.MIN_VALUE;
+            int bmin = Integer.MAX_VALUE;
+            int bmax = Integer.MIN_VALUE;
+            int len = perpLengths[i];
+            V p = perps[i];
+            
+            if (len <= 0) {
+                return false;
+            }
+            for (int j = 0; j < ap.length; j++) {
+                int v = CoreMath.div(p.getDotProduct(ap[j]), len);
+                if (v < amin) {
+                    amin = v;
                 }
-                p.x = lx;
-                p.y = ly;
+                if (v > amax) {
+                    amax = v;
+                }
             }
-            
-            // Step 3: Use separating axis theorem (four tests)
-            // Line A: (0,0)->(w1,0)
-            // Line B: (0,0)->(0,h1)
-            // Line C: Perpendicular to (o[0], o[0])->(o[1], o[1])
-            // Line D: Perpendicular to (o[0], o[0])->(o[3], o[3])
-            V[] vectors = { 
-                new V(w1, 0),
-                new V(0, h1),
-                new V(o[1].y - o[0].y, o[0].x - o[1].x),
-                new V(o[3].y - o[0].y, o[0].x - o[3].x)
-            };
-            for (int i = 0; i < vectors.length; i++) {
-                
+            for (int j = 0; j < bp.length; j++) {
+                int v = CoreMath.div(p.getDotProduct(bp[j]), len);
+                if (v < bmin) {
+                    bmin = v;
+                }
+                if (v > bmax) {
+                    bmax = v;
+                }
             }
-            
+            if (amax < bmin || amin > bmax) {
+                return false;
+            }
         }
-        */
-    }    
+        return true;
+    }
             
     /**
         Checks if this Sprite (and its parents) are enabled, and
@@ -1184,7 +1235,13 @@ public abstract class Sprite implements PropertyListener {
         }
         
         public int getLength() {
-            return CoreMath.sqrt(getLengthSq());
+            int l2 = getLengthSq();
+            if (l2 > 0) {
+                return CoreMath.sqrt(l2);
+            }
+            else {
+                return 0;
+            }
         }
         
         public void setLength(int newLength) {
