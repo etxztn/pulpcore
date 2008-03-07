@@ -128,10 +128,10 @@ public class Transform {
     
     
     /**
+        Gets the integer bounds.
         @return true if the bounds instance was changed
     */
     public boolean getBounds(int fw, int fh, Rect bounds) {
-        
         int x1 = getTranslateX();
         int y1 = getTranslateY();
         int x2 = CoreMath.mul(getScaleX(), fw);
@@ -162,6 +162,34 @@ public class Transform {
         else {
             return false;
         }
+    }
+    
+    /**
+        Gets the fixed-point bounds.
+    */
+    public Rect getBounds(int fw, int fh) {
+        int x1 = getTranslateX();
+        int y1 = getTranslateY();
+        int x2 = CoreMath.mul(getScaleX(), fw);
+        int y2 = CoreMath.mul(getShearY(), fw);
+        int x3 = CoreMath.mul(getShearX(), fh);
+        int y3 = CoreMath.mul(getScaleY(), fh);
+        int x4 = x1 + x2 + x3;
+        int y4 = y1 + y2 + y3;
+        x2 += x1;
+        y2 += y1;
+        x3 += x1;
+        y3 += y1;
+        
+        int boundsX1 = Math.min( Math.min(x1, x2), Math.min(x3, x4) );
+        int boundsY1 = Math.min( Math.min(y1, y2), Math.min(y3, y4) );
+        int boundsX2 = Math.max( Math.max(x1, x2), Math.max(x3, x4) );
+        int boundsY2 = Math.max( Math.max(y1, y2), Math.max(y3, y4) );
+        
+        int boundsW = boundsX2 - boundsX1;
+        int boundsH = boundsY2 - boundsY1;
+        
+        return new Rect(boundsX1, boundsY1, boundsW, boundsH);
     }
     
   

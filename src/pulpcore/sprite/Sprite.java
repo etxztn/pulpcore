@@ -774,7 +774,71 @@ public abstract class Sprite implements PropertyListener {
             return false;
         }
     }
+    
+    // Marked as private because this method isn't finished yet.
+    private final boolean intersects(Sprite sprite) {
+        Sprite a = this;
+        Sprite b = sprite;
+        Transform at = a.getTransform();
+        Transform bt = b.getTransform();
+        Rect ab = at.getBounds(a.getNaturalWidth(), a.getNaturalHeight());
+        Rect bb = bt.getBounds(b.getNaturalWidth(), b.getNaturalHeight());
         
+        if (!ab.intersects(bb)) {
+            return false;
+        }
+        else if ((at.getType() & Transform.TYPE_ROTATE) == 0 &&
+                 (bt.getType() & Transform.TYPE_ROTATE) == 0)
+        {
+            // Simple case - no further tests needed
+            return true;
+        }
+        else {
+            // Complex case - use separating axis theorem
+            // TODO
+            return true;
+        }
+            /*
+            
+            // Step 1: Get points of specified sprite (convert this Sprite's Local Space)
+            int w2 = sprite.getNaturalWidth();
+            int h2 = sprite.getNaturalHeight();
+            V[] o = {
+                new V(sprite.transform.transformX(0, 0), sprite.transform.transformY(0, 0)),
+                new V(sprite.transform.transformX(w2, 0), sprite.transform.transformY(w2, 0)),
+                new V(sprite.transform.transformX(w2, h2), sprite.transform.transformY(w2, h2)),
+                new V(sprite.transform.transformX(0, h2), sprite.transform.transformY(0, h2)),
+            };
+            for (int i = 0; i < 4; i++) {
+                V p = o[i];
+                int lx = transform.inverseTransformX(p.x, p.y);
+                int ly = transform.inverseTransformY(p.x, p.y);
+                if (lx == Integer.MAX_VALUE || ly == Integer.MAX_VALUE) {
+                    return false;
+                }
+                p.x = lx;
+                p.y = ly;
+            }
+            
+            // Step 3: Use separating axis theorem (four tests)
+            // Line A: (0,0)->(w1,0)
+            // Line B: (0,0)->(0,h1)
+            // Line C: Perpendicular to (o[0], o[0])->(o[1], o[1])
+            // Line D: Perpendicular to (o[0], o[0])->(o[3], o[3])
+            V[] vectors = { 
+                new V(w1, 0),
+                new V(0, h1),
+                new V(o[1].y - o[0].y, o[0].x - o[1].x),
+                new V(o[3].y - o[0].y, o[0].x - o[3].x)
+            };
+            for (int i = 0; i < vectors.length; i++) {
+                
+            }
+            
+        }
+        */
+    }    
+            
     /**
         Checks if this Sprite (and its parents) are enabled, and
         the mouse is currently within the bounds of this Sprite.
@@ -1133,7 +1197,7 @@ public abstract class Sprite implements PropertyListener {
         public void normalize() {
             int length = getLength();
             if (length != 0) {
-                divide(length);
+                div(length);
             }
         }    
     
@@ -1142,7 +1206,7 @@ public abstract class Sprite implements PropertyListener {
             this.y += y;
         }
     
-        public void subtract(int x, int y) {
+        public void sub(int x, int y) {
             add(-x, -y);
         }
     
@@ -1150,16 +1214,16 @@ public abstract class Sprite implements PropertyListener {
             add(v.x, v.y);
         }
     
-        public void subtract(V v) {
+        public void sub(V v) {
             add(-v.x, -v.y);
         }    
         
-        public void multiply(int s) {
+        public void mul(int s) {
            x = CoreMath.mul(x, s);
            y = CoreMath.mul(y, s);
         }
     
-        public void divide(int s) {
+        public void div(int s) {
            x = CoreMath.div(x, s);
            y = CoreMath.div(y, s);
         }
