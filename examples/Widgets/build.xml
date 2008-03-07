@@ -14,6 +14,8 @@
         pulpcore.player.wait  If true, the PulpCore Player Ant task waits until the Player
                               window is closed. Otherwise, the Ant task returns immediately. 
                               Default is true.
+        include.src           If true, the source and resources are included as links in the 
+                              applet HTML.
         project.jar           The name of the project jar to create.
         project.assets        The name of the project zip file to create.
         project.scene         The name of the first scene to display.
@@ -39,6 +41,7 @@
                               For Max OS X, use "${java.home}/../Classes/classes.jar"
     -->
     <property name="pulpcore.player.wait" value="true" />
+    <property name="include.src" value="false" />
     <property name="project.scene" value="Widgets" />
     <property name="project.jar" value="${project.scene}.jar" />
     <property name="project.assets.zip" value="${project.scene}.zip" />    
@@ -49,7 +52,6 @@
     <property name="pulpcore.path" value="../../build" />
     <property name="proguard.path" value="" />
     <property name="library.path" value="" /> 
-    
     
     <!--
         Normally you won't need to edit anything below this line 
@@ -68,8 +70,6 @@
     <property name="build.temp" value="${build}/temp" />
     <property name="build.classes" value="${build.temp}/classes" />
     <property name="build.res" value="${build.temp}" />
-    
-    <property name="display.src" value="${src}/${project.scene}.java" />
     
     <!-- PulpCore paths -->
     <property name="core.jar.file" value="${pulpcore.path}/pulpcore-${pulpcore.platform}-${pulpcore.build}-${pulpcore.version}.jar" />
@@ -156,6 +156,10 @@
         
         <condition property="bootclasspath" value="${library.path}" else="">
             <equals arg1="${pulpcore.java.language}" arg2="1.4" />
+        </condition>
+        
+        <condition property="display.src" value="${src}/${project.scene}.java" else="">
+            <istrue value="${include.src}" />
         </condition>
         
         <delete dir="${build.classes}" failonerror="false" />
