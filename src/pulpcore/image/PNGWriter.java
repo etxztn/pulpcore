@@ -147,7 +147,7 @@ public class PNGWriter {
         out.writeInt(len);
         out.writeInt(chunkType);
         out.write(data.getData(), 0, len);
-        out.writeInt(getCRC(data.getData(), data.position() - len - 4, len + 4));
+        out.writeInt(getCRC(out.getData(), out.position() - len - 4, len + 4));
     }
     
 }
