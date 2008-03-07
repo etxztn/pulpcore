@@ -1,5 +1,4 @@
-0.11 (Alpha, in progress)
-  * Core: CoreImages now have premultiplied alpha (this will not affect the vast majority of users).
+0.11.0 (March 6, 2008)
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
     their parent. No more ConcurrentModificationExceptions!
@@ -21,6 +20,7 @@
   * API: Sprites no longer take input if their parent is not enabled. So, an entire Group of 
     widgets can be disabled by using group.enabled.set(false);
   * API: Added Group.pick() and Group.pickEnabledAndVisible().
+  * Core: CoreImages now have premultiplied alpha (this will not affect the vast majority of users).
   * Core: Refactoring so that ProGuard can remove the SoundEngine if an app doesn't use sound.
   * Core: Images, fonts, and sounds are cached (using WeakReferences) which will speed up loading
     and reduce memory when loading the same asset multiple times. 
@@ -34,7 +34,7 @@
   
 == Version 0.10 ==
 
-0.10.11 (February 7, 2008):
+0.10.11 (February 7, 2008)
   * Tools: the contrib/ dir is now included in the distribution archive.
   * Fixed bug: Sprite.isMouseXXX() methods no longer return true if the mouse is outside the applet.
   * Fixed bug: Fixed typo, renamed Stage.AUTO_STETCH to Stage.AUTO_STRETCH.
