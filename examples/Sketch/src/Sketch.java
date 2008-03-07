@@ -9,19 +9,23 @@ import pulpcore.scene.Scene;
 import pulpcore.Stage;
 
 public class Sketch extends Scene {
+    int[] colors = { rgb(0, 2, 19), rgb(4, 14, 0), rgb(21, 4, 7), rgb(15, 0, 21),  rgb(19, 18, 1) };
     Particle[] particles;
     int particleIndex;
-    int nextFade, nextFade2;
+    int nextFade;
     int lastX, lastY;
     boolean erase;
     boolean wasMouseInside;
+    boolean firstTime = true;
     
     @Override
     public void load() {
-        int numParticlesPerAttractor = 500;
         particles = new Particle[5000];
+        int numParticlesPerAttractor = 500;
         for (int i = 0; i < particles.length; i++) {
-            particles[i] = new Particle();
+            boolean visible = firstTime && i < numParticlesPerAttractor*2;
+            int color = colors[(i / numParticlesPerAttractor) % colors.length];
+            particles[i] = new Particle(visible, color);
         }
         for (int i = 0; i < particles.length; i++) {
             int j = (i + particles.length - 1) % particles.length;
@@ -29,6 +33,10 @@ public class Sketch extends Scene {
             particles[i].attractor = particles[j];
         }
         erase = true;
+        if (firstTime) {
+            firstTime = false;
+            particleIndex = numParticlesPerAttractor*2;
+        }
     }
     
     @Override
@@ -53,7 +61,6 @@ public class Sketch extends Scene {
                 particle.update(elapsedTime);
             }
             nextFade -= elapsedTime;
-            nextFade2 -= elapsedTime;
         }
     }
     
@@ -73,7 +80,7 @@ public class Sketch extends Scene {
         
         // Slowly fade
         if (nextFade <= 0) { 
-            nextFade = 75;
+            nextFade = 50;
             g.setBlendMode(BlendMode.SrcOver());
             g.setColor(BLACK);
             g.setAlpha(0x06);
@@ -99,7 +106,14 @@ public class Sketch extends Scene {
         double velocityX, velocityY;
         double lastX, lastY;
         Particle attractor;
-        int color = gray(15);
+        int color;
+        
+        Particle(boolean visible, int color) {
+            this.color = color;
+            if (visible) {
+                init(x, y);
+            }
+        }
 
         void init(double x, double y) {
             this.x = x;
