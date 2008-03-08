@@ -735,8 +735,46 @@ public abstract class Sprite implements PropertyListener {
             return false;
         }
         
-        return (localX >= 0 && localX < getNaturalWidth() &&
-                localY >= 0 && localY < getNaturalHeight());
+        if (localX >= 0 && localX < getNaturalWidth() &&
+            localY >= 0 && localY < getNaturalHeight())
+        {
+            if (getPixelLevelChecks()) {
+                localX = CoreMath.toIntFloor(localX);
+                localY = CoreMath.toIntFloor(localY);
+                return !isTransparent(localX, localY);
+            }
+            else {
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    
+    /**
+        Returns true if this sprite should use pixel-level checks for intersections and picking.
+        <p>
+        This method returns false. Subclasses of Sprite should override this method if they
+        have pixel-level checks in their implementation of {@link #isTransparent(int, int) }.
+    */
+    public boolean getPixelLevelChecks() {
+        return false;
+    }
+    
+    /**
+        Checks if the pixel at the specified integer location is transparent. This method does not
+        check if this sprite is enabled or visible, nor does it check its alpha value. 
+        <p>
+        The default implementation always returns false. 
+        Subclasses of this class may need to override this method to return accurate results.
+        <p>
+        This method is called from {@link #contains(int,int)}.
+        @param localX integer x-coordinate in local space
+        @param localY integer y-coordinate in local space
+    */
+    protected boolean isTransparent(int localX, int localY) {
+        return false;
     }
     
     /**
@@ -784,7 +822,7 @@ public abstract class Sprite implements PropertyListener {
         @param sprite the sprite to test against.
         @return true if the two sprites' OBBs intersect.
     */
-    public final boolean intersects(Sprite sprite) {
+    public boolean intersects(Sprite sprite) {
         Sprite a = this;
         Sprite b = sprite;
         Transform at = a.getTransform();
@@ -793,6 +831,7 @@ public abstract class Sprite implements PropertyListener {
         int ah = a.getNaturalHeight();
         int bw = b.getNaturalWidth();
         int bh = b.getNaturalHeight();
+        boolean pixelLevel = a.getPixelLevelChecks() || b.getPixelLevelChecks();
         
         // First, test the bounding box of the two sprites
         Rect ab = at.getBounds(aw, ah);
@@ -805,7 +844,13 @@ public abstract class Sprite implements PropertyListener {
         if ((at.getType() & Transform.TYPE_ROTATE) == 0 &&
             (bt.getType() & Transform.TYPE_ROTATE) == 0)
         {
-            return true;
+            if (pixelLevel) {
+                ab.intersection(bb);
+                return isPixelLevelCollision(b, ab);
+            }
+            else {
+                return true;
+            }
         }
         
         // One or both sprites are rotated. Use the separating axis theorem on the two
@@ -853,7 +898,9 @@ public abstract class Sprite implements PropertyListener {
             perps[3].getLength()
         };
         
-        // Step 4: Project points onto each perp
+        // Step 4: Project points onto each perpendicular.
+        // For each perpendicular, the span of projected points from sprite A must intersect 
+        // the span of projected points from sprite B
         for (int i = 0; i < perps.length; i++) {
             int amin = Integer.MAX_VALUE;
             int amax = Integer.MIN_VALUE;
@@ -887,7 +934,35 @@ public abstract class Sprite implements PropertyListener {
                 return false;
             }
         }
-        return true;
+        
+        if (pixelLevel) {
+            // TODO: better intersection bounds?
+            ab.intersection(bb);
+            return isPixelLevelCollision(b, ab);
+        }
+        else {
+            return true;
+        }
+    }
+    
+    private boolean isPixelLevelCollision(Sprite sprite, Rect intersection) {
+        Sprite a = this;
+        Sprite b = sprite;
+        Transform at = a.getTransform();
+        Transform bt = b.getTransform();
+        int x1 = CoreMath.toIntFloor(intersection.x);
+        int y1 = CoreMath.toIntFloor(intersection.y);
+        int x2 = CoreMath.toIntCeil(intersection.x + intersection.width);
+        int y2 = CoreMath.toIntCeil(intersection.y + intersection.height);
+        
+        for (int y = y1; y < y2; y++) {
+            for (int x = x1; x < x2; x++) {
+                if (a.contains(x, y) && b.contains(x, y)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
             
     /**

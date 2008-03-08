@@ -24,6 +24,7 @@ public class Sounds extends Scene2D {
         ear = new ImageSprite("ear.png", 300, 180);
         muteButton = new Button(CoreImage.load("mute.png").split(3,2), 600, 440, true);
         muteButton.setSelected(!CoreSystem.isMute());
+        muteButton.setPixelLevelChecks(false);
         add(new FilledSprite(WHITE));
         add(ear);
         add(muteButton);

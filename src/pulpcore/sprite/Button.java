@@ -44,6 +44,9 @@ import pulpcore.sprite.Group;
     Button has three visual states: normal, hover, and pressed. Call 
     {@link #isClicked()} to check if the user clicked the button. By default, a Button's cursor
     is {@link pulpcore.Input#CURSOR_HAND}.
+    <p>
+    By default, Buttons use pixel level checking for intersection tests. Use 
+    {@link ImageSprite#setPixelLevelChecks(boolean) } to disable this feature.
 */
 public class Button extends ImageSprite {
     

@@ -39,10 +39,14 @@ import pulpcore.math.Transform;
     An image-based sprite. The image can be an {@link pulpcore.image.AnimatedImage}.
     To ignore the CoreImage's hotspot, call {@link #setAnchor(int) } with an 
     anchor other than Sprite.DEFAULT, like Sprite.NORTH_WEST.
+    <p>
+    By default, ImageSprites use pixel-level checking for intersection tests. Use 
+    {@link #setPixelLevelChecks(boolean) } to disable this feature.
 */
 public class ImageSprite extends Sprite {
     
     private CoreImage image;
+    private boolean pixelLevel = true;
     
     /**
         Creates an ImageSprite that has the same dimensions as the image.
@@ -126,7 +130,15 @@ public class ImageSprite extends Sprite {
     }
     
     /**
-        Sets this ImageSprite's internal image. The width and height of this ImageSprite is
+        Sets this ImageSprite's internal image. The width and height of this ImageSprite are
+        not changed.
+    */
+    public void setImage(String imageAsset) {
+        setImage(CoreImage.load(imageAsset));
+    }
+    
+    /**
+        Sets this ImageSprite's internal image. The width and height of this ImageSprite are
         not changed.
     */
     public void setImage(CoreImage image) {
@@ -145,6 +157,21 @@ public class ImageSprite extends Sprite {
                 setDirty(true);
             }
         }
+    }
+    
+    /**
+        Sets whether this sprite should use pixel-level checking for intersections and picking.
+    */
+    public final void setPixelLevelChecks(boolean pixelLevel) {
+        this.pixelLevel = pixelLevel;
+    }
+    
+    /**
+        Returns true if this sprite should use pixel-level checks for intersections and picking.
+        @see #setPixelLevelChecks(boolean)
+    */
+    public final boolean getPixelLevelChecks() {
+        return pixelLevel;
     }
     
     protected int getNaturalWidth() {
@@ -180,6 +207,15 @@ public class ImageSprite extends Sprite {
         }
         else {
             return super.getAnchorY();
+        }
+    }
+    
+    protected boolean isTransparent(int localX, int localY) {
+        if (getPixelLevelChecks()) {
+            return (image == null || image.isTransparent(localX, localY));
+        }
+        else {
+            return super.isTransparent(localX, localY);
         }
     }
     

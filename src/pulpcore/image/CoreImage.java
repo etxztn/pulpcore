@@ -162,6 +162,23 @@ public class CoreImage {
         return data;
     }
     
+    /**
+        Checks if the pixel at the specified location is transparent. 
+        @return true if the pixel is transpent or if the location is out of bounds.
+    */
+    public final boolean isTransparent(int x, int y) {
+        if (x < 0 || y < 0 || x >= width || y >= height) {
+            return true;
+        }
+        else if (isOpaque) {
+            return false;
+        }
+        else {
+            int pixel = data[x + y * width];
+            return (pixel >>> 24) == 0;
+        }
+    }
+    
     /* package-private */ final void setData(int[] data) {
         this.data = data;
     }

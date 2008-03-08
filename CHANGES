@@ -1,3 +1,9 @@
+0.11.1 (In progress)
+  * Core: ImageSprites and Buttons now check if the mouse is over an opaque or transparent pixel. 
+    So apps can have non-rectangular buttons, like circles, stars, etc. This feature is on
+    by default; it can be disabled with imageSprite.setPixelLevelChecks(false);
+  * API: Added sprite.intersects(sprite). ImageSprites check intersections at pixel-level.
+
 0.11.0 (March 6, 2008)
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
