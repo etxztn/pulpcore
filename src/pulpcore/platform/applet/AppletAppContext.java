@@ -411,7 +411,7 @@ public final class AppletAppContext extends AppContext {
         
         try {
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(in.getData()));
-        
+
             boolean isOpaque = true;
             ColorModel model = image.getColorModel();
             if (model instanceof DirectColorModel) {
@@ -430,9 +430,17 @@ public final class AppletAppContext extends AppContext {
                 image = newImage;
             }
             
+            int[] data = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
+            
+            if (image.getType() == BufferedImage.TYPE_INT_RGB) {
+                // Add the alpha component to the data
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = 0xff000000 | data[i];
+                }
+            }
+            
             // Convert to CoreImage
-            return new CoreImage(image.getWidth(), image.getHeight(), isOpaque, 
-                ((DataBufferInt)image.getRaster().getDataBuffer()).getData());
+            return new CoreImage(image.getWidth(), image.getHeight(), isOpaque, data);
         }
         catch (Exception ex) {
             if (Build.DEBUG) CoreSystem.print("ImageIO", ex);
