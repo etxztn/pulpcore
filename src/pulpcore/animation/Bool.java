@@ -68,6 +68,15 @@ public final class Bool extends Property {
     }
     
     /**
+        Toggles the value of this Bool (same as the {@code ! } logical complement operator,
+        inverting the value). 
+        Any previous animations are stopped.
+    */
+    public void toggle() {
+        set(!get());
+    }
+    
+    /**
         Sets the value of this Bool after a specific delay. 
         Any previous animations are stopped.
     */
