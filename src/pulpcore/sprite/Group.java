@@ -34,14 +34,20 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import pulpcore.Build;
+import pulpcore.image.BlendMode;
 import pulpcore.image.CoreGraphics;
+import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
+import pulpcore.math.Transform;
+import pulpcore.Stage;
 
 /**
     A container of Sprites.
 */
 public class Group extends Sprite {
+    
+    private static final Transform IDENTITY = new Transform();
     
     /** Immuatable list of sprites. A new array is created when the list changes. */
     private Sprite[] sprites = new Sprite[0];
@@ -55,6 +61,11 @@ public class Group extends Sprite {
     private int fNaturalHeight;
     private int fInnerX;
     private int fInnerY;
+    
+    private CoreImage backBuffer;
+    private boolean backBufferCoversStage;
+    private boolean backBufferUpToDate;
+    private BlendMode backBufferBlendMode = BlendMode.SrcOver();
     
     public Group() {
         this(0, 0, 0, 0);
@@ -147,6 +158,13 @@ public class Group extends Sprite {
         @return The top-most sprite at the specified location, or null if none is found.
     */
     public Sprite pick(int viewX, int viewY) {
+        if (hasBackBuffer() && !backBufferCoversStage) {
+            if (viewX < 0 || viewY < 0 || 
+                viewX >= backBuffer.getWidth() || viewY >= backBuffer.getHeight()) 
+            {
+                return null;
+            }
+        }
         Sprite[] snapshot = sprites;
         for (int i = snapshot.length - 1; i >= 0; i--) {
             Sprite child = snapshot[i];
@@ -179,6 +197,13 @@ public class Group extends Sprite {
         if none is found.
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
+        if (hasBackBuffer() && !backBufferCoversStage) {
+            if (viewX < 0 || viewY < 0 || 
+                viewX >= backBuffer.getWidth() || viewY >= backBuffer.getHeight()) 
+            {
+                return null;
+            }
+        }
         Sprite[] snapshot = sprites;
         for (int i = snapshot.length - 1; i >= 0; i--) {
             Sprite child = snapshot[i];
@@ -425,6 +450,87 @@ public class Group extends Sprite {
     }
     
     //
+    // Back buffers
+    //
+    
+    /**
+        Creates a back buffer for this Group.
+        <p>
+        If this Group was created with a dimension (constructors {@link #Group(int,int,int,int) } 
+        or {@link #Group(double,double,double,double) } or has a dimension after calling
+        {@link #pack() }, then the back buffer has the same dimensions of this Group. Otherwise,
+        the back buffer has the same dimensions of the Stage.
+    */
+    public void createBackBuffer() {
+        createBackBuffer(BlendMode.SrcOver());
+    }
+    
+    /**
+        Creates a back buffer for this Group, and sets the blend mode for rendering onto 
+        the back buffer.
+        <p>
+        If this Group was created with a dimension (constructors {@link #Group(int,int,int,int) } 
+        or {@link #Group(double,double,double,double) } or has a dimension after calling
+        {@link #pack() }, then the back buffer has the same dimensions of this Group. Otherwise,
+        the back buffer has the same dimensions of the Stage.
+    */
+    public void createBackBuffer(BlendMode blendMode) {
+        setBackBufferBlendMode(blendMode);
+        if (fNaturalWidth == 0 || fNaturalHeight == 0) {
+            backBuffer = new CoreImage(Stage.getWidth(), Stage.getHeight(), false);
+            backBufferCoversStage = true;
+        }
+        else {
+            backBuffer = new CoreImage(CoreMath.toIntCeil(fNaturalWidth), 
+                CoreMath.toIntCeil(fNaturalHeight), false);
+            backBufferCoversStage = false;
+        }
+    }
+    
+    /**
+        Checks if this Group has a back buffer.
+        @return true if this Group has a back buffer.
+    */
+    public boolean hasBackBuffer() {
+        return (backBuffer != null);
+    }
+    
+    /**
+        Removes this Group's back buffer.
+    */
+    public void removeBackBuffer() {
+        backBuffer = null;
+    }
+    
+    /**
+        Sets this Group's blend mode for rendering onto its back buffer.
+        @param blendMode the blend mode.
+    */
+    public void setBackBufferBlendMode(BlendMode blendMode) {
+        if (blendMode == null) {
+            blendMode = BlendMode.SrcOver();
+        }
+        backBufferBlendMode = blendMode;
+    }
+    
+    /**
+        Gets this Group's blend mode for rendering onto its back buffer.
+        @return the blend mode.
+    */
+    public BlendMode getBackBufferBlendMode() {
+        return backBufferBlendMode;
+    }
+    
+    /* package-private */ Transform getBackBufferTransform() {
+        if (!hasBackBuffer() || backBufferCoversStage) {
+            return getDrawTransform();
+        }
+        else {
+            return IDENTITY;
+        }
+    }
+    
+    //
     // Sprite class implementation
     // 
     
@@ -461,12 +567,40 @@ public class Group extends Sprite {
         for (int i = 0; i < snapshot.length; i++) {
             snapshot[i].update(elapsedTime);
         }
+        backBufferUpToDate = false;
     }
     
     protected void drawSprite(CoreGraphics g) {
         Sprite[] snapshot = sprites;
-        for (int i = 0; i < snapshot.length; i++) {
-            snapshot[i].draw(g);
+        
+        if (backBuffer == null) {
+            for (int i = 0; i < snapshot.length; i++) {
+                snapshot[i].draw(g);
+            }
+        }
+        else {
+            CoreGraphics g2 = backBuffer.createGraphics();
+            g2.setBlendMode(backBufferBlendMode);
+            if (backBufferCoversStage) {
+                g2.setTransform(g.getTransform());
+                g2.setClip(g.getClipX(), g.getClipY(), g.getClipWidth(), g.getClipHeight());
+                g2.clear();
+                for (int i = 0; i < snapshot.length; i++) {
+                    snapshot[i].draw(g2);
+                }
+                // Note: this is ok; the transform is popped upon returning from drawSprite()
+                g.getTransform().clear();
+            }
+            else if (!backBufferUpToDate) {
+                backBufferUpToDate = true;
+                // Make sure the entire back buffer is only updated once per frame
+                // TODO: better to set the clip rather than update the entire back buffer?
+                g2.clear();
+                for (int i = 0; i < snapshot.length; i++) {
+                    snapshot[i].draw(g2);
+                }
+            }
+            g.drawImage(backBuffer);
         }
     }
     

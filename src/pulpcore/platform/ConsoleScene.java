@@ -113,7 +113,9 @@ public class ConsoleScene extends Scene2D {
             but using a slider works for now.
         */
         private Slider scrollBar;
+        private Group viewport;
         private Group contents;
+        
         private String lastLine;
         
         public TextBox(int x, int y, int w, int h) {
@@ -126,8 +128,11 @@ public class ConsoleScene extends Scene2D {
             scrollBar.setAnimationDuration(60, 250);
             add(scrollBar);
             
-            contents = new Group(0, 0, w - scrollBar.width.get() - 2, h);
-            add(contents);
+            contents = new Group();
+            viewport = new Group(0, 0, w - scrollBar.width.get() - 2, h);
+            viewport.createBackBuffer();
+            viewport.add(contents);
+            add(viewport);
             
             scrollBar.value.addListener(new PropertyListener() {
                 public void propertyChange(Property p) {
@@ -208,7 +213,7 @@ public class ConsoleScene extends Scene2D {
             contents.removeAll();
             int numLines = 0;
             int y = 0;
-            int w = contents.width.getAsInt();
+            int w = viewport.width.getAsInt();
             Iterator i = logLines.iterator();
             while (i.hasNext()) {
                 String[] text = StringUtil.wordWrap((String)i.next(), null, w);
@@ -232,22 +237,6 @@ public class ConsoleScene extends Scene2D {
             else {
                 scrollBar.visible.set(true);
             }
-        }
-        
-        protected void drawSprite(CoreGraphics g) {
-            Rect lastClip = new Rect();
-            g.getClip(lastClip);
-            
-            updateDirtyRect();
-            Rect newClip = getDirtyRect();
-            if (newClip == null) {
-                g.clipRect(x.getAsInt(), y.getAsInt(), width.getAsInt(), height.getAsInt());
-            }
-            else {
-                g.clipRect(newClip);
-            }
-            super.drawSprite(g);
-            g.setClip(lastClip);
         }
     }
 }

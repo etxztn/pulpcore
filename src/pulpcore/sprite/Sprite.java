@@ -53,6 +53,8 @@ import pulpcore.Stage;
     method to draw.
 */
 public abstract class Sprite implements PropertyListener {
+    
+    private static final Transform IDENTITY = new Transform();
 
     //
     // Text anchors
@@ -198,10 +200,18 @@ public abstract class Sprite implements PropertyListener {
     private boolean dirty = true;
     private boolean transformDirty = true;
     
-    /** Transform based on parent transform and this sprite's x, y, width, height, and angle. */
-    private final Transform transform = new Transform();
+    /** 
+        The view transform, used for dirty rectangles and collision detection.
+    */
+    private final Transform viewTransform = new Transform();
     
-    /** The draw bounding box used for directy rectangles in Scene2D */
+    /**
+        The draw transform, which will be different from the view transform if an ancestor 
+        has a back buffer that does not cover the Stage. 
+    */
+    private final Transform drawTransform = new Transform();
+    
+    /** The draw bounding box used for dirty rectangles in Scene2D */
     private Rect dirtyRect;
     
     
@@ -331,7 +341,9 @@ public abstract class Sprite implements PropertyListener {
             
             updateTransform();
             
-            changed |= transform.getBounds(
+            // TODO: if an ancestor has a back-buffer, clip the dirty rect to the back-buffer bounds
+            
+            changed |= viewTransform.getBounds(
                 getNaturalWidth(), getNaturalHeight(), dirtyRect);
         }
         
@@ -365,9 +377,14 @@ public abstract class Sprite implements PropertyListener {
         return dirty;
     }
     
-    /* package-private */ final Transform getTransform() {
+    /* package-private */ final Transform getViewTransform() {
         updateTransform();
-        return transform;
+        return viewTransform;
+    }
+    
+    /* package-private */ final Transform getDrawTransform() {
+        updateTransform();
+        return drawTransform;
     }
     
     /* package-private */ final boolean isTransformDirty() {
@@ -383,16 +400,30 @@ public abstract class Sprite implements PropertyListener {
         }
     }
     
-    /* package-private */ final Transform getParentTransform() {
+    /* package-private */ final Transform getParentViewTransform() {
         if (parent == null) {
             return Stage.getDefaultTransform();
         }
         else {
-            return parent.getTransform();
+            return parent.getViewTransform();
         }
     }
     
-    /* package-private */ final void updateTransform(Transform parentTransform) {
+    /* package-private */ final Transform getParentDrawTransform() {
+        if (parent == null) {
+            return Stage.getDefaultTransform();
+        }
+        else if (parent.hasBackBuffer()) {
+            return parent.getBackBufferTransform();
+        }
+        else {
+            return parent.getDrawTransform();
+        }
+    }
+    
+    /* package-private */ final void updateTransform(Transform parentTransform, 
+        Transform transform) 
+    {
         transform.set(parentTransform);
             
         // Translate
@@ -433,20 +464,24 @@ public abstract class Sprite implements PropertyListener {
         Gets the bounds relative to the parent.
     */
     /* package-private */ final Rect getRelativeBounds() {
-        Transform oldTransform = new Transform(transform);
-        Transform identityTransform = new Transform();
+        Transform transform = new Transform();
         Rect bounds = new Rect();
-        
-        updateTransform(identityTransform);
+        updateTransform(IDENTITY, transform);
         transform.getBounds(getNaturalWidth(), getNaturalHeight(), bounds);
-        
-        transform.set(oldTransform);
         return bounds;
     }
     
     private final void updateTransform() {
         if (isTransformDirty()) {
-            updateTransform(getParentTransform());
+            Transform pvt = getParentViewTransform();
+            Transform pdt = getParentDrawTransform();
+            updateTransform(pvt, viewTransform);
+            if (pvt.equals(pdt)) {
+                drawTransform.set(viewTransform);
+            }
+            else {
+                updateTransform(pdt, drawTransform);
+            }
             
             // Keep track of dirty state
             transformDirty = false;
@@ -607,19 +642,12 @@ public abstract class Sprite implements PropertyListener {
     }
     
     public final void draw(CoreGraphics g) {
-        
         if (isDirty()) {
             updateTransform();
             setDirty(false);
         }
         
         if (!visible.get()) {
-            return;
-        }
-        
-        if (dirtyRect != null && dirtyRect.width > 0 &&
-            !dirtyRect.intersects(g.getClipX(), g.getClipY(), g.getClipWidth(), g.getClipHeight())) 
-        {
             return;
         }
         
@@ -642,7 +670,7 @@ public abstract class Sprite implements PropertyListener {
         
         // Set transform
         g.pushTransform();
-        g.setTransform(transform);
+        g.setTransform(drawTransform);
         
         // Draw
         drawSprite(g);
@@ -670,7 +698,7 @@ public abstract class Sprite implements PropertyListener {
         updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
-        int localX = transform.inverseTransformX(fx, fy);
+        int localX = viewTransform.inverseTransformX(fx, fy);
         if (localX == Integer.MAX_VALUE) {
             return Integer.MAX_VALUE;
         }
@@ -686,7 +714,7 @@ public abstract class Sprite implements PropertyListener {
         updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
-        int localY = transform.inverseTransformY(fx, fy);
+        int localY = viewTransform.inverseTransformY(fx, fy);
         if (localY == Integer.MAX_VALUE) {
             return Integer.MAX_VALUE;
         }
@@ -701,7 +729,7 @@ public abstract class Sprite implements PropertyListener {
         updateTransform();
         int fx = CoreMath.toFixed(localX);
         int fy = CoreMath.toFixed(localY);
-        return CoreMath.toInt(transform.transformX(fx, fy));
+        return CoreMath.toInt(viewTransform.transformX(fx, fy));
     }
     
     /**
@@ -712,7 +740,7 @@ public abstract class Sprite implements PropertyListener {
         updateTransform();
         int fx = CoreMath.toFixed(localX);
         int fy = CoreMath.toFixed(localY);
-        return CoreMath.toInt(transform.transformY(fx, fy));
+        return CoreMath.toInt(viewTransform.transformY(fx, fy));
     }
     
     /**
@@ -728,8 +756,8 @@ public abstract class Sprite implements PropertyListener {
         updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
-        int localX = transform.inverseTransformX(fx, fy);
-        int localY = transform.inverseTransformY(fx, fy);
+        int localX = viewTransform.inverseTransformX(fx, fy);
+        int localY = viewTransform.inverseTransformY(fx, fy);
         
         if (localX == Integer.MAX_VALUE || localY == Integer.MAX_VALUE) {
             return false;
@@ -825,8 +853,8 @@ public abstract class Sprite implements PropertyListener {
     public boolean intersects(Sprite sprite) {
         Sprite a = this;
         Sprite b = sprite;
-        Transform at = a.getTransform();
-        Transform bt = b.getTransform();
+        Transform at = a.getViewTransform();
+        Transform bt = b.getViewTransform();
         int aw = a.getNaturalWidth();
         int ah = a.getNaturalHeight();
         int bw = b.getNaturalWidth();
@@ -936,7 +964,7 @@ public abstract class Sprite implements PropertyListener {
         }
         
         if (pixelLevel) {
-            // TODO: better intersection bounds?
+            // TODO: better intersection bounds for rotated sprites?
             ab.intersection(bb);
             return isPixelLevelCollision(b, ab);
         }
@@ -948,8 +976,8 @@ public abstract class Sprite implements PropertyListener {
     private boolean isPixelLevelCollision(Sprite sprite, Rect intersection) {
         Sprite a = this;
         Sprite b = sprite;
-        Transform at = a.getTransform();
-        Transform bt = b.getTransform();
+        Transform at = a.getViewTransform();
+        Transform bt = b.getViewTransform();
         int x1 = CoreMath.toIntFloor(intersection.x);
         int y1 = CoreMath.toIntFloor(intersection.y);
         int x2 = CoreMath.toIntCeil(intersection.x + intersection.width);

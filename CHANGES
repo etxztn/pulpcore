@@ -1,10 +1,19 @@
-0.11.1 (In progress)
+0.11.1 (In SVN)
+  * Examples: Added Flashlight example.
+  * Examples: Updated Widgets example
   * Core: ImageSprites and Buttons now check if the mouse is over an opaque or transparent pixel. 
     So apps can have non-rectangular buttons, like circles, stars, etc. This feature is on
     by default; it can be disabled with imageSprite.setPixelLevelChecks(false);
+  * Core: Sliders now automatically choose insets by default.
+  * API: Added Bool.toggle()
   * API: Added sprite.intersects(sprite). ImageSprites check intersections at pixel-level.
+  * API: Groups can now have a back buffer
+  * Fixed bug: Loaded JPEG images didn't have an alpha component.
 
 0.11.0 (March 6, 2008)
+  * Examples: Added Clock example.
+  * Examples: Added Compositing examples; removed Colors example.
+  * Examples: Updated Widgets and Sketch examples.
   * Core: CoreGraphics can now draw on translucent surfaces.
   * Core: Scene2D and Group are now thread-safe, and Sprites can now remove themselves from
     their parent. No more ConcurrentModificationExceptions!

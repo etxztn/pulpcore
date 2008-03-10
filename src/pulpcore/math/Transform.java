@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -44,16 +44,32 @@ public class Transform {
     private int m00, m01, m02;
     private int m10, m11, m12;
     
-    
     public Transform() {
         clear();
     }
-    
     
     public Transform(Transform transform) {
         set(transform);
     }
     
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        else if (!(object instanceof Transform)) {
+            return false;
+        }
+        else {
+            Transform t = (Transform)object;
+            return (
+                m00 == t.m00 &&
+                m01 == t.m01 &&
+                m02 == t.m02 &&
+                m10 == t.m10 &&
+                m11 == t.m11 &&
+                m12 == t.m12);
+        }
+    }
     
     public int transformX(int fx, int fy) {
         // [ x']   [  m00  m01  m02  ] [ x ]   [ m00x + m01y + m02 ]
@@ -63,7 +79,6 @@ public class Transform {
         return CoreMath.mul(m00, fx) + CoreMath.mul(m01, fy) + m02;
     }
     
-    
     public int transformY(int fx, int fy) {
         // [ x']   [  m00  m01  m02  ] [ x ]   [ m00x + m01y + m02 ]
         // [ y'] = [  m10  m11  m12  ] [ y ] = [ m10x + m11y + m12 ]
@@ -71,7 +86,6 @@ public class Transform {
         
         return CoreMath.mul(m10, fx) + CoreMath.mul(m11, fy) + m12;
     }
-    
     
     /**
         Returns Integer.MAX_VALUE if this transform can't be inverted.
@@ -97,7 +111,6 @@ public class Transform {
             return fx;
         }
     }
-    
     
     /**
         Returns Integer.MAX_VALUE if this transform can't be inverted.
@@ -125,7 +138,6 @@ public class Transform {
         }
         
     }
-    
     
     /**
         Gets the integer bounds.
@@ -192,51 +204,41 @@ public class Transform {
         return new Rect(boundsX1, boundsY1, boundsW, boundsH);
     }
     
-  
     public int getType() {
         return type;
     }
-    
     
     public int getTranslateX() {
         return m02;
     }
     
-    
     public int getTranslateY() {
         return m12;
     }
-    
     
     public int getScaleX() {
         return m00;
     }
     
-    
     public int getScaleY() {
         return m11;
     }
-    
     
     public int getShearX() {
         return m01;
     }
     
-    
     public int getShearY() {
         return m10;
     }
-    
     
     public int getDeterminant() {
         return CoreMath.mul(m00, m11) - CoreMath.mul(m01, m10);
     }
     
-    
     //
     // Matrix modifications
     //
-    
     
     /**
         Clears this transform, i.e., sets this transform to the identity matrix.  
@@ -252,7 +254,6 @@ public class Transform {
         
         type = TYPE_IDENTITY;
     }
-    
     
     /**
         Sets this transform to a copy of specified transform.
@@ -274,17 +275,14 @@ public class Transform {
             this.type = transform.type;
         }
     }
-
     
     public void concatenate(Transform transform) {
         mult(this, transform, this);
     }
     
-    
     public void preConcatenate(Transform transform) {
         mult(transform, this, this);
     }
-    
     
     private static void mult(Transform a, Transform b, Transform result) {
         
@@ -328,7 +326,6 @@ public class Transform {
             result.type = a.type | b.type;
         }
     }
-
     
     public void translate(int fx, int fy) {
         // [   1   0   x   ]
@@ -352,7 +349,6 @@ public class Transform {
         type |= TYPE_TRANSLATE;
     }
     
-    
     public void scale(int fx, int fy) {
         // [   x   0   0   ]
         // [   0   y   0   ]
@@ -374,7 +370,6 @@ public class Transform {
         
         type |= TYPE_SCALE;
     }
-    
     
     //public void scaleByFraction(int fxNumerator, int fxDenominator, 
     //    int fyNumerator, int fyDenominator)
@@ -400,11 +395,9 @@ public class Transform {
     //    type |= TYPE_SCALE;
     //}
     
-    
     public void rotate(int fAngle) {
         rotate(CoreMath.cos(fAngle), CoreMath.sin(fAngle));
     }
-    
     
     public void rotate(int fCosAngle, int fSinAngle) {
         // [   x  -y   0   ]
@@ -438,7 +431,6 @@ public class Transform {
         
         type |= TYPE_ROTATE;
     }
-    
     
     public void shear(int fx, int fy) {
         // [   1   x   0   ]
