@@ -64,6 +64,7 @@ public class Slider extends Sprite {
     
     private CoreImage backgroundImage;
     private CoreImage knobImage;
+    private boolean autoInsets;
     private int orientation;
     private int top, left, bottom, right;
     private int min, max, extent;
@@ -94,6 +95,8 @@ public class Slider extends Sprite {
         this.min = 0;
         this.max = 100;
         this.extent = 0;
+        this.autoInsets = true;
+        setInsets();
     }
     
     /**
@@ -335,8 +338,43 @@ public class Slider extends Sprite {
     public void setKnob(CoreImage knobImage) {
         if (this.knobImage != knobImage) {
             this.knobImage = knobImage;
+            if (autoInsets) {
+                setInsets();
+            }
             positionKnob();
         }
+    }
+    
+    private void setInsets() {
+        int bw = backgroundImage.getWidth();
+        int bh = backgroundImage.getHeight();
+        int kw = knobImage.getWidth();
+        int kh = knobImage.getHeight();
+        if (isHorizontal()) {
+            int diff = bh - kh;
+            if (diff < 0) {
+                // Slider-style
+                setInsets(diff/2, -kw/2, diff-diff/2, kw/2-kw);
+            }
+            else {
+                // Scrollbar-style
+                setInsets(0, diff/2, 0, diff-diff/2);
+            }
+        }
+        else {
+            int diff = bw - kw;
+            if (diff < 0) {
+                // Slider-style
+                setInsets(-kh/2, diff/2, kh/2-kh, diff-diff/2);
+            }
+            else {
+                // Scrollbar-style
+                setInsets(diff/2, 0, diff-diff/2, 0);
+            }
+        }
+     
+        // Reset after calling setInsets(int,int,int,int)
+        autoInsets = true;
     }
     
     /**
@@ -352,6 +390,7 @@ public class Slider extends Sprite {
         and the knob is centered horizontally between the left and right insets.
     */
     public void setInsets(int top, int left, int bottom, int right) {
+        this.autoInsets = false;
         if (this.top != top || this.left != left || this.bottom != bottom || this.right != right) {
             int oldNaturalWidth = getNaturalWidth();
             int oldNaturalHeight = getNaturalHeight();
@@ -393,6 +432,9 @@ public class Slider extends Sprite {
     public void setOrientation(int orientation) {
         if (this.orientation != orientation) {
             this.orientation = orientation;
+            if (autoInsets) {
+                setInsets();
+            }
             positionKnob();
         }
     }
