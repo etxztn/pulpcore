@@ -1,8 +1,6 @@
 // Widgets
-// Shows various buttons and form fields.
-// All widgets work when transformed!
+// Shows UI Components
 import pulpcore.animation.Easing;
-import static pulpcore.image.Colors.*;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -10,11 +8,13 @@ import pulpcore.scene.Scene2D;
 import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
+import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Slider;
 import pulpcore.sprite.Sprite;
 import pulpcore.sprite.TextField;
 import pulpcore.Stage;
+import static pulpcore.image.Colors.*;
 
 public class Widgets extends Scene2D {
     
@@ -28,17 +28,17 @@ public class Widgets extends Scene2D {
     
     @Override
     public void load() {
-        CoreFont font = CoreFont.getSystemFont();
+        CoreFont font = CoreFont.getSystemFont().tint(WHITE);
         
         // Create the form fields
-        Label label = new Label("Name: ", 0, 0);
+        Label label = new Label(font, "Name: ", 0, 0);
         label.setAnchor(Sprite.EAST);
         
         textField = new TextField("Suzy", 5, 0, 150, font.getHeight());
         textField.setAnchor(Sprite.WEST);
         textField.setFocus(true);
         
-        Label label2 = new Label("Secret Password: ", 0, 40);
+        Label label2 = new Label(font, "Secret Password: ", 0, 40);
         label2.setAnchor(Sprite.EAST);
         
         passwordField = new TextField(5, 40, 150, font.getHeight());
@@ -46,9 +46,8 @@ public class Widgets extends Scene2D {
         passwordField.setAnchor(Sprite.WEST);
         
         Slider slider = new Slider("slider.png", "slider-thumb.png", 0, 80);
-        slider.setInsets(0, 1, 0, 1);
         slider.setAnchor(Sprite.WEST);
-        Label label3 = new Label("Value: %d ", 0, 80);
+        Label label3 = new Label(font, "Value: %d ", 0, 80);
         label3.setFormatArg(slider.value);
         label3.setAnchor(Sprite.EAST);
         
@@ -56,12 +55,16 @@ public class Widgets extends Scene2D {
         checkbox = Button.createLabeledToggleButton(checkboxImage.split(3,2), font,
             "I'm feeling slanted", 0, 120, 30, 12, Sprite.WEST, false);
         checkbox.setCursor(Input.CURSOR_DEFAULT);
+        checkbox.setPixelLevelChecks(false);
         checkbox.setAnchor(Sprite.WEST);
         
         CoreImage buttonImage = CoreImage.load("button.png");
         okButton = new Button(buttonImage.split(3), 0, 160);
         okButton.setAnchor(Sprite.NORTH);
         okButton.setKeyBinding(Input.KEY_ENTER);
+        
+        answer = new Label(font, "", 0, 235);
+        answer.setAnchor(Sprite.CENTER);
         
         // Add the form fields to a group
         form = new Group(Stage.getWidth() / 2, Stage.getHeight() / 2);
@@ -76,22 +79,17 @@ public class Widgets extends Scene2D {
         form.add(slider);
         form.add(okButton);
         form.add(checkbox);
+        form.add(answer);
         form.pack();
         
-        // Add background, answer message, and form to the scene
-        answer = new Label("", 320, 400);
-        answer.setAnchor(Sprite.CENTER);
-        add(new FilledSprite(WHITE));
-        add(answer);
+        // Add background and form to the scene
+        add(new FilledSprite(BLACK));
         addLayer(form);
     }
     
     public Sprite createTextFieldBackground(TextField field) {
-        FilledSprite background = new FilledSprite(
-            field.x.get() - 4, field.y.get(), 
-            field.width.get() + 8, field.height.get() + 8, WHITE);
-        background.setBorderSize(1);
-        background.borderColor.set(BLACK);
+        field.selectionColor.set(rgb(0x1d5ef2));
+        ImageSprite background = new ImageSprite("textfield.png", field.x.get()-5, field.y.get());
         background.setAnchor(Sprite.WEST);
         return background;
     }
