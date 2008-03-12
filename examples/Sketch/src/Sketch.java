@@ -9,7 +9,7 @@ import pulpcore.scene.Scene;
 import pulpcore.Stage;
 
 public class Sketch extends Scene {
-    int[] colors = { rgb(0, 2, 19), rgb(4, 14, 0), rgb(21, 4, 7), rgb(15, 0, 21),  rgb(19, 18, 1) };
+    int[] colors = { rgb(0, 2, 19), rgb(4, 14, 0), rgb(15, 0, 21), rgb(21, 4, 7), rgb(19, 18, 1) };
     Particle[] particles;
     int particleIndex;
     int nextFade;
@@ -37,6 +37,7 @@ public class Sketch extends Scene {
             firstTime = false;
             particleIndex = numParticlesPerAttractor*2;
         }
+        Input.setCursor(Input.CURSOR_OFF);
     }
     
     @Override
