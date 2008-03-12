@@ -459,7 +459,7 @@
         <!-- 
             Create the www folder used at interactivepulp.com
             
-            Ignoring ImagesAndFonts. Renaming the Easings example. 
+            Renaming the Easings example. 
             
             NOTE: explore using subant once Mac OS X has Java 6 (So the uppercase dir names can be
             converted to lowercase using a scriptmapper)
@@ -478,6 +478,12 @@
         </copy>
         <copy todir="${build}/www/easing">
             <fileset dir="${dist.temp}/examples/Easings/build"/>
+        </copy>
+        <copy todir="${build}/www/flashlight">
+            <fileset dir="${dist.temp}/examples/Flashlight/build"/>
+        </copy>
+        <copy todir="${build}/www/images">
+            <fileset dir="${dist.temp}/examples/Images/build"/>
         </copy>
         <copy todir="${build}/www/particles">
             <fileset dir="${dist.temp}/examples/Particles/build"/>

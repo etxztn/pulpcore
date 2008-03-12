@@ -29,13 +29,21 @@ public class Images extends Scene2D {
     Group stars;
     Label clickMessage;
     
+    double getRandX(Sprite star) {
+        return rand(star.width.get()/2, Stage.getWidth() - star.width.get());
+    }
+    
+    double getRandY(Sprite star) {
+        return rand(star.height.get()/2, Stage.getHeight() - star.height.get());
+    }
+    
     @Override
     public void load() {
         // Set up some random stars
         stars = new Group();
         for (int i = 0; i < 16; i++) {
-            ImageSprite star = new ImageSprite("star.png", 
-                rand(Stage.getWidth()), rand(Stage.getHeight()));
+            ImageSprite star = new ImageSprite("star.png", 0, 0);
+            star.setLocation(getRandX(star), getRandY(star));
             star.angle.set(rand(Math.PI*2));
             stars.add(star);
         }
@@ -115,7 +123,7 @@ public class Images extends Scene2D {
                 
                 // Show the star again 15 seconds later
                 t = new Timeline(15000);
-                t.setLocation(star, rand(Stage.getWidth()), rand(Stage.getHeight()));
+                t.setLocation(star, getRandX(star), getRandY(star));
                 t.set(star.angle, rand(Math.PI*2));
                 t.animate(star.alpha, 0, 255, 200);
                 t.scale(star, 2, 2, 64, 64, 200);
