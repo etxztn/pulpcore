@@ -258,9 +258,10 @@ public class CoreImage {
         a web browser.
         <p>
         Images are internally cached (using a WeakReference), and if the image was previously 
-        loaded, this method may return the same reference.
+        loaded, this method may return an image with the same internal raster data.
         @param imageAsset The name of a PNG or JPEG image file.
-        @return The image, or a broken image if the image cannot be found.
+        @return The image, (either a CoreImage or an AnimatedImage) 
+        or a broken image if the image cannot be found.
     */
     public static CoreImage load(String imageAsset) {
         return load(imageAsset, null);
@@ -275,7 +276,15 @@ public class CoreImage {
         if (imageRef != null) {
             CoreImage image = (CoreImage)imageRef.get();
             if (image != null) {
-                return image;
+                if (image instanceof AnimatedImage) {
+                    // Create a new copy that has its own timeline
+                    // (The raster data is shared)
+                    return new AnimatedImage((AnimatedImage)image);
+                }
+                else {
+                    // Create a new copy (The raster data is shared)
+                    return new CoreImage(image);
+                }
             }
             else {
                 loadedImages.remove(imageAsset);

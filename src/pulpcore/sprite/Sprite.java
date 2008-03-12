@@ -721,27 +721,46 @@ public abstract class Sprite implements PropertyListener {
         return CoreMath.toInt(localY);
     }
     
-    /**
-        Gets the integer x-coordinate in View Space of the specified location in
-        Local Space.
-    */
-    public final int getViewX(int localX, int localY) {
-        updateTransform();
-        int fx = CoreMath.toFixed(localX);
-        int fy = CoreMath.toFixed(localY);
-        return CoreMath.toInt(viewTransform.transformX(fx, fy));
-    }
+    // Note sure about these. Too confusing of an API? Provide way to return a copy of
+    // the Transform?
     
-    /**
-        Gets the integer y-coordinate in View Space of the specified location in
-        Local Space.
-    */
-    public final int getViewY(int localX, int localY) {
-        updateTransform();
-        int fx = CoreMath.toFixed(localX);
-        int fy = CoreMath.toFixed(localY);
-        return CoreMath.toInt(viewTransform.transformY(fx, fy));
-    }
+    ///**
+    //    Gets the x-coordinate of this sprite in View Space.
+    //*/
+    //public final double getViewX() {
+    //    updateTransform();
+    //    return CoreMath.toDouble(viewTransform.getTranslateX());
+    //}
+    //
+    ///**
+    //    Gets the y-coordinate of this sprite in View Space.
+    //*/
+    //public final double getViewY() {
+    //    updateTransform();
+    //    return CoreMath.toDouble(viewTransform.getTranslateY());
+    //}
+    
+    ///**
+    //    Gets the integer x-coordinate in View Space of the specified location in
+    //    Local Space.
+    //*/
+    //public final int getViewX(int localX, int localY) {
+    //    updateTransform();
+    //    int fx = CoreMath.toFixed(localX);
+    //    int fy = CoreMath.toFixed(localY);
+    //    return CoreMath.toInt(viewTransform.transformX(fx, fy));
+    //}
+    //
+    ///**
+    //    Gets the integer y-coordinate in View Space of the specified location in
+    //    Local Space.
+    //*/
+    //public final int getViewY(int localX, int localY) {
+    //    updateTransform();
+    //    int fx = CoreMath.toFixed(localX);
+    //    int fy = CoreMath.toFixed(localY);
+    //    return CoreMath.toInt(viewTransform.transformY(fx, fy));
+    //}
     
     /**
         Checks if the specified location is within the bounds of this 
@@ -1151,6 +1170,26 @@ public abstract class Sprite implements PropertyListener {
     public void setSize(double width, double height) {
         this.width.set(width);
         this.height.set(height);
+    }
+    
+    //
+    // Bind convenience methods
+    //
+    
+    /**
+        Binds this sprite's location to that of the specified sprite.
+    */
+    public void bindLocationTo(Sprite sprite) {
+        x.bindTo(sprite.x);
+        y.bindTo(sprite.y);
+    }
+    
+    /**
+        Binds this sprite's size to that of the specified sprite.
+    */
+    public void bindSizeTo(Sprite sprite) {
+        width.bindTo(sprite.width);
+        height.bindTo(sprite.height);
     }
     
     //

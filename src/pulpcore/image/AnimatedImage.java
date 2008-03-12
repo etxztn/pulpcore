@@ -210,24 +210,41 @@ public class AnimatedImage extends CoreImage {
     }
     
     /**
-        Sets the current frame.
+        Gets the duration of the specified virtual frame.
+    */
+    public int getDuration(int frame) {
+        if (frameDuration == null || frame < 0 || frame >= frameDuration.length) {
+            return 0;
+        }
+        else {
+            return frameDuration[frame];
+        }
+    }
+    
+    /**
+        Gets the image for the specified virtual frame.
+    */
+    public CoreImage getImage(int frame) {
+        if (frameSequence != null) {
+            return frames[frameSequence[frame]];
+        }
+        else {
+            return frames[frame];
+        }
+    }
+    
+    /**
+        Sets the current frame. 
     */
     public void setFrame(int frame) {
         currentFrame = frame;
         animTime = 0;
-        if (frameSequence != null) {
-            setFrame(frames[frameSequence[currentFrame]]);
-        }
-        else {
-            setFrame(frames[currentFrame]);
-        }
-    }
-    
-    private void setFrame(CoreImage frame) {
-        setData(frame.getData());
-        setOpaque(frame.isOpaque());
+        
+        CoreImage image = getImage(frame);
+        setData(image.getData());
+        setOpaque(image.isOpaque());
         if (differentHotSpotPerFrame) {
-            setHotspot(frame.getHotspotX(), frame.getHotspotY()); 
+            setHotspot(image.getHotspotX(), image.getHotspotY()); 
         }
     }
     

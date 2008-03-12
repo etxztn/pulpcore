@@ -62,6 +62,10 @@ public final class Timeline extends Animation {
         this(null, 0);
     }
     
+    public Timeline(int startDelay) {
+        this(null, startDelay);
+    }
+    
     public Timeline(Easing easing) {
         this(easing, 0);
     }
@@ -198,7 +202,7 @@ public final class Timeline extends Animation {
     }
     
     /**
-        @deprecated Replaced by {@link #add(Animation) } 
+        Adds an event to the timeline.
     */
     public void addEvent(TimelineEvent event) {
         add(event);
@@ -274,7 +278,7 @@ public final class Timeline extends Animation {
     }
     
     //
-    // Set convenience methods
+    // Set convenience methods (immediate)
     //
     
     public void set(Bool property, boolean value) {
@@ -297,6 +301,30 @@ public final class Timeline extends Animation {
         set(property, value, 0);
     }
     
+    public void setLocation(Sprite sprite, int x, int y) { 
+        set(sprite.x, x, 0);
+        set(sprite.y, y, 0);
+    }
+    
+    public void setLocation(Sprite sprite, double x, double y) { 
+        set(sprite.x, x, 0);
+        set(sprite.y, y, 0);
+    }
+    
+    public void setSize(Sprite sprite, int width, int height) { 
+        set(sprite.width, width, 0);
+        set(sprite.height, height, 0);
+    }
+    
+    public void setSize(Sprite sprite, double width, double height) { 
+        set(sprite.width, width, 0);
+        set(sprite.height, height, 0);
+    }
+    
+    //
+    // Set convenience methods (delayed)
+    //
+    
     public void set(Bool property, boolean value, int delay) {
         add(property, new Tween(property.get()?1:0, value?1:0, 0, null, delay));
     }
@@ -315,6 +343,26 @@ public final class Timeline extends Animation {
     
     public void set(Fixed property, double value, int delay) {
         add(property, new Tween(property.getAsFixed(), CoreMath.toFixed(value), 0, null, delay));
+    }
+    
+    public void setLocation(Sprite sprite, int x, int y, int delay) { 
+        set(sprite.x, x, delay);
+        set(sprite.y, y, delay);
+    }
+    
+    public void setLocation(Sprite sprite, double x, double y, int delay) { 
+        set(sprite.x, x, delay);
+        set(sprite.y, y, delay);
+    }
+    
+    public void setSize(Sprite sprite, int width, int height, int delay) { 
+        set(sprite.width, width, delay);
+        set(sprite.height, height, delay);
+    }
+    
+    public void setSize(Sprite sprite, double width, double height, int delay) { 
+        set(sprite.width, width, delay);
+        set(sprite.height, height, delay);
     }
     
     //
