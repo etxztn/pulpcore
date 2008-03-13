@@ -289,6 +289,10 @@ public final class Timeline extends Animation {
         set(property, value, 0);
     }
     
+    public void set(Color property, int value) {
+        set(property, value, 0);
+    }
+    
     public void setAsFixed(Fixed property, int value) {
         set(property, value, 0);
     }
@@ -330,6 +334,10 @@ public final class Timeline extends Animation {
     }
     
     public void set(Int property, int value, int delay) {
+        add(property, new Tween(property.get(), value, 0, null, delay));
+    }
+    
+    public void set(Color property, int value, int delay) {
         add(property, new Tween(property.get(), value, 0, null, delay));
     }
     
