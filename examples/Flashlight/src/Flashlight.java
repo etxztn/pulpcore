@@ -1,5 +1,6 @@
 // Flashlight
 // Click to turn on the lights.
+import pulpcore.animation.Timeline;
 import pulpcore.image.BlendMode;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
@@ -31,16 +32,25 @@ public class Flashlight extends Scene2D {
         maskLayer.createBackBuffer();
         
         // Create the background image
+        Timeline t = new Timeline();
         Group imageLayer = new Group();
         imageLayer.add(new FilledSprite(rgb(0xba9b65)));
         int size = 80;
         int spacing = 16;
         for (int i = -spacing/2; i < Stage.getWidth(); i += spacing + size) {
             for (int j = -spacing/2; j < Stage.getHeight(); j += spacing + size) {
-                int randomColor = colors[CoreMath.rand(colors.length - 1)];
-                imageLayer.add(new FilledSprite(i, j, size, size, randomColor));
+                int color1 = colors[CoreMath.rand(colors.length - 1)];
+                int color2 = colors[CoreMath.rand(colors.length - 1)];
+                FilledSprite sprite = new FilledSprite(i, j, size, size, color1);
+                imageLayer.add(sprite);
+                int delay1 = CoreMath.rand(20000);
+                int delay2 = delay1 + CoreMath.rand(20000);
+                t.set(sprite.fillColor, color2, delay1);
+                t.set(sprite.fillColor, color1, delay2);
             }
         }
+        t.loopForever();
+        addTimeline(t);
         
         // Add the layers to the scene
         addLayer(imageLayer);
