@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,6 +30,7 @@
 package pulpcore;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,10 +54,8 @@ public class Assets {
     private static final Map CATALOGS = new HashMap();
     private static final Map ASSETS = new HashMap();
     
-    
     // Prevent instantiation
     private Assets() { }
-    
     
     /**
         Adds the contents of an asset catalog (zip file) into memory.
@@ -75,7 +74,6 @@ public class Assets {
         
         return addCatalog(catalogName, new ByteArrayInputStream(zipFileData));
     }
-    
     
     /**
         Adds the contents of an asset catalog (zip file) into memory.
@@ -107,16 +105,17 @@ public class Assets {
                     break;
                 }
                 
-                String name = entry.getName();
                 int size = (int)entry.getSize();
-                if (size > 0) {
-                    byte[] entryData = new byte[size];
+                String entryName = entry.getName();
+                byte[] entryData;
+                if (size != -1) {
+                    entryData = new byte[size];
                     int bytesToRead = size;
                     while (bytesToRead > 0) {
                         int bytesRead = in.read(entryData, size - bytesToRead, bytesToRead);
                         if (bytesRead == -1) {
                             if (Build.DEBUG) {
-                                CoreSystem.print("Couldn't add asset (EOF reached): " + name);
+                                CoreSystem.print("Couldn't add asset (EOF reached): " + entryName);
                             }
                             in.close();
                             return false;
@@ -125,15 +124,21 @@ public class Assets {
                             bytesToRead -= bytesRead;
                         }
                     }
-                    
-                    assetNames.add(name);
-                    assetData.add(entryData);
-                }
+                }                                 
                 else {
-                    if (Build.DEBUG) CoreSystem.print("Couldn't add asset (no size): " + name);
-                    in.close();
-                    return false;
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[1024];
+                    while (true) {
+                        int bytesRead = in.read(buffer);
+                        if (bytesRead == -1) {
+                            entryData = out.toByteArray();
+                            break;
+                        }
+                        out.write(buffer, 0, bytesRead);
+                    }
                 }
+                assetNames.add(entryName);
+                assetData.add(entryData);
             }
             in.close();
         }
@@ -168,7 +173,6 @@ public class Assets {
         return true;        
     }
     
-    
     /**
         Gets an iterator of catalog names (zip files) stored in memory.
     */
@@ -179,7 +183,6 @@ public class Assets {
         }
     }
 
-
     /**
         Checks if the specified catalog name (zip file) is stored in memory.
     */
@@ -188,7 +191,6 @@ public class Assets {
             return (CATALOGS.get(catalogName) != null);
         }
     }
-    
     
     /**
         Removes all assets downloaded from the specified catalog (zip file).
@@ -208,7 +210,6 @@ public class Assets {
         }
     }
     
-    
     /**
         Gets an iterator of the names of all assets from all zip files stored in memory. 
         Does not include assets in the jar file.
@@ -218,7 +219,6 @@ public class Assets {
             return ASSETS.keySet().iterator();
         }
     }
-    
     
     /**
         Returns true if the specified asset in any zip file exists. Does not check the jar.
@@ -232,7 +232,6 @@ public class Assets {
             return (ASSETS.get(assetName) != null);
         }
     }
-    
     
     /**
         Removes a specific asset from memory.
@@ -254,7 +253,6 @@ public class Assets {
             }
         }
     }    
-    
     
     /**
         Gets an asset as a {@link pulpcore.util.ByteArray}.
@@ -302,7 +300,6 @@ public class Assets {
             }
         }
     }
-    
     
     /**
         Gets an asset as an {@link java.io.InputStream}.
