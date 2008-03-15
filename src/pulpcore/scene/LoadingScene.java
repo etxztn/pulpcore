@@ -61,7 +61,7 @@ import pulpcore.util.StringUtil;
 public class LoadingScene extends Scene2D {
     
     //private static final String ERROR_MESSAGE = "Oops! There was a problem\ndownloading the game.";
-    private static final String ERROR_MESSAGE = "Oops! A download error occured.";
+    private static final String ERROR_MESSAGE = "Oops! A download error occurred.";
     private static final String TRY_AGAIN = "Try Again";
     
     private static final int FADE_OUT_DURATION = 300;
