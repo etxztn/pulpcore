@@ -70,7 +70,15 @@ public final class AppletAppContext extends AppContext {
         this.applet = app;
         this.enableLiveConnect = true;
         
-        if (CoreSystem.isWindows() && isMozillaFamily() && isVirtualHost()) {
+        /* 
+            Workaround for this bug:
+            http://bugs.sun.com/view_bug.do?bug_id=6622150
+            FF + 1.6.0_03 + virtual host + liveconnect = can't access server 
+            TODO: when this bug is fixed, only do the workaround on the 
+            affected versions (so far: 1.6.0_03, 1.6.0_04, 1.6.0_05)
+        */
+        boolean isSun = "Sun Microsystems Inc.".equals(CoreSystem.getJavaProperty("java.vendor"));
+        if (isSun && CoreSystem.isJava16orNewer() && isMozillaFamily() && isVirtualHost()) {
             enableLiveConnect = false;
         }
         
