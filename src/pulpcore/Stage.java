@@ -37,8 +37,10 @@ import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
+import pulpcore.math.Tuple2i;
 import pulpcore.platform.AppContext;
 import pulpcore.platform.ConsoleScene;
+import pulpcore.platform.PolledInput;
 import pulpcore.platform.SceneSelector;
 import pulpcore.platform.SoundEngine;
 import pulpcore.platform.Surface;
@@ -179,11 +181,11 @@ public class Stage implements Runnable {
     
     
     /**
-        @return A copy of the default transform used to draw onto the surface.
+        @return The transform used to draw onto the surface.
     */
     public static Transform getDefaultTransform() {
         Stage instance = getThisStage();
-        return new Transform(instance.defaultTransform);
+        return instance.defaultTransform;
     }
     
     
@@ -603,7 +605,7 @@ public class Stage implements Runnable {
             boolean oldFocus = Input.hasKeyboardFocus();
             
             // Capture input
-            appContext.pollInput();
+            pollInput();
             
             // Redraw if the focus changed
             boolean focusedChanged = Input.hasKeyboardFocus() != oldFocus;
@@ -633,9 +635,10 @@ public class Stage implements Runnable {
             numDirtyRectangles = -1;
             
             if (surface.contentsLost()) {
+                needsFullRedraw = true;
                 setTransform();
             }
-            if (needsFullRedraw || surface.contentsLost()) {
+            if (needsFullRedraw) {
                 currentScene.redrawNotify();
             }
             
@@ -668,7 +671,9 @@ public class Stage implements Runnable {
             
             // Draw frame rate and memory info (DEBUG only)
             if (Build.DEBUG) {
-                if (showInfoOverlay && infoOverlay != null && numDirtyRectangles < 0) {
+                if (showInfoOverlay && infoOverlay != null &&
+                    !(currentScene instanceof Scene2D))
+                {
                     g.reset();
                     g.getTransform().concatenate(defaultTransform);
                     infoOverlay.draw(g);
@@ -753,7 +758,6 @@ public class Stage implements Runnable {
         }
     }
     
-    
     private boolean hasNewScene() {
         
         boolean nextSceneLoaded = false;
@@ -827,61 +831,90 @@ public class Stage implements Runnable {
         
         // Do an extra input poll clear any keypresses during the scene switch process.
         // (Note, the input is polled again after returning from this method)
-        appContext.pollInput();
+        pollInput();
         
         return true;
     }
     
-    
     private void setTransform() {
         defaultTransform.clear();
         
-        switch (autoScaleType) {
-            default: case AUTO_OFF:
-                // Do nothing
-                break;
-                
-            case AUTO_CENTER:
-                defaultTransform.translate(
-                    CoreMath.toFixed((surface.getWidth() - naturalWidth) / 2),
-                    CoreMath.toFixed((surface.getHeight() - naturalHeight) / 2));
-                break;
-                
-            case AUTO_STRETCH:
-                defaultTransform.scale(
-                    CoreMath.toFixed(surface.getWidth()) / naturalWidth,
-                    CoreMath.toFixed(surface.getHeight()) / naturalHeight);
-                break;
-                
-            case AUTO_FIT:
-                int a = naturalHeight * surface.getWidth();
-                int b = naturalWidth * surface.getHeight();
-                int newWidth;
-                int newHeight;
-                
-                if (a > b) {
-                    newHeight = surface.getHeight();
-                    newWidth = newHeight * naturalWidth / naturalHeight;
-                }
-                else if (a < b) {
-                    newWidth = surface.getWidth();
-                    newHeight = newWidth * naturalHeight / naturalWidth;
-                }
-                else {
-                    newWidth = surface.getWidth();
-                    newHeight = surface.getHeight();
-                }
-                
-                defaultTransform.translate(
-                    CoreMath.toFixed((surface.getWidth() - newWidth) / 2),
-                    CoreMath.toFixed((surface.getHeight() - newHeight) / 2));
-                defaultTransform.scale(
-                    CoreMath.toFixed(newWidth) / naturalWidth,
-                    CoreMath.toFixed(newHeight) / naturalHeight);
-                break;
+        if (surface.getWidth() != naturalWidth || surface.getHeight() != naturalHeight) {
+            
+            float w = naturalWidth;
+            float h = naturalHeight;
+            
+            switch (autoScaleType) {
+                default: case AUTO_OFF:
+                    // Do nothing
+                    break;
+                    
+                case AUTO_CENTER:
+                    defaultTransform.translate(
+                        CoreMath.toFixed((surface.getWidth() - w) / 2),
+                        CoreMath.toFixed((surface.getHeight() - h) / 2));
+                    break;
+                    
+                case AUTO_STRETCH:
+                    defaultTransform.scale(
+                        CoreMath.toFixed(surface.getWidth() / w),
+                        CoreMath.toFixed(surface.getHeight() / h));
+                    break;
+                    
+                case AUTO_FIT:
+                    float a = h * surface.getWidth();
+                    float b = w * surface.getHeight();
+                    float newWidth;
+                    float newHeight;
+                    
+                    if (a > b) {
+                        newHeight = surface.getHeight();
+                        newWidth = (float)Math.floor(newHeight * w / h);
+                    }
+                    else if (a < b) {
+                        newWidth = surface.getWidth();
+                        newHeight = (float)Math.floor(newWidth * h / w);
+                    }
+                    else {
+                        newWidth = surface.getWidth();
+                        newHeight = surface.getHeight();
+                    }
+                    
+                    defaultTransform.translate(
+                        CoreMath.floor(CoreMath.toFixed((surface.getWidth() - newWidth) / 2)),
+                        CoreMath.floor(CoreMath.toFixed((surface.getHeight() - newHeight) / 2)));
+                    // Kind of weird - looks good with the Flashlight example at various sizes
+                    defaultTransform.scale(
+                        (int)Math.floor(CoreMath.ONE * newWidth / w - 1),
+                        (int)Math.floor(CoreMath.ONE * newHeight / h - 1));
+                    //defaultTransform.scale(CoreMath.toFixed(newWidth / w),
+                    //    CoreMath.toFixed(newHeight / h));
+                    break;
+            }
         }
     }
     
+    public void pollInput() {
+        appContext.pollInput();
+        
+        if (defaultTransform.getType() != Transform.TYPE_IDENTITY) {
+            PolledInput p = appContext.getPolledInput();
+            transform(p.mouse);
+            transform(p.mousePress);
+            transform(p.mouseRelease);
+            transform(p.mouseWheel);
+        }
+    }
+    
+    private final void transform(Tuple2i point) {
+        int fx = CoreMath.toFixed(point.x);
+        int fy = CoreMath.toFixed(point.y);
+        int tx = defaultTransform.inverseTransformX(fx, fy);
+        int ty = defaultTransform.inverseTransformY(fx, fy);
+        point.x = (tx == Integer.MAX_VALUE) ? tx : CoreMath.toInt(tx);
+        point.y = (ty == Integer.MAX_VALUE) ? ty : CoreMath.toInt(ty);
+    }
+        
     //
     // Debug mode only
     //

@@ -628,13 +628,18 @@ public class Scene2D extends Scene {
     }
     
     public final void redrawNotify() {
-        Transform defaultTransform = Stage.getDefaultTransform();
-                
-        drawBounds.setBounds(
-            CoreMath.toInt(defaultTransform.getTranslateX()),
-            CoreMath.toInt(defaultTransform.getTranslateY()),
-            CoreMath.toInt(Stage.getWidth() * defaultTransform.getScaleX()),
-            CoreMath.toInt(Stage.getHeight() * defaultTransform.getScaleY()));
+        Transform t = Stage.getDefaultTransform();
+        
+        if (t.getType() == Transform.TYPE_IDENTITY) {
+            drawBounds.setBounds(0, 0, Stage.getWidth(), Stage.getHeight());
+        }
+        else {
+            drawBounds.setBounds(
+                CoreMath.toInt(t.getTranslateX()),
+                CoreMath.toInt(t.getTranslateY()),
+                CoreMath.toInt(Stage.getWidth() * t.getScaleX()),
+                CoreMath.toInt(Stage.getHeight() * t.getScaleY()));
+        }
         needsFullRedraw = true;
     }
     
@@ -691,6 +696,12 @@ public class Scene2D extends Scene {
         
         if (needsFullRedraw) {
             layers.setDirty(true);
+            if (Build.DEBUG) {
+                Sprite overlay = Stage.getInfoOverlay();
+                if (overlay != null) {
+                    overlay.setDirty(true);
+                }
+            }
         }
         
         if (dirtyRectanglesEnabled) {
@@ -714,7 +725,6 @@ public class Scene2D extends Scene {
             if (Build.DEBUG) {
                 Sprite overlay = Stage.getInfoOverlay();
                 if (overlay != null) {
-                    //overlay.prepareToDraw(transform, needsFullRedraw);
                     if (needsFullRedraw || overlay.isDirty()) {
                         if (dirtyRectangles.isOverflowed()) {
                             overlay.updateDirtyRect();
@@ -825,12 +835,22 @@ public class Scene2D extends Scene {
     */
     public void drawScene(CoreGraphics g) {
         
+        boolean drawOverlay = (Build.DEBUG && Stage.getInfoOverlay() != null);
+        
         if (!dirtyRectanglesEnabled || needsFullRedraw || dirtyRectangles.isOverflowed()) {
+            g.setClip(drawBounds);
             layers.draw(g);
+            if (Build.DEBUG && drawOverlay) {
+                Stage.getInfoOverlay().draw(g);
+            }
             needsFullRedraw = false;
         }
         else if (Build.DEBUG && showDirtyRectangles) {
+            g.setClip(drawBounds);
             layers.draw(g);
+            if (Build.DEBUG && drawOverlay) {
+                Stage.getInfoOverlay().draw(g);
+            }
             
             for (int i = 0; i < dirtyRectangles.size(); i++) {
                 Rect r = dirtyRectangles.get(i);
@@ -843,8 +863,6 @@ public class Scene2D extends Scene {
         else {
             // This might be a place to optimize. Currently every sprite is drawn for every
             // rectangle, and the clipping bounds makes sure we don't overdraw. 
-            boolean drawOverlay = (Build.DEBUG && Stage.getInfoOverlay() != null);
-            
             for (int i = 0; i < dirtyRectangles.size(); i++) {
                 Rect r = dirtyRectangles.get(i);
                 g.setClip(r.x, r.y, r.width, r.height);

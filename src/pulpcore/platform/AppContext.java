@@ -119,22 +119,61 @@ public abstract class AppContext {
         The runnable is not guaranteed to execute if the app is exited by the user.
     */
     public final void invokeLater(Runnable runnable) {
-        runnables.add(runnable);
+        synchronized (runnables) {
+            runnables.add(runnable);
+        }
+    }
+    
+    /**
+        Causes {@code runnable} to have its {@code run} method called in the animation thread.
+        This will happen immediately before calling {@link pulpcore.scene.Scene.updateScene(int)}.
+        The runnable is not guaranteed to execute if the app is exited by the user.
+    */
+    public final void invokeAndWait(Runnable runnable) {
+        synchronized (runnable) {
+            synchronized (runnables) {
+                runnables.add(runnable);
+            }
+        
+            try {
+                runnable.wait();
+            }
+            catch (InterruptedException ex) { }
+        }
     }
     
     /**
         Runs the events stored in invokeLater(). This method is called by the Stage.
     */
     public final void runEvents() {
-        for (int i = 0; i < runnables.size(); i++) {
-            try {
-                ((Runnable)runnables.get(i)).run();
-            }
-            catch (Exception ex) {
-                if (Build.DEBUG) CoreSystem.print("Error running event", ex);
+        runEvents(true);
+    }
+    
+    private final void runEvents(boolean execute) {
+        if (runnables.size() == 0) {
+            return;
+        }
+        ArrayList list;
+        
+        synchronized (runnables) {
+            list = new ArrayList(runnables);
+            runnables.clear();
+        }
+        
+        for (int i = 0; i < list.size(); i++) {
+            Runnable r = (Runnable)list.get(i);
+            synchronized (r) {
+                if (execute) {
+                    try {
+                        r.run();
+                    }
+                    catch (Exception ex) {
+                        if (Build.DEBUG) CoreSystem.print("Error running event", ex);
+                    }
+                }
+                r.notifyAll();
             }
         }
-        runnables.clear();
     }
     
     public abstract String getAppProperty(String name);
@@ -145,7 +184,9 @@ public abstract class AppContext {
     
     public abstract void stop();
     
-    public abstract void destroy();
+    public void destroy() {
+        runEvents(false);
+    }
     
     public abstract void putUserData(String key, byte[] data);
         

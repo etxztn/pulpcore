@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -64,6 +64,8 @@ public class AppletInput implements KeyListener, MouseListener,
     private int cursorCode;
     private int awtCursorCode;
     
+    private int lastAppletMouseX = -1;
+    private int lastAppletMouseY = -1;
     private int appletMouseX = -1;
     private int appletMouseY = -1;
     private int appletMousePressX = -1;
@@ -110,6 +112,10 @@ public class AppletInput implements KeyListener, MouseListener,
         // the component; there must be a delay.
         // A value of 10 tested fine; I've increased it here for slower machines.
         focusCountdown = 30;
+    }
+    
+    /* package-private */ Component getComponent() {
+        return comp;
     }
     
     /* package-private */ PolledInput getPolledInput() {
@@ -159,16 +165,16 @@ public class AppletInput implements KeyListener, MouseListener,
             }
         }
         
-        polledInput.isMouseMoving = (appletMouseX != polledInput.mouseX || 
-            appletMouseY != polledInput.mouseY);
-        polledInput.mouseX = appletMouseX;
-        polledInput.mouseY = appletMouseY;
-        polledInput.mousePressX = appletMousePressX;
-        polledInput.mousePressY = appletMousePressY;
-        polledInput.mouseReleaseX = appletMouseReleaseX;
-        polledInput.mouseReleaseY = appletMouseReleaseY;
-        polledInput.mouseWheelX = appletMouseWheelX;
-        polledInput.mouseWheelY = appletMouseWheelY;
+        polledInput.isMouseMoving = (appletMouseX != lastAppletMouseX || 
+            appletMouseY != lastAppletMouseY);
+        polledInput.mouse.x = appletMouseX;
+        polledInput.mouse.y = appletMouseY;
+        polledInput.mousePress.x = appletMousePressX;
+        polledInput.mousePress.y = appletMousePressY;
+        polledInput.mouseRelease.x = appletMouseReleaseX;
+        polledInput.mouseRelease.y = appletMouseReleaseY;
+        polledInput.mouseWheel.x = appletMouseWheelX;
+        polledInput.mouseWheel.y = appletMouseWheelY;
         polledInput.mouseWheelRotation = appletMouseWheel;
         polledInput.hasKeyboardFocus = appletHasKeyboardFocus;
         polledInput.isMouseInside = appletIsMouseInside && 
@@ -176,6 +182,8 @@ public class AppletInput implements KeyListener, MouseListener,
             appletMouseX < comp.getWidth() && appletMouseY < comp.getHeight();
         
         appletMouseWheel = 0;
+        lastAppletMouseX = appletMouseX;
+        lastAppletMouseY = appletMouseY;
         
         if (typedCharsSinceLastPoll.length() > 0) {
             polledInput.typedChars = typedCharsSinceLastPoll.toString();
@@ -426,12 +434,28 @@ public class AppletInput implements KeyListener, MouseListener,
     // Event listener implementations
     //
     
+    private void consume(KeyEvent e) {
+        //int mask = KeyEvent.CTRL_DOWN_MASK | KeyEvent.ALT_DOWN_MASK | KeyEvent.META_DOWN_MASK;
+        //if ((e.getModifiersEx() & mask) == 0) {
+        //    // Only consume if a no 'command' keys are down (ctrl, alt, meta)
+        //    e.consume();
+        //}
+        e.consume();
+    }
+    
     public void keyPressed(KeyEvent e) {
-        //pulpcore.CoreSystem.print(KeyEvent.getKeyText(e.getKeyCode()) + " = " + e.getKeyCode());
-        
         int keyCode = getKeyCode(e);
         keyEvent(keyCode, true);
-        e.consume();
+        
+        consume(e);
+        
+        if (e.isMetaDown() && 
+            !keyDown[Input.KEY_LEFT_META] && !keyDown[Input.KEY_RIGHT_META]) 
+        {
+            // Mac on Leopard won't send meta keys - do it here
+            keyEvent(Input.KEY_LEFT_META, true);
+            keyEvent(Input.KEY_LEFT_META, false);
+        }
         
         if (keyCode == Input.KEY_LEFT_META || keyCode == Input.KEY_RIGHT_META) {
             // On Mac OS X, press and release events are not sent if the meta key is down
@@ -444,7 +468,7 @@ public class AppletInput implements KeyListener, MouseListener,
 
     public void keyReleased(KeyEvent e) {
         keyEvent(getKeyCode(e), false);
-        e.consume();
+        consume(e);
     }
 
     public void keyTyped(KeyEvent e) {
@@ -455,8 +479,9 @@ public class AppletInput implements KeyListener, MouseListener,
             keyEvent(keyCode, true);
             keyEvent(keyCode, false);
         }
-        else {
+        else if (!e.isActionKey()) {
             synchronized (this) {
+                // See this bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4435010
                 char ch = e.getKeyChar();
                 if (ch == KeyEvent.VK_BACK_SPACE) {
                     if (typedCharsSinceLastPoll.length() > 0) {
@@ -470,8 +495,7 @@ public class AppletInput implements KeyListener, MouseListener,
                 }
             }
         }
-        
-        e.consume();
+        consume(e);
     }
     
     public void mousePressed(MouseEvent e) {

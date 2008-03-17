@@ -38,11 +38,17 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.EventQueue;
+import java.awt.Graphics;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.Toolkit;
+import java.awt.Window;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -72,7 +78,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
 import javax.swing.Box;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -81,6 +89,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
+import javax.swing.MenuElement;
 import javax.swing.UIManager;
 import pulpcore.Build;
 
@@ -103,10 +113,12 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         Note: running from the command-line has only been tested with the html generated
         by Eclipse. NetBeans can use the Ant file's "run" task.
         
-        <applet archive="archive.jar" width="640" height="480">
-        <param name="name1" value="value1">
-        <param name="name2" value="value2">
-        <param name="name3" value="value3">
+        Example:
+        
+        <applet code="pulpcore.platform.applet.CoreApplet" 
+            archive="Widgets.jar" width="640" height="480">
+            <param name="scene" value="Widgets">
+            <param name="assets" value="Widgets.zip">
         </applet>
     */
     public static void main(String[] args) {
@@ -196,6 +208,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
         
         // Use system Look and Feel
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         }
@@ -234,47 +247,46 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     public static void start(String documentURL, String archive, int width, int height,
         Map<String, String> params, boolean waitUntilClosed)
     {
+        PulpCorePlayer player = null;
         final String key = documentURL + archive;
         
-        if (waitUntilClosed && !EventQueue.isDispatchThread()) {
+        // Only wait if this is not the EDT
+        waitUntilClosed = waitUntilClosed && !EventQueue.isDispatchThread();
+        
+        synchronized (players) {
+            if (!waitUntilClosed) {
+                player = players.get(key);
+                if (player != null) {
+                    player.reloadApplet();
+                    return;
+                }
+            }
+            
             try {
-                synchronized (key) {
-                    PulpCorePlayer player = new PulpCorePlayer(key, documentURL, archive, 
-                        width, height, params);
-                    // Wait until closed
-                    try {
-                        key.wait();
-                    }
-                    catch (InterruptedException ex) { }
-                }       
+                player = new PulpCorePlayer(key, documentURL, archive, width, height, params);
             }
             catch (MalformedURLException ex) {
                 System.out.println("Path problem: " + ex);
+                return;
             }
             catch (IOException ex) {
                 System.out.println(ex);
+                return;
             }
-                 
+            
+            if (!waitUntilClosed) {
+                players.put(key, player);
+                player.showFrame();
+            }
         }
-        else {
-            synchronized (players) {
-                PulpCorePlayer player = players.get(key);
-                if (player != null) {
-                    player.reloadApplet();
+        
+        if (waitUntilClosed) {
+            synchronized (key) {
+                player.showFrame();
+                try {
+                    key.wait();
                 }
-                else {
-                    try {
-                        player = new PulpCorePlayer(key, documentURL, archive, width, height,
-                            params);
-                        players.put(key, player);
-                    }
-                    catch (MalformedURLException ex) {
-                        System.out.println("Path problem: " + ex);
-                    }
-                    catch (IOException ex) {
-                        System.out.println(ex);
-                    }
-                }
+                catch (InterruptedException ex) { }
             }
         }
     }
@@ -294,27 +306,12 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private List<String> savedAssets;
     private String savedScene;
     
+    private Color osBackground;
+    
     public PulpCorePlayer(String key, String documentURL, String archive, 
         int width, int height, Map<String, String> params) 
         throws MalformedURLException, IOException
     { 
-        // Setup the JFrame 
-        super("PulpCore Player");
-        setLocationByPlatform(true);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout(0,0));
-        
-        // Setup menu bar
-        // Use setLightWeightPopupEnabled(false) because we're mixing lightweight and 
-        // heavyweight components
-        JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu = new JMenu(new FileAction());
-        fileMenu.getPopupMenu().setLightWeightPopupEnabled(false);
-        fileMenu.add(new JMenuItem(new ReloadAction()));
-        menuBar.add(fileMenu);
-        setJMenuBar(menuBar);
-        
-        // Setup applet parameters
         this.key = key;
         this.width = width;
         this.height = height;
@@ -322,19 +319,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         params.put("browsername", "PulpCore Player");
         params.put("browserversion", Build.VERSION);
         
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                synchronized (players) {
-                    players.remove(PulpCorePlayer.this.key);
-                    unloadApplet();
-                }
-                
-                synchronized (PulpCorePlayer.this.key) {
-                    PulpCorePlayer.this.key.notify();
-                }
-            }
-        });
-
         // Create the URLs
         if (documentURL.startsWith("file:/")) {
             documentURL = documentURL.substring(6);
@@ -343,7 +327,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 documentURL = documentURL.substring(1);
             }
         }
-        
         if (documentURL.startsWith("http:")) {
             // Determine URL redirects. For example, 
             // "http://www.example.com/path" might redirect to 
@@ -376,14 +359,83 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         else {
             archiveURL = new URL(codeBaseURL, archive);
         }
-
-        // Show the window
+        
+        // For Mac OS X
+        osBackground = getBackground();
+        osBackground = new Color(osBackground.getRGB());
+        
+        // Setup the JFrame
+        setBackground(Color.BLACK);
+        getContentPane().setBackground(Color.BLACK);
+        setTitle(getProjectTitle(archive));
+        setLocationByPlatform(true);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        getContentPane().setLayout(new BorderLayout(0,0));
         if ("Mac OS X".equals(System.getProperty("os.name"))) {
             getContentPane().setPreferredSize(new Dimension(width, height + MAC_GROWBOX_SIZE));
         }
         else {
             getContentPane().setPreferredSize(new Dimension(width, height));
-        }        
+        }
+        
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                GraphicsEnvironment.getLocalGraphicsEnvironment().
+                    getDefaultScreenDevice().setFullScreenWindow(null);
+                    
+                synchronized (players) {
+                    players.remove(PulpCorePlayer.this.key);
+                    unloadApplet();
+                }
+                
+                synchronized (PulpCorePlayer.this.key) {
+                    PulpCorePlayer.this.key.notify();
+                }
+            }
+        });
+        
+        setJMenuBar(createJMenuBar());
+    }
+    
+    private JMenuBar createJMenuBar() {
+        JMenu fileMenu = new JMenu(new FileAction());
+        fileMenu.add(new JMenuItem(new ReloadAction()));
+        fileMenu.addSeparator();
+        fileMenu.add(new JMenuItem(new ScreenshotAction()));
+        
+        JMenu viewMenu = new JMenu(new ViewAction());
+        viewMenu.add(new JMenuItem(new FullScreenAction()));
+        
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(fileMenu);
+        menuBar.add(viewMenu);
+        
+        // Use setLightWeightPopupEnabled(false) because we're mixing lightweight and 
+        // heavyweight components
+        for (MenuElement menu : menuBar.getSubElements()) {
+            if (menu instanceof JMenu) {
+                ((JMenu)menu).getPopupMenu().setLightWeightPopupEnabled(false);
+            }
+        }
+        
+        return menuBar;
+    }
+    
+    private String getProjectTitle(String archive) {
+        String title = "PulpCore";
+        // The project title is displayed in the HTML title.
+        // Since there is no mechanism to specify the title, use the archive name.
+        // There's no plans to create such mechanism since people can create their own
+        // HTML template.
+        if (archive != null && archive.toLowerCase().endsWith(".jar")) {
+            title = archive.substring(0, archive.length() - 4);
+        }
+        // Replace dashes with spaces, so "HelloWorld-1.0" becomes "HelloWorld 1.0".
+        title = title.replace("-", " ");
+        return title;
+    }
+    
+    private void showFrame() {
         pack();
         setVisible(true);
         
@@ -398,7 +450,6 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 }
             }
         });
-        
     }
     
     private synchronized void loadApplet() {
@@ -442,10 +493,11 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         getContentPane().add(applet, BorderLayout.CENTER);
         // Add 15 pixels for the growbox
         if ("Mac OS X".equals(System.getProperty("os.name"))) {
-            Component c = Box.createVerticalStrut(MAC_GROWBOX_SIZE);
-            c.setBackground(Color.BLACK);
-            c.setForeground(Color.BLACK);
+            Filler c = Filler.createVerticalStrut(MAC_GROWBOX_SIZE);
+            c.setOpaque(true);
+            c.setBackground(osBackground);
             getContentPane().add(c, BorderLayout.SOUTH);
+            c.revalidate();
         }
         applet.init();
         
@@ -488,6 +540,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     }
     
     private void showError(Throwable t) {
+        applet = null;
         t.printStackTrace();
         JPanel panel = new JPanel();
         panel.add(new JLabel(t.toString()));
@@ -668,8 +721,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
         catch (UnsupportedOperationException ex) {
             ex.getCause().printStackTrace();
-            JOptionPane.showMessageDialog(null,
-                "Could not launch browser.\n" + url);
+            JOptionPane.showMessageDialog(null, "Could not launch browser.\n" + url);
         }
     }
     
@@ -695,11 +747,93 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     // Swing actions
     //
     
+    private class EscapeFullScreen extends KeyAdapter {
+        public void keyPressed(KeyEvent e) {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                Window window = GraphicsEnvironment.getLocalGraphicsEnvironment().
+                    getDefaultScreenDevice().getFullScreenWindow();
+                GraphicsEnvironment.getLocalGraphicsEnvironment().
+                    getDefaultScreenDevice().setFullScreenWindow(null);
+                if (window != null) {
+                    window.dispose();
+                }
+                if (applet != null) {
+                    PulpCorePlayer.this.getContentPane().add(applet, BorderLayout.CENTER);
+                    PulpCorePlayer.this.pack();
+                    applet.removeKeyListener(this);
+                    applet.requestFocus();
+                }
+                PulpCorePlayer.this.setVisible(true);
+            }
+        }
+    };
+    
     public class FileAction extends EditAction { }
+    
+    public class ViewAction extends EditAction { }
+    
+    public class FullScreenAction extends EditAction { 
+        public void actionPerformed(ActionEvent e) {
+            if (applet != null) {
+                PulpCorePlayer.this.getContentPane().remove(applet);
+                PulpCorePlayer.this.setVisible(false);
+                JFrame fullScreenWindow = new JFrame();
+                
+                // Copy accelerators
+                // (Commented out because accelerators aren't working)
+                // Probably due to consumed events?
+                //fullScreenWindow.setJMenuBar(createJMenuBar());
+                //fullScreenWindow.getJMenuBar().setVisible(false);
+                
+                fullScreenWindow.setUndecorated(true);
+                fullScreenWindow.setResizable(false);
+                fullScreenWindow.setTitle(PulpCorePlayer.this.getTitle());
+                fullScreenWindow.setBackground(Color.BLACK);
+                fullScreenWindow.getContentPane().setBackground(Color.BLACK);
+                fullScreenWindow.getContentPane().setLayout(new BorderLayout(0,0));
+                fullScreenWindow.getContentPane().add(applet, BorderLayout.CENTER);
+                applet.addKeyListener(new EscapeFullScreen());
+                GraphicsEnvironment.getLocalGraphicsEnvironment().
+                    getDefaultScreenDevice().setFullScreenWindow(fullScreenWindow);
+                EventQueue.invokeLater(new Runnable() {
+                    public void run() {
+                        applet.requestFocus();
+                    }
+                });
+            }
+        }
+    }
     
     public class ReloadAction extends EditAction {
         public void actionPerformed(ActionEvent e) {
             reloadApplet();
+        }
+    }
+    
+    public class ScreenshotAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (applet != null) {
+                try {
+                    // Call CoreApplet.getScreenshot()
+                    Method getScreenshot = applet.getClass().getMethod("getScreenshot");
+                    Object image = getScreenshot.invoke(applet, new Object[0]);
+                    if (image != null) {
+                        File dir = new File(
+                            System.getProperty("user.home") + File.separator + "Desktop");
+                        if (!dir.exists()) {
+                            dir = new File(System.getProperty("user.home"));
+                        }
+                        
+                        File imageFile = File.createTempFile(getTitle(), ".png", dir);
+                        
+                        ImageIO.write((BufferedImage)image, "PNG", imageFile);
+                    }
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                    Toolkit.getDefaultToolkit().beep();
+                }
+            }
         }
     }
 
@@ -762,6 +896,37 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 }
             }
             return null;
+        }
+    }
+    
+    public static class Filler extends JComponent {
+        
+        public static Filler createVerticalStrut(int height) {
+            return new Filler(new Dimension(0, height), new Dimension(0, height), 
+                new Dimension(Short.MAX_VALUE, height));
+        }
+        
+        public static Filler createHorizontalStrut(int width) {
+            return new Filler(new Dimension(width, 0), new Dimension(width, 0), 
+                new Dimension(width, Short.MAX_VALUE));
+        }
+
+        public Filler(Dimension min, Dimension pref, Dimension max) {
+            setMinimumSize(min);
+            setPreferredSize(pref);
+            setMaximumSize(max);
+        }
+
+        public void changeShape(Dimension min, Dimension pref, Dimension max) {
+            setMinimumSize(min);
+            setPreferredSize(pref);
+            setMaximumSize(max);
+            revalidate();
+        }
+
+        protected void paintComponent(Graphics g) {
+            g.setColor(getBackground());
+            g.fillRect(0, 0, getWidth(), getHeight());
         }
     }
 }

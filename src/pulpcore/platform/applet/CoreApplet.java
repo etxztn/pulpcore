@@ -31,17 +31,22 @@ package pulpcore.platform.applet;
 
 import java.applet.Applet;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.net.MalformedURLException;
 import java.net.URL;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.image.CoreImage;
 import pulpcore.platform.Surface;
 import pulpcore.scene.LoadingScene;
 import pulpcore.scene.Scene;
+import pulpcore.Stage;
 
 /**
     CoreApplet is a Java 1.4-compatible Platform implementation.
@@ -124,6 +129,8 @@ public final class CoreApplet extends Applet {
     */
     public Scene createFirstScene() {
         
+        Stage.setAutoScale(getWidth(), getHeight());
+        
         Scene firstScene;
         
         // Create the first scene
@@ -176,4 +183,96 @@ public final class CoreApplet extends Applet {
         }
     }
     
+    /**
+        Causes {@code runnable} to have its {@code run} method called in the animation thread.
+        This will happen immediately before calling {@link pulpcore.scene.Scene.updateScene(int)}.
+        The runnable is not guaranteed to execute if the app is exited by the user.
+    */
+    public void invokeAndWait(Runnable runnable) {
+        AppletAppContext c = context;
+        if (c != null) {
+            c.invokeAndWait(runnable);
+        }
+    }
+    
+    // For PulpCore Player
+    
+    private Component getInputComponent() {
+        AppletAppContext c = context;
+        if (c != null) {
+            Component comp = c.getInputComponent();
+            if (comp != null) {
+                return comp;
+            }
+        }
+        return this;
+    }
+    
+    public void requestFocus() {
+        Component comp = getInputComponent();
+        if (comp == this) {
+            super.requestFocus();
+        }
+        else {
+            comp.requestFocus();
+        }
+    }
+    
+    public void removeKeyListener(KeyListener l) {
+        Component comp = getInputComponent();
+        if (comp == this) {
+            super.removeKeyListener(l);
+        }
+        else {
+            comp.removeKeyListener(l);
+        }
+    }
+    
+    public void addKeyListener(KeyListener l) {
+        Component comp = getInputComponent();
+        if (comp == this) {
+            super.addKeyListener(l);
+        }
+        else {
+            comp.addKeyListener(l);
+        }
+    }
+    
+    public KeyListener[] getKeyListeners() {
+        Component comp = getInputComponent();
+        if (comp == this) {
+            return super.getKeyListeners();
+        }
+        else {
+            return comp.getKeyListeners();
+        }
+    }
+    
+    /**
+        Gets a screenshot of the current appearance of the stage.
+        @return a new image that contains the screenshot.
+    */
+    public BufferedImage getScreenshot() {
+        final CoreImage[] image = new CoreImage[1];
+        AppletAppContext c = context;
+        if (c != null) {
+            c.invokeAndWait(new Runnable() {
+                public void run() {
+                    image[0] = Stage.getScreenshot();
+                }
+            });
+        }
+        
+        if (image[0] != null) {
+            int w = image[0].getWidth();
+            int h = image[0].getHeight();
+            int[] d = image[0].getData();
+            BufferedImage awtImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+            awtImage.setRGB(0, 0, w, h, d, 0, w);
+            return awtImage;
+        }
+        else {
+            return null;
+        }
+    }
 }

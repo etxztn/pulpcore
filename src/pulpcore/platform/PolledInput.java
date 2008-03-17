@@ -30,6 +30,7 @@
 package pulpcore.platform;
 
 import pulpcore.Input;
+import pulpcore.math.Tuple2i;
 
 /**
     The PolledInput class represents a snapshot of the input state at the last call to 
@@ -38,18 +39,14 @@ import pulpcore.Input;
 public class PolledInput {
     
     public final int[] keyStates = new int[Input.NUM_KEY_CODES];
+    public final Tuple2i mouse = new Tuple2i();
+    public final Tuple2i mousePress = new Tuple2i();
+    public final Tuple2i mouseRelease = new Tuple2i();
+    public final Tuple2i mouseWheel = new Tuple2i();
+    public int mouseWheelRotation;
     public boolean isMouseInside;
     public boolean isMouseMoving;   
     public boolean hasKeyboardFocus;
-    public int mouseX;
-    public int mouseY;
-    public int mousePressX;
-    public int mousePressY;
-    public int mouseReleaseX;
-    public int mouseReleaseY;
-    public int mouseWheelX;
-    public int mouseWheelY;
-    public int mouseWheelRotation;
     public String typedChars = "";
    
 }

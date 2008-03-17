@@ -344,6 +344,18 @@ public class CoreGraphics {
         return clipHeight;
     }
     
+    /**
+        Gets the current clip as a newly allocated Rect.
+    */
+    public Rect getClip() {
+        Rect clip = new Rect();
+        getClip(clip);
+        return clip;
+    }
+    
+    /**
+        Copies the current clip into the specified Rect.
+    */
     public void getClip(Rect rect) {
         rect.setBounds(clipX, clipY, clipWidth, clipHeight);
     }

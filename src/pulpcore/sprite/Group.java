@@ -39,6 +39,7 @@ import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
+import pulpcore.math.Tuple2i;
 import pulpcore.math.Transform;
 import pulpcore.Stage;
 
@@ -46,8 +47,6 @@ import pulpcore.Stage;
     A container of Sprites.
 */
 public class Group extends Sprite {
-    
-    private static final Transform IDENTITY = new Transform();
     
     /** Immuatable list of sprites. A new array is created when the list changes. */
     private Sprite[] sprites = new Sprite[0];
@@ -64,7 +63,6 @@ public class Group extends Sprite {
     
     private CoreImage backBuffer;
     private boolean backBufferCoversStage;
-    private boolean backBufferUpToDate;
     private BlendMode backBufferBlendMode = BlendMode.SrcOver();
     
     public Group() {
@@ -409,6 +407,7 @@ public class Group extends Sprite {
     
     /**
         Packs this group so that its dimensions match the area covered by its children. 
+        If this Group has a back buffer, the back buffer is resized if necessary.
     */
     public void pack() {
         Sprite[] snapshot = sprites;
@@ -446,6 +445,9 @@ public class Group extends Sprite {
             width.set(0);
             height.set(0);
         }
+        if (hasBackBuffer()) {
+            createBackBuffer(backBufferBlendMode);
+        }
         setDirty(true);
     }
     
@@ -476,14 +478,23 @@ public class Group extends Sprite {
     */
     public void createBackBuffer(BlendMode blendMode) {
         setBackBufferBlendMode(blendMode);
+        int backBufferWidth;
+        int backBufferHeight;
         if (fNaturalWidth == 0 || fNaturalHeight == 0) {
-            backBuffer = new CoreImage(Stage.getWidth(), Stage.getHeight(), false);
+            backBufferWidth = Stage.getWidth();
+            backBufferHeight = Stage.getHeight();
             backBufferCoversStage = true;
         }
         else {
-            backBuffer = new CoreImage(CoreMath.toIntCeil(fNaturalWidth), 
-                CoreMath.toIntCeil(fNaturalHeight), false);
+            backBufferWidth = CoreMath.toIntCeil(fNaturalWidth);
+            backBufferHeight = CoreMath.toIntCeil(fNaturalHeight);
             backBufferCoversStage = false;
+        }
+        if (backBuffer == null || 
+            backBuffer.getWidth() != backBufferWidth ||
+            backBuffer.getHeight() != backBufferHeight)
+        {
+            backBuffer = new CoreImage(backBufferWidth, backBufferHeight, false);
         }
     }
     
@@ -519,15 +530,6 @@ public class Group extends Sprite {
     */
     public BlendMode getBackBufferBlendMode() {
         return backBufferBlendMode;
-    }
-    
-    /* package-private */ Transform getBackBufferTransform() {
-        if (!hasBackBuffer() || backBufferCoversStage) {
-            return getDrawTransform();
-        }
-        else {
-            return IDENTITY;
-        }
     }
     
     //
@@ -567,7 +569,6 @@ public class Group extends Sprite {
         for (int i = 0; i < snapshot.length; i++) {
             snapshot[i].update(elapsedTime);
         }
-        backBufferUpToDate = false;
     }
     
     protected void drawSprite(CoreGraphics g) {
@@ -579,27 +580,67 @@ public class Group extends Sprite {
             }
         }
         else {
+            int clipX = g.getClipX();
+            int clipY = g.getClipY(); 
+            int clipW = g.getClipWidth();
+            int clipH = g.getClipHeight();
+            Transform clipTransform;
             CoreGraphics g2 = backBuffer.createGraphics();
             g2.setBlendMode(backBufferBlendMode);
             if (backBufferCoversStage) {
                 g2.setTransform(g.getTransform());
-                g2.setClip(g.getClipX(), g.getClipY(), g.getClipWidth(), g.getClipHeight());
-                g2.clear();
-                for (int i = 0; i < snapshot.length; i++) {
-                    snapshot[i].draw(g2);
-                }
-                // Note: this is ok; the transform is popped upon returning from drawSprite()
-                g.getTransform().clear();
+                clipTransform = g.getTransform();
             }
-            else if (!backBufferUpToDate) {
-                backBufferUpToDate = true;
-                // Make sure the entire back buffer is only updated once per frame
-                // TODO: better to set the clip rather than update the entire back buffer?
-                g2.clear();
-                for (int i = 0; i < snapshot.length; i++) {
-                    snapshot[i].draw(g2);
+            else {
+                Transform t = Stage.getDefaultTransform();
+                if (t.getType() != Transform.TYPE_IDENTITY) {
+                    clipTransform = new Transform(t);
+                    clipTransform.concatenate(getViewTransform());
+                }
+                else {
+                    clipTransform = getViewTransform();
                 }
             }
+            
+            if (clipTransform.getType() != Transform.TYPE_IDENTITY) {
+                Tuple2i p1 = new Tuple2i(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY));
+                Tuple2i p2 = new Tuple2i(
+                    CoreMath.toFixed(clipX + clipW), 
+                    CoreMath.toFixed(clipY + clipH));
+                
+                boolean success = true;
+                success &= clipTransform.inverseTransform(p1);
+                success &= clipTransform.inverseTransform(p2);
+                if (!success) {
+                    return;
+                }
+                if (p2.x < p1.x) {
+                    int t = p1.x;
+                    p1.x = p2.x;
+                    p2.x = t;
+                }
+                if (p2.y < p1.y) {
+                    int t = p1.y;
+                    p1.y = p2.y;
+                    p2.y = t;
+                }
+                clipX = CoreMath.toIntFloor(p1.x);
+                clipY = CoreMath.toIntFloor(p1.y);
+                clipW = CoreMath.toIntCeil(p2.x) - clipX + 1;
+                clipH = CoreMath.toIntCeil(p2.y) - clipY + 1;
+            }
+            g2.setClip(clipX, clipY, clipW, clipH);
+            g2.clear();
+            for (int i = 0; i < snapshot.length; i++) {
+                snapshot[i].draw(g2);
+            }
+            
+            if (backBufferCoversStage) {
+                // Note: setting the transform is ok;
+                // the transform is popped upon returning from drawSprite()
+                g.setTransform(Stage.getDefaultTransform());
+            }
+            
             g.drawImage(backBuffer);
         }
     }

@@ -118,7 +118,7 @@ public class PlayerTask extends Task {
                         Method m = c.getMethod("start", String.class, String.class, 
                             Integer.TYPE, Integer.TYPE, Map.class, Boolean.TYPE);
                         m.invoke(null, path, archive, width, height, 
-                            appProperties, waitUntilClosed ? true : false);
+                            appProperties, waitUntilClosed);
                         return;
                     }
                     catch (Exception ex) {
@@ -130,7 +130,7 @@ public class PlayerTask extends Task {
         
         // No running copy found: start a new one.
         PulpCorePlayer.start(path, archive, width, height, 
-            appProperties, waitUntilClosed ? true : false);
+            appProperties, waitUntilClosed);
     }
     
     /**

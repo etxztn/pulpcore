@@ -42,6 +42,7 @@ import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
+import pulpcore.math.Tuple2i;
 import pulpcore.scene.Scene2D;
 import pulpcore.Stage;
 
@@ -341,9 +342,16 @@ public abstract class Sprite implements PropertyListener {
             
             updateTransform();
             
+            Transform d = Stage.getDefaultTransform();
+            Transform t = viewTransform;
+            if (d.getType() != Transform.TYPE_IDENTITY) {
+                t = new Transform(d);
+                t.concatenate(viewTransform);
+            }
+            
             // TODO: if an ancestor has a back-buffer, clip the dirty rect to the back-buffer bounds
             
-            changed |= viewTransform.getBounds(
+            changed |= t.getBounds(
                 getNaturalWidth(), getNaturalHeight(), dirtyRect);
         }
         
@@ -402,7 +410,7 @@ public abstract class Sprite implements PropertyListener {
     
     /* package-private */ final Transform getParentViewTransform() {
         if (parent == null) {
-            return Stage.getDefaultTransform();
+            return IDENTITY;
         }
         else {
             return parent.getViewTransform();
@@ -414,7 +422,7 @@ public abstract class Sprite implements PropertyListener {
             return Stage.getDefaultTransform();
         }
         else if (parent.hasBackBuffer()) {
-            return parent.getBackBufferTransform();
+            return IDENTITY;
         }
         else {
             return parent.getDrawTransform();
@@ -904,45 +912,41 @@ public abstract class Sprite implements PropertyListener {
         // sprite's OBB (which is actually a parallelogram)
       
         // Step 1: Get sprite A's points
-        V[] ap = {
-            new V(0, 0),
-            new V(aw, 0),
-            new V(aw, ah),
-            new V(0, ah)
+        Tuple2i[] ap = {
+            new Tuple2i(0, 0),
+            new Tuple2i(aw, 0),
+            new Tuple2i(aw, ah),
+            new Tuple2i(0, ah)
         };
             
         // Step 2: Get sprite B's points and convert them to sprite A's local space
-        V[] bp = {
-            new V(0, 0),
-            new V(bw, 0),
-            new V(bw, bh),
-            new V(0, bh)
+        Tuple2i[] bp = {
+            new Tuple2i(0, 0),
+            new Tuple2i(bw, 0),
+            new Tuple2i(bw, bh),
+            new Tuple2i(0, bh)
         };
         for (int i = 0; i < 4; i++) {
-            V p = bp[i];
-            int x1 = bt.transformX(p.x, p.y);
-            int y1 = bt.transformY(p.x, p.y);
-            int x2 = at.inverseTransformX(x1, y1);
-            int y2 = at.inverseTransformY(x1, y1);
-            if (x2 == Integer.MAX_VALUE || y2 == Integer.MAX_VALUE) {
+            Tuple2i p = bp[i];
+            bt.transform(p);
+            at.inverseTransform(p);
+            if (p.x == Integer.MAX_VALUE || p.y == Integer.MAX_VALUE) {
                 return false;
             }
-            p.x = x2;
-            p.y = y2;
         }
         
         // Step 3: Get perpendiculars of each edge
-        V[] perps = { 
-            new V(ap[1].y - ap[0].y, ap[0].x - ap[1].x),
-            new V(ap[3].y - ap[0].y, ap[0].x - ap[3].x),
-            new V(bp[1].y - bp[0].y, bp[0].x - bp[1].x),
-            new V(bp[3].y - bp[0].y, bp[0].x - bp[3].x)
+        Tuple2i[] perps = { 
+            new Tuple2i(ap[1].y - ap[0].y, ap[0].x - ap[1].x),
+            new Tuple2i(ap[3].y - ap[0].y, ap[0].x - ap[3].x),
+            new Tuple2i(bp[1].y - bp[0].y, bp[0].x - bp[1].x),
+            new Tuple2i(bp[3].y - bp[0].y, bp[0].x - bp[3].x)
         };
         int[] perpLengths = {
             aw,
             ah,
-            perps[2].getLength(),
-            perps[3].getLength()
+            perps[2].length(),
+            perps[3].length()
         };
         
         // Step 4: Project points onto each perpendicular.
@@ -954,13 +958,13 @@ public abstract class Sprite implements PropertyListener {
             int bmin = Integer.MAX_VALUE;
             int bmax = Integer.MIN_VALUE;
             int len = perpLengths[i];
-            V p = perps[i];
+            Tuple2i p = perps[i];
             
             if (len <= 0) {
                 return false;
             }
             for (int j = 0; j < ap.length; j++) {
-                int v = CoreMath.div(p.getDotProduct(ap[j]), len);
+                int v = CoreMath.div(p.dot(ap[j]), len);
                 if (v < amin) {
                     amin = v;
                 }
@@ -969,7 +973,7 @@ public abstract class Sprite implements PropertyListener {
                 }
             }
             for (int j = 0; j < bp.length; j++) {
-                int v = CoreMath.div(p.getDotProduct(bp[j]), len);
+                int v = CoreMath.div(p.dot(bp[j]), len);
                 if (v < bmin) {
                     bmin = v;
                 }
@@ -1348,92 +1352,5 @@ public abstract class Sprite implements PropertyListener {
     {
         this.width.animateTo(width, duration, easing, startDelay);
         this.height.animateTo(height, duration, easing, startDelay);
-    }
-    
-    // Quick-and-dirty fixed-point vector class for sprite.intersects()
-    private static class V {
-        public int x;
-        public int y;
-        
-        public V() {
-            setTo(0, 0);
-        }
-        
-        public V(int x, int y) {
-            setTo(x, y);
-        }
-        
-        public V(V v) {
-            setTo(v.x, v.y);
-        }
-        
-        public void setTo(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-        
-        public int getLengthSq() {
-            return CoreMath.mul(x, x) + CoreMath.mul(y, y);
-        }
-        
-        public int getLength() {
-            int l2 = getLengthSq();
-            if (l2 > 0) {
-                return CoreMath.sqrt(l2);
-            }
-            else {
-                return 0;
-            }
-        }
-        
-        public void setLength(int newLength) {
-            int length = getLength();
-            if (length != 0) {
-                mulDiv(newLength, length);
-            }
-        }
-        
-        public void normalize() {
-            int length = getLength();
-            if (length != 0) {
-                div(length);
-            }
-        }    
-    
-        public void add(int x, int y) {
-            this.x += x;
-            this.y += y;
-        }
-    
-        public void sub(int x, int y) {
-            add(-x, -y);
-        }
-    
-        public void add(V v) {
-            add(v.x, v.y);
-        }
-    
-        public void sub(V v) {
-            add(-v.x, -v.y);
-        }    
-        
-        public void mul(int s) {
-           x = CoreMath.mul(x, s);
-           y = CoreMath.mul(y, s);
-        }
-    
-        public void div(int s) {
-           x = CoreMath.div(x, s);
-           y = CoreMath.div(y, s);
-        }
-        
-        public void mulDiv(int n, int d) {
-           x = CoreMath.mulDiv(x, n, d);
-           y = CoreMath.mulDiv(y, n, d);
-        }
-    
-        public int getDotProduct(V v) {
-            return CoreMath.mul(x, v.x) + CoreMath.mul(y, v.y);
-        }
     }
 }

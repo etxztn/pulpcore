@@ -158,6 +158,7 @@ public final class AppletAppContext extends AppContext {
     }
     
     public void destroy() {
+        super.destroy();
         if (stage != null) {
             stage.destroy();
             stage = null;
@@ -315,6 +316,16 @@ public final class AppletAppContext extends AppContext {
         }
         
         inputSystem = new AppletInput(inputComponent);
+    }
+    
+    Component getInputComponent() {
+        AppletInput i = inputSystem;
+        if (i != null) {
+            return i.getComponent();
+        }
+        else {
+            return null;
+        }
     }
     
     public Stage getStage() {

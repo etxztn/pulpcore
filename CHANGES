@@ -1,5 +1,10 @@
 0.11.2 (In SVN)
-  * Fixed bug: FF bug fixed in 0.10.8 for Windows now also fixed for Linux.
+  * API: Added pulpcore.math.Tuple2i
+  * Core: App resizing now works automagically in all cases. No source changes required.
+  * Player: Added 'Full Screen' option (rebuild your app to enable this feature).
+  * Player: Added 'Capture Screenshot' option (rebuild your app to enable this feature).
+  * Fixed bug: TextField: detect meta key combinations on Mac OS X Leopoard 
+  * Fixed bug: Fixed FF/Linux download issue (same as FF/Windows bug fixed in 0.10.8)
   
 0.11.1 (March 13, 2008)
   * Examples: Added Images example, showing frame-based animated images and pixel-level collisions.

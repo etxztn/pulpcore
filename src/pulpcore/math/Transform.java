@@ -87,6 +87,10 @@ public class Transform {
         return CoreMath.mul(m10, fx) + CoreMath.mul(m11, fy) + m12;
     }
     
+    public void transform(Tuple2i t) {
+        t.set(transformX(t.x, t.y), transformY(t.x, t.y));
+    }
+    
     /**
         Returns Integer.MAX_VALUE if this transform can't be inverted.
     */
@@ -136,7 +140,19 @@ public class Transform {
         else {
             return fy;
         }
-        
+    }
+    
+    /**
+        @return true on success; false if this transform can't be inverted.
+    */
+    public boolean inverseTransform(Tuple2i t) {
+        int tx = inverseTransformX(t.x, t.y);
+        int ty = inverseTransformY(t.x, t.y);
+        if (tx == Integer.MAX_VALUE || ty == Integer.MAX_VALUE) {
+            return false;
+        }
+        t.set(tx, ty);
+        return true;
     }
     
     /**

@@ -408,14 +408,14 @@ public final class Input {
         @return the current x location of the mouse.
     */
     public static int getMouseX() {
-        return getThisPolledInput().mouseX;
+        return getThisPolledInput().mouse.x;
     }
     
     /**
         @return the current y location of the mouse.
     */
     public static int getMouseY() {
-        return getThisPolledInput().mouseY;
+        return getThisPolledInput().mouse.y;
     }
     
     /**
@@ -424,7 +424,7 @@ public final class Input {
         @return the x location of the last mouse press.
     */
     public static int getMousePressX() {
-        return getThisPolledInput().mousePressX;
+        return getThisPolledInput().mousePress.x;
     }
     
     /**
@@ -433,7 +433,7 @@ public final class Input {
         @return the y location of the last mouse press.
     */
     public static int getMousePressY() {
-        return getThisPolledInput().mousePressY;
+        return getThisPolledInput().mousePress.y;
     }
     
     /**
@@ -442,7 +442,7 @@ public final class Input {
         @return the x location of the last mouse release.
     */
     public static int getMouseReleaseX() {
-        return getThisPolledInput().mouseReleaseX;
+        return getThisPolledInput().mouseRelease.x;
     }
     
     /**
@@ -451,7 +451,7 @@ public final class Input {
         @return the y location of the last mouse release.
     */
     public static int getMouseReleaseY() {
-        return getThisPolledInput().mouseReleaseY;
+        return getThisPolledInput().mouseRelease.y;
     }
     
     /**
@@ -460,7 +460,7 @@ public final class Input {
         @return the x location of the last mouse wheel rotation.
     */
     public static int getMouseWheelX() {
-        return getThisPolledInput().mouseWheelX;
+        return getThisPolledInput().mouseWheel.x;
     }
     
     /**
@@ -469,7 +469,7 @@ public final class Input {
         @return the y location of the last mouse wheel rotation.
     */
     public static int getMouseWheelY() {
-        return getThisPolledInput().mouseWheelY;
+        return getThisPolledInput().mouseWheel.y;
     }
     
     /**
