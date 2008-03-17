@@ -57,7 +57,7 @@ public class Sketch extends Scene {
             wasMouseInside = Input.isMouseInside();
         
             // Update particles
-            elapsedTime = Math.min(elapsedTime, 100);
+            elapsedTime = Math.min(elapsedTime, 20);
             for (Particle particle : particles) {
                 particle.update(elapsedTime);
             }
