@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -43,7 +43,10 @@ import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.ConvolveOp;
 import java.awt.image.DataBufferInt;
+import java.awt.image.Kernel;
 import java.awt.Paint;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -74,21 +77,19 @@ public class ConvertFontTask extends Task {
     private static final long MAGIC = 0x70756c70666e740bL; // "pulpfnt" 0.11
     
     // For fonts with kerning pairs (work in progress)
+    // Also need advance info?
     //private static final long MAGIC_0_12 = 0x70756c70666e740cL; // "pulpfnt" 0.12
     
     private File srcFile;
     private File destFile;
     
-    
     public void setSrcFile(File srcFile) {
         this.srcFile = srcFile;
     }
     
-    
     public void setDestFile(File destFile) {
         this.destFile = destFile;
     }
-    
     
     public void execute() throws BuildException {
         if (srcFile == null) {
@@ -111,11 +112,9 @@ public class ConvertFontTask extends Task {
         }
     }
     
-
     //
     //
     //
-    
     
     private String chars;
     
@@ -129,14 +128,14 @@ public class ConvertFontTask extends Task {
     private boolean hasBearing;
     
     private Paint backgroundPaint;
-    private Color fillColor1;
-    private Color fillColor2;
+    private Paint fillPaint;
     private Paint strokePaint;
     private Stroke stroke;
     
     private float shadowX;
     private float shadowY;
     private Paint shadowPaint;
+    private Filter shadowBlur;
     
     private int numColors;
     
@@ -151,7 +150,6 @@ public class ConvertFontTask extends Task {
     private final FontRenderContext context = 
         new FontRenderContext(new AffineTransform(), true, true);
     
-    
     private void create() throws IOException, FontFormatException {
         try {
             loadProperties(srcFile);
@@ -163,7 +161,6 @@ public class ConvertFontTask extends Task {
         
         createFont();
     }
-    
     
     private void loadProperties(File file) throws IOException, NumberFormatException {
         CoreProperties props = new CoreProperties();
@@ -262,9 +259,19 @@ public class ConvertFontTask extends Task {
         }
         
         backgroundPaint = props.getColorProperty("background.color", null);
-        fillColor1 = props.getColorProperty("color", Color.BLACK);
-        fillColor2 = props.getColorProperty("gradient.color", null);
         strokePaint = props.getColorProperty("stroke.color", null);
+        Color fillColor1 = props.getColorProperty("color", Color.BLACK);
+        Color fillColor2 = props.getColorProperty("gradient.color", null);
+        
+        fillPaint = fillColor1;
+        if (fillColor2 != null) {
+            float yOffset = props.getFloatProperty("gradient.offset", 0);
+            fillPaint = new GradientPaint(
+                0, -fontSize + yOffset,
+                fillColor1,
+                0, yOffset,
+                fillColor2);
+        }
         
         float strokeSize = props.getFloatProperty("stroke.size", 0);
         if (strokeSize > 0) {
@@ -277,6 +284,7 @@ public class ConvertFontTask extends Task {
         shadowX = props.getFloatProperty("shadow.x", 0);
         shadowY = props.getFloatProperty("shadow.y", 0);
         shadowPaint = props.getColorProperty("shadow.color", null);
+        shadowBlur = new BlurFilter(props.getIntProperty("shadow.blur", 0));
         
         numColors = props.getIntProperty("colors", 0);
         
@@ -288,9 +296,7 @@ public class ConvertFontTask extends Task {
             throw new BuildException(file + 
                 " has unknown property \"" + i.next() + "\"");
         }
-        
     }
-    
     
     private void createFont() throws IOException, FontFormatException, BuildException {
         
@@ -406,10 +412,12 @@ public class ConvertFontTask extends Task {
         
         // Find the character bounds
         Rectangle[] bounds = new Rectangle[legalChars.length()];
+        BufferedImage[] charImages = new BufferedImage[legalChars.length()];
         for (int i = 0; i < legalChars.length(); i++) {
             char ch = legalChars.charAt(i);
-            bounds[i] = calcBounds(drawChar(font, ch, Color.WHITE, Color.BLACK,
-                stroke, Color.BLACK, Color.BLACK, shadowX, shadowY));
+            charImages[i] = drawChar(font, ch, fillPaint,
+                    stroke, strokePaint, shadowPaint, shadowX, shadowY, shadowBlur);
+            bounds[i] = calcBounds(charImages[i]);
             int w = bounds[i].width;
             int h = bounds[i].height;
             
@@ -422,6 +430,7 @@ public class ConvertFontTask extends Task {
             else {
                 // A space character - calculate later
                 bounds[i] = null;
+                charImages[i] = null;
             }
         }
         
@@ -468,15 +477,6 @@ public class ConvertFontTask extends Task {
             }
         }
         
-        Paint fillPaint = fillColor1;
-        if (fillColor2 != null) {
-            fillPaint = new GradientPaint(
-                new Point(0, 0),
-                fillColor1,
-                new Point(0, height),
-                fillColor2);
-        }
-        
         // Draw the final image
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         int x = 0;
@@ -506,18 +506,11 @@ public class ConvertFontTask extends Task {
             if (bounds[i] != null) {
                 xOffset += x - bounds[i].x;
                 
-                BufferedImage charImage = drawChar(font, ch, null, fillPaint,
-                    stroke, strokePaint, shadowPaint, shadowX, shadowY);
-                
                 if (useGlyphBearingInfo && !monospace && !(monospaceNumerals && isNumeral)) {
-                    getBearing(font, ch, charImage, bounds[i].x, bounds[i].x + bounds[i].width - 1);
+                    getBearing(font, ch, widths[ch - firstChar]);
                 }
-                
-                //if (backgroundPaint != null) {
-                //    g.setPaint(backgroundPaint);
-                //    g.fillRect(xOffset, -minY, charImage.getWidth(), charImage.getHeight());
-                //}
-                g.drawImage(charImage, xOffset, -minY, null);
+
+                g.drawImage(charImages[i], xOffset, -minY, null);
             }
             x += widths[ch - firstChar];
         }
@@ -526,7 +519,9 @@ public class ConvertFontTask extends Task {
     }
     
     
-    private void getBearing(Font font, char ch, BufferedImage image, int x1, int x2) {
+    private void getBearing(Font font, char ch, int imageWidth) {
+        // See http://developer.apple.com/documentation/Carbon/Conceptual/ATSUI_Concepts/art/glyphterms.gif
+        // w = advance - lsb - rsb;
         
         GlyphMetrics metrics = getMetrics(font, ch);
         float w = (float)metrics.getBounds2D().getWidth();
@@ -536,6 +531,15 @@ public class ConvertFontTask extends Task {
             float lsbDiff = metrics.getLSB() - lsb;
             int rsb = Math.round(metrics.getRSB() + lsbDiff);
             
+            if (imageWidth - w >= 2) {
+                //System.out.println(ch + ": w=" + w + " imageWidth=" + imageWidth);
+                // Image is bigger due to strokes and/or shadow.
+                // Adjust bearing on each side
+                float diff = imageWidth - w;
+                lsb -= (int)Math.floor(diff/2);
+                rsb -= (int)Math.ceil(diff/2);
+            }
+            
             if (lsb != 0 || rsb != 0) {
                 hasBearing = true;
                 fontBearingLeft[ch] += lsb;
@@ -544,14 +548,13 @@ public class ConvertFontTask extends Task {
         }
     }
     
-    
     private Rectangle calcBounds(BufferedImage image) {
         int boundX1 = image.getWidth() + 1; 
         int boundX2 = -1;
         int boundY1 = image.getHeight() + 1;
         int boundY2 = -1;
         
-        int backgroundColor = Color.WHITE.getRGB();
+        int backgroundColor = 0;
         
         for (int i = 0; i < image.getWidth(); i++) {
             for (int j = 0; j < image.getHeight(); j++) {
@@ -567,10 +570,9 @@ public class ConvertFontTask extends Task {
         return new Rectangle(boundX1, boundY1, boundX2 - boundX1 + 1, boundY2 - boundY1 + 1);
     }
     
-    
     private BufferedImage drawChar(Font font, char ch,
-        Paint backgroundPaint, Paint fillPaint, Stroke stroke, Paint strokePaint,
-        Paint shadowPaint, float shadowX, float shadowY)
+        Paint fillPaint, Stroke stroke, Paint strokePaint,
+        Paint shadowPaint, float shadowX, float shadowY, Filter shadowBlur)
     {
         // Get the bounds (make plently of room for the stroke, anti-aliasing, etc.)
         Rectangle2D bounds = font.getMaxCharBounds(context);
@@ -580,19 +582,14 @@ public class ConvertFontTask extends Task {
         // Create the shape (baseline in the middle of the image)
         int x = width / 3;
         int y = height / 2;
-        Shape shape = font.createGlyphVector(context, Character.toString(ch)).getOutline(x, y);
+        Shape shape = font.createGlyphVector(context, Character.toString(ch)).getOutline(0, 0);
         
         // Create the image buffer
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
         setHighQuality(g);
+        g.translate(x, y);
 
-        // Draw the background
-        if (backgroundPaint != null) {
-            g.setPaint(backgroundPaint);
-            g.fillRect(0, 0, width, height);
-        }
-        
         // Draw the shadow
         if (shadowPaint != null) {
             g.translate(shadowX, shadowY);
@@ -602,7 +599,11 @@ public class ConvertFontTask extends Task {
                 g.setStroke(stroke);
                 g.draw(shape);
             }
-            g.translate(-shadowX, -shadowY);
+            
+            image = shadowBlur.filter(image);
+            g = image.createGraphics();
+            setHighQuality(g);
+            g.translate(x, y);
         }
         
         // Draw the character
@@ -616,7 +617,6 @@ public class ConvertFontTask extends Task {
         
         return image;
     }
-    
     
     private void setHighQuality(Graphics2D g) {
         g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
@@ -675,7 +675,6 @@ public class ConvertFontTask extends Task {
         return pairs;
     }
     
-    
     /**
         Gets the kerning between two chars. Assumes the font has the KERNING_ON attribute but
         not LIGATURES_ON.
@@ -708,6 +707,53 @@ public class ConvertFontTask extends Task {
         
         public String toString() {
             return prev + "" + next + " (" + (int)prev + ", " + (int)next + "): " + kerning;
+        }
+    }
+    
+    // Filters
+    
+    public interface Filter {
+        /**
+            The fiter may choose to edit the contents of the BufferedImage
+        */
+        public BufferedImage filter(BufferedImage in);
+    }
+    
+    public static class NoFilter implements Filter {
+        public BufferedImage filter(BufferedImage in) {
+            return in;
+        }
+    }
+    
+    public static class BlurFilter implements Filter {
+        
+        private final int passes;
+        private BufferedImageOp op;
+        
+        public BlurFilter(int passes) {
+            this.passes = passes;
+            int size = 3;
+            float[] elements = new float[size * size];
+            for (int i = 0; i < elements.length; i++) {
+                elements[i] = 1f / (size*size);
+            }
+            Kernel blurKernel = new Kernel(size, size, elements);
+            op = new ConvolveOp(blurKernel);
+        }
+        
+        public BufferedImage filter(BufferedImage image) {
+            if (passes <= 0) {
+                return image;
+            }
+            BufferedImage temp = new BufferedImage(image.getWidth(), image.getHeight(),
+                BufferedImage.TYPE_INT_ARGB);
+            for (int i = 0; i < passes; i++) {
+                op.filter(image, temp);
+                BufferedImage t = image;
+                image = temp;
+                temp = t;
+            }
+            return image;
         }
     }
 }
