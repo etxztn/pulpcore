@@ -59,8 +59,8 @@ public class ImageAnalyzer {
             int g = (pixel >> 8) & 0xff;
             int b = pixel & 0xff;
             
-            // I'm not sure why I originally added this.
             // The images tend to compress better with this statement.
+            // Since PulpCore uses premultiplied alpha, the result is the same
             if (a == 0) {
                 dataARGB[i] = 0;
                 pixel = 0;
@@ -87,14 +87,12 @@ public class ImageAnalyzer {
             alphas.set(a);
         }
         
-        // Sort so that all opaque entries appear last.
-        Collections.sort(palette, new UnsignedIntComparator());
-
         // Choose the smallest bits-per-pixel (bpp) needed to encode the image
         if (palette.size() <= 16) {
             // 4 bpp
             bitDepth = 4;
             colorType = PNGWriter.COLOR_TYPE_PALETTE;
+            Collections.sort(palette, new UnsignedIntComparator());
             description = "4-bit color, " + palette.size() + " colors, " + 
                 (isOpaque ? "opaque": "w/alpha");
         }
@@ -106,6 +104,7 @@ public class ImageAnalyzer {
         else if (palette.size() <= 256) {
             // 8 bpp
             colorType = PNGWriter.COLOR_TYPE_PALETTE;
+            Collections.sort(palette, new UnsignedIntComparator());
             description = "8-bit color, " + palette.size() + " colors, " + 
                 (isOpaque ? "opaque": "w/alpha");
         }

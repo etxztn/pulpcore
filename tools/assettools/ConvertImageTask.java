@@ -32,6 +32,7 @@ package pulpcore.assettools;
 import com.kitfox.svg.app.beans.SVGIcon;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.Transparency;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -84,7 +85,7 @@ public class ConvertImageTask extends Task {
         }
         if (optimizationLevel < 0 || optimizationLevel > PNGWriter.MAX_OPTIMIZATION_LEVEL) {
             throw new BuildException("Optimization level must be between 0 and " + 
-                optimizationLevel + ".");
+                PNGWriter.MAX_OPTIMIZATION_LEVEL + ".");
         }
         
         log("Converting: " + srcFile, Project.MSG_VERBOSE);

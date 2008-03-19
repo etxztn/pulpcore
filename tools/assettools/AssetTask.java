@@ -35,6 +35,7 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Copy;
+import pulpcore.assettools.png.PNGWriter;
 
 public class AssetTask extends Task {
     
@@ -42,6 +43,7 @@ public class AssetTask extends Task {
     
     private File srcDir;
     private File destDir;
+    private int optimizationLevel = PNGWriter.DEFAULT_OPTIMIZATION_LEVEL;
     
     public void setSrcDir(File srcDir) {
         this.srcDir = srcDir;
@@ -51,12 +53,20 @@ public class AssetTask extends Task {
         this.destDir = destDir;
     }
     
+    public void setOptimizationLevel(int level) {
+        this.optimizationLevel = level;
+    } 
+    
     public void execute() throws BuildException {
         if (srcDir == null) {
             throw new BuildException("The srcDir is not specified.");
         }
         if (destDir == null) {
             throw new BuildException("The destDir is not specified.");
+        }
+        if (optimizationLevel < 0 || optimizationLevel > PNGWriter.MAX_OPTIMIZATION_LEVEL) {
+            throw new BuildException("Optimization level must be between 0 and " + 
+                PNGWriter.MAX_OPTIMIZATION_LEVEL + ".");
         }
         
         if (!srcDir.exists()) {
@@ -155,6 +165,7 @@ public class AssetTask extends Task {
                         imageTask.setSrcPropertyFile(propertyFile);
                     }
                     imageTask.setDestFile(destFile);
+                    imageTask.setOptimizationLevel(optimizationLevel);
                     imageTask.execute();
                 }
             }
@@ -167,6 +178,7 @@ public class AssetTask extends Task {
                     initSubTask(fontTask);
                     fontTask.setSrcFile(file);
                     fontTask.setDestFile(destFile);
+                    fontTask.setOptimizationLevel(optimizationLevel);
                     fontTask.execute();
                 }
             }

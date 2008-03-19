@@ -82,6 +82,7 @@ public class ConvertFontTask extends Task {
     
     private File srcFile;
     private File destFile;
+    private int optimizationLevel = PNGWriter.DEFAULT_OPTIMIZATION_LEVEL;
     
     public void setSrcFile(File srcFile) {
         this.srcFile = srcFile;
@@ -91,12 +92,20 @@ public class ConvertFontTask extends Task {
         this.destFile = destFile;
     }
     
+    public void setOptimizationLevel(int level) {
+        this.optimizationLevel = level;
+    }
+    
     public void execute() throws BuildException {
         if (srcFile == null) {
             throw new BuildException("The srcFile is not specified.");
         }
         if (destFile == null) {
             throw new BuildException("The destFile is not specified.");
+        }
+        if (optimizationLevel < 0 || optimizationLevel > PNGWriter.MAX_OPTIMIZATION_LEVEL) {
+            throw new BuildException("Optimization level must be between 0 and " + 
+                PNGWriter.MAX_OPTIMIZATION_LEVEL + ".");
         }
         
         log("Converting: " + srcFile, Project.MSG_VERBOSE);
@@ -134,7 +143,7 @@ public class ConvertFontTask extends Task {
     
     private float shadowX;
     private float shadowY;
-    private Paint shadowPaint;
+    private Color shadowPaint;
     private Filter shadowBlur;
     
     private int numColors;
@@ -284,7 +293,10 @@ public class ConvertFontTask extends Task {
         shadowX = props.getFloatProperty("shadow.x", 0);
         shadowY = props.getFloatProperty("shadow.y", 0);
         shadowPaint = props.getColorProperty("shadow.color", null);
-        shadowBlur = new BlurFilter(props.getIntProperty("shadow.blur", 0));
+        if (shadowPaint != null) {
+            shadowBlur = new BlurFilter(props.getIntProperty("shadow.blur", 0),
+                shadowPaint.getRGB());
+        }
         
         numColors = props.getIntProperty("colors", 0);
         
@@ -391,16 +403,16 @@ public class ConvertFontTask extends Task {
         // Save the image
         out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(destFile)));
         PNGWriter writer = new PNGWriter();
+        writer.setOptimizationLevel(optimizationLevel);
         String imageDescription = writer.write(image, 0, 0, null, fontData.toByteArray(), out);
         out.close();
         
         // Log diagnostic info
-        long time = (System.nanoTime() - startTime) / 1000000;
-        //String description = srcFile + " (" + time + "ms): " + imageDescription;
+        //long time = (System.nanoTime() - startTime) / 1000000;
+        //log("Font PNG encoding: " + time + "ms", Project.MSG_INFO);
         String description = destFile + " (" + font.getFamily() + " font, " + imageDescription + ")";
         log("Created: " + description, Project.MSG_INFO);
     }
-    
     
     private BufferedImage renderFont(Font font, String legalChars, int[] widths) {
         
@@ -410,13 +422,24 @@ public class ConvertFontTask extends Task {
         int minY = Integer.MAX_VALUE;
         int maxY = -1; 
         
-        // Find the character bounds
-        Rectangle[] bounds = new Rectangle[legalChars.length()];
+        //long startTime = System.nanoTime();
+        
+        // Create char images
         BufferedImage[] charImages = new BufferedImage[legalChars.length()];
         for (int i = 0; i < legalChars.length(); i++) {
             char ch = legalChars.charAt(i);
             charImages[i] = drawChar(font, ch, fillPaint,
                     stroke, strokePaint, shadowPaint, shadowX, shadowY, shadowBlur);
+        }
+        
+        //long time = (System.nanoTime() - startTime) / 1000000;
+        //log("Font char images: " + time + "ms", Project.MSG_INFO);
+        //startTime = System.nanoTime();
+        
+        // Find the character bounds
+        Rectangle[] bounds = new Rectangle[legalChars.length()];
+        for (int i = 0; i < legalChars.length(); i++) {
+            char ch = legalChars.charAt(i);
             bounds[i] = calcBounds(charImages[i]);
             int w = bounds[i].width;
             int h = bounds[i].height;
@@ -433,6 +456,9 @@ public class ConvertFontTask extends Task {
                 charImages[i] = null;
             }
         }
+        
+        //time = (System.nanoTime() - startTime) / 1000000;
+        //log("Font character bounds: " + time + "ms", Project.MSG_INFO);
         
         // Calculate width of monospace numerals 0 - 9
         int maxNumeralWidth = 0;
@@ -485,7 +511,7 @@ public class ConvertFontTask extends Task {
         if (backgroundPaint != null) {
             g.setPaint(backgroundPaint);
             g.fillRect(0, 0, width, height);
-        }        
+        }
         
         for (int i = 0; i < legalChars.length(); i++) {
             char ch = legalChars.charAt(i);
@@ -518,7 +544,6 @@ public class ConvertFontTask extends Task {
         return image;
     }
     
-    
     private void getBearing(Font font, char ch, int imageWidth) {
         // See http://developer.apple.com/documentation/Carbon/Conceptual/ATSUI_Concepts/art/glyphterms.gif
         // w = advance - lsb - rsb;
@@ -534,7 +559,7 @@ public class ConvertFontTask extends Task {
             if (imageWidth - w >= 2) {
                 //System.out.println(ch + ": w=" + w + " imageWidth=" + imageWidth);
                 // Image is bigger due to strokes and/or shadow.
-                // Adjust bearing on each side
+                // Adjust bearing on each side.
                 float diff = imageWidth - w;
                 lsb -= (int)Math.floor(diff/2);
                 rsb -= (int)Math.ceil(diff/2);
@@ -549,6 +574,9 @@ public class ConvertFontTask extends Task {
     }
     
     private Rectangle calcBounds(BufferedImage image) {
+        int w = image.getWidth();
+        int h = image.getWidth();
+        int[] data = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
         int boundX1 = image.getWidth() + 1; 
         int boundX2 = -1;
         int boundY1 = image.getHeight() + 1;
@@ -556,14 +584,16 @@ public class ConvertFontTask extends Task {
         
         int backgroundColor = 0;
         
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
-                if (image.getRGB(i, j) != backgroundColor) {
+        int offset = 0;
+        for (int j = 0; j < image.getHeight(); j++) {
+            for (int i = 0; i < image.getWidth(); i++) {
+                if (data[offset] != backgroundColor) {
                     boundX1 = Math.min(boundX1, i);
                     boundX2 = Math.max(boundX2, i);
                     boundY1 = Math.min(boundY1, j);
                     boundY2 = Math.max(boundY2, j);
                 }
+                offset++;
             }
         }
         
@@ -643,7 +673,9 @@ public class ConvertFontTask extends Task {
         return font.createGlyphVector(context, Character.toString(ch)).getGlyphMetrics(0);
     }
     
+    //
     // Kerning
+    //
     
     private List<Kerning> getKerningPairs(Font font, char[] chars) {
         List<Kerning> pairs = new ArrayList<Kerning>();
@@ -710,11 +742,13 @@ public class ConvertFontTask extends Task {
         }
     }
     
+    //
     // Filters
+    //
     
     public interface Filter {
         /**
-            The fiter may choose to edit the contents of the BufferedImage
+            The filter may edit the contents of the BufferedImage
         */
         public BufferedImage filter(BufferedImage in);
     }
@@ -724,36 +758,88 @@ public class ConvertFontTask extends Task {
             return in;
         }
     }
-    
+
+    /**
+        3x3 box filter that blurs the alpha and copies the RGB.
+        Nearly 2X faster that using ConvolveOp. 
+    */
     public static class BlurFilter implements Filter {
         
-        private final int passes;
-        private BufferedImageOp op;
+        public static final int SIZE = 3;
         
-        public BlurFilter(int passes) {
+        private final int passes;
+        private final int rgb;
+        
+        public BlurFilter(int passes, int rgb) {
             this.passes = passes;
-            int size = 3;
-            float[] elements = new float[size * size];
-            for (int i = 0; i < elements.length; i++) {
-                elements[i] = 1f / (size*size);
-            }
-            Kernel blurKernel = new Kernel(size, size, elements);
-            op = new ConvolveOp(blurKernel);
+            this.rgb = 0xffffff & rgb;
         }
         
-        public BufferedImage filter(BufferedImage image) {
-            if (passes <= 0) {
-                return image;
+        public BufferedImage filter(BufferedImage in) {
+            if (passes > 0) {
+                if (in.getType() != BufferedImage.TYPE_INT_ARGB &&
+                    in.getType() != BufferedImage.TYPE_INT_RGB)
+                {
+                    throw new IllegalArgumentException(
+                        "Image type must be TYPE_INT_RGB or TYPE_INT_ARGB");
+                }
+                
+                int imageWidth = in.getWidth();
+                int imageHeight = in.getHeight();
+                int[] srcData = ((DataBufferInt)in.getRaster().getDataBuffer()).getData();
+                int[] temp1 = srcData;
+                int[] temp2 = new int[imageWidth * imageHeight];
+                
+                for (int i = 0; i < passes; i++) {
+                    filter(imageWidth, imageHeight, temp1, temp2);
+                    int[] t = temp1;
+                    temp1 = temp2;
+                    temp2 = t;
+                }
+                
+                if (temp1 != srcData) {
+                    System.arraycopy(temp1, 0, srcData, 0, srcData.length);
+                }
             }
-            BufferedImage temp = new BufferedImage(image.getWidth(), image.getHeight(),
-                BufferedImage.TYPE_INT_ARGB);
-            for (int i = 0; i < passes; i++) {
-                op.filter(image, temp);
-                BufferedImage t = image;
-                image = temp;
-                temp = t;
+            return in;
+        }
+        
+        protected void filter(int imageWidth, int imageHeight, int[] srcData, int[] destData) {
+            int xOffset = SIZE/2;
+            int yOffset = SIZE/2;
+            int offset;
+            int startRowOffset = -yOffset * imageWidth;
+            
+            for (int y = yOffset; y < imageHeight-yOffset; y++) {
+                offset = y * imageWidth + xOffset;
+                for (int x = xOffset; x < imageWidth-xOffset; x++) {
+                    int suma = 0;
+                    //int sumr = 0;
+                    //int sumg = 0;
+                    //int sumb = 0;
+                    int srcOffset = offset + startRowOffset - xOffset;
+                    for (int j = 0; j < SIZE; j++) {
+                        for (int i = 0; i < SIZE; i++) {
+                            int argb = srcData[srcOffset + i];
+                            suma += (argb >>> 24);
+                            //sumr += ((argb >> 16) & 0xff);
+                            //sumg += ((argb >> 8) & 0xff);
+                            //sumb += (argb & 0xff);
+                        }
+                        srcOffset += imageWidth;
+                    }
+                    
+                    // n / 9 = (n * 3641) >> 15
+                    suma = (suma * 3641) >> 15;
+                    //sumr = (sumr * 3641) >> 15;
+                    //sumg = (sumg * 3641) >> 15;
+                    //sumb = (sumb * 3641) >> 15;
+                    
+                    //destData[offset] = (suma << 24) | (sumr << 16) | (sumg << 8) | sumb;
+                    destData[offset] = (suma << 24) | rgb;
+                    offset++;
+                }
             }
-            return image;
         }
     }
 }

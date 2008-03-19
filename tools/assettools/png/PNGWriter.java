@@ -30,6 +30,7 @@
 package pulpcore.assettools.png;
 
 import java.awt.image.BufferedImage;
+import java.awt.Transparency;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;

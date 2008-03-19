@@ -158,6 +158,11 @@
         <condition property="bootclasspath" value="${library.path}" else="">
             <equals arg1="${pulpcore.java.language}" arg2="1.4" />
         </condition>
+        
+        <!-- PNG Optimization. Possible values range from 0 to 5 -->
+        <condition property="optimizationLevel" value="4" else="1">
+            <equals arg1="${pulpcore.build}" arg2="release" />
+        </condition>
 
         <buildnumber/>
         <echo file="${src}/ProjectBuild.java"><![CDATA[
@@ -287,8 +292,11 @@
     
     <!-- Creates the assets zip file -->
     <target name="res" depends="init">
-        <pulpcore-assets srcDir="${res}/jar" destDir="${build.res}/jar" />
-        <pulpcore-assets srcDir="${res}/zip" destDir="${build.res}/zip" />
+        <pulpcore-assets srcDir="${res}/jar" destDir="${build.res}/jar" 
+            optimizationLevel="${optimizationLevel}" />
+            
+        <pulpcore-assets srcDir="${res}/zip" destDir="${build.res}/zip" 
+            optimizationLevel="${optimizationLevel}" />
     
         <delete file="${build}/${project.assets.zip}" failonerror="false" />
         <zip destfile="${build}/${project.assets.zip}" filesonly="true"
