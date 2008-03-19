@@ -238,12 +238,13 @@ package pulpcore.image;
         // is needed - return the color.
         int ffracX = (fx & 0xff00) >> 8;
         int ffracY = (fy & 0xff00) >> 8;
+        int x = fx >> 16;
         if (ffracX == 0 && ffracY == 0) {
-            if (offsetTop < 0 || fx < 0) {
+            if (offsetTop < 0 || fx < 0 || x >= srcWidth) {
                 return 0;
             }
             else {
-               return imageData[offsetTop + (fx >> 16)];
+               return imageData[offsetTop + x];
             }
         }
         
@@ -253,7 +254,6 @@ package pulpcore.image;
         int bottomRightPixel = 0;
         
         // Find left and right location
-        int x = fx >> 16;
         
         if (x >= 0 && x < srcWidth) {
             if (offsetTop != -1) {
