@@ -61,6 +61,13 @@ public class Stage implements Runnable {
     private static final float SLOW_MOTION_SPEED = 1/4f;
     private static final float FAST_MOTION_SPEED = 4f;
     
+    private static final int DEBUG_COMMAND_SHOW_CONSOLE = 1;
+    private static final int DEBUG_COMMAND_SHOW_SCENE_SELECTOR = 2;
+    private static final int DEBUG_COMMAND_SHOW_SCENE_INFO = 4;
+    private static final int DEBUG_COMMAND_SPEED_SLOW = 8;
+    private static final int DEBUG_COMMAND_SPEED_NORMAL = 16;
+    private static final int DEBUG_COMMAND_SPEED_FAST = 32;
+    
     /** No limit to the frame rate (not recommended) */
     public static final int MAX_FPS = -1;
     /** 60 fps  (default) */
@@ -114,7 +121,6 @@ public class Stage implements Runnable {
     private int nextSceneType = NO_NEXT_SCENE;
     private LinkedList sceneStack = new LinkedList();
     private Scene uncaughtExceptionScene;
-    private boolean uncaughtExceptionSceneSet = false;
     
     // Auto scaling
     private int naturalWidth = 1;
@@ -131,6 +137,8 @@ public class Stage implements Runnable {
     private Activity memActivity;
     private Activity cpuActivity;
     
+    private int debugCommands;
+    
     // Slow motion mode (debug only)
     private float speed = 1;
     private float elapsedTimeRemainder;
@@ -139,18 +147,21 @@ public class Stage implements Runnable {
     public Stage(Surface surface, AppContext appContext) {
         this.surface = surface;
         this.appContext = appContext;
+        if (Build.DEBUG) {
+            this.uncaughtExceptionScene = new ConsoleScene();
+        }
+        else {
+            this.uncaughtExceptionScene = null;
+        }
     }
-    
     
     //
     // Static convenience methods
     //
     
-    
     private static Stage getThisStage() {
         return CoreSystem.getThisAppContext().getStage();
     }
-    
     
     /**
         @return The width of the surface.
@@ -165,7 +176,6 @@ public class Stage implements Runnable {
         }
     }
     
-    
     /**
         @return The height of the surface.
     */
@@ -179,7 +189,6 @@ public class Stage implements Runnable {
         }
     }
     
-    
     /**
         @return The transform used to draw onto the surface.
     */
@@ -188,11 +197,9 @@ public class Stage implements Runnable {
         return instance.defaultTransform;
     }
     
-    
     public static void setAutoScale(int naturalWidth, int naturalHeight) {
         setAutoScale(naturalWidth, naturalHeight, AUTO_FIT);
     }
-    
     
     public static void setAutoScale(int naturalWidth, int naturalHeight, int autoScaleType) {
         Stage instance = getThisStage();
@@ -201,7 +208,6 @@ public class Stage implements Runnable {
         instance.autoScaleType = autoScaleType;
         instance.setTransform();
     }
-    
     
     /**
         Sets the desired frame rate in frames per second. The Stage will attempt
@@ -235,7 +241,6 @@ public class Stage implements Runnable {
         }
     }
     
-    
     /**
         Gets the current desired frame rate in frames per second. This is the same value passed
         in to {@link #setFrameRate(int)}.
@@ -245,7 +250,6 @@ public class Stage implements Runnable {
     public static int getFrameRate() {
         return getThisStage().desiredFPS;
     }
-    
     
     /**
         Gets the actual frame rate the Stage is displaying in frames per second. 
@@ -259,7 +263,6 @@ public class Stage implements Runnable {
         return getThisStage().actualFPS;
     }
     
-    
     public static void setDirtyRectangles(Rect[] dirtyRectangles) {
         if (dirtyRectangles == null) {
             setDirtyRectangles(null, 0);
@@ -268,7 +271,6 @@ public class Stage implements Runnable {
             setDirtyRectangles(dirtyRectangles, dirtyRectangles.length);
         }
     }
-        
         
     public static void setDirtyRectangles(Rect[] dirtyRectangles, int numDirtyRectangles) {
         Stage instance = getThisStage();
@@ -281,25 +283,12 @@ public class Stage implements Runnable {
         instance.numDirtyRectangles = numDirtyRectangles;
     }
     
-    
-    public static Sprite getInfoOverlay() {
-        Stage instance = getThisStage();
-        if (!instance.showInfoOverlay) {
-            return null;
-        }
-        else {
-            return instance.infoOverlay;
-        }
-    }
-    
-    
     /**
         Gets the current active Scene.
     */
     public static Scene getScene() {
         return getThisStage().currentScene;
     }
-    
     
     /**
         Returns true if the there are Scenes on the scene stack.
@@ -308,7 +297,6 @@ public class Stage implements Runnable {
         Stage instance = getThisStage();
         return (!instance.sceneStack.isEmpty());
     }
-
 
     /**
         Unloads the current scene, empties the scene stack, and
@@ -329,7 +317,6 @@ public class Stage implements Runnable {
         instance.nextSceneType = SET_SCENE;
     }
     
-    
     /**
         Unloads the current scene and sets the next scene to display.
         <p>
@@ -348,7 +335,6 @@ public class Stage implements Runnable {
         instance.nextSceneType = REPLACE_SCENE;
     }
     
-    
     /**
         Pushes the current scene onto the scene stack and sets the current scene.
         The pushed scene is activated again when {@link #popScene()} is invoked. 
@@ -365,7 +351,6 @@ public class Stage implements Runnable {
         instance.nextScene = scene;
         instance.nextSceneType = PUSH_SCENE;
     }
-    
     
     /**
         Sets the current scene to the scene at the top of the scene stack. If
@@ -386,7 +371,6 @@ public class Stage implements Runnable {
         }
     }
     
-    
     /**
         Sets the scene to use when an uncaught exception occurs. If null, the app "reboots" itself
         after a short delay. By default, debug builds use a ConsoleScene, and release builds use
@@ -399,10 +383,8 @@ public class Stage implements Runnable {
     */
     public static void setUncaughtExceptionScene(Scene scene) {
         Stage instance = getThisStage();
-        instance.uncaughtExceptionSceneSet = true;
         instance.uncaughtExceptionScene = scene;
     }
-    
     
     /**
         Gets a screenshot of the current appearance of the stage.
@@ -415,7 +397,6 @@ public class Stage implements Runnable {
         return image;
     }
     
-    
     /**
         Gets a screenshot at the specified location on the screen and copies
         it to the specified image.
@@ -424,7 +405,6 @@ public class Stage implements Runnable {
         Stage instance = getThisStage();
         instance.surface.getScreenshot(image, x, y);
     }
-    
     
     /**
         Returns true if the current thread is the animation thread.
@@ -440,7 +420,6 @@ public class Stage implements Runnable {
         }
         return false;
     }
-    
     
     //
     // Methods called from the main platform class
@@ -461,7 +440,6 @@ public class Stage implements Runnable {
         }
     }
     
-    
     // Called from the AWT event thread
     public synchronized void stop() {
         if (animationThread != null) {
@@ -472,7 +450,6 @@ public class Stage implements Runnable {
             catch (InterruptedException ex) { }
         }
     }
-    
     
     // Called from the AWT event thread
     // After destroying, the Stage must never be used again
@@ -485,23 +462,12 @@ public class Stage implements Runnable {
             stop();
         }
     }
-        
     
     //
     // Animation thread
     //
     
     public void run() {
-        
-        if (!uncaughtExceptionSceneSet) {
-            // This has to be set in the animation thread, not the Stage's constructor
-            if (Build.DEBUG) {
-                setUncaughtExceptionScene(new ConsoleScene());
-            }
-            else {
-                setUncaughtExceptionScene(null);
-            }
-        }
         
         Thread currentThread = Thread.currentThread();
         
@@ -546,14 +512,12 @@ public class Stage implements Runnable {
         }
     }
     
-    
     private synchronized Thread animationThreadStop() {
         Thread t = animationThread;
         animationThread = null;
         return t;
     }
         
-    
     /**
         This method is called repeatedly from the run() method.
     */
@@ -579,16 +543,41 @@ public class Stage implements Runnable {
                 continue;
             }
             
+            // Take in debug keys
+            if (Build.DEBUG) {
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_C)) {
+                    debugCommands |= DEBUG_COMMAND_SHOW_CONSOLE;
+                }
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_X)) {
+                    debugCommands |= DEBUG_COMMAND_SHOW_SCENE_SELECTOR;
+                }
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_I)) {
+                    debugCommands |= DEBUG_COMMAND_SHOW_SCENE_INFO;
+                }
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_1)) {
+                    debugCommands |= DEBUG_COMMAND_SPEED_SLOW;
+                }
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_2)) {
+                    debugCommands |= DEBUG_COMMAND_SPEED_NORMAL;
+                }
+                if (Input.isControlDown() && Input.isPressed(Input.KEY_3)) {
+                    debugCommands |= DEBUG_COMMAND_SPEED_FAST;
+                }
+                
+                if (currentScene instanceof ConsoleScene) {
+                    debugCommands &= ~DEBUG_COMMAND_SHOW_CONSOLE;
+                }
+                if (currentScene instanceof SceneSelector) {
+                    debugCommands &= ~DEBUG_COMMAND_SHOW_SCENE_SELECTOR;
+                }
+            }
+    
             // Check if a new Scene should be shown
             if (Build.DEBUG) {
-                if (Input.isControlDown() && Input.isPressed(Input.KEY_C) && 
-                    !(currentScene instanceof ConsoleScene)) 
-                {
+                if ((debugCommands & DEBUG_COMMAND_SHOW_CONSOLE) != 0) {
                     pushScene(new ConsoleScene());
                 }
-                if (Input.isControlDown() && Input.isPressed(Input.KEY_X) && 
-                    !(currentScene instanceof SceneSelector)) 
-                {
+                if ((debugCommands & DEBUG_COMMAND_SHOW_SCENE_SELECTOR) != 0) {
                     pushScene(new SceneSelector());
                 }
             }
@@ -612,23 +601,26 @@ public class Stage implements Runnable {
             boolean needsFullRedraw = focusedChanged | renderingErrorOccurred;
             
             if (Build.DEBUG) {
-                if (Input.isControlDown() && Input.isPressed(Input.KEY_I)) {
+                if ((debugCommands & DEBUG_COMMAND_SHOW_SCENE_INFO) != 0) {
                     showInfoOverlay = !showInfoOverlay;
                     needsFullRedraw = true;
                 }
-                if (Input.isControlDown() && Input.isPressed(Input.KEY_1)) {
+                if ((debugCommands & DEBUG_COMMAND_SPEED_SLOW) != 0) {
                     speed = SLOW_MOTION_SPEED;
                     elapsedTimeRemainder = 0;
                 }
-                if (Input.isControlDown() && Input.isPressed(Input.KEY_2)) {
+                if ((debugCommands & DEBUG_COMMAND_SPEED_NORMAL) != 0) {
                     speed = 1;
                     elapsedTimeRemainder = 0;
                 }
-                if (Input.isControlDown() && Input.isPressed(Input.KEY_3)) {
+                if ((debugCommands & DEBUG_COMMAND_SPEED_FAST) != 0) {
                     speed = FAST_MOTION_SPEED;
                     elapsedTimeRemainder = 0;
                 }
             }
+            
+            // Finished processing debug commands
+            debugCommands = 0;
             
             // Reset dirty rectangles. Scene can set dirty rectangles in updateScene() or 
             // drawScene()
@@ -647,6 +639,7 @@ public class Stage implements Runnable {
             // Update and draw scene
             synchronized (currentScene) {
                 appContext.runEvents();
+                
                 currentScene.updateScene(elapsedTime);
                 
                 // Set the transform
@@ -916,8 +909,52 @@ public class Stage implements Runnable {
     }
         
     //
+    // Called via reflection via PulpCore Player
+    //
+    
+    private static void toggleInfoOverlay() {
+        Stage instance = getThisStage();
+        instance.debugCommands |= DEBUG_COMMAND_SHOW_SCENE_INFO;
+    }
+    
+    private static void showConsole() {
+        Stage instance = getThisStage();
+        instance.debugCommands |= DEBUG_COMMAND_SHOW_CONSOLE;
+    }
+    
+    private static void showSceneSelector() {
+        Stage instance = getThisStage();
+        instance.debugCommands |= DEBUG_COMMAND_SHOW_SCENE_SELECTOR;
+    }
+    
+    private static void setSpeedSlow() {
+        Stage instance = getThisStage();
+        instance.debugCommands |= DEBUG_COMMAND_SPEED_SLOW;
+    }
+    
+    private static void setSpeedNormal() {
+        Stage instance = getThisStage();
+        instance.debugCommands |= DEBUG_COMMAND_SPEED_NORMAL;
+    }
+    
+    private static void setSpeedFast() {
+        Stage instance = getThisStage();
+        instance.debugCommands |= DEBUG_COMMAND_SPEED_FAST;
+    }
+    
+    //
     // Debug mode only
     //
+    
+    public static Sprite getInfoOverlay() {
+        Stage instance = getThisStage();
+        if (!instance.showInfoOverlay) {
+            return null;
+        }
+        else {
+            return instance.infoOverlay;
+        }
+    }
     
     private void doInfoSample() {
         

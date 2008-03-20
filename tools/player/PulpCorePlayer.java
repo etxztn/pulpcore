@@ -35,7 +35,6 @@ import java.applet.AppletStub;
 import java.applet.AudioClip;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
@@ -49,11 +48,8 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.Toolkit;
 import java.awt.Window;
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -64,12 +60,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -79,7 +71,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
-import javax.swing.Box;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -88,8 +79,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.KeyStroke;
 import javax.swing.MenuElement;
 import javax.swing.UIManager;
 import pulpcore.Build;
@@ -299,8 +288,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private final int height;
     private final Map<String, String> params;
     
-    private Class appletClass;
     private Applet applet;
+    private Scripting scripting;
     private boolean active;
     
     private List<String> savedAssets;
@@ -399,13 +388,23 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     private JMenuBar createJMenuBar() {
         JMenu fileMenu = new JMenu(new FileAction());
+        fileMenu.add(new JMenuItem(new ShowSceneSelectorAction()));
+        fileMenu.addSeparator();
         fileMenu.add(new JMenuItem(new ReloadAction()));
         fileMenu.addSeparator();
         fileMenu.add(new JMenuItem(new ScreenshotAction()));
         
         JMenu viewMenu = new JMenu(new ViewAction());
+        viewMenu.add(new JMenuItem(new SceneInfoAction()));
+        viewMenu.add(new JMenuItem(new DirtyRectanglesAction()));
+        viewMenu.add(new JMenuItem(new ShowConsoleAction()));
+        viewMenu.addSeparator();
+        viewMenu.add(new JMenuItem(new SlowSpeedAction()));
+        viewMenu.add(new JMenuItem(new NormalSpeedAction()));
+        viewMenu.add(new JMenuItem(new FastSpeedAction()));
+        viewMenu.addSeparator();
         viewMenu.add(new JMenuItem(new FullScreenAction()));
-        
+
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(fileMenu);
         menuBar.add(viewMenu);
@@ -486,6 +485,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         //    // Ignore
         //}
         
+        scripting = new Scripting(applet);
         applet.setStub(this);
         applet.setSize(width, height);
         // Not sure why this doesn't seem to work
@@ -506,6 +506,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             public void run() {
                 active = true;
                 applet.start();
+                applet.requestFocus();
             }
         });
     }
@@ -519,6 +520,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         if (applet != null) {
             applet.destroy();
             applet = null;
+            scripting = null;
         }
     }
     
@@ -541,6 +543,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     private void showError(Throwable t) {
         applet = null;
+        scripting = null;
+        
         t.printStackTrace();
         JPanel panel = new JPanel();
         panel.add(new JLabel(t.toString()));
@@ -549,46 +553,39 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         validate();
         panel.repaint();
     }
-    
+   
     private void saveState() {
 
         clearState();
         
-        if (applet != null) {
-            
-            ClassLoader classLoader = applet.getClass().getClassLoader();
-            
-            try {
-                // Call Stage.getScene()
-                Method getScene = classLoader.loadClass("pulpcore.Stage").getMethod("getScene");
-                Object sceneObject = getScene.invoke(null, new Object[0]);
-                if (sceneObject == null) {
-                    return;
-                }
-                Class sceneClass = sceneObject.getClass();
-                if (!isValidScene(sceneClass)) {
-                    return;
-                }
-                String scene = sceneClass.getName();
-                
-                // Call Assets.getCatalogs()
-                Method getCatalogs = classLoader.loadClass("pulpcore.Assets").getMethod("getCatalogs");
-                Iterator i = (Iterator)getCatalogs.invoke(null, new Object[0]);
-                List<String> assets = new ArrayList<String>();
-                while (i.hasNext()) {
-                    assets.add((String)i.next());
-                }
-                
-                // Store the data
-                savedAssets = assets;
-                savedScene = scene;
-                return;
-            }
-            catch (Throwable t) {
-                // Ignore
-                t.printStackTrace();
-            }
+        if (scripting == null) {
+            return;
         }
+        
+        // Call Stage.getScene()
+        Object sceneObject = scripting.invokeStaticInAnimationThread("pulpcore.Stage", "getScene");
+        if (sceneObject == null) {
+            return;
+        }
+        Class sceneClass = sceneObject.getClass();
+        if (!isValidScene(sceneClass)) {
+            return;
+        }
+        String scene = sceneClass.getName();
+        
+        // Call Assets.getCatalogs()
+        Iterator i = (Iterator)scripting.invokeStatic("pulpcore.Assets","getCatalogs");
+        if (i == null) {
+            return;
+        }
+        List<String> assets = new ArrayList<String>();
+        while (i.hasNext()) {
+            assets.add((String)i.next());
+        }
+        
+        // Store the data
+        savedAssets = assets;
+        savedScene = scene;
     }
     
     private boolean isValidScene(Class c) {
@@ -621,30 +618,19 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     }
     
     private void restoreState() {
-        if (applet != null) {
-            
-            ClassLoader classLoader = applet.getClass().getClassLoader();
-            Method addCatalog;
+        if (scripting == null) {
+            return;
+        }
+   
+        Method method = scripting.getMethod("pulpcore.Assets","addCatalog",
+            String.class, InputStream.class);
+        for (String path : savedAssets) {
             try {
-                Class assetsClass = classLoader.loadClass("pulpcore.Assets");
-                addCatalog = assetsClass.getMethod("addCatalog", 
-                    new Class[] { String.class, InputStream.class });
+                InputStream is = new URL(applet.getCodeBase(), path).openStream();
+                method.invoke(null, path, is);
             }
-            catch (Throwable t) {
-                // Ignore
-                t.printStackTrace();
-                return;
-            }    
-            
-            for (String path : savedAssets) {
-                try {
-                    InputStream is = new URL(applet.getCodeBase(), path).openStream();
-                    addCatalog.invoke(null, new Object[] { path, is } );
-                }
-                catch (Throwable t) {
-                    // Ignore
-                    t.printStackTrace();
-                }
+            catch (Exception ex) {
+                ex.printStackTrace();
             }
         }
     }
@@ -812,93 +798,89 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     public class ScreenshotAction extends EditAction {
         public void actionPerformed(ActionEvent e) {
-            if (applet != null) {
-                try {
-                    // Call CoreApplet.getScreenshot()
-                    Method getScreenshot = applet.getClass().getMethod("getScreenshot");
-                    Object image = getScreenshot.invoke(applet, new Object[0]);
-                    if (image != null) {
-                        File dir = new File(
-                            System.getProperty("user.home") + File.separator + "Desktop");
-                        if (!dir.exists()) {
-                            dir = new File(System.getProperty("user.home"));
-                        }
-                        
+            if (scripting != null) {
+                Object image = scripting.invokeInAnimationThread("getScreenshot");
+                if (image != null) {
+                    File dir = new File(
+                        System.getProperty("user.home") + File.separator + "Desktop");
+                    if (!dir.exists()) {
+                        dir = new File(System.getProperty("user.home"));
+                    }
+                    
+                    try {
                         File imageFile = File.createTempFile(getTitle(), ".png", dir);
-                        
                         ImageIO.write((BufferedImage)image, "PNG", imageFile);
                     }
+                    catch (IOException ex) {
+                        ex.printStackTrace();
+                        image = null;
+                    }
                 }
-                catch (Exception ex) {
-                    ex.printStackTrace();
+                
+                if (image == null) {
                     Toolkit.getDefaultToolkit().beep();
                 }
             }
         }
     }
-
-    //
-    // ClassLoader hack
-    //
     
-    public static class NoResourceCacheClassLoader extends URLClassLoader {
-        
-        private NoResourceCacheClassLoader(URL[] urls, ClassLoader parent) {
-            super(urls, parent);
-        }
-        
-        /*
-            This is mostly a hack for Eclipse, which supplies the applet codebase in the 
-            system classpath rather than using the applet tag's codebase attribute.
-            
-            In order for reloading to work, the applet classes need to be loaded in a 
-            throw-away class loader - not the system class loader.
-            
-            For this to work, the PulpCore player jar must be in the bootclasspath.
-        */
-        public static NoResourceCacheClassLoader create(URL[] urls, ClassLoader parent) {
-            // If parent is null, the PulpCorePlayer is running from the bootstrap class
-            // loader.
-            if (parent == null) {
-                parent = ClassLoader.getSystemClassLoader();
+    public class SceneInfoAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.Stage", "toggleInfoOverlay");
             }
-            
-            // If the parent is a URLClassLoader, use all of its URLs
-            List<URL> urlList = new ArrayList<URL>();
-            urlList.addAll(Arrays.asList(urls));
-            
-            while (parent instanceof URLClassLoader) { 
-                urlList.addAll(Arrays.asList(((URLClassLoader)parent).getURLs()));
-                parent = parent.getParent();
-            }
-            
-            urls = urlList.toArray(new URL[0]);
-            
-            return new NoResourceCacheClassLoader(urls, parent);
-        }
-        
-        // Don't cache resources inside jars - a ZipException will occur if 
-        // the jar is modified.
-        public InputStream getResourceAsStream(String name) {
-            URL url = super.getResource(name);
-            if (url != null) {
-                try {
-                    URLConnection c = url.openConnection();
-                    if (url.toString().startsWith("jar:file:")) {
-                        // Don't use caches - it's a local jar file that could have been modified 
-                        // recently in the edit->build->test cycle.
-                        c.setUseCaches(false);
-                    }
-                    return c.getInputStream();
-                }
-                catch (IOException ex) {
-                    // Ignore
-                }
-            }
-            return null;
         }
     }
     
+    public class DirtyRectanglesAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.scene.Scene2D", 
+                    "toggleShowDirtyRectangles");
+            }
+        }
+    }
+    
+    public class ShowConsoleAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.Stage", "showConsole");
+            }
+        }
+    }
+    
+    public class ShowSceneSelectorAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.Stage", "showSceneSelector");
+            }
+        }
+    }
+    
+    public class SlowSpeedAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.Stage", "setSpeedSlow");
+            }
+        }
+    }
+    
+    public class NormalSpeedAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.Stage", "setSpeedNormal");
+            }
+        }
+    }
+    
+    public class FastSpeedAction extends EditAction {
+        public void actionPerformed(ActionEvent e) {
+            if (scripting != null) {
+                scripting.invokeStaticInAnimationThread("pulpcore.Stage", "setSpeedFast");
+            }
+        }
+    }
+        
     public static class Filler extends JComponent {
         
         public static Filler createVerticalStrut(int height) {

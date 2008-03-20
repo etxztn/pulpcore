@@ -4,6 +4,7 @@
   * Core: App resizing now works automagically in all cases. No source changes required.
   * Player: Added 'Full Screen' option (rebuild your app to enable this feature).
   * Player: Added 'Capture Screenshot' option (rebuild your app to enable this feature).
+  * Player: Added several menu options previously only available via hotkeys
   * Tools: Font creator: added gradient offset, shadow blur, sped up rendering.
   * Tools: Previously PNG optimization level was always set at '2' (valid values are from 0 to 5).
     Now PNG optimization is set to '1' in 'debug' mode and '4' in 'release' mode. Do

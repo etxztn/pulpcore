@@ -127,6 +127,15 @@ public class Scene2D extends Scene {
     private boolean stateSaved;
     private int desiredFPS;
     
+    // Called via reflection via PulpCore Player
+    private static void toggleShowDirtyRectangles() {
+        showDirtyRectangles = !showDirtyRectangles;
+        Scene scene = Stage.getScene();
+        if (scene instanceof Scene2D) {
+            ((Scene2D)scene).needsFullRedraw = true;
+        }
+    }
+    
     /**
         Creates a new Scene2D with one layer and with dirty rectangles enabled.
     */

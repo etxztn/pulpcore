@@ -248,25 +248,15 @@ public final class CoreApplet extends Applet {
         }
     }
     
-    /**
-        Gets a screenshot of the current appearance of the stage.
-        @return a new image that contains the screenshot.
-    */
-    public BufferedImage getScreenshot() {
-        final CoreImage[] image = new CoreImage[1];
-        AppletAppContext c = context;
-        if (c != null) {
-            c.invokeAndWait(new Runnable() {
-                public void run() {
-                    image[0] = Stage.getScreenshot();
-                }
-            });
-        }
+    // Called via PulpCore Player via reflection
+    // This method must be called in the animation thread.
+    private BufferedImage getScreenshot() {
+        CoreImage image = Stage.getScreenshot();
         
-        if (image[0] != null) {
-            int w = image[0].getWidth();
-            int h = image[0].getHeight();
-            int[] d = image[0].getData();
+        if (image != null) {
+            int w = image.getWidth();
+            int h = image.getHeight();
+            int[] d = image.getData();
             BufferedImage awtImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
             awtImage.setRGB(0, 0, w, h, d, 0, w);
             return awtImage;
