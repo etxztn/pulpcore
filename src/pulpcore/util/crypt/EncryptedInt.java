@@ -129,12 +129,6 @@ public class EncryptedInt extends Int implements PropertyListener {
         buffer.crypt(cipher);
         
         buffer.reset();
-        try {
-            return buffer.readInt();
-        }
-        catch (EOFException ex) {
-            // Won't happen
-            return 0;
-        }
+        return buffer.readInt();
     }
 }

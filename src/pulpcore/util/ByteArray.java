@@ -29,7 +29,6 @@
 
 package pulpcore.util;
 
-import java.io.EOFException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -176,12 +175,12 @@ public class ByteArray {
     
     /**
         Sets the current position where data is read from and write to. 
-        @throws EOFException If the new position is less than zero or greater than the 
+        @throws IndexOutOfBoundsException If the new position is less than zero or greater than the 
         data length;
     */
-    public void setPosition(int position) throws EOFException {
+    public void setPosition(int position) throws IndexOutOfBoundsException {
         if (position < 0 || position > data.length) {
-            throw new EOFException();
+            throw new IndexOutOfBoundsException();
         }
         
         this.position = position;
@@ -304,14 +303,14 @@ public class ByteArray {
     //
     
     
-    private void checkAvailable(int length) throws EOFException {
+    private void checkAvailable(int length) throws IndexOutOfBoundsException {
         if (available() < length) {
-            throw new EOFException();
+            throw new IndexOutOfBoundsException();
         }
     }
     
     
-    public byte readByte() throws EOFException {
+    public byte readByte() throws IndexOutOfBoundsException {
         checkAvailable(1);
         return data[position++];
     }
@@ -320,10 +319,10 @@ public class ByteArray {
     /**
         Reads bytes from the current position in this ByteArray into a buffer.
         @return the number of bytes read (always returns the length of the byte array)
-        @throws EOFException if there aren't enough remaining bytes in this ByteArray to 
+        @throws IndexOutOfBoundsException if there aren't enough remaining bytes in this ByteArray to 
         fill the buffer
     */
-    public int read(byte[] buffer) throws EOFException {
+    public int read(byte[] buffer) throws IndexOutOfBoundsException {
         return read(buffer, 0, buffer.length);
     }
     
@@ -331,10 +330,10 @@ public class ByteArray {
     /**
         Reads bytes from the current position in this ByteArray into a buffer.
         @return the number of bytes read (always returns the specified length)
-        @throws EOFException if there aren't enough remaining bytes in this ByteArray to 
+        @throws IndexOutOfBoundsException if there aren't enough remaining bytes in this ByteArray to 
         read the specified number of bytes.
     */
-    public int read(byte[] buffer, int offset, int length) throws EOFException {
+    public int read(byte[] buffer, int offset, int length) throws IndexOutOfBoundsException {
         if (length == 0) {
             return 0;
         }
@@ -351,12 +350,12 @@ public class ByteArray {
     }
     
     
-    public boolean readBoolean() throws EOFException {
+    public boolean readBoolean() throws IndexOutOfBoundsException {
         return (readByte() != 0);
     }
     
     
-    public short readShort() throws EOFException {
+    public short readShort() throws IndexOutOfBoundsException {
         checkAvailable(2);
         if (byteOrder == LITTLE_ENDIAN) {
             return (short)(
@@ -371,7 +370,7 @@ public class ByteArray {
     }
     
     
-    public int readInt() throws EOFException {
+    public int readInt() throws IndexOutOfBoundsException {
         checkAvailable(4);
         if (byteOrder == LITTLE_ENDIAN) {
             return 
@@ -390,7 +389,7 @@ public class ByteArray {
     }
     
     
-    public long readLong() throws EOFException {
+    public long readLong() throws IndexOutOfBoundsException {
         checkAvailable(8);
         if (byteOrder == LITTLE_ENDIAN) {
             return (readInt() & 0xffffffffL) | ((readInt() & 0xffffffffL) << 32L);
@@ -401,12 +400,12 @@ public class ByteArray {
     }
     
     
-    public float readFloat() throws EOFException {
+    public float readFloat() throws IndexOutOfBoundsException {
         return Float.intBitsToFloat(readInt());
     }
     
     
-    public double readDouble() throws EOFException {
+    public double readDouble() throws IndexOutOfBoundsException {
         return Double.longBitsToDouble(readLong());
     }
     
@@ -414,7 +413,7 @@ public class ByteArray {
     /**
         Reads a string in the same modified UTF-8 format used in DataInputStream.
     */
-    public String readUTF() throws EOFException, UTFDataFormatException {
+    public String readUTF() throws IndexOutOfBoundsException, UTFDataFormatException {
         checkAvailable(2);
         int utfLength = readShort() & 0xffff;
         checkAvailable(utfLength);
