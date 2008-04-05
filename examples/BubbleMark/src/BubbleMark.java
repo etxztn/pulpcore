@@ -53,13 +53,17 @@ public class BubbleMark extends Scene2D {
         }
     }
     
-    // Methods called from JavaScript
+    // Methods called from JavaScript (invoke in the animation thread)
     
-    public synchronized void setNumBalls(final int numBalls) {
-        if (numBalls != balls.length) {
-            balls = new Ball[numBalls];
-            reload();
-        }
+    public void setNumBalls(final int numBalls) {
+        invokeLater(new Runnable() {
+            public void run() {
+                if (numBalls != balls.length) {
+                    balls = new Ball[numBalls];
+                    reload();
+                }
+            }
+        });
     }
     
     public void setCapFrameRate(final boolean capFrameRate) {
@@ -70,8 +74,12 @@ public class BubbleMark extends Scene2D {
         });
     }
     
-    public synchronized void setPixelSnapping(boolean pixelSnapping) {
-        this.pixelSnapping.set(pixelSnapping);
+    public void setPixelSnapping(final boolean pixelSnapping) {
+        invokeLater(new Runnable() {
+            public void run() {
+                BubbleMark.this.pixelSnapping.set(pixelSnapping);
+            }
+        });
     }
     
     // The Ball sprite, wrapper for Ball.java by rbair
