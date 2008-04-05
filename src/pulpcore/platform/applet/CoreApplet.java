@@ -163,12 +163,13 @@ public final class CoreApplet extends Applet {
         {@code pulpcore_object.getCurrentScene().callMyMethod()}.
     */
     public Scene getCurrentScene() {
-        if (context != null) {
-            return context.getStage().getScene();
-        }
-        else {
-            return null;
-        }
+        final Scene[] scene = new Scene[1];
+        invokeAndWait(new Runnable() {
+            public void run() {
+                scene[0] = Stage.getScene();
+            }
+        });
+        return scene[0];
     }
     
     /**

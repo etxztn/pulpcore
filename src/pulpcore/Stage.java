@@ -436,6 +436,7 @@ public class Stage implements Runnable {
             // Run animation at norm priority because the AWT Event thread 
             // needs to run at a higher priority. 
             animationThread = appContext.createThread("PulpCore-Stage", this);
+            appContext.setAnimationThread(animationThread);
             animationThread.start();
         }
     }
@@ -514,6 +515,7 @@ public class Stage implements Runnable {
     
     private synchronized Thread animationThreadStop() {
         Thread t = animationThread;
+        appContext.setAnimationThread(null);
         animationThread = null;
         return t;
     }
@@ -735,9 +737,11 @@ public class Stage implements Runnable {
     
     private void doDestroy() {
         animationThread = Thread.currentThread();
+        appContext.setAnimationThread(animationThread);
         currentScene.hideNotify();
         currentScene.unload();
         clearSceneStack();
+        appContext.setAnimationThread(null);
         animationThread = null;
     }
     

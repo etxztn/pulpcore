@@ -55,6 +55,7 @@ public abstract class AppContext {
 
     private static int nextContextID = 0;
     
+    private Thread animationThread;
     private ThreadGroup threadGroup;
     private Map talkbackFields = new HashMap();
     private ArrayList runnables = new ArrayList();
@@ -114,13 +115,27 @@ public abstract class AppContext {
     }
     
     /**
+        Called by the Stage.
+    */
+    public void setAnimationThread(Thread thread) {
+        this.animationThread = thread;
+    }
+    
+    /**
         Causes {@code runnable} to have its {@code run} method called in the animation thread.
         This will happen immediately before calling {@link pulpcore.scene.Scene.updateScene(int)}.
         The runnable is not guaranteed to execute if the app is exited by the user.
+        <p>
+        If the current thread is the animation thread, the runnable is executed immediately.
     */
     public final void invokeLater(Runnable runnable) {
-        synchronized (runnables) {
-            runnables.add(runnable);
+        if (animationThread == Thread.currentThread()) {
+            runnable.run();
+        }
+        else {
+            synchronized (runnables) {
+                runnables.add(runnable);
+            }
         }
     }
     
@@ -128,17 +143,24 @@ public abstract class AppContext {
         Causes {@code runnable} to have its {@code run} method called in the animation thread.
         This will happen immediately before calling {@link pulpcore.scene.Scene.updateScene(int)}.
         The runnable is not guaranteed to execute if the app is exited by the user.
+        <p>
+        If the current thread is the animation thread, the runnable is executed immediately.
     */
     public final void invokeAndWait(Runnable runnable) {
-        synchronized (runnable) {
-            synchronized (runnables) {
-                runnables.add(runnable);
+        if (animationThread == Thread.currentThread()) {
+            runnable.run();
+        }
+        else {
+            synchronized (runnable) {
+                synchronized (runnables) {
+                    runnables.add(runnable);
+                }
+            
+                try {
+                    runnable.wait();
+                }
+                catch (InterruptedException ex) { }
             }
-        
-            try {
-                runnable.wait();
-            }
-            catch (InterruptedException ex) { }
         }
     }
     
