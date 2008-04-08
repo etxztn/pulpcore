@@ -119,6 +119,12 @@ public abstract class AppContext {
     */
     public void setAnimationThread(Thread thread) {
         this.animationThread = thread;
+        if (thread != null) {
+            // For Stage.doDestroy()
+            if (threadGroup == null || !threadGroup.parentOf(thread.getThreadGroup())) {
+                threadGroup = thread.getThreadGroup();
+            }
+        }
     }
     
     /**
