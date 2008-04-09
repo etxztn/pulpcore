@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,21 +34,115 @@ import pulpcore.platform.applet.SystemTimer;
 /**
     The NanoTimer class uses System.nanoTime() for Applets running on
     Java 1.5 or newer.
+    <p>
+    Some nanoTime implementations (Win XP, AMD Dual-core) return a different time depending on 
+    which CPU the method is called on. This code attempts to guess which timer the nanoTime value 
+    comes from.
 */
 public class NanoTimer extends SystemTimer {
-        
+    
+    private static final int NUM_TIMERS = 8;
+    private static final long MAX_DIFF = 1000000000L; // 1 sec
+    private static final long NEVER_USED = -1; 
+    
+    private long[] lastTimeStamps = new long[NUM_TIMERS];
+    private long[] timeSinceLastUsed = new long[NUM_TIMERS];
+    
+    private long virtualNanoTime = 0;
+    private int timesInARowNewTimerChosen = 0;
+    private long lastDiff = 0;
+    
+    public NanoTimer() {
+        for (int i = 0; i < NUM_TIMERS; i++) {
+            timeSinceLastUsed[i] = NEVER_USED;
+        }
+    }
     
     public String getName() {
         return "NanoTimer";
     }
     
+    private long nanoTime() {
+        long diff;
+        
+        if (timesInARowNewTimerChosen >= NUM_TIMERS) {
+            long nanoTime = System.currentTimeMillis() * 1000000;
+            diff = nanoTime - lastTimeStamps[0];
+        }
+        else {  
+            long nanoTime = System.nanoTime();
     
-    public long getTimeMillis() {
-        return System.nanoTime() / 1000000;
+            // Find which timer the nanoTime value came from 
+            int bestTimer = -1;
+            long bestDiff = 0;
+            for (int i = 0; i < NUM_TIMERS; i++) {
+                if (timeSinceLastUsed[i] != NEVER_USED) {
+                    long t = lastTimeStamps[i] + timeSinceLastUsed[i];
+                    long timerDiff = nanoTime - t;
+                    if (timerDiff > 0 && timerDiff < MAX_DIFF) {
+                        if (bestTimer == -1 || timerDiff < bestDiff) {
+                            bestTimer = i;
+                            bestDiff = timerDiff;
+                        }
+                    }
+                }
+            }
+            
+            // No best timer found
+            if (bestTimer == -1) {
+                // Use last good diff
+                diff = lastDiff;
+                
+                // Find a new timer 
+                bestTimer = 0;
+                for (int i = 0; i < NUM_TIMERS; i++) {
+                    if (timeSinceLastUsed[i] == NEVER_USED) {
+                        // This timer never used - use it
+                        bestTimer = i;
+                        break;
+                    }
+                    else if (timeSinceLastUsed[i] > timeSinceLastUsed[bestTimer]) {
+                        // Least used timer so far, but keep looking
+                        bestTimer = i;
+                    }
+                }
+                timesInARowNewTimerChosen++;
+            }
+            else {
+                timesInARowNewTimerChosen = 0;
+                diff = nanoTime - lastTimeStamps[bestTimer] - timeSinceLastUsed[bestTimer];
+                // Set lastDiff if this same timer used twice in a row
+                if (timeSinceLastUsed[bestTimer] == 0) {
+                    lastDiff = diff;
+                }
+            }
+            
+            lastTimeStamps[bestTimer] = nanoTime;
+            timeSinceLastUsed[bestTimer] = 0;
+            
+            // Increment usage of all other timers
+            for (int i = 0; i < NUM_TIMERS; i++) {
+                if (i != bestTimer && timeSinceLastUsed[i] != NEVER_USED) {
+                    timeSinceLastUsed[i] += diff;
+                }
+            }
+            
+            // Check for total failure
+            if (timesInARowNewTimerChosen >= NUM_TIMERS) {
+                lastTimeStamps[0] = System.currentTimeMillis() * 1000000;
+            }
+        }
+        
+        virtualNanoTime += diff;
+        
+        return virtualNanoTime;
     }
     
+    public long getTimeMillis() {
+        return nanoTime() / 1000000;
+    }
     
     public long getTimeMicros() {
-        return System.nanoTime() / 1000;
+        return nanoTime() / 1000;
     }
 }
