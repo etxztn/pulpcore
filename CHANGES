@@ -1,3 +1,7 @@
+0.11.3 (In progress) 
+  * Fixed bug: nanoTime workaround for dual-core AMD systems.
+  * Fixed bug: thread issues when two of the same applet is loaded in the same VM instance.
+  
 0.11.2 (March 20, 2008)
   * Examples: Updated Text example to show gradients and blurred shadows. 
   * API: Added pulpcore.math.Tuple2i
