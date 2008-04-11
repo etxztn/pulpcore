@@ -88,7 +88,7 @@ public class Images extends Scene2D {
             // Move the player in the x direction
             double dx = playerSpeed * direction;
             double newX = player.x.get() + dx * elapsedTime;
-            double halfWidth = player.height.get()/2;
+            double halfWidth = player.width.get()/2;
             if (newX < -halfWidth) {
                 newX = Stage.getWidth() + halfWidth;
             }
