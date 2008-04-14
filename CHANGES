@@ -1,4 +1,6 @@
-0.11.3 (In progress) 
+0.11.3 (In SVN) 
+  * Fixed bug: Mac OS X bug (requesting Providers on the server) only happens on startup and not 
+    once per minute.
   * Fixed bug: nanoTime workaround for dual-core AMD systems.
   * Fixed bug: thread issues when two of the same applet is loaded in the same VM instance.
   

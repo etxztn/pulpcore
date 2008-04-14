@@ -67,24 +67,28 @@ public class JavaSound implements SoundEngine {
     // be fixed using gain/colume controls, so delay the sound data by 10ms (1/100th of a second).
     private static final int WINDOWS_CLIP_DELAY = 10;
     
-    // The amount of time (in milliseconds) to fade before and after the Mac OS X "glitch" 
-    private static final int MAC_FADE_TIME = 5;
+    // The amount of time (in milliseconds) to fade before and after the "glitch" 
+    private static final int GLITCH_FADE_TIME = 5;
     
     // Buffer size (in milliseconds)
     // This implementation attempts to keep 250ms of sound data in the SourceDataLine's internal 
     // buffer. Up to 1 second of sound data is kept in the internal buffer for slow frame rates.
     // Based on tests, 250ms is required as a minimum on Mac OS X.
-    private static final int MIN_BUFFER_SIZE = 250;
+    // 4/15/2008: changed to 300ms
+    private static final int MIN_BUFFER_SIZE = 300;
     private static final int MAX_BUFFER_SIZE = 1000;
     
     // Work buffer used during audio rendering.
     private static final byte[] WORK_BUFFER = new byte[44100 * FRAME_SIZE * MAX_BUFFER_SIZE / 1000];
     
+    private final Mixer mixer;
     private DataLinePlayer[] players = new DataLinePlayer[0];
     private int[] maxSoundsForSampleRate = new int[SAMPLE_RATES.length];
     private int[] sampleRates;
     
     public JavaSound() {
+        
+        mixer = AudioSystem.getMixer(null);
         
         // Calculate the max number of simultaneous sounds for each sample rate
         int numSampleRates = 0;
@@ -111,7 +115,7 @@ public class JavaSound implements SoundEngine {
         if (maxSounds > 0) {
             players = new DataLinePlayer[maxSounds];
             for (int i = 0; i < players.length; i++) {
-                players[i] = new DataLinePlayer(sampleRates, i % sampleRates.length);
+                players[i] = new DataLinePlayer(mixer, sampleRates, i % sampleRates.length);
             }
         }
         else {
@@ -136,7 +140,7 @@ public class JavaSound implements SoundEngine {
                             AudioFormat format = getFormat(sampleRates[0]);
                             DataLine.Info lineInfo =
                                 new DataLine.Info(SourceDataLine.class, format);
-                            SourceDataLine line = (SourceDataLine)AudioSystem.getLine(lineInfo);
+                            SourceDataLine line = (SourceDataLine)mixer.getLine(lineInfo);
                             line.open(format);
                             byte[] blank = new byte[line.getBufferSize()];
                             line.start();
@@ -174,10 +178,8 @@ public class JavaSound implements SoundEngine {
     private int getMaxSimultaneousSounds(int sampleRate) {
         
         AudioFormat format = getFormat(sampleRate);
-        
         try {
             DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, format);
-            Mixer mixer = AudioSystem.getMixer(null);
             int maxLines = mixer.getMaxLines(lineInfo);
             if (maxLines == AudioSystem.NOT_SPECIFIED || maxLines > MAX_SIMULTANEOUS_SOUNDS) {
                 return MAX_SIMULTANEOUS_SOUNDS;
@@ -368,6 +370,7 @@ public class JavaSound implements SoundEngine {
     
     static class DataLinePlayer {
         
+        private final Mixer mixer;
         private SoundStream stream;
         private SourceDataLine line;
         private int sampleRate;
@@ -378,7 +381,8 @@ public class JavaSound implements SoundEngine {
         // For the JavaSound "glitch"
         private int[] fadeGoal = new int[NUM_CHANNELS];
         
-        public DataLinePlayer(int[] sampleRates, int firstAttempt) {
+        public DataLinePlayer(Mixer mixer, int[] sampleRates, int firstAttempt) {
+            this.mixer = mixer;
             for (int i = 0; i < sampleRates.length; i++) {
                 this.sampleRate = sampleRates[(i + firstAttempt) % sampleRates.length];
                 open();
@@ -409,7 +413,7 @@ public class JavaSound implements SoundEngine {
                 try {
                     DataLine.Info lineInfo =
                         new DataLine.Info(SourceDataLine.class, format, bufferSize);
-                    line = (SourceDataLine)AudioSystem.getLine(lineInfo);
+                    line = (SourceDataLine)mixer.getLine(lineInfo);
                     line.open(format, bufferSize);
                 }
                 catch (Exception ex) {
@@ -599,7 +603,7 @@ public class JavaSound implements SoundEngine {
             }
             
             // Fade
-            int fadeFrames = sampleRate * MAC_FADE_TIME / 1000;
+            int fadeFrames = sampleRate * GLITCH_FADE_TIME / 1000;
             int positionInc = out ? -FRAME_SIZE : FRAME_SIZE;
             for (int i = 0; i < fadeFrames; i++) {
                 for (int j = 0; j < NUM_CHANNELS; j++) {
