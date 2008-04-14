@@ -729,46 +729,43 @@ public abstract class Sprite implements PropertyListener {
         return CoreMath.toInt(localY);
     }
     
-    // Note sure about these. Too confusing of an API? Provide way to return a copy of
-    // the Transform?
+    /**
+        Gets the x-coordinate of this sprite in View Space.
+    */
+    public final double getViewX() {
+        updateTransform();
+        return CoreMath.toDouble(viewTransform.getTranslateX());
+    }
     
-    ///**
-    //    Gets the x-coordinate of this sprite in View Space.
-    //*/
-    //public final double getViewX() {
-    //    updateTransform();
-    //    return CoreMath.toDouble(viewTransform.getTranslateX());
-    //}
-    //
-    ///**
-    //    Gets the y-coordinate of this sprite in View Space.
-    //*/
-    //public final double getViewY() {
-    //    updateTransform();
-    //    return CoreMath.toDouble(viewTransform.getTranslateY());
-    //}
+    /**
+        Gets the y-coordinate of this sprite in View Space.
+    */
+    public final double getViewY() {
+        updateTransform();
+        return CoreMath.toDouble(viewTransform.getTranslateY());
+    }
     
-    ///**
-    //    Gets the integer x-coordinate in View Space of the specified location in
-    //    Local Space.
-    //*/
-    //public final int getViewX(int localX, int localY) {
-    //    updateTransform();
-    //    int fx = CoreMath.toFixed(localX);
-    //    int fy = CoreMath.toFixed(localY);
-    //    return CoreMath.toInt(viewTransform.transformX(fx, fy));
-    //}
-    //
-    ///**
-    //    Gets the integer y-coordinate in View Space of the specified location in
-    //    Local Space.
-    //*/
-    //public final int getViewY(int localX, int localY) {
-    //    updateTransform();
-    //    int fx = CoreMath.toFixed(localX);
-    //    int fy = CoreMath.toFixed(localY);
-    //    return CoreMath.toInt(viewTransform.transformY(fx, fy));
-    //}
+    /**
+        Gets the x-coordinate in View Space of the specified location in
+        Local Space.
+    */
+    public final double getViewX(double localX, double localY) {
+        updateTransform();
+        int fx = CoreMath.toFixed(localX);
+        int fy = CoreMath.toFixed(localY);
+        return CoreMath.toDouble(viewTransform.transformX(fx, fy));
+    }
+    
+    /**
+        Gets the y-coordinate in View Space of the specified location in
+        Local Space.
+    */
+    public final double getViewY(double localX, double localY) {
+        updateTransform();
+        int fx = CoreMath.toFixed(localX);
+        int fy = CoreMath.toFixed(localY);
+        return CoreMath.toDouble(viewTransform.transformY(fx, fy));
+    }
     
     /**
         Checks if the specified location is within the bounds of this 
