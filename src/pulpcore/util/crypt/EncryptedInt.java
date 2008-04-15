@@ -109,7 +109,7 @@ public class EncryptedInt extends Int implements PropertyListener {
         specified cipher.
     */
     public EncryptedInt(PropertyListener listener, int value, ARC4 cipher) {
-        super(listener, 0);
+        super(listener, value);
         this.cipher = cipher;
         propertyChange(this);
         addListener(this);
