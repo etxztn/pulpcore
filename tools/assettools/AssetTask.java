@@ -100,8 +100,19 @@ public class AssetTask extends Task {
     }
     
     private boolean isImagePropertyFile(File file) {
+        boolean isImagePropertyFile = false;
         String name = file.getName().toLowerCase();
-        return file.isFile() && name.endsWith(".properties") && !name.endsWith(".font.properties");
+        if (file.isFile() && name.endsWith(".properties") && !name.endsWith(".font.properties")) {
+            // Check if a matching image exists
+            for (String type : IMAGE_TYPES) {
+                 File imageFile = new File(removeExtension(file.getPath()) + "." + type);
+                 if (imageFile.exists()) {
+                     isImagePropertyFile = true;
+                     break;
+                 }
+            }
+        }
+        return isImagePropertyFile;
     }
     
     private boolean isFontFile(File file) {
@@ -193,17 +204,7 @@ public class AssetTask extends Task {
                 }
             }
             else if (isImagePropertyFile(file)) {
-                boolean imageExists = false;
-                for (String type : IMAGE_TYPES) {
-                     File imageFile = new File(removeExtension(file.getPath()) + "." + type);
-                     if (imageFile.exists()) {
-                         imageExists = true;
-                         break;
-                     }
-                }
-                if (!imageExists) {
-                    log("Unused image property file " + file, Project.MSG_WARN);
-                }
+                // Do nothing!
             }
             else if (isOtherAsset(file)) {
                 File destFile = new File(destDir, file.getName());
