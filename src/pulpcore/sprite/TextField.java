@@ -369,9 +369,9 @@ public class TextField extends Sprite {
     }
     
     private int getCharPositionFromMouse() {
-        int mouseClickX = getLocalX(Input.getMouseX(), Input.getMouseY());
+        double mouseClickX = getLocalX(Input.getMouseX(), Input.getMouseY());
         
-        if (mouseClickX == Integer.MAX_VALUE) {
+        if (mouseClickX == Double.MAX_VALUE) {
             return 0;
         }
         

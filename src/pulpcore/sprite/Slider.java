@@ -144,14 +144,16 @@ public class Slider extends Sprite {
                 dragMode = DRAG_NONE;
             }
             else {
-                int offset;
+                double offset;
                 if (isHorizontal()) {
                     offset = getLocalX(Input.getMouseX(), Input.getMouseY());
                 }
                 else {
                     offset = getLocalY(Input.getMouseX(), Input.getMouseY());
                 }
-                value.set(getValue(offset - dragOffset));
+                if (offset != Double.MAX_VALUE) {
+                    value.set(getValue((int)offset - dragOffset));
+                }
             }
         }
         else if (dragMode == DRAG_GUTTER) {
@@ -165,9 +167,14 @@ public class Slider extends Sprite {
                 dragGutterDelay -= elapsedTime;
                 if (dragGutterDelay <= 0) {
                     dragGutterDelay = DRAG_GUTTER_DELAY;
-                    int x = getLocalX(Input.getMouseX(), Input.getMouseY());
-                    int y = getLocalY(Input.getMouseX(), Input.getMouseY());
-                    if (isHorizontal()) {
+                    double lx = getLocalX(Input.getMouseX(), Input.getMouseY());
+                    double ly = getLocalY(Input.getMouseX(), Input.getMouseY());
+                    int x = (int)Math.round(lx);
+                    int y = (int)Math.round(ly);
+                    if (lx == Double.MAX_VALUE || ly == Double.MAX_VALUE) {
+                        // Do nothing
+                    }
+                    else if (isHorizontal()) {
                         if (x < knobX && dragGutterDir <= 0) {
                             // Scroll left
                             page(-extent, x - knobImage.getWidth()/2);
@@ -192,9 +199,14 @@ public class Slider extends Sprite {
             }
         }
         else if (isMousePressed()) {
-            int x = getLocalX(Input.getMousePressX(), Input.getMousePressY());
-            int y = getLocalY(Input.getMousePressX(), Input.getMousePressY());
-            if (isHorizontal()) {
+            double lx = getLocalX(Input.getMousePressX(), Input.getMousePressY());
+            double ly = getLocalY(Input.getMousePressX(), Input.getMousePressY());
+            int x = (int)Math.round(lx);
+            int y = (int)Math.round(ly);
+            if (lx == Double.MAX_VALUE || ly == Double.MAX_VALUE) {
+                // Do nothing
+            }
+            else if (isHorizontal()) {
                 dragOffset = x - knobX;
                 if (x < knobX) {
                     // Scroll left

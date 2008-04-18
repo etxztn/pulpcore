@@ -699,34 +699,34 @@ public abstract class Sprite implements PropertyListener {
     
     /**
         Gets the integer x-coordinate in Local Space of the specified location in
-        View Space. Returns Integer.MAX_VALUE if the Local Space is invalid 
+        View Space. Returns Double.MAX_VALUE if the Local Space is invalid 
         (that is, it's Transform determinant is zero).
     */
-    public final int getLocalX(int viewX, int viewY) {
+    public final double getLocalX(double viewX, double viewY) {
         updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
         int localX = viewTransform.inverseTransformX(fx, fy);
         if (localX == Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
+            return Double.MAX_VALUE;
         }
-        return CoreMath.toInt(localX);
+        return CoreMath.toDouble(localX);
     }
     
     /**
         Gets the integer y-coordinate in Local Space of the specified location in
-        View Space. Returns Integer.MAX_VALUE if the Local Space is invalid 
+        View Space. Returns Double.MAX_VALUE if the Local Space is invalid 
         (that is, it's Transform determinant is zero).
     */
-    public final int getLocalY(int viewX, int viewY) {
+    public final double getLocalY(double viewX, double viewY) {
         updateTransform();
         int fx = CoreMath.toFixed(viewX);
         int fy = CoreMath.toFixed(viewY);
         int localY = viewTransform.inverseTransformY(fx, fy);
         if (localY == Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
+            return Double.MAX_VALUE;
         }
-        return CoreMath.toInt(localY);
+        return CoreMath.toDouble(localY);
     }
     
     /**
