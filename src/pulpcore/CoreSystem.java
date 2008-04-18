@@ -65,7 +65,9 @@ public class CoreSystem {
         IS_JAVA_1_4 = (javaVersion.compareTo("1.4") >= 0);
         IS_JAVA_1_5 = (javaVersion.compareTo("1.5") >= 0);
         IS_JAVA_1_6 = (javaVersion.compareTo("1.6") >= 0);
+        IS_JAVA_1_6_U_10 = (javaVersion.compareTo("1.6.0_10") >= 0);
         IS_JAVA_1_7 = (javaVersion.compareTo("1.7") >= 0);
+        
     }
 
     private static final boolean IS_MAC_OS_X;
@@ -76,19 +78,17 @@ public class CoreSystem {
     private static final boolean IS_JAVA_1_4;
     private static final boolean IS_JAVA_1_5;
     private static final boolean IS_JAVA_1_6;
+    private static final boolean IS_JAVA_1_6_U_10;
     private static final boolean IS_JAVA_1_7;
 
     private static Platform platform;
     
-    
     // Prevent instantiation
     private CoreSystem() { }
-
 
     public static void init(Platform platform) {
         CoreSystem.platform = platform;
     }
-    
     
     /**
         Gets a Java system property. Returns null if the property does not exist or there is a 
@@ -103,7 +103,6 @@ public class CoreSystem {
         }
     }
 
-
     /**
         Used internally by PulpCore - most apps will not need to access
         the Platform instance.
@@ -111,7 +110,6 @@ public class CoreSystem {
     public static Platform getPlatform() {
         return platform;
     }
-    
     
     /**
         Used internally by PulpCore - most apps will not need to access
@@ -121,14 +119,12 @@ public class CoreSystem {
         return platform.getThisAppContext();
     }
 
-
     /**
         Returns true if Java 1.3 or newer is in use.
     */
     public static final boolean isJava13orNewer() {
         return IS_JAVA_1_3;
     }
-
 
     /**
         Returns true if Java 1.4 or newer is in use.
@@ -137,14 +133,12 @@ public class CoreSystem {
         return IS_JAVA_1_4;
     }
 
-
     /**
         Returns true if Java 1.5 or newer is in use.
     */
     public static final boolean isJava15orNewer() {
         return IS_JAVA_1_5;
     }
-
 
     /**
         Returns true if Java 1.6 or newer is in use.
@@ -153,6 +147,12 @@ public class CoreSystem {
         return IS_JAVA_1_6;
     }
     
+    /**
+        Returns true if Java 1.6 update 10 or newer is in use.
+    */
+    public static final boolean isJava16u10orNewer() {
+        return IS_JAVA_1_6_U_10;
+    }
     
     /**
         Returns true if Java 1.7 or newer is in use.
@@ -160,7 +160,6 @@ public class CoreSystem {
     public static final boolean isJava17orNewer() {
         return IS_JAVA_1_7;
     }
-    
     
     /**
         Returns true if the current operating system is any version of Mac OS X.
@@ -176,14 +175,12 @@ public class CoreSystem {
         return IS_MAC_OS_X_LEOPARD;
     }
     
-    
     /**
         Returns true if the current operating system is any version of Windows.
     */
     public static final boolean isWindows() {
         return IS_WINDOWS;
     }
-    
     
     /**
         Returns true if the current operating system is Windows XP (5.1) or newer.
@@ -192,11 +189,9 @@ public class CoreSystem {
         return IS_WINDOWS_XP;
     }
 
-
     //
     // Shorcut methods to AppContext
     //
-    
     
     /**
         Gets a named property for this application instance. Returns null if the named parameter
@@ -208,14 +203,12 @@ public class CoreSystem {
         return getThisAppContext().getAppProperty(name);
     }
     
-    
     /**
         Gets a named TalkBack field.
     */
     public static String getTalkBackField(String name) {
         return getThisAppContext().getTalkBackField(name);
     }
-
     
     /**
         Sets a new TalkBack field. If the named field already exists, it is replaced.
@@ -224,16 +217,13 @@ public class CoreSystem {
         getThisAppContext().setTalkBackField(name, value);
     }
 
-
     public static void setTalkBackField(String name, Throwable t) {
         getThisAppContext().setTalkBackField(name, t);
     }
 
-
     public static void clearTalkBackFields() {
         getThisAppContext().clearTalkBackFields();
     }
-
 
     /**
         Uploads talkback data to an external URL using the POST (multipart form)
@@ -248,7 +238,6 @@ public class CoreSystem {
         return getThisAppContext().uploadTalkBackFields(talkbackPath);
     }
 
-
     /**
         Determines if this app is running from one of the specified
         hosts.
@@ -257,26 +246,21 @@ public class CoreSystem {
         return getThisAppContext().isValidHost(validHosts);
     }
 
-
     public static void setConsoleOutputEnabled(boolean consoleOut) {
         getThisAppContext().setConsoleOutputEnabled(consoleOut);
     }
-
 
     public static boolean isConsoleOutputEnabled() {
         return getThisAppContext().isConsoleOutputEnabled();
     }
 
-
     public static String getLogText() {
         return getThisAppContext().getLogText();
     }
     
-    
     public static void clearLog() {
         getThisAppContext().clearLog();
     }
-    
     
     /**
         Prints a the string representation of an object to the log.
@@ -290,14 +274,12 @@ public class CoreSystem {
         }
     }
     
-    
     /**
         Prints the string representation of a boolean to the log.
     */
     public static void print(boolean b) {
         print(Boolean.toString(b));
     }
-    
     
     /**
         Prints the string representation of an integer to the log.
@@ -306,7 +288,6 @@ public class CoreSystem {
         print(Integer.toString(n));
     }
     
-    
     /**
         Prints the string representation of a float to the log.
     */
@@ -314,14 +295,12 @@ public class CoreSystem {
         print(Float.toString(n));
     }
     
-    
     /**
         Prints the string representation of a double to the log.
     */
     public static void print(double n) {
         print(Double.toString(n));
     }
-
 
     /**
         Prints a line of text to the log.
@@ -335,7 +314,6 @@ public class CoreSystem {
             System.out.println(statement);
         }
     }
-
 
     /**
         Prints a line of text and a Throwable's stack trace to the log.
@@ -351,7 +329,6 @@ public class CoreSystem {
         }
     }
 
-
     /**
         Prints the amount of current memory usage and the change in memory
         usage since the last call to this method. System.gc() is called
@@ -366,7 +343,6 @@ public class CoreSystem {
             System.out.println(statement);
         }
     }
-
 
     /**
         Attempts to store persistant user data to the local machine.
@@ -398,7 +374,6 @@ public class CoreSystem {
         getThisAppContext().putUserData(key, data);
     }
     
-    
     /**
         Attempts to get persistant user data from the local machine.
         @see #putUserData(String, byte[])
@@ -407,7 +382,6 @@ public class CoreSystem {
     public static byte[] getUserData(String key) {
         return getThisAppContext().getUserData(key);
     }
-
 
     /**
         Attempts to remove persistant user data from the local machine.
@@ -418,36 +392,29 @@ public class CoreSystem {
         getThisAppContext().removeUserData(key);
     }
 
-
     public static URL getBaseURL() {
         return getThisAppContext().getBaseURL();
     }
-
 
     public static String getLocaleLanguage() {
         return getThisAppContext().getLocaleLanguage();
     }
 
-
     public static String getLocaleCountry() {
         return getThisAppContext().getLocaleCountry();
     }
-
     
     public static void showDocument(String url) {
         showDocument(url, "_top");
     }
     
-    
     public static void showDocument(String url, String target) {
         getThisAppContext().showDocument(url, target);
     }
     
-    
     //
     // Shorcut methods to Platform
     //
-
 
     /**
         Returns the current value of the system timer in milliseconds.
@@ -456,14 +423,12 @@ public class CoreSystem {
         return platform.getTimeMillis();
     }
 
-
     /**
         Returns the current value of the system timer in microseconds.
     */
     public static long getTimeMicros() {
         return platform.getTimeMicros();
     }
-
 
     /**
         Checks if the platform has access to the native operating system
@@ -472,7 +437,6 @@ public class CoreSystem {
     public static boolean isNativeClipboard() {
         return platform.isNativeClipboard();
     }
-
 
     /**
         Returns the text currently in the clipboard. Returns an empty string
@@ -483,7 +447,6 @@ public class CoreSystem {
         return platform.getClipboardText();
     }
 
-
     /**
         Sets the text in the clipboard. If the native clipboard is not accessible (typical
         in Applet environments), an application clipboard is used.
@@ -492,7 +455,6 @@ public class CoreSystem {
         platform.setClipboardText(text);
     }
     
-    
     /**
         Returns true if this platform is hosted in a browser (Applets).
     */
@@ -500,14 +462,12 @@ public class CoreSystem {
         return platform.isBrowserHosted();
     }
     
-    
     /**
         Returns the name of the web browser, or null if the browser name could not be determined.
     */
     public static String getBrowserName() {
         return platform.getBrowserName();
     }
-
     
     /**
         Returns the version of the web browser, or null if the browser version
@@ -517,11 +477,9 @@ public class CoreSystem {
         return platform.getBrowserVersion();
     }
     
-    
     //
     // Sound methods
     //
-    
     
     /**
         Gets the audio mute setting for this application.
@@ -563,14 +521,12 @@ public class CoreSystem {
         getThisAppContext().setSoundVolume(volume);
     }
     
-    
     /**
         Returns true if the user's system can play sound.
     */
     public static boolean isSoundEngineAvailable() {
         return (getPlatform().getSoundEngine() != null);
     }
-    
     
     /**
         Gets the number of sounds currently playing in the sound engine.
@@ -589,7 +545,6 @@ public class CoreSystem {
             return soundEngine.getNumSoundsPlaying();
         }
     }
-    
     
     /**
         Gets the maximum number of sounds that can be played simultaneously.
