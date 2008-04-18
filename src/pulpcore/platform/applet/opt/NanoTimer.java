@@ -42,17 +42,30 @@ import pulpcore.platform.applet.SystemTimer;
 public class NanoTimer extends SystemTimer {
     
     private static final int NUM_TIMERS = 8;
-    private static final long MAX_DIFF = 1000000000L; // 1 sec
+    private static final long ONE_SEC = 1000000000L; // nanoseconds
+    private static final long MAX_DIFF = ONE_SEC; 
     private static final long NEVER_USED = -1; 
+    private static final long DEFAULT_FAIL_RESET_TIME = ONE_SEC;
     
     private long[] lastTimeStamps = new long[NUM_TIMERS];
     private long[] timeSinceLastUsed = new long[NUM_TIMERS];
     
-    private long virtualNanoTime = 0;
-    private int timesInARowNewTimerChosen = 0;
-    private long lastDiff = 0;
+    private long virtualNanoTime;
+    private int timesInARowNewTimerChosen;
+    private long lastDiff;
+    private long failTime;
+    private long failResetTime;
     
     public NanoTimer() {
+        virtualNanoTime = 0;
+        failResetTime = DEFAULT_FAIL_RESET_TIME;
+        reset();
+    }
+    
+    private void reset() {
+        failTime = 0;
+        lastDiff = 0;
+        timesInARowNewTimerChosen = 0;
         for (int i = 0; i < NUM_TIMERS; i++) {
             timeSinceLastUsed[i] = NEVER_USED;
         }
@@ -68,6 +81,14 @@ public class NanoTimer extends SystemTimer {
         if (timesInARowNewTimerChosen >= NUM_TIMERS) {
             long nanoTime = System.currentTimeMillis() * 1000000;
             diff = nanoTime - lastTimeStamps[0];
+            
+            failTime += diff;
+            if (failTime >= failResetTime) {
+                // Maybe thrashing or system hibernation caused the problem - try again
+                reset();
+                // But, increase the reset time
+                failResetTime *= 2;
+            }
         }
         else {  
             long nanoTime = System.nanoTime();
@@ -109,8 +130,11 @@ public class NanoTimer extends SystemTimer {
                 timesInARowNewTimerChosen++;
             }
             else {
+                // Success!
                 timesInARowNewTimerChosen = 0;
+                failResetTime = DEFAULT_FAIL_RESET_TIME;
                 diff = nanoTime - lastTimeStamps[bestTimer] - timeSinceLastUsed[bestTimer];
+                
                 // Set lastDiff if this same timer used twice in a row
                 if (timeSinceLastUsed[bestTimer] == 0) {
                     lastDiff = diff;
