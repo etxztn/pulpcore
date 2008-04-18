@@ -30,18 +30,16 @@
 package pulpcore.platform.applet;
 
 import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
+import java.awt.Image;
 import java.awt.image.ColorModel;
-import java.awt.image.DataBufferInt;
 import java.awt.image.DirectColorModel;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import java.awt.image.PixelGrabber;
+import java.awt.MediaTracker;
+import java.awt.Toolkit;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import javax.imageio.ImageIO;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
@@ -72,13 +70,16 @@ public final class AppletAppContext extends AppContext {
         
         /* 
             Workaround for this bug:
-            http://bugs.sun.com/view_bug.do?bug_id=6622150
-            FF + 1.6.0_03 + virtual host + liveconnect = can't access server 
-            TODO: when this bug is fixed, only do the workaround on the 
-            affected versions (so far: 1.6.0_03, 1.6.0_04, 1.6.0_05)
+            http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6669818
+            FF + 1.6.0_03 + virtual host + liveconnect = can't access server
+            
+            Fixed in u10.
+            TODO: It might be better to fine-tune the affected versions
+            (so far: 1.6.0_03, 1.6.0_04, 1.6.0_05). Waiting to see if a 1.6.0_06 comes out.
         */
         boolean isSun = "Sun Microsystems Inc.".equals(CoreSystem.getJavaProperty("java.vendor"));
-        if (isSun && CoreSystem.isJava16orNewer() && isMozillaFamily() && isVirtualHost()) {
+        boolean isOldJava6 = CoreSystem.isJava16orNewer() && !CoreSystem.isJava16u10orNewer();
+        if (isSun && isOldJava6 && isMozillaFamily() && isVirtualHost()) { 
             enableLiveConnect = false;
         }
         
@@ -424,45 +425,49 @@ public final class AppletAppContext extends AppContext {
     }
     
     public CoreImage loadImage(ByteArray in) {
+        
         if (in == null) {
             return null;
         }
         
+        Image image = Toolkit.getDefaultToolkit().createImage(in.getData());
+        
+        MediaTracker tracker = new MediaTracker(applet);
+        tracker.addImage(image, 0);
         try {
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(in.getData()));
-
+            tracker.waitForAll();
+        }
+        catch (InterruptedException ex) { }
+            
+        int width = image.getWidth(null);
+        int height = image.getHeight(null);
+        if (width <= 0 || height <= 0) {
+            return null;
+        }
+        
+        int[] data = new int[width * height];
+        PixelGrabber pixelGrabber = new PixelGrabber(image, 0, 0, width, height, data, 0, width);
+        boolean success = false;
+        try {
+            success = pixelGrabber.grabPixels();
+        }
+        catch (InterruptedException ex) { }
+        
+        if (success) {
             boolean isOpaque = true;
-            ColorModel model = image.getColorModel();
+            ColorModel model = pixelGrabber.getColorModel();
             if (model instanceof DirectColorModel) {
                 isOpaque = ((DirectColorModel)model).getAlphaMask() == 0;
             }
-            
-            // Convert to TYPE_INT_RGB or TYPE_INT_ARGB_PRE 
-            if (image.getType() != BufferedImage.TYPE_INT_RGB &&
-                image.getType() != BufferedImage.TYPE_INT_ARGB_PRE)
-            {
-                int type = isOpaque ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB_PRE;
-                BufferedImage newImage = new BufferedImage(image.getWidth(), image.getHeight(),
-                    type);
-                Graphics g = newImage.getGraphics();
-                g.drawImage(image, 0, 0, null);
-                image = newImage;
-            }
-            
-            int[] data = ((DataBufferInt)image.getRaster().getDataBuffer()).getData();
-            
-            if (image.getType() == BufferedImage.TYPE_INT_RGB) {
+            if (isOpaque) {
                 // Add the alpha component to the data
                 for (int i = 0; i < data.length; i++) {
                     data[i] = 0xff000000 | data[i];
                 }
             }
-            
-            // Convert to CoreImage
-            return new CoreImage(image.getWidth(), image.getHeight(), isOpaque, data);
+            return new CoreImage(width, height, isOpaque, data);
         }
-        catch (Exception ex) {
-            if (Build.DEBUG) CoreSystem.print("ImageIO", ex);
+        else {
             return null;
         }
     }
