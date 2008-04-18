@@ -495,7 +495,12 @@ public class Group extends Sprite {
             backBuffer.getHeight() != backBufferHeight)
         {
             backBuffer = new CoreImage(backBufferWidth, backBufferHeight, false);
+            backBufferChanged();
         }
+    }
+    
+    private void backBufferChanged() {
+        setDirty(true);
     }
     
     /**
@@ -510,18 +515,24 @@ public class Group extends Sprite {
         Removes this Group's back buffer.
     */
     public void removeBackBuffer() {
-        backBuffer = null;
+        if (backBuffer != null) {
+            backBuffer = null;
+            backBufferChanged();
+        }
     }
     
     /**
         Sets this Group's blend mode for rendering onto its back buffer.
         @param blendMode the blend mode.
     */
-    public void setBackBufferBlendMode(BlendMode blendMode) {
-        if (blendMode == null) {
-            blendMode = BlendMode.SrcOver();
+    public void setBackBufferBlendMode(BlendMode backBufferBlendMode) {
+        if (backBufferBlendMode == null) {
+            backBufferBlendMode = BlendMode.SrcOver();
         }
-        backBufferBlendMode = blendMode;
+        if (this.backBufferBlendMode != backBufferBlendMode) {
+            this.backBufferBlendMode = backBufferBlendMode;
+            backBufferChanged();
+        }
     }
     
     /**
@@ -592,14 +603,7 @@ public class Group extends Sprite {
                 clipTransform = g.getTransform();
             }
             else {
-                Transform t = Stage.getDefaultTransform();
-                if (t.getType() != Transform.TYPE_IDENTITY) {
-                    clipTransform = new Transform(t);
-                    clipTransform.concatenate(getViewTransform());
-                }
-                else {
-                    clipTransform = getViewTransform();
-                }
+                clipTransform = getDrawTransform();
             }
             
             if (clipTransform.getType() != Transform.TYPE_IDENTITY) {
