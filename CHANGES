@@ -1,4 +1,13 @@
 0.11.3 (In SVN) 
+  * API: Added CoreSystem.isJava16u10orNewer()
+  * API: Added Sprite getViewX() and getViewY(). 
+  * API: Sprite getLocalX() and getLocalY() now take doubles and return doubles.
+  * Core: Allow LiveConnect on 1.6 update 10 (bug fixed as of 1.6u10 b22)
+  * Fixed bug: Nested back-buffered Groups was incorrect in some cases.
+  * Fixed bug: Property files that don't belong to an image (resource bundles) are now included in 
+    jar or zip (Issue 6).
+  * Fixed bug: Reverted back to AWT/PixelGrabber for JPG loading, which doesn't cause 404s on the 
+    server like ImageIO did.
   * Fixed bug: Mac OS X bug (requesting Providers on the server) only happens on startup and not 
     once per minute.
   * Fixed bug: nanoTime workaround for dual-core AMD systems.
