@@ -342,6 +342,7 @@ public abstract class Sprite implements PropertyListener {
             
             updateTransform();
             
+            // Dirty rectangles are in device space. Convert view space to device space.
             Transform d = Stage.getDefaultTransform();
             Transform t = viewTransform;
             if (d.getType() != Transform.TYPE_IDENTITY) {
@@ -351,8 +352,7 @@ public abstract class Sprite implements PropertyListener {
             
             // TODO: if an ancestor has a back-buffer, clip the dirty rect to the back-buffer bounds
             
-            changed |= t.getBounds(
-                getNaturalWidth(), getNaturalHeight(), dirtyRect);
+            changed |= t.getBounds(getNaturalWidth(), getNaturalHeight(), dirtyRect);
         }
         
         return changed;

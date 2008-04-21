@@ -122,6 +122,9 @@ public class Scene2D extends Scene {
     private Rect unionRect = new Rect();
     private Rect intersectionRect = new Rect();
     
+    private int dirtyRectPadX = 1;
+    private int dirtyRectPadY = 1;
+    
     // Saved state: options automatically restored on showNotify()
     
     private boolean stateSaved;
@@ -462,7 +465,8 @@ public class Scene2D extends Scene {
         subRects.clear();
         
         // Increase bounds to correct off-by-one miscalculation in some rare rotated sprites.
-        addDirtyRectangle(r.x - 1, r.y - 1, r.width + 2, r.height + 2, MAX_NON_DIRTY_AREA);
+        addDirtyRectangle(r.x - dirtyRectPadX, r.y - dirtyRectPadY, 
+            r.width + dirtyRectPadX*2, r.height + dirtyRectPadY*2, MAX_NON_DIRTY_AREA);
         
         int originalSize = subRects.size();
         for (int i = 0; i < subRects.size() && !dirtyRectangles.isOverflowed(); i++) {
@@ -641,6 +645,8 @@ public class Scene2D extends Scene {
         
         if (t.getType() == Transform.TYPE_IDENTITY) {
             drawBounds.setBounds(0, 0, Stage.getWidth(), Stage.getHeight());
+            dirtyRectPadX = 1;
+            dirtyRectPadY = 1;
         }
         else {
             drawBounds.setBounds(
@@ -648,6 +654,8 @@ public class Scene2D extends Scene {
                 CoreMath.toInt(t.getTranslateY()),
                 CoreMath.toInt(Stage.getWidth() * t.getScaleX()),
                 CoreMath.toInt(Stage.getHeight() * t.getScaleY()));
+            dirtyRectPadX = 1 + CoreMath.toIntCeil(t.getScaleX());
+            dirtyRectPadY = 1 + CoreMath.toIntCeil(t.getScaleY());
         }
         needsFullRedraw = true;
     }
@@ -750,6 +758,9 @@ public class Scene2D extends Scene {
                 }
             }
         }
+        else {
+            updateTransforms(layers);
+        }
     }
     
     private void setDirty(Group group, boolean dirty) {
@@ -774,6 +785,20 @@ public class Scene2D extends Scene {
             }
             else {
                 sprite.clearDirtyRect();
+            }
+        }
+    }
+    
+    private void updateTransforms(Group group) {
+        // Hack: use getViewX() to force update of transform
+        group.getViewX();
+        for (int i = 0; i < group.size(); i++) {
+            Sprite sprite = group.get(i);
+            if (sprite instanceof Group) {
+                updateTransforms((Group)sprite);
+            }
+            else {
+                sprite.getViewX();
             }
         }
     }
