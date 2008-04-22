@@ -523,7 +523,7 @@ public class Group extends Sprite {
     
     /**
         Sets this Group's blend mode for rendering onto its back buffer.
-        @param blendMode the blend mode.
+        @param backBufferBlendMode the blend mode.
     */
     public void setBackBufferBlendMode(BlendMode backBufferBlendMode) {
         if (backBufferBlendMode == null) {
