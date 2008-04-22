@@ -89,6 +89,10 @@ function pulpcore_appletLoaded() {
 
 var pulpCoreObject = {
 	
+	// Max time (milliseconds) to show the splash gif; after this time the applet is shown.
+	// Usually the applet calls pulpcore_appletLoaded() before the timeout.
+	splashTimeout: 15000,
+	
 	// The minimum JRE version
 	requiredJRE: "1.4",
 	
@@ -108,6 +112,8 @@ var pulpCoreObject = {
 	// The URL to the page to visit to install Java
 	getJavaURL: "http://java.sun.com/webapps/getjava/BrowserRedirect?host=java.com" +
 		'&returnPage=' + document.location,
+		
+	deploymentToolkitMimeType: 'application/npruntime-scriptable-plugin;DeploymentToolkit',
 		
 	// The Applet HTML (inserted after a delay)
 	appletHTML: "",
@@ -133,10 +139,47 @@ var pulpCoreObject = {
 	},
 	
 	write: function() {
-		// JLint gives a warning about "eval" here.
-		// Note the HTML uses onload and onfocus attributes in a few places.
+		pulpCoreObject.detectBrowser();
+		pulpCoreObject.initDeploymentToolkit();
+		
 		document.write(pulpCoreObject.getObjectHTML());
 	},
+	
+	initDeploymentToolkit: function() {
+        if (pulpCoreObject.browserName == "Explorer") {
+            document.write('<' + 
+                'object classid="clsid:CAFEEFAC-DEC7-0000-0000-ABCDEFFEDCBA" ' +
+                'id="deploymentToolkit" width="0" height="0">' +
+                '<' + '/' + 'object' + '>');
+        } 
+		else if (pulpCoreObject.browserIsMozillaFamily) {
+            if (navigator.mimeTypes !== null) {
+				var mimeType = pulpCoreObject.deploymentToolkitMimeType;
+				for (var i = 0; i < navigator.mimeTypes.length; i++) {
+					if (navigator.mimeTypes[i].type == mimeType) {
+						if (navigator.mimeTypes[i].enabledPlugin) {
+							document.write('<' + 
+								'embed id="deploymentToolkit" type="' + 
+								mimeType + '" hidden="true" />');
+						}
+                    }
+                }
+            }
+        }
+    },
+	
+    isPlugin2: function() {
+		var deploymentToolkit = document.getElementById('deploymentToolkit');
+        if (deploymentToolkit !== null) {
+            try {
+                return deploymentToolkit.isPlugin2();
+            } 
+			catch (err) {
+                // Fall through
+            }
+        }
+        return false;
+    },
 	
 	hideSplash: function() {
 		var splash = document.getElementById('pulpcore_splash');
@@ -178,14 +221,14 @@ var pulpCoreObject = {
 		else {
 			pulpCoreObject.appletInserted = true;
 			gameContainer.innerHTML = pulpCoreObject.appletHTML;
-			setTimeout(pulpcore_appletLoaded, navigator.javaEnabled() ? 15000 : 10);
+			setTimeout(pulpcore_appletLoaded, 
+				navigator.javaEnabled() ? pulpCoreObject.splashTimeout : 10);
 		}
 	},
 		
 	getObjectHTML: function() {
 		pulpCoreObject.appletHTML = "";
 		
-		pulpCoreObject.detectBrowser();
 		if (!pulpCoreObject.isAcceptableJRE()) {
 			return pulpCoreObject.installLatestJRE();
 		}
@@ -211,12 +254,31 @@ var pulpCoreObject = {
 		var objectParams =
 			'  <param name="code" value="' + code + '" />\n' +
 			'  <param name="archive" value="' + archive + '" />\n' +
+			
+			// For the plugin
+			'  <param name="mayscript" value="true" />\n' +
+			'  <param name="scriptable" value="true" />\n' +
 			'  <param name="boxbgcolor" value="' + bgcolor + '" />\n' +
 			'  <param name="boxfgcolor" value="' + fgcolor + '" />\n' +
 			'  <param name="boxmessage" value="" />\n' +
+			'  <param name="codebase_lookup" value="false" />\n' +
+			
+			// For PulpCore
 			'  <param name="browsername" value="' + pulpCoreObject.browserName + '" />\n' +
-			'  <param name="browserversion" value="' + pulpCoreObject.browserVersion + '" />\n' +
-			'  <param name="java_arguments" value="-Dsun.awt.noerasebackground=true" />\n';
+			'  <param name="browserversion" value="' + pulpCoreObject.browserVersion + '" />\n';
+			
+		// For Java 6u10 plugin2
+		if (pulpCoreObject.isPlugin2()) {
+			var args = '-Dsun.awt.noerasebackground=true -Djnlp.packEnabled=true';
+			objectParams += 
+				'  <param name="boxborder" value="false" />\n' +
+				'  <param name="image" value="' + splash + '" />\n' +
+				'  <param name="centerimage" value="true" />\n' +
+				'  <param name="separate_jvm" value="true" />\n' +
+				'  <param name="java_arguments" value="' + args + '" />\n';
+		}
+
+		// For the PulpCore app
 		if (codebase.length > 0) {
 			objectParams += '  <param name="codebase" value="' + codebase + '" />\n';
 		}
@@ -229,10 +291,7 @@ var pulpCoreObject = {
 		for (var i in params) {
 			objectParams += '  <param name="' + i + '" value="' + params[i] + '" />\n';
 		}
-		objectParams += 
-			'  <param name="mayscript" value="true" />\n' +
-			'  <param name="scriptable" value="true" />\n' +
-			'  ' + pulpCoreObject.getInstallHTML();
+		objectParams += '  ' + pulpCoreObject.getInstallHTML();
 		
 		// Create the Object tag. 
 		if (pulpCoreObject.browserName == "Explorer") {
@@ -263,7 +322,7 @@ var pulpCoreObject = {
 				'height: ' + height + 'px; position: relative; overflow: hidden; ' +
 				'text-align: center">\n' +
 				'  <div style="position: absolute; top: 50%; left: 50%;">\n' +
-				'    <img alt="Loading..." src="' + splash + '"\n' + 
+				'    <img alt="" src="' + splash + '"\n' + 
 				'    onload="pulpCoreObject.splashLoaded(this)"\n' + 
 				'    style="position: relative; top: -50%; left: -50%;" />\n' +
 				'  </div>\n' +

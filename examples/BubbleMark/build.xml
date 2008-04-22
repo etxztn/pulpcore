@@ -53,6 +53,7 @@
     <property name="proguard.path" value="" />
     <property name="library.path" value="" /> 
     
+    
     <!--
         Normally you won't need to edit anything below this line 
     -->
@@ -76,6 +77,7 @@
     <property name="tools.jar.file" value="${pulpcore.path}/pulpcore-assettools-${pulpcore.version}.jar" />
     <property name="player.jar.file" value="${pulpcore.path}/pulpcore-player-${pulpcore.version}.jar" />
     <property name="retroweaver.jar.file" value="${pulpcore.path}/retroweaver-all.jar" />
+    <property name="pack200.jar.file" value="${pulpcore.path}/Pack200Task.jar" />
     
     <!-- PulpCore tasks -->
     <taskdef resource="tasks.properties" classpath="${tools.jar.file}"/>
@@ -146,6 +148,10 @@
             </condition>
         </fail>
         
+        <condition property="do.pack200">
+            <equals arg1="${pulpcore.build}" arg2="release" />
+        </condition>
+
         <condition property="do.applet.html">
             <equals arg1="${pulpcore.platform}" arg2="applet" />
         </condition>
@@ -286,12 +292,22 @@
             whenempty="create"
             basedir="${build.res}/zip" />
     </target>
+    
+    
+    <target name="pack200" depends="obfuscate" if="do.pack200">
+        <taskdef name="pack200"
+            classname="com.sun.tools.apache.ant.pack200.Pack200Task"
+            classpath="${pack200.jar.file}"/>
+            
+        <pack200 src="${build}/${project.jar}" gzipoutput="true" effort="9"
+            destfile="${build}/${project.jar}.pack.gz"/>
+    </target>
 
 
     <!-- Compiles the code and creates the assets zip -->
-    <target name="build" depends="res, obfuscate, applet.html" description="Build" />
-    
-    
+    <target name="build" depends="res, pack200, applet.html" description="Build" />
+
+
     <target name="build-and-run" depends="build, run" description="Build and Run" />
     
     

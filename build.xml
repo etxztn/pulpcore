@@ -240,8 +240,9 @@
             </manifest>
         </jar>
         
-        <!-- Copy Retroweaver jar -->
+        <!-- Copy Retroweaver, pack200 jar -->
         <copy file="${retroweaver.path}" tofile="${build}/retroweaver-all.jar"/>
+        <copy file="${pack200.ant.path}" tofile="${build}/Pack200Task.jar"/>
 
         <!-- Clean up-->
         <delete dir="${build.temp}" />
@@ -432,7 +433,7 @@
 	    <property name="library.path" location="${library.path}"/>
             <property name="proguard.path" location="${proguard.path}"/>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
-            <property name="do.obfuscate" value="true"/>
+            <property name="do.obfuscate" value="true" />
             <property name="include.src" value="false" />
             <fileset dir="${dist.temp}/templates" includes="*/build.xml"/>
             <target name="build"/>
@@ -449,7 +450,8 @@
             <property name="library.path" location="${library.path}" />
             <property name="proguard.path" location="${proguard.path}" />
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
-            <property name="do.obfuscate" value="true"/>
+            <property name="do.obfuscate" value="true" />
+            <property name="do.pack200" value="true" />
             <property name="include.src" value="true" />
             <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
             <target name="build"/>
