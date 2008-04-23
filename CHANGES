@@ -3,10 +3,12 @@
   * API: Added Sprite getViewX() and getViewY(). 
   * API: Sprite getLocalX() and getLocalY() now take doubles and return doubles.
   * Core: Allow LiveConnect on 1.6 update 10 (bug fixed as of 1.6u10 b22)
-  * Tools: game.jar.pack.gz file are automatically created on release mode 
-    (these require 6u10 and about 1/2 the size as the plain jar files)
+  * Tools: A game.jar.pack.gz file is now automatically created on release mode.
+    (Requires 6u10. The .pack.gz file is about 1/2 the size as the plain jar file.)
   * Tools: pulpcore.js updates for 6u10 plugin2
-  * Fixed bug: sometimes rendeing was incorrect when dirty rectangles was disabled.
+  * Tools: pulpcore.js now installs Java 5 (instead of Java 6) if the user has Windows 95/98/NT4.
+    Java 6 requires XP/Vista/2000.
+  * Fixed bug: sometimes rendering was incorrect when dirty rectangles was disabled.
   * Fixed bug: Nested back-buffered Groups was incorrect in some cases; removing them and
     re-creating them at runtime was incorrect in some cases.
   * Fixed bug: Property files that don't belong to an image (resource bundles) are now included in 

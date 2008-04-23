@@ -101,13 +101,20 @@ var pulpCoreObject = {
 	
 	// The URL to the CAB of the latest JRE (for IE)
 	// See http://java.sun.com/javase/6/docs/technotes/guides/deployment/deployment-guide/autodl-files.html
-	getJavaCAB: "http://java.sun.com/update/1.6.0/jinstall-6-windows-i586.cab",
+	// First is for Windows9x, second is For XP/2000/Vista/etc.
+	getJavaCAB: [ 
+		"http://java.sun.com/update/1.5.0/jinstall-1_5_0_11-windows-i586.cab",
+		"http://java.sun.com/update/1.6.0/jinstall-6-windows-i586.cab"
+	],
 	
 	// The URL of the XPI of the latest JRE (for Windows+Firefox)
 	// Currently using the unsigned version (-jc) since the signed version in 6u3 is broken
-	getJavaXPI: "http://java.sun.com/update/1.6.0/jre-6-windows-i586-jc.xpi",
-	//getJavaXPI: "http://java.sun.com/update/1.6.0/jre-6-windows-i586.xpi",
-	//getJavaXPI: "http://java.com/jre-install.xpi",
+	// "http://java.sun.com/update/1.6.0/jre-6-windows-i586.xpi"
+	// "http://java.com/jre-install.xpi"
+	getJavaXPI: [
+		"http://java.sun.com/update/1.5.0/jre-1_5_0_11-windows-i586.xpi",
+		"http://java.sun.com/update/1.6.0/jre-6-windows-i586-jc.xpi"
+	],
 	
 	// The URL to the page to visit to install Java
 	getJavaURL: "http://java.sun.com/webapps/getjava/BrowserRedirect?host=java.com" +
@@ -296,6 +303,7 @@ var pulpCoreObject = {
 		// Create the Object tag. 
 		if (pulpCoreObject.browserName == "Explorer") {
 			var extraAttributes = '';
+			var cabURL = pulpCoreObject.getJavaCAB[pulpCoreObject.osIsOldWindows ? 0 : 1];
 			if (pulpCoreObject.compareVersions(pulpCoreObject.browserVersion, "7") < 0 && 
 				parent.frames.length > 0) 
 			{
@@ -308,8 +316,7 @@ var pulpCoreObject = {
 			pulpCoreObject.appletHTML = 
 				'<object id="pulpcore_object"\n' + 
 				'  classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"\n' +
-				'  codebase="' + pulpCoreObject.getJavaCAB + '#Version=' + 
-				pulpCoreObject.ieRequiredJRE + '"\n' +
+				'  codebase="' + cabURL + '#Version=' + pulpCoreObject.ieRequiredJRE + '"\n' +
 				extraAttributes +
 				'  width="' + width + '" height="' + height + '">\n' + 
 				objectParams +
@@ -514,8 +521,9 @@ var pulpCoreObject = {
 	},
 	
 	installXPI: function() {
+		var xpiURL = pulpCoreObject.getJavaXPI[pulpCoreObject.osIsOldWindows ? 0 : 1];
 		// Note: The user needs to allow the domain to install the plugin.
-		var xpi = { "Java Plug-in": pulpCoreObject.getJavaXPI }; 
+		var xpi = { "Java Plug-in": xpiURL }; 
 		InstallTrigger.install(xpi, pulpCoreObject.installXPIComplete);
 	},
 	
@@ -554,6 +562,7 @@ var pulpCoreObject = {
 	browserVersion: "",
 	browserIsMozillaFamily: false,
 	osName: "",
+	osIsOldWindows: false,
 	
 	detectBrowser: function() {
 		pulpCoreObject.browserName = 
@@ -570,6 +579,20 @@ var pulpCoreObject = {
 			pulpCoreObject.browserName == "Netscape" || 
 			pulpCoreObject.browserName == "Mozilla" || 
 			pulpCoreObject.browserName == "Firefox";
+			
+		if (pulpCoreObject.osName == "Windows") {
+			var ua = navigator.userAgent.toLowerCase();
+			if (ua.search(/win98/) != -1 ||
+				ua.search(/windows\s98/) != -1 ||
+				ua.search(/windows\sme/) != -1 ||
+				ua.search(/windows\s95/) != -1 ||
+				ua.search(/win95/) != -1 ||
+				ua.search(/nt\s4\.0/) != -1 || 
+				ua.search(/nt4\.0/) != -1)
+			{
+				pulpCoreObject.osIsOldWindows = true;
+			}
+		}
 	},
 
 	searchString: function(data) {
