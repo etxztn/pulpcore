@@ -47,6 +47,9 @@ import pulpcore.animation.Animation;
         }
     });  
     </pre>
+    <p>
+    A TimelineEvent only executes once - if it is in a looping Timeline, 
+    it only executes the first time.
 */
 public abstract class TimelineEvent extends Animation implements Runnable {
 
