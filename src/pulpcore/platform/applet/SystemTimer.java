@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -37,46 +37,17 @@ import pulpcore.CoreSystem;
 */
 public class SystemTimer {
     
-    private Thread granularityThread;
     private long lastTime;
     private long virtualTime;
     
-    
-    public synchronized void start() {
+    public void start() {
         lastTime = System.currentTimeMillis();
         virtualTime = 0;
-        granularityThread = null;
-        
-        if (CoreSystem.isWindowsXPorNewer()) {
-            // Improves the granularity of the sleep() function on Windows XP
-            // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
-            granularityThread = new Thread("PulpCore-Win32Granularity") {
-                
-                public void run() {
-                    while (Thread.currentThread() == granularityThread) {
-                        try {
-                            Thread.sleep(Integer.MAX_VALUE);
-                        }
-                        catch (InterruptedException ex) {
-                            // Ignore
-                        }
-                    }
-                }
-            };
-            granularityThread.setDaemon(true);
-            granularityThread.start();
-        }
     }
     
-    
-    public synchronized void stop() {
-        if (granularityThread != null) {
-            Thread t = granularityThread;
-            granularityThread = null;
-            t.interrupt();
-        }
+    public void stop() {
+        // Do nothing
     }
-    
     
     public long getTimeMillis() {
         long time = System.currentTimeMillis();
@@ -87,34 +58,37 @@ public class SystemTimer {
         
         return virtualTime;
     }
-    
 
     public long getTimeMicros() {
         return getTimeMillis() * 1000;
     }
     
-    
     public String getName() {
         return "SystemTimer";
     }
     
-    
     public long sleepUntilTimeMicros(long goalTimeMicros) {
         if (CoreSystem.isWindowsXPorNewer()) {
-            while (true) {
-                long currentTimeMicros = getTimeMicros();
-                long diff = goalTimeMicros - currentTimeMicros;
-                if (diff <= 50) {
-                    return currentTimeMicros;
-                }
-                else if (diff <= 1500) {
-                    Thread.yield();
-                }
-                else {
-                    try {
-                        Thread.sleep(1);
+            synchronized (this) {
+                while (true) {
+                    long currentTimeMicros = getTimeMicros();
+                    long diff = goalTimeMicros - currentTimeMicros;
+                    if (diff <= 50) {
+                        return currentTimeMicros;
                     }
-                    catch (InterruptedException ex) { }
+                    else if (diff <= 1500) {
+                        Thread.yield();
+                    }
+                    else {
+                        // DO NOT use Thread.sleep(1) - it fucks with the system time
+                        // on Windows, causing acceleration or decceleration. This is 
+                        // bad for games that depend on accurate system time.
+                        // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
+                        try {
+                            wait(1);
+                        }
+                        catch (InterruptedException ex) { }
+                    }
                 }
             }
         }

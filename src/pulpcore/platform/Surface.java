@@ -170,8 +170,15 @@ public abstract class Surface {
         else {
             int delay = 1000000 / refreshRate;
             long startTimeMicros = CoreSystem.getTimeMicros();
-            long endTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(refreshRateSyncTime);
+            long endTimeMicros;
+            if (startTimeMicros < refreshRateSyncTime) {
+                endTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(refreshRateSyncTime);
+            }
+            else {
+                endTimeMicros = startTimeMicros;
+            }
             refreshRateSyncTime += delay;
+            
             if (endTimeMicros > refreshRateSyncTime + delay) {
                 // Missed too many sync's
                 long x = (long)Math.ceil((double)(endTimeMicros - refreshRateSyncTime) / delay);

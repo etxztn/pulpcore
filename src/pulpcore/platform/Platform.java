@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -37,22 +37,17 @@ package pulpcore.platform;
 */
 public interface Platform {
     
-    
     public AppContext getThisAppContext();
-    
-    
     
     /**
         Returns the current value of the system timer in milliseconds. 
     */
     public long getTimeMillis();
     
-    
     /**
         Returns the current value of the system timer in microseconds. 
     */
     public long getTimeMicros();
-    
     
     /**
         Sleeps until the specified time, in microseconds, occurs.
@@ -61,13 +56,11 @@ public interface Platform {
     */
     public long sleepUntilTimeMicros(long timeMicros);    
     
-    
     /**
         Checks if the platform has access to the native operating system
         clipboard. If not, an application-only clipboard is used.
     */
     public boolean isNativeClipboard();
-    
     
     /**
         Returns the text currently in the clipboard. Returns an empty string
@@ -75,33 +68,26 @@ public interface Platform {
     */
     public String getClipboardText();
     
-    
     /**
         Sets the text in the clipboard.
     */
     public void setClipboardText(String text);
     
-    
     public boolean isSoundEngineCreated();
-    
     
     public SoundEngine getSoundEngine();
     
-    
     public void updateSoundEngine(int timeUntilNextUpdate);
-    
     
     /**
         Returns true if this platform is hosted in a browser (Applets)
     */
     public boolean isBrowserHosted();
     
-    
     /**
         Returns the name of the web browser, or null if the browser name could not be determined.
     */
     public String getBrowserName();
-
     
     /**
         Returns the version of the web browser, or null if the browser name could not be determined.

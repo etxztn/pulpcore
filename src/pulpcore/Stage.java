@@ -695,13 +695,10 @@ public class Stage implements Runnable {
             appContext.notifyFrameComplete();
             
             // Sleep to create correct frame rate
-            long currTimeMicros;
             if (desiredFPS == MAX_FPS || surface.getRefreshRate() > 0) {
                 if (surfaceSleepTimeMicros == 0) {
                     Thread.yield();
                 }
-                currTimeMicros = CoreSystem.getTimeMicros();
-                
                 if (Build.DEBUG) {
                     overlaySleepTime += surfaceSleepTimeMicros / 1000;
                 }
@@ -709,7 +706,7 @@ public class Stage implements Runnable {
             else {
                 long goalTimeMicros = lastTimeMicros + 1000000L / desiredFPS;
                 long priorToSleepTime = CoreSystem.getTimeMicros();
-                currTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(goalTimeMicros);
+                long currTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(goalTimeMicros);
                 
                 if (Build.DEBUG) {
                     long sleepTimeMicros = currTimeMicros - priorToSleepTime;
@@ -718,6 +715,7 @@ public class Stage implements Runnable {
             }
             
             // Update elapsed time
+            long currTimeMicros = CoreSystem.getTimeMicros();
             long elapsedTimeMicros = currTimeMicros - lastTimeMicros + remainderMicros;
             elapsedTime = (int)(elapsedTimeMicros / 1000);
             remainderMicros = elapsedTimeMicros - elapsedTime * 1000;

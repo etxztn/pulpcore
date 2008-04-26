@@ -36,8 +36,9 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.Toolkit;
 import java.io.IOException;
-import java.util.List;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.List;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.platform.AppContext;
@@ -68,11 +69,9 @@ public final class AppletPlatform implements Platform {
     private boolean soundEngineCreated;
     private SoundEngine soundEngine;
     
-    
     public static AppletPlatform getInstance() {
         return INSTANCE;
     }
-    
     
     private AppletPlatform() {
         
@@ -103,11 +102,9 @@ public final class AppletPlatform implements Platform {
         CoreSystem.init(this);
     }
     
-    
     //
     // App management
     //
-    
     
     public AppContext getThisAppContext() {
         // In most cases, there will be only one registered App. In that case, this method
@@ -139,7 +136,6 @@ public final class AppletPlatform implements Platform {
         }
     }
     
-    
     private synchronized AppContext getAppContext(CoreApplet app) {
         if (mainContext != null && mainContext.getApplet() == app) {
             return mainContext;
@@ -157,11 +153,9 @@ public final class AppletPlatform implements Platform {
         return null;
     }
     
-    
     private synchronized boolean isRegistered(CoreApplet app) {
         return (getAppContext(app) != null);
     }
-    
     
     private synchronized int getNumRegisteredApps() {
         if (allContexts == null) {
@@ -176,7 +170,6 @@ public final class AppletPlatform implements Platform {
             return allContexts.size();
         }
     }
-    
     
     public synchronized AppContext registerApp(CoreApplet app) {
         
@@ -209,7 +202,6 @@ public final class AppletPlatform implements Platform {
         
         return newContext;
     }
-    
     
     public synchronized void unregisterApp(CoreApplet app) {
         
@@ -251,31 +243,25 @@ public final class AppletPlatform implements Platform {
         }
     }
     
-    
     //
     // System time
     //
-    
     
     public long getTimeMillis() {
         return timer.getTimeMillis();
     }
     
-    
     public long getTimeMicros() {
         return timer.getTimeMicros();
     }
-    
     
     public long sleepUntilTimeMicros(long time) {
         return timer.sleepUntilTimeMicros(time);
     }
     
-    
     //
     // Clipboard
     //
-    
     
     public boolean isNativeClipboard() {
         if (!Build.DEBUG) {
@@ -291,21 +277,18 @@ public final class AppletPlatform implements Platform {
             catch (SecurityException ex) {
                 return false;
             }
+            
+            // TODO: test is JNLP clipboard is available
         }
     }
     
-    
     public String getClipboardText() {
-        if (!Build.DEBUG) {
-            // The applet doesn't have permission
-            return clipboardText;
-        }
-        else {
+        if (Build.DEBUG) {
             // Debug mode - the developer might have put permission in the policy file.
             try {
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 
-                int attemptsLeft = 30; // 30*100ms = 3 seconds
+                int attemptsLeft = 10; // 10*100ms = 1 second
                 while (attemptsLeft > 0) {
                     try {
                         Transferable contents = clipboard.getContents(null);
@@ -341,36 +324,59 @@ public final class AppletPlatform implements Platform {
                         attemptsLeft--;
                     }
                 }
-                // Failure to access clipboard
-                return "";
             }
             catch (SecurityException ex) {
                 // The applet doesn't have permission
-                return clipboardText;
             }
         }
+        
+        // Try JNLP API
+        /*
+        Object clipboard = getJNLPService("javax.jnlp.ClipboardService");
+        if (clipboard != null) {
+            try {
+                Method m = clipboard.getClass().getMethod("getContents", new Class[0]);
+                Transferable t = (Transferable)m.invoke(clipboard, new Object[0]);
+                
+                if (t.isDataFlavorSupported(DataFlavor.stringFlavor)) { 
+                    try { 
+                        return (String)t.getTransferData(DataFlavor.stringFlavor); 
+                    } 
+                    catch (Exception e) { 
+                        return ""; 
+                    } 
+                }
+                else {
+                    return "";
+                }
+            }
+            catch (Throwable t) {
+                // Ignore, fall through
+                if (Build.DEBUG) CoreSystem.print("JNLP fail", t);
+            }
+        }
+        */
+        
+        // Internal clipboard
+        return clipboardText;
     }
-    
     
     public void setClipboardText(String text) {
         if (text == null) {
             text = "";
         }
         
-        if (!Build.DEBUG) {
-            // The applet doesn't have permission
-            clipboardText = text;
-        }
-        else {
+        if (Build.DEBUG) {
             // Debug mode - the developer might have put permission in the policy file.
             try {
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 StringSelection data = new StringSelection(text);
-                int attemptsLeft = 30; // 30*100ms = 3 seconds
+                int attemptsLeft = 10; // 10*100ms = 1 second
                 
                 while (attemptsLeft > 0) {
                     try {
                         clipboard.setContents(data, data);
+                        if (Build.DEBUG) CoreSystem.print("System success");
                         // Success
                         return;
                     }
@@ -384,16 +390,48 @@ public final class AppletPlatform implements Platform {
                         attemptsLeft--;
                     }
                 }
-                // Failure to access clipboard
-                return;
+                if (Build.DEBUG) CoreSystem.print("Access fail");
             }
             catch (SecurityException ex) {
-                // The applet doesn't have permission
-                clipboardText = text;
+                // The applet doesn't have permission - ignore and try again
+                if (Build.DEBUG) CoreSystem.print("Clipboard fail");
             }
         }
+        
+        // Try JNLP API
+        /*
+        Object clipboard = getJNLPService("javax.jnlp.ClipboardService");
+        if (clipboard != null) {
+            StringSelection data = new StringSelection(text);
+            try {
+                Method m = clipboard.getClass().getMethod("setContents", 
+                    new Class[] { Class.forName("java.awt.datatransfer.Transferable") });
+                m.invoke(clipboard, new Object[] { data });
+                if (Build.DEBUG) CoreSystem.print("JNLP success");
+                // Success
+                return;
+            }
+            catch (Throwable t) {
+                // Ignore, fall through
+                if (Build.DEBUG) CoreSystem.print("JNLP fail", t);
+            }
+        }
+        */
+        
+        // Internal clipboard
+        clipboardText = text;
     }
     
+    public Object getJNLPService(String service) {
+        try {
+             Class c = Class.forName("javax.jnlp.ServiceManager");
+             Method m = c.getMethod("lookup", new Class[] { String.class });
+             return m.invoke(null, new Object[] { service });
+        }
+        catch (Throwable t) {
+            return null;
+        }
+    }
     
     //
     // Sound
@@ -402,7 +440,6 @@ public final class AppletPlatform implements Platform {
     public boolean isSoundEngineCreated() {
         return soundEngineCreated;
     }
-    
     
     public SoundEngine getSoundEngine() {
         if (soundEngineCreated) {
@@ -426,23 +463,19 @@ public final class AppletPlatform implements Platform {
         return soundEngine;
     }
     
-    
     public void updateSoundEngine(int timeUntilNextUpdate) {
         if (soundEngine != null) {
             soundEngine.update(timeUntilNextUpdate);
         }
     }
     
-    
     //
     // Browser
     //
-    
         
     public boolean isBrowserHosted() {
         return true;
     }
-    
     
     /**
         Returns the name of the web browser, or null if the browser name could not be determined.
@@ -451,7 +484,6 @@ public final class AppletPlatform implements Platform {
         AppletAppContext context = (AppletAppContext)getThisAppContext();
         return context.getAppProperty("browsername");
     }
-
     
     /**
         Returns the version of the web browser, or null if the browser name could not be determined.
@@ -460,5 +492,4 @@ public final class AppletPlatform implements Platform {
         AppletAppContext context = (AppletAppContext)getThisAppContext();
         return context.getAppProperty("browserversion");
     }
-   
 }

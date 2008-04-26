@@ -8,6 +8,9 @@
   * Tools: pulpcore.js updates for 6u10 plugin2
   * Tools: pulpcore.js now installs Java 5 (instead of Java 6) if the user has Windows 95/98/NT4.
     Java 6 requires XP/Vista/2000.
+  * Fixed bug: fixed two Windows timing bugs that caused (1) occational acceleration or deccerlation
+    of system time and (2) key input lag on some systems. These mostly occured if other 
+    threads/processes used a lot of CPU, especially on single-core systems.
   * Fixed bug: sometimes rendering was incorrect when dirty rectangles was disabled.
   * Fixed bug: Nested back-buffered Groups was incorrect in some cases; removing them and
     re-creating them at runtime was incorrect in some cases.

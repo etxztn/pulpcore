@@ -44,6 +44,7 @@ import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
 import java.awt.ImageCapabilities;
 import java.awt.Point;
+import java.lang.reflect.Constructor;
 import java.util.Hashtable;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -234,6 +235,53 @@ public class BufferStrategySurface extends Surface {
         
         // Try whatever the system wants
         canvas.createBufferStrategy(2);
+        
+        /* Try to enable vsync (Java 6u10)
+        
+            Note, "separate_jvm" property must be specified for applets that v-sync. From the bug
+            description:
+                Note that since the D3D pipeline uses single thread rendering - meainng
+                that all D3D-related activity happens on a single thread only
+                one BufferStrategy in per vm instance can be made v-synced without
+                undesireable effects. 
+                
+                If there's more than one (say N) v-synced BSs then
+                since their Present() calls will effectively be serialized (since they're
+                running from a single thread) each BS will be able
+                to flip only on every Nth vsync, resulting in decrease in
+                perceived responsiveness.
+
+            Unfortunately this doesn't work because sandboxed applets can't access sun.* packages.
+            This is left here (commented out) in case the API gets moved to com.sun. 
+        */
+        /*
+        BufferStrategy bufferStrategy = canvas.getBufferStrategy();
+        if (bufferStrategy != null) {
+            BufferCapabilities caps = bufferStrategy.getCapabilities();
+            try {
+                Class ebcClass = Class.forName(
+                    "sun.java2d.pipe.hw.ExtendedBufferCapabilities");
+                Class vstClass = Class.forName(
+                    "sun.java2d.pipe.hw.ExtendedBufferCapabilities$VSyncType");
+                
+                Constructor ebcConstructor = ebcClass.getConstructor(
+                    new Class[] { BufferCapabilities.class, vstClass });
+                Object vSyncType = vstClass.getField("VSYNC_ON").get(null);
+                
+                BufferCapabilities newCaps = (BufferCapabilities)ebcConstructor.newInstance(
+                    new Object[] { caps, vSyncType });
+                
+                canvas.createBufferStrategy(2, newCaps);
+                
+                // TODO: if success, setCanChangeRefreshRate(false) and setRefreshRate(60). 
+                // Possibly override refreshRateSync()?
+            }
+            catch (Throwable t) {
+                // Ignore
+                t.printStackTrace();
+            }
+        }
+        */
     }
     
     public String toString() {
@@ -241,17 +289,9 @@ public class BufferStrategySurface extends Surface {
         if (bufferStrategy != null) {
             BufferCapabilities caps = bufferStrategy.getCapabilities();
             s += " (" + 
-            //"doAppleSync=" + doAppleSync + 
-            //", " +
             "isPageFlipping=" + caps.isPageFlipping() + 
             ", " + 
             "useDirtyRects=" + useDirtyRects + 
-            //", " +
-            //"frontBufferAccelerated=" + caps.getFrontBufferCapabilities().isAccelerated() + 
-            //", " +
-            //"backBufferAccelerated=" + caps.getBackBufferCapabilities().isAccelerated() + 
-            //", " + 
-            //"flipContents=" + caps.getFlipContents() +
             ")";
         }
         return s;
