@@ -113,7 +113,7 @@ public class SoundStream {
         return state == STATE_PAUSED || state == STATE_TRACKING_WHILE_PAUSED;
     }
         
-    private void stop() {
+    public void stop() {
         if (state != STATE_STOPPED) {
             state = STATE_STOPPING;
         }

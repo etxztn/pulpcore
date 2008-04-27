@@ -712,7 +712,9 @@ public class Stage implements Runnable {
             // Send pending sound data to sound system
             // (Don't create the sound engine if it's not already created)
             if (CoreSystem.getPlatform().isSoundEngineCreated()) {
-                int estimatedTimeUntilNextUpdate = Math.max(elapsedTime, 1000 / desiredFPS);
+                double fps = actualFPS > 0 ? actualFPS : desiredFPS > 0 ? desiredFPS : 60;
+                int estimatedTimeUntilNextUpdate = Math.max(elapsedTime, 
+                    (int)Math.round(1000 / fps));
                 CoreSystem.getPlatform().updateSoundEngine(estimatedTimeUntilNextUpdate);
             }
             

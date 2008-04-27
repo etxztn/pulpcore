@@ -580,7 +580,10 @@ public class JavaSound implements SoundEngine {
                 }
             }
             catch (Exception ex) {
-                if (Build.DEBUG) CoreSystem.print("Error playing sound", ex);
+                if (stream != null) {
+                    stream.stop();
+                }
+                CoreSystem.setTalkBackField("pulpcore.sound-exception", ex);
                 close(false);
                 open();
             }
