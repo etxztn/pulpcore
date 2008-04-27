@@ -121,6 +121,7 @@ public class Stage implements Runnable {
     private int nextSceneType = NO_NEXT_SCENE;
     private LinkedList sceneStack = new LinkedList();
     private Scene uncaughtExceptionScene;
+    private Runnable shutdownCode;
     
     // Auto scaling
     private int naturalWidth = 1;
@@ -384,6 +385,38 @@ public class Stage implements Runnable {
     public static void setUncaughtExceptionScene(Scene scene) {
         Stage instance = getThisStage();
         instance.uncaughtExceptionScene = scene;
+    }
+    
+    /**
+        Sets the runnable to execute at application shutdown. Single-scene apps can overload the
+        {@link Scene2D#unload()} method, but multi-scene apps that require shutdown code to be
+        run (for example, logging off from a server) can use this method for convenience.
+        <P>
+        The {@code runnable} is executed in the animation thread after all scenes are
+        unloaded. 
+    */
+    public static void invokeOnShutdown(final Runnable runnable) {
+        final Stage instance = getThisStage();
+        if (runnable == null) {
+            instance.shutdownCode = null;
+        }
+        else {
+            instance.shutdownCode = new Runnable() {
+                public void run() {
+                    Thread t = Thread.currentThread();
+                    instance.appContext.setAnimationThread(t);
+                    instance.animationThread = t;
+                    try {
+                        runnable.run();
+                    }
+                    catch (Throwable ex) {
+                        if (Build.DEBUG) ex.printStackTrace();
+                    }
+                    instance.appContext.setAnimationThread(null);
+                    instance.animationThread = null;
+                }
+            };
+        }
     }
     
     /**
@@ -741,6 +774,11 @@ public class Stage implements Runnable {
         clearSceneStack();
         appContext.setAnimationThread(null);
         animationThread = null;
+        
+        Runnable r = shutdownCode;
+        if (r != null) {
+            appContext.createThread("PulpCore-Shutdown", r).start();
+        }
     }
     
     /**

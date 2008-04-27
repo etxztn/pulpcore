@@ -11,6 +11,11 @@ public class LoadingScene extends pulpcore.scene.LoadingScene {
         CoreSystem.setTalkBackField("app.version", ProjectBuild.VERSION);
         
         Stage.setUncaughtExceptionScene(new UncaughtExceptionScene());
+        Stage.invokeOnShutdown(new Runnable() {
+            public void run() {
+                // Shutdown network connections, DB connections, etc. 
+            }
+        });
     }
     
     @Override
