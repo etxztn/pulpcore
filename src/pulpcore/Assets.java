@@ -68,7 +68,7 @@ public class Assets {
         @return true on success; false otherwise.
     */
     public static boolean addCatalog(String catalogName, byte[] zipFileData) {
-        if (zipFileData == null) {
+        if (zipFileData == null || zipFileData.length == 0) {
             return false;
         }
         

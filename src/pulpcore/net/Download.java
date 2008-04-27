@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -40,7 +40,6 @@ import java.net.URLConnection;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 
-
 /**
     Downloads a file into memory. Handles partial HTTP downloads if the 
     first attempt downloads only a portion of the file.
@@ -62,6 +61,7 @@ public class Download implements Runnable {
     private int state;
     private long startTime;
     private int unsuccessfulAttempts;
+    private boolean resetUnsuccessfulAttempts;
     
     private URL url;
     private int size;
@@ -73,7 +73,6 @@ public class Download implements Runnable {
     private Throwable lastException;
     
     private byte[] data;
-    
     
     /**
         Starts downloading a file from the server. Returns immediatly.
@@ -93,7 +92,6 @@ public class Download implements Runnable {
         download.start();
         return download;
     }
-    
   
     public Download(URL url) {
         this.url = url;
@@ -102,7 +100,6 @@ public class Download implements Runnable {
         startTime = -1;
         unsuccessfulAttempts = 0;
     }
-    
     
     public void start() {
         
@@ -118,7 +115,6 @@ public class Download implements Runnable {
         }
     }
     
-    
     public void cancel() {
         synchronized (lock) {
             if (state == DOWNLOADING) {
@@ -127,7 +123,6 @@ public class Download implements Runnable {
         }
     }
     
-    
     /**
         Returns the size of the file currently downloading, or -1 if not known.
     */
@@ -135,14 +130,12 @@ public class Download implements Runnable {
         return size;
     }
     
-    
     /**
         Returns the number of bytes downloaded.
     */
     public int getBytesRead() {
         return currentPosition;
     }
-    
     
     /**
         Returns a values less than zero if the percent not known
@@ -158,16 +151,13 @@ public class Download implements Runnable {
         }
     }
     
-    
     public Throwable getLastException() {
         return lastException;
     }
     
-    
     public byte[] getData() {
         return data;
     }
-    
     
     public int getState() {
         return state;
@@ -179,7 +169,6 @@ public class Download implements Runnable {
             data = null;
         }
     }
-    
     
     public long getEstimatedTimeRemaining() {
         
@@ -199,7 +188,6 @@ public class Download implements Runnable {
             return Math.round((1 - p) * elapsedTime / p);
         }
     }
-    
     
     public void run() {
         
@@ -240,7 +228,6 @@ public class Download implements Runnable {
         }
     }
     
-    
     private void attemptDownload() throws IOException {
         
         long newStartTime = System.currentTimeMillis();
@@ -249,6 +236,7 @@ public class Download implements Runnable {
         URLConnection connection = url.openConnection();
         
         int newStartPosition = 0;
+        resetUnsuccessfulAttempts = false;
         if (connection instanceof HttpURLConnection) {
             connection.setRequestProperty("Cache-Control", "no-transform");
             if (restartPosition > 0) {
@@ -279,6 +267,10 @@ public class Download implements Runnable {
                         try {
                             newStartPosition = Integer.parseInt(contentRange.substring(6, index));
                             parsedContentRange = true;
+                            if (newStartPosition == restartPosition) {
+                                // Reset the counter if we actually download something
+                                resetUnsuccessfulAttempts = true;
+                            }
                         }
                         catch (NumberFormatException ex) {
                             // Ignore
@@ -369,7 +361,6 @@ public class Download implements Runnable {
         }
     }
     
-    
     private final void setErrorMessage(String error) {
         lastException = new IOException(error);
         if (Build.DEBUG) {
@@ -378,24 +369,23 @@ public class Download implements Runnable {
         }
     }
     
-    
     private final int getCurrentPosition() {
         return currentPosition;
     }
     
-    
     private final void increasePosition(int numBytes) {
         if (numBytes > 0) {
             currentPosition += numBytes;
-            unsuccessfulAttempts = 0;
+            if (resetUnsuccessfulAttempts) {
+                unsuccessfulAttempts = 0;
+                resetUnsuccessfulAttempts = false;
+            }
         }
     }
-    
     
     private final void markRestartPosition() {
         restartPosition = currentPosition;
     }
-    
     
     /**
         @return true if the data length should be double-checked with a head request.

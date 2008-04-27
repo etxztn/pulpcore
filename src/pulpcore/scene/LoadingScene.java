@@ -49,7 +49,6 @@ import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
 import pulpcore.util.StringUtil;
 
-
 /**
     A scene that downloads the asset catalog file (zip file). It automatically handles download
     errors by allowing the user to retry a failed download.
@@ -90,16 +89,13 @@ public class LoadingScene extends Scene2D {
    
     private Download download;
     
-    
     public LoadingScene(String assetCatalogFile) {
         this(assetCatalogFile, null, DEFAULT_BACKGROUND_COLOR, null);
     }
     
-    
     public LoadingScene(String assetCatalogFile, Scene nextScene) {
         this(assetCatalogFile, nextScene, DEFAULT_BACKGROUND_COLOR, null);
     }
-    
     
     public LoadingScene(String assetCatalogFile, Scene nextScene, int backgroundColor, 
         CoreFont font) 
@@ -146,7 +142,6 @@ public class LoadingScene extends Scene2D {
         }
     }
     
-    
     /**
         Sets the timeline to start once the download is complete. Normally, the 
         timeline includes a SetScene event.
@@ -161,7 +156,6 @@ public class LoadingScene extends Scene2D {
             addTimeline(onCompletion);
         }
     }
-    
     
     public void setErrorMessage(String message, String retryButtonText) {
         
@@ -182,31 +176,24 @@ public class LoadingScene extends Scene2D {
             Stage.getWidth() / 2,
             Stage.getHeight() * 3 / 4);
         tryAgainButton.setAnchor(Sprite.SOUTH);
-        // Hack: must set to invisible so a click isn't detected
-        tryAgainButton.visible.set(false);
-        
         errorLayer.add(tryAgainButton);
     }
-    
     
     public void load() {
         startDownload();
     }
     
-    
     public void unload() {
+        super.unload();
         if (download != null) {
             download.cancel();
             download = null;
         }
     }
     
-    
     private void startDownload() {
         normalLayer.visible.set(true);
         errorLayer.visible.set(false);
-        // Hack: must set to invisible so a click isn't detected
-        tryAgainButton.visible.set(false);
                 
         totalTime = 0;
         if (Assets.containsCatalog(assetCatalogFile)) {
@@ -217,13 +204,13 @@ public class LoadingScene extends Scene2D {
             download.getState() == Download.ERROR ||
             download.getState() == Download.CANCELED) 
         {
+            showProgress = false;
             download = Download.startDownload(assetCatalogFile);
             if (download == null) {
                 state = Download.ERROR;
             }
         }
     }
-
 
     /**
         Subclasses should call super.update() to handing downloading success and error.
@@ -283,9 +270,6 @@ public class LoadingScene extends Scene2D {
             
             normalLayer.visible.set(false);
             errorLayer.visible.set(true);
-            // Hack: must set to invisible so a click isn't detected
-            tryAgainButton.visible.set(true);
-            
             if (tryAgainButton.isClicked()) {
                 startDownload();
             }
@@ -293,9 +277,11 @@ public class LoadingScene extends Scene2D {
         
         // Default progress bar view
         double p = getProgress();
-        if (shouldProgressBeVisible() && download != null && p > 0) {
-            progressBar.width.set(p * (progressBarBackground.width.get() - 4));
-            progressBar.visible.set(true);
+        if (shouldProgressBeVisible() && download != null && p >= 0) {
+            progressBar.visible.set((p > 0));
+            if (p > 0) {
+                progressBar.width.set(p * (progressBarBackground.width.get() - 4));    
+            }
             progressBarBackground.visible.set(true);
         }
         else {
@@ -304,11 +290,9 @@ public class LoadingScene extends Scene2D {
         }
     }
     
-    
     public boolean shouldProgressBeVisible() {
         return showProgress;
     }
-    
     
     /**
         Returns a value from 0 to 1. If the download hasn't started,
@@ -323,7 +307,7 @@ public class LoadingScene extends Scene2D {
         }
             
         if (download == null) {
-            return -1;
+            return showProgress ? 0 : -1;
         }
         double p = download.getPercentDownloaded();
         
@@ -333,7 +317,7 @@ public class LoadingScene extends Scene2D {
         }
         
         if (p < 0) {
-            return -1;
+            return showProgress ? 0 : -1;
         }
         else {
             return p;
