@@ -439,8 +439,11 @@ public class Button extends ImageSprite {
         }
         
         // Determine bounds of the image after the text is added
-        Rect bounds = new Rect(0, 0, images[0].getWidth(), images[0].getHeight());
-        bounds.union(textX, textY, textWidth + 1, textHeight + 1);
+        Rect imageBounds = new Rect(0, 0, images[0].getWidth(), images[0].getHeight());
+        Rect textBounds = new Rect(textX, textY, textWidth + 1, textHeight + 1);
+        Rect bounds = new Rect(imageBounds);
+        bounds.union(textBounds);
+        boolean textInsideImage = bounds.equals(imageBounds);
         
         // Create new images
         CoreImage[] textImages = new CoreImage[images.length];
@@ -461,7 +464,9 @@ public class Button extends ImageSprite {
             g.drawString(text, textX-bounds.x + offsetX, textY-bounds.y + offsetY);
         }
     
-        return new Button(textImages, x, y, isToggleButton);
+        Button button = new Button(textImages, x, y, isToggleButton);
+        button.setPixelLevelChecks(textInsideImage);
+        return button;
     }
     
     private static CoreImage createButtonImage(int buttonWidth, int buttonHeight, int type) {
