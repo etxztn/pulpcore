@@ -16,9 +16,17 @@ import pulpcore.sprite.ImageSprite;
 
 /**
     Sprite that allows drawing with Java2D and works with PulpCore's dirty rectangles and 
-    blend modes. Subclasses overwrite the needsRedraw() and draw() methods.
-    
-    Example:
+    blend modes. 
+    <p>
+    Note, this will only work on PulpCore platforms where Java2D is available, so using this
+    class will limit portability. In the future PulpCore weill be ported to OpenGL (desktop,
+    maybe portable devices).
+    <p>
+    Also, certain Java2D operations can crash Apple's Quartz renderer. As of Mac OS X
+    Leopard, Apple's Java implementation has switched to Sun's Java2D renderer, so this will be 
+    less of a problem in the future.
+    <p>
+    Subclasses overwrite the needsRedraw() and draw() methods. Example:
     <pre>
     arc = new Java2DSprite(0, 0, 100, 100) {
             

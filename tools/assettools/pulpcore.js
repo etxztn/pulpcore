@@ -256,6 +256,22 @@ var pulpCoreObject = {
 		var assets	 = window.pulpcore_assets || "";
 		var params	 = window.pulpcore_params || { };
 		var codebase = window.pulpcore_codebase || pulpCoreObject.getCodeBase();
+		var name     = window.pulpcore_name || params.name || "";
+		
+		if (name === "") {
+			// Use the archive name
+			var index = archive.indexOf('.');
+			var index2 = archive.indexOf('-');
+			if (index2 != -1 && index2 < index) {
+				index = index2;
+			}
+			if (index == -1) {
+				name = archive;
+			}
+			else {
+				name = archive.substring(0, index);
+			}
+		}
 		
 		// Create the object tag parameters
 		var objectParams =
@@ -263,6 +279,7 @@ var pulpCoreObject = {
 			'  <param name="archive" value="' + archive + '" />\n' +
 			
 			// For the plugin
+			'  <param name="name" value="' + name + '" />\n' +
 			'  <param name="mayscript" value="true" />\n' +
 			'  <param name="scriptable" value="true" />\n' +
 			'  <param name="boxbgcolor" value="' + bgcolor + '" />\n' +
@@ -296,7 +313,9 @@ var pulpCoreObject = {
 			objectParams += '  <param name="assets" value="' + assets + '" />\n';
 		}
 		for (var i in params) {
-			objectParams += '  <param name="' + i + '" value="' + params[i] + '" />\n';
+			if (i !== "name") {
+				objectParams += '  <param name="' + i + '" value="' + params[i] + '" />\n';
+			}
 		}
 		objectParams += '  ' + pulpCoreObject.getInstallHTML();
 		
