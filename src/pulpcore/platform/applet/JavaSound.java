@@ -532,11 +532,11 @@ public class JavaSound implements SoundEngine {
                     int actualSize;
                     int available = line.available();
                     
-                    if (CoreSystem.isMacOSX()) {
+                    if (CoreSystem.isMacOSX() && !CoreSystem.isMacOSXLeopardOrNewer()) {
                         actualSize = (framesWritten - line.getFramePosition()) * FRAME_SIZE;
                     }
                     else {
-                        // Windows
+                        // Windows, Linux, Mac OS X Leopard
                         actualSize = line.getBufferSize() - available;
                     }
                     available = Math.min(available, desiredSize - actualSize);
@@ -548,9 +548,6 @@ public class JavaSound implements SoundEngine {
                         length -= (length % FRAME_SIZE);
                         
                         stream.render(WORK_BUFFER, 0, NUM_CHANNELS, length / FRAME_SIZE);
-                        if (numWrites == 0) {
-                            line.start();
-                        }
                         if (CoreSystem.isMacOSX() || !CoreSystem.isJava15orNewer()) {
                             /*
                                 The JavaSound "glitch". Happens on Java 1.4 and all known
@@ -572,8 +569,14 @@ public class JavaSound implements SoundEngine {
                                 fade(0, false);
                             }
                         }
-                        
-                        line.write(WORK_BUFFER, 0, length);
+                        if (numWrites == 0) {
+                            line.start();
+                        }
+                        int bytesWritten = 0;
+                        while (bytesWritten < length) {
+                            bytesWritten +=
+                                line.write(WORK_BUFFER, bytesWritten, length - bytesWritten);
+                        }
                         framesWritten += length / FRAME_SIZE;
                         numWrites++;
                     }
