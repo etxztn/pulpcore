@@ -779,7 +779,12 @@ public class Stage implements Runnable {
         
         Runnable r = shutdownCode;
         if (r != null) {
-            appContext.createThread("PulpCore-Shutdown", r).start();
+            Thread t = appContext.createThread("PulpCore-Shutdown", r);
+            try {
+                t.setDaemon(false);
+            }
+            catch (Exception ex) { }
+            t.start();
         }
     }
     
