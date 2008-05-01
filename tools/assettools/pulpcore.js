@@ -93,6 +93,9 @@ var pulpCoreObject = {
 	// Usually the applet calls pulpcore_appletLoaded() before the timeout.
 	splashTimeout: 15000,
 	
+	// Arguments for Java 6u10 (plugin2)
+	javaArguments: "-Dsun.awt.noerasebackground=true -Djnlp.packEnabled=true",
+	
 	// The minimum JRE version
 	requiredJRE: "1.4",
 	
@@ -293,7 +296,7 @@ var pulpCoreObject = {
 			
 		// For Java 6u10 plugin2
 		if (pulpCoreObject.isPlugin2()) {
-			var args = '-Dsun.awt.noerasebackground=true -Djnlp.packEnabled=true';
+			var args = pulpCoreObject.javaArguments;
 			objectParams += 
 				'  <param name="boxborder" value="false" />\n' +
 				'  <param name="image" value="' + splash + '" />\n' +
