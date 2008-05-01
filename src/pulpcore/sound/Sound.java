@@ -433,9 +433,10 @@ public abstract class Sound {
                     }
                     return NO_SOUND;
                 }
-                byte[] samples = new byte[chunkSize];
-                in.read(samples);
-                return new SoundClip(samples, sampleRate, stereo);
+                byte[] data = in.getData();
+                int dataOffset = in.position();
+                int dataLength = chunkSize;
+                return new SoundClip(data, dataOffset, dataLength, sampleRate, stereo);
             }
             else {
                 // Skip this unknown chunk

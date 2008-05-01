@@ -3,6 +3,7 @@
   * API: Added Sprite getViewX() and getViewY(). 
   * API: Sprite getLocalX() and getLocalY() now take doubles and return doubles.
   * API: Added Stage.invokeOnShutdown(Runnable) (Issue 7).
+  * Core: Reduced memory usage of WAV files.
   * Core: Allow LiveConnect on 1.6 update 10 (bug fixed as of 1.6u10 b22)
   * Core: Labelled buttons: If the text is outside the button image, pixelLevelChecks is set to 
     false by default (pixel level checks would be awkward when the mouse moves over the text).

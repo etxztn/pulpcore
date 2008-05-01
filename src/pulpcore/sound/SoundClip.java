@@ -38,6 +38,8 @@ import pulpcore.platform.SoundStream;
 /* package-private */ class SoundClip extends Sound {
     
     private final byte[] data;
+    private final int dataOffset;
+    private final int dataLength;
     private final int numChannels;
     private final int frameSize;
     private final int numFrames;
@@ -47,14 +49,25 @@ import pulpcore.platform.SoundStream;
         (signed, little endian, 16-bit PCM format). 
     */
     public SoundClip(byte[] data, int sampleRate, boolean stereo) {
+        this(data, 0, data.length, sampleRate, stereo);
+    }
+        
+    
+    /**
+        Creates an sound clip with the specified samples 
+        (signed, little endian, 16-bit PCM format). 
+    */
+    public SoundClip(byte[] data, int dataOffset, int dataLength, int sampleRate, boolean stereo) {
         super(sampleRate);
         this.data = data;
+        this.dataOffset = dataOffset;
+        this.dataLength = dataLength;
         this.numChannels = stereo ? 2 : 1;
         this.frameSize = getSampleSize() * numChannels;
-        if ((data.length % frameSize) != 0) {
+        if ((dataLength % frameSize) != 0) {
             throw new IllegalArgumentException();
         }
-        this.numFrames = data.length / frameSize;
+        this.numFrames = dataLength / frameSize;
     }
     
     /**
@@ -75,7 +88,7 @@ import pulpcore.platform.SoundStream;
             throw new IllegalArgumentException();
         }
         
-        int srcOffset = srcFrame * frameSize;
+        int srcOffset = srcFrame * frameSize + dataOffset;
         
         if (getNumChannels() == destChannels) {
             // Mono-to-mono or stereo-to-stereo
