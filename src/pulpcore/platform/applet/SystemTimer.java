@@ -37,8 +37,14 @@ import pulpcore.CoreSystem;
 */
 public class SystemTimer {
     
+    // Number of frames in a row with no sleep before lowering sleep granularity
+    private static final int FRAMES_BEFORE_SWITCH = 4;
+    
+    private Thread granularityThread;
     private long lastTime;
     private long virtualTime;
+    private int framesInARowNoSleep = 0;
+    private boolean sleptThisFrame = false;
     
     public void start() {
         lastTime = System.currentTimeMillis();
@@ -47,6 +53,54 @@ public class SystemTimer {
     
     public void stop() {
         // Do nothing
+    }
+    
+    private final boolean getHighSleepGranularity() {
+        return (granularityThread != null);
+    }
+    
+    private void setHighSleepGranularity(boolean high) {
+        if (high != getHighSleepGranularity()) {
+            if (high) {
+                startGranularityThread();
+            }
+            else {
+                stopGranularityThread();
+            }
+        }
+    }
+    
+    private final void startGranularityThread() {
+        if (granularityThread == null) {
+            // Improves the granularity of the sleep() function on Windows XP
+            // Note: on some machines, time-of-day drift may occur if another thread hogs the
+            // CPU
+            // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
+            granularityThread = new Thread("PulpCore-Win32Granularity") {
+                public void run() {
+                    pulpcore.CoreSystem.print("-->TStart");
+                    while (granularityThread == this) {
+                        try {
+                            Thread.sleep(Integer.MAX_VALUE);
+                        }
+                        catch (InterruptedException ex) {
+                            // Ignore
+                        }
+                    }
+                    pulpcore.CoreSystem.print("<--TStop");
+                }
+            };
+            granularityThread.setDaemon(true);
+            granularityThread.start();
+        }
+    }
+    
+    private final void stopGranularityThread() {
+        if (granularityThread != null) {
+            Thread t = granularityThread;
+            granularityThread = null;
+            t.interrupt();
+        }
     }
     
     public long getTimeMillis() {
@@ -67,34 +121,54 @@ public class SystemTimer {
         return "SystemTimer";
     }
     
-    public long sleepUntilTimeMicros(long goalTimeMicros) {
+    public void notifyFrameComplete() {
         if (CoreSystem.isWindowsXPorNewer()) {
-            synchronized (this) {
-                while (true) {
-                    long currentTimeMicros = getTimeMicros();
-                    long diff = goalTimeMicros - currentTimeMicros;
-                    if (diff <= 50) {
-                        return currentTimeMicros;
-                    }
-                    else if (diff <= 1500) {
-                        Thread.yield();
-                    }
-                    else {
-                        // DO NOT use Thread.sleep(1) - it fucks with the system time
-                        // on Windows, causing acceleration or decceleration. This is 
-                        // bad for games that depend on accurate system time.
-                        // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
-                        try {
-                            wait(1);
-                        }
-                        catch (InterruptedException ex) { }
-                    }
+            if (sleptThisFrame) {
+                framesInARowNoSleep = 0;
+            }
+            else {
+                framesInARowNoSleep++;
+                // If we're maxing CPU, so disable high sleep granularity - it can cause
+                // noticable time-of-day drift with max cpu.
+                if (framesInARowNoSleep >= FRAMES_BEFORE_SWITCH && getHighSleepGranularity()) {
+                    setHighSleepGranularity(false);
                 }
+            }
+            sleptThisFrame = false;
+        }
+    }
+    
+    public long sleepUntilTimeMicros(long goalTimeMicros) {
+        
+        if (CoreSystem.isWindowsXPorNewer()) {
+            boolean firstIteration = true;
+            while (true) {
+                long currentTimeMicros = getTimeMicros();
+                long diff = goalTimeMicros - currentTimeMicros;
+                if (diff <= 50) {
+                    return currentTimeMicros;
+                }
+                else if (diff <= 1500) {
+                    Thread.yield();
+                }
+                else {
+                    if (!getHighSleepGranularity()) {
+                        // We need to sleep, so make sure the sleep granularity is high
+                        setHighSleepGranularity(true);
+                    }
+                    try {
+                        Thread.sleep(1);
+                    }
+                    catch (InterruptedException ex) { }
+                }
+                // Only set if we didn't return immediately on the first check
+                sleptThisFrame = true;
             }
         }
         else {
             long time = goalTimeMicros - getTimeMicros();
             if (time >= 500) {
+                sleptThisFrame = true;
                 try {
                     Thread.sleep((int)((time + 500) / 1000));
                 }

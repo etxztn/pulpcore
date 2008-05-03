@@ -57,6 +57,7 @@ import pulpcore.util.ByteArray;
 public final class AppletAppContext extends AppContext {
     
     private CoreApplet applet;
+    private SystemTimer timer;
     private Surface surface;
     private AppletInput inputSystem;
     private Stage stage;
@@ -66,6 +67,7 @@ public final class AppletAppContext extends AppContext {
     
     public AppletAppContext(CoreApplet app, SystemTimer timer) {
         this.applet = app;
+        this.timer = timer;
         this.enableLiveConnect = true;
         
         /* 
@@ -238,6 +240,7 @@ public final class AppletAppContext extends AppContext {
                 }
             }
         }
+        timer.notifyFrameComplete();
     }
     
     private void createSurface(CoreApplet app) {
