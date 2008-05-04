@@ -58,8 +58,7 @@ public final class CoreApplet extends Applet {
     static {
         // Send a message to the Java Console
         System.out.println(
-            "PulpCore " + Build.VERSION + " (build " + Build.BUILD_NUMBER + ") " +
-            "by Interactive Pulp, LLC.");
+            "PulpCore " + Build.VERSION + " (" + Build.BUILD_DATE + ")");
     }
     
     private AppletAppContext context;

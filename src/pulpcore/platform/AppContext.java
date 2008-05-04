@@ -77,7 +77,7 @@ public abstract class AppContext {
         getThreadGroup();
         
         setTalkBackField("pulpcore.version", Build.VERSION);
-        setTalkBackField("pulpcore.version.build", Build.BUILD_NUMBER);
+        setTalkBackField("pulpcore.version.date", Build.BUILD_DATE);
         setTalkBackField("pulpcore.java.vendor", CoreSystem.getJavaProperty("java.vendor"));
         setTalkBackField("pulpcore.java.version", CoreSystem.getJavaProperty("java.version"));
         setTalkBackField("pulpcore.os.arch", CoreSystem.getJavaProperty("os.arch"));

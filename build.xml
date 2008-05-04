@@ -83,8 +83,8 @@
             /** The version number of this PulpCore build. */
             public static final String VERSION = "${version.full}";
             
-            /** The build number of this PulpCore build. */
-            public static final String BUILD_NUMBER = "${build.number}";
+            /** The build date. */
+            public static final String BUILD_DATE = "${build.date}";
             
             /** The platform name of this PulpCore build. */
             public static final String PLATFORM = "${platform}";
@@ -251,7 +251,9 @@
     
     <target name="build-core" description="Build">
     
-        <buildnumber/>
+        <tstamp>
+            <format property="build.date" pattern="yyyy/MM/dd HH:mm:ss" />
+        </tstamp>
         
         <!-- Create the system font  -->
         <taskdef resource="tasks.properties" classpath="${build}/${assettools.jar.file}" /> 
@@ -281,9 +283,6 @@
     
         <delete dir="doc/api" failonerror="false"/>
         <mkdir dir="doc/api" />
-        
-        <!-- Get the last build number -->
-        <loadproperties srcFile="build.number"/>
         
         <javadoc
             destdir="doc/api"
@@ -430,7 +429,7 @@
         <!-- Compile templates for distribution -->
         <subant>
             <property name="pulpcore.path" location="${build}" />
-	    <property name="library.path" location="${library.path}"/>
+            <property name="library.path" location="${library.path}"/>
             <property name="proguard.path" location="${proguard.path}"/>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
             <property name="do.obfuscate" value="true" />
