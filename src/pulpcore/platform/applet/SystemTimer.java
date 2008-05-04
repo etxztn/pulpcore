@@ -78,7 +78,6 @@ public class SystemTimer {
             // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
             granularityThread = new Thread("PulpCore-Win32Granularity") {
                 public void run() {
-                    pulpcore.CoreSystem.print("-->TStart");
                     while (granularityThread == this) {
                         try {
                             Thread.sleep(Integer.MAX_VALUE);
@@ -87,7 +86,6 @@ public class SystemTimer {
                             // Ignore
                         }
                     }
-                    pulpcore.CoreSystem.print("<--TStop");
                 }
             };
             granularityThread.setDaemon(true);
