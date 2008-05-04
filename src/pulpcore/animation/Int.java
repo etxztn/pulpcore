@@ -29,6 +29,8 @@
 
 package pulpcore.animation;
 
+import pulpcore.math.CoreMath;
+
 /**
     An Int is an integer value that can be animated over time.
 */
@@ -70,6 +72,44 @@ public class Int extends Property {
     
     public String toString() {
         return Integer.toString(get());
+    }
+    
+    /**
+        Returns true if the specified object is an 
+        {@code Int},
+        {@link Fixed}, 
+        {@link java.lang.Byte},
+        {@link java.lang.Short},
+        {@link java.lang.Integer},
+        {@link java.lang.Long},
+        {@link java.lang.Float}, or
+        {@link java.lang.Double}, and
+        its value is equal to this value.
+    */
+    public boolean equals(Object obj) {
+        if (obj instanceof Int) {
+            return get() == ((Int)obj).get();
+        }
+        else if (obj instanceof Fixed) {
+            return (((long)get()) << CoreMath.FRACTION_BITS) == ((Fixed)obj).getAsFixed();
+        }
+        else if (obj instanceof Double) {
+            return get() == ((Double)obj).doubleValue();
+        }
+        else if (obj instanceof Float) {
+            return get() == ((Float)obj).floatValue();
+        }
+        else if (
+            obj instanceof Byte || 
+            obj instanceof Short || 
+            obj instanceof Integer || 
+            obj instanceof Long) 
+        {
+            return get() == ((Number)obj).longValue();
+        }
+        else {
+            return false;
+        }
     }
     
     protected void setValue(Number value) {

@@ -44,6 +44,7 @@ public class AssetTask extends Task {
     private File srcDir;
     private File destDir;
     private int optimizationLevel = PNGWriter.DEFAULT_OPTIMIZATION_LEVEL;
+    private boolean skipSourceFiles = true;
     
     public void setSrcDir(File srcDir) {
         this.srcDir = srcDir;
@@ -55,6 +56,10 @@ public class AssetTask extends Task {
     
     public void setOptimizationLevel(int level) {
         this.optimizationLevel = level;
+    }
+    
+    public void setSkipSourceFiles(boolean skipSourceFiles) {
+        this.skipSourceFiles = skipSourceFiles;
     } 
     
     public void execute() throws BuildException {
@@ -129,27 +134,32 @@ public class AssetTask extends Task {
     }
     
     private boolean isOtherAsset(File file) {
-        String name = file.getName();
-        String lowerCaseName = name.toLowerCase();
-        
         return (file.isFile() && 
             !isImageFile(file) && !isImagePropertyFile(file) && !isFontFile(file) &&
-            !isIgnoredAsset(file));
+            !isIgnoredAsset(file) && !(skipSourceFiles && isSourceFile(file)));
     }
     
     public static boolean isIgnoredAsset(File file) {
         String name = file.getName();
-        String lowerCaseName = name.toLowerCase();
         
-        // Set of file to ignore. Ignore .java files because of the "quick" template
+        // Set of file to ignore. Ignore source files because of the "quick" template
         // directory structure.
-        return (
-            lowerCaseName.endsWith(".ttf") || 
-            lowerCaseName.endsWith(".java") || 
+        return (name.toLowerCase().endsWith(".ttf") || 
             name.equals("Thumbs.db") || 
             name.equals(".DS_Store") ||
             name.equals(".cvsignore") || 
             name.equals("vssver.scc"));
+    }
+    
+    public static boolean isSourceFile(File file) {
+        String name = file.getName();
+        return (
+            name.endsWith(".java") || 
+            name.endsWith(".scala") ||
+            name.endsWith(".py") ||
+            name.endsWith(".groovy") ||
+            name.endsWith(".js") ||
+            name.endsWith(".rb"));
     }
     
     private boolean isTraverseableDirectory(File dir) {

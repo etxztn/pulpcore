@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 
-<project name="PulpCore Project" default="build-and-run" basedir=".">
+<!-- 
+    This template is designed for trying out PulpCore quickly without creating 
+    a directory structure for a full project.
+-->
+<project name="HelloWorld - Scala" default="build-and-run" basedir=".">
 
     <property file="build.properties" />
     
@@ -10,14 +14,13 @@
         pulpcore.player.wait  If true, the PulpCore Player Ant task waits until the Player
                               window is closed. Otherwise, the Ant task returns immediately. 
                               Default is true.
+        include.src           If true, the source and resources are included as links in the 
+                              applet HTML.
         project.jar           The name of the project jar to create.
         project.assets        The name of the project zip file to create.
-        project.scene         The name of the first scene to display 
+        project.scene         The name of the first scene to display.
         project.width         The width of the applet.
         project.height        The height of the applet.
-        project.params        The applet parameters (as JavaScript prop objects - see 
-                              build.properties)
-        project.codebase      The applet codebase (default is same path as the html document)
         pulpcore.build        Build mode: "release" or "debug".
                               For "debug" builds, these hotkeys are available:
                               Ctrl-1  Slow-motion mode.
@@ -38,19 +41,18 @@
                               For Max OS X, use "${java.home}/../Classes/classes.jar"
     -->
     <property name="pulpcore.player.wait" value="true" />
+    <property name="include.src" value="false" />
     <property name="project.scene" value="HelloWorld" />
-    <property name="project.jar" value="HelloWorld.jar" />
-    <property name="project.assets.zip" value="HelloWorld.zip" />
+    <property name="project.jar" value="${project.scene}.jar" />
+    <property name="project.assets.zip" value="${project.scene}.zip" />    
     <property name="project.width" value="640" />
     <property name="project.height" value="480" />
     <property name="project.params" value="" />
-    <property name="project.codebase" value="" />
-    <property name="project.version" value="1.0" />    
     <property name="pulpcore.build" value="debug" />
     <property name="pulpcore.path" value="../../build" />
     <property name="proguard.path" value="" />
     <property name="library.path" value="" /> 
-    
+    <property name="scala.home" value="C:\Program Files\Scala" />
     
     <!--
         Normally you won't need to edit anything below this line 
@@ -58,16 +60,14 @@
     
     <property name="pulpcore.version" value="0.11" />
     <property name="pulpcore.platform" value="applet" />
-    <property name="autoload.assets.zip" value="" />
+    <property name="autoload.assets.zip" value="${project.assets.zip}" />
     
     <!-- Java language to use. May be 1.4 or 1.5. If the value is 1.5, Retroweaver is used. -->
-    <property name="pulpcore.java.language" value="1.5" />
+    <property name="pulpcore.java.language" value="1.4" />
     
     <!-- Project paths -->
     <property name="src" value="src" />
-    <property name="res" value="res" />
-    <property name="lib" value="lib" />
-    <property name="build" value="build/${pulpcore.platform}" />
+    <property name="build" value="build/" />
     <property name="build.temp" value="${build}/temp" />
     <property name="build.classes" value="${build.temp}/classes" />
     <property name="build.res" value="${build.temp}" />
@@ -82,6 +82,15 @@
     <!-- PulpCore tasks -->
     <taskdef resource="tasks.properties" classpath="${tools.jar.file}"/>
     <taskdef resource="tasks.properties" classpath="${player.jar.file}"/>
+    
+    <!-- Scala tasks -->
+    <property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
+    <taskdef resource="scala/tools/ant/antlib.xml">
+      <classpath>
+        <pathelement location="${scala.home}/lib/scala-compiler.jar"/>
+        <pathelement location="${scala-library.jar}"/>
+      </classpath>
+    </taskdef>
 
     
     <target name="clean" description="Deletes builds, compiled classes, and processed assets">
@@ -151,7 +160,7 @@
         <condition property="do.pack200">
             <equals arg1="${pulpcore.build}" arg2="release" />
         </condition>
-        
+
         <condition property="do.applet.html">
             <equals arg1="${pulpcore.platform}" arg2="applet" />
         </condition>
@@ -159,25 +168,20 @@
         <condition property="do.retroweaver">
             <equals arg1="${pulpcore.java.language}" arg2="1.5" />
         </condition>
-
-        <condition property="bootclasspath" value="${library.path}" else="">
+        
+        <!--<condition property="bootclasspath" value="${library.path}" else="">
             <equals arg1="${pulpcore.java.language}" arg2="1.4" />
+        </condition>
+        -->
+        
+        <condition property="display.src" value="${src}/${project.scene}.java" else="">
+            <istrue value="${include.src}" />
         </condition>
         
         <!-- PNG Optimization. Possible values range from 0 to 5 -->
         <condition property="optimizationLevel" value="4" else="1">
             <equals arg1="${pulpcore.build}" arg2="release" />
         </condition>
-
-        <buildnumber/>
-        <echo file="${src}/ProjectBuild.java"><![CDATA[
-        // Automatically generated file. Do not edit.
-
-        public interface ProjectBuild {
-            public static final String VERSION = "${project.version}";
-            public static final String BUILD_NUMBER = "${build.number}";
-        }
-        ]]></echo>        
         
         <delete dir="${build.classes}" failonerror="false" />
         <mkdir dir="${build}" />
@@ -189,36 +193,22 @@
 
     <!-- Compiles the code -->
     <target name="compile" depends="init">
-        <javac srcdir="${src}"
-                destdir="${build.classes}"
-                source="${pulpcore.java.language}"
-                target="${pulpcore.java.language}"
-                debug="on"
-                deprecation="on"
-                bootclasspath="${bootclasspath}">
-
-            <include name="**/*.java"/>
-            <compilerarg line="-Xlint:all" />
-            
-            <classpath>
-                <pathelement location="${core.jar.file}"/>
-                <fileset dir="${lib}">
-                    <include name="**/*.jar"/>
-                </fileset>
-            </classpath>
-        </javac>
+        <scalac srcdir="${src}"
+            destdir="${build.classes}"
+            classpath="${scala-library.jar};${core.jar.file}"
+            target="jvm-${pulpcore.java.language}"
+            force="changed">
+          <include name="**/*.scala"/>
+        </scalac>
     </target>
     
 
-    <!-- Creates a jar of the compiled code and libraries -->
+    <!-- Creates a jar of the compiled code -->
     <target name="jar" depends="compile">
         <jar destfile="${build}/${project.jar}">
             <fileset dir="${build.classes}" includes="**/*.class" />
-            <fileset dir="${build.res}/jar" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
-            <zipgroupfileset dir="${lib}" includes="**/*.jar">
-                <exclude name="META-INF/**/*"/>
-            </zipgroupfileset>
+            <zipfileset src="${scala-library.jar}" excludes="META-INF/**/*" />
         </jar>
     </target>
    
@@ -246,7 +236,7 @@
         <delete file="${build}/in2.jar" />
     </target>
 
-
+    
     <!-- Obfuscates the jar using Proguard -->
     <target name="obfuscate" if="do.obfuscate" depends="retroweave">
         <taskdef resource="proguard/ant/task.properties" classpath="${proguard.path}" />
@@ -266,10 +256,6 @@
             <injar name="${build}/in.jar" />
             <outjar name="${build}/${project.jar}" />
             
-            <keep name="pulpcore.sound.JOrbisAdapter">
-                <!-- Keep the special method that can be accessed via reflection -->
-                <method name="decode" />
-            </keep>
             <keep name="pulpcore.platform.applet.CoreApplet">
                 <!-- Keep the special method that can be accessed via JavaScript -->
                 <method name="getCurrentScene" />
@@ -290,19 +276,14 @@
             height="${project.height}"
             scene="${project.scene}"
             assets="${autoload.assets.zip}"
-            params="${project.params}" 
-            codebase="${project.codebase}" />
+            params="${project.params}"
+            displaySource="${display.src}"/>
     </target>
 
     
     <!-- Creates the assets zip file -->
     <target name="res" depends="init">
-        <pulpcore-assets srcDir="${res}/jar" destDir="${build.res}/jar" 
-            skipSourceFiles="false"
-            optimizationLevel="${optimizationLevel}" />
-            
-        <pulpcore-assets srcDir="${res}/zip" destDir="${build.res}/zip" 
-            skipSourceFiles="false"
+        <pulpcore-assets srcDir="${src}" destDir="${build.res}/zip" 
             optimizationLevel="${optimizationLevel}" />
     
         <delete file="${build}/${project.assets.zip}" failonerror="false" />
@@ -324,34 +305,18 @@
 
     <!-- Compiles the code and creates the assets zip -->
     <target name="build" depends="res, pack200, applet.html" description="Build" />
-    
-    
+
+
     <target name="build-and-run" depends="build, run" description="Build and Run" />
     
     
     <target name="run" description="Runs in PulpCore Player">
         <pulpcore-player path="${basedir}/${build}" archive="${project.jar}" 
             width="${project.width}" height="${project.height}"
-            scene="${project.scene}" assets="${autoload.assets.zip}" 
+            scene="${project.scene}" assets="${autoload.assets.zip}"
             params="${project.params}"
             waitUntilClosed="${pulpcore.player.wait}" />
     </target>
     
-    
-    <target name="profile" description="Run in a profiler">
-        <!-- NOTE: extra applet params ${project.params} is ignored here. -->
-        <echo file="${build}/appletviewer.html" append="false"><![CDATA[
-        <applet code="pulpcore.platform.applet.CoreApplet.class" archive="${project.jar}" 
-            width="${project.width}" height="${project.height}">
-            <param name="scene" value="${project.scene}"/>
-            <param name="assets" value="${autoload.assets.zip}"/>
-        </applet>
-        ]]></echo>
-        
-        <exec dir="${build}" executable="${appletviewer.path}" output="${build.temp}/xprof.txt">
-            <arg line="-J-Xprof appletviewer.html" />
-        </exec>
-        <echo>Profiling saved to ${build.temp}/xprof.txt</echo>
-    </target>
     
 </project>

@@ -3,6 +3,7 @@
   * API: Added Sprite getViewX() and getViewY(). 
   * API: Sprite getLocalX() and getLocalY() now take doubles and return doubles.
   * API: Added Stage.invokeOnShutdown(Runnable) (Issue 7).
+  * Examples: Added initial Scala language support. See templates/scala.
   * Core: Reduced memory usage of WAV files.
   * Core: Allow LiveConnect on 1.6 update 10 (bug fixed as of 1.6u10 b22)
   * Core: Labelled buttons: If the text is outside the button image, pixelLevelChecks is set to 

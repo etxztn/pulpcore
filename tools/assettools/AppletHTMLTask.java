@@ -206,15 +206,7 @@ public class AppletHTMLTask extends Task {
             
             FileFilter filter = new FileFilter() {
                 public boolean accept(File pathname) {
-                    String filename = pathname.getName();
-                    
-                    if (pathname.isFile()) {
-                        if (filename.endsWith(".java") || !AssetTask.isIgnoredAsset(pathname)) {
-                            return true;
-                        }
-                    }
-                    
-                    return false;
+                    return (pathname.isFile() && !AssetTask.isIgnoredAsset(pathname));
                 }
             };
             
@@ -235,7 +227,7 @@ public class AppletHTMLTask extends Task {
                 // Setup the hyperlink
                 String link = "<a target=\"pulpcore_src\" href=\"src/" + filename + "\">" +
                     filename + "</a>&nbsp; ";
-                if (filename.endsWith(".java")) {
+                if (AssetTask.isSourceFile(srcFile)) {
                     // First
                     links = link + links;
                 }

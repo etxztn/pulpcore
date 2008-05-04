@@ -58,6 +58,8 @@ public abstract class Property {
     */
     protected abstract void setValue(Number value);
     
+    public abstract boolean equals(Object obj);
+    
     /**
         Sets the value for this property. If the new value is different from the old value,
         any listeners are alerted. The behavior, if any, is not changed.

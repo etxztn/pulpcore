@@ -101,4 +101,22 @@ public final class Bool extends Property {
     public String toString() {
         return get() ? "true" : "false";
     }
+    
+    /**
+        Returns true if the specified object is a 
+        {@code Bool} or 
+        {@link java.lang.Boolean} and
+        its value is equal to this value.
+    */
+    public boolean equals(Object obj) {
+        if (obj instanceof Bool) {
+            return get() == ((Bool)obj).get();
+        }
+        else if (obj instanceof Boolean) {
+            return get() == ((Boolean)obj).booleanValue();
+        }
+        else {
+            return false;
+        }
+    }
 }

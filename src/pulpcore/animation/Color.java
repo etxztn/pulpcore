@@ -84,6 +84,22 @@ public class Color extends Property {
         }
         return "0x" + s;
     }
+    
+    /**
+        Returns true if the specified object is a
+        {@code Color} or {@link java.lang.Integer} and its value is equal to this value.
+    */
+    public boolean equals(Object obj) {
+        if (obj instanceof Color) {
+            return get() == ((Color)obj).get();
+        }
+        else if (obj instanceof Integer) {
+            return get() == ((Integer)obj).intValue();
+        }
+        else {
+            return false;
+        }
+    }
 
     //
     // Convenience methods

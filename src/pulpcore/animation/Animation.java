@@ -191,6 +191,10 @@ public abstract class Animation {
         return duration;
     }
     
+    public final Easing getEasing() {
+        return easing;
+    }
+    
     /* package-private */ final void setDuration(int duration) {
         this.duration = duration;
     }

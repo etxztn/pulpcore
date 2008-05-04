@@ -102,6 +102,46 @@ public final class Fixed extends Property {
         return CoreMath.toString(super.getValue(), 7);
     }
     
+    /**
+        Returns true if the specified object is an 
+        {@code Int},
+        {@link Fixed}, 
+        {@link java.lang.Byte},
+        {@link java.lang.Short},
+        {@link java.lang.Integer},
+        {@link java.lang.Long},
+        {@link java.lang.Float}, or
+        {@link java.lang.Double}, and
+        its value is equal to this value.
+    */
+    public boolean equals(Object obj) {
+        if (obj instanceof Fixed) {
+            return getAsFixed() == ((Fixed)obj).getAsFixed();
+        }
+        else if (obj instanceof Int) {
+            long objValue = ((Int)obj).get();
+            return getAsFixed() == (objValue << CoreMath.FRACTION_BITS);
+        }
+        else if (obj instanceof Double) {
+            return get() == ((Double)obj).doubleValue();
+        }
+        else if (obj instanceof Float) {
+            return get() == ((Float)obj).floatValue();
+        }
+        else if (
+            obj instanceof Byte || 
+            obj instanceof Short || 
+            obj instanceof Integer || 
+            obj instanceof Long) 
+        {
+            long objValue = ((Number)obj).longValue();
+            return getAsFixed() == (objValue << CoreMath.FRACTION_BITS);
+        }
+        else {
+            return false;
+        }
+    }
+    
     //
     // Setters - 3 methods
     //
