@@ -1,16 +1,16 @@
-0.11.3 (In SVN) 
+0.11.3 (May 4, 2008) 
   * API: Added CoreSystem.isJava16u10orNewer()
   * API: Added Sprite getViewX() and getViewY(). 
   * API: Sprite getLocalX() and getLocalY() now take doubles and return doubles.
   * API: Added Stage.invokeOnShutdown(Runnable) (Issue 7).
-  * Examples: Added initial Scala language support. See templates/scala.
+  * Examples: Added Scala language support. See templates/scala.
   * Core: Reduced memory usage of WAV files.
   * Core: Allow LiveConnect on 1.6 update 10 (bug fixed as of 1.6u10 b22)
   * Core: Labelled buttons: If the text is outside the button image, pixelLevelChecks is set to 
     false by default (pixel level checks would be awkward when the mouse moves over the text).
   * Contrib: Added Java2DSprite.
   * Tools: A game.jar.pack.gz file is now automatically created on release mode.
-    (Requires 6u10. The .pack.gz file is about 1/2 the size as the plain jar file.)
+    (Used if the user has 6u10. The .pack.gz file is about 1/2 the size as the plain jar file.)
   * Tools: pulpcore.js updates for 6u10 plugin2
   * Tools: pulpcore.js chooses a name automatically (which is shown in the status bar of some
     browsers). The name can be overridden by setting a "name" parameter.
@@ -20,8 +20,8 @@
     of system time and (2) key input lag on some systems. These mostly occured if other 
     threads/processes used a lot of CPU, especially on single-core systems.
   * Fixed bug: sometimes rendering was incorrect when dirty rectangles was disabled.
-  * Fixed bug: Nested back-buffered Groups was incorrect in some cases; removing them and
-    re-creating them at runtime was incorrect in some cases.
+  * Fixed bug: Nested back-buffered Groups was incorrect in some cases; removing a back-buffer and
+    then re-creating it at runtime was incorrect in some cases.
   * Fixed bug: Property files that don't belong to an image (resource bundles) are now included in 
     jar or zip (Issue 6).
   * Fixed bug: Reverted back to AWT/PixelGrabber for JPG loading, which doesn't cause 404s on the 

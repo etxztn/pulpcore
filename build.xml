@@ -380,7 +380,7 @@
         <property name="dist.temp" value="${build}/dist.temp" />
         <delete dir="${dist.temp}" failonerror="false" />
 	
-	<fail message="Please delete: ${dist.temp}">
+        <fail message="Please delete: ${dist.temp}">
             <condition><available file="${dist.temp}" /></condition>
         </fail>
 	
@@ -395,6 +395,7 @@
             <fileset dir="templates">
                 <exclude name="*/build/**/*" />
                 <exclude name="build.number" />
+                <exclude name="scala/build.properties" />
             </fileset>
         </copy>
         
@@ -431,6 +432,7 @@
             <property name="pulpcore.path" location="${build}" />
             <property name="library.path" location="${library.path}"/>
             <property name="proguard.path" location="${proguard.path}"/>
+            <property name="scala.home" location="${scala.home}"/>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
             <property name="do.obfuscate" value="true" />
             <property name="include.src" value="false" />
