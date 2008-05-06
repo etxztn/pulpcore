@@ -623,7 +623,7 @@ public class Stage implements Runnable {
             }
             if (currentScene == null) {
                 animationThreadStop();
-                return;
+                break;
             }
             
             boolean oldFocus = Input.hasKeyboardFocus();
@@ -763,7 +763,7 @@ public class Stage implements Runnable {
             }
         }
         
-        if (currentScene != null && destroyed) {
+        if (destroyed) {
             doDestroy();
         }
     }
@@ -771,8 +771,10 @@ public class Stage implements Runnable {
     private void doDestroy() {
         animationThread = Thread.currentThread();
         appContext.setAnimationThread(animationThread);
-        currentScene.hideNotify();
-        currentScene.unload();
+        if (currentScene != null) {
+            currentScene.hideNotify();
+            currentScene.unload();
+        }
         clearSceneStack();
         appContext.setAnimationThread(null);
         animationThread = null;
