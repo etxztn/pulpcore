@@ -1,3 +1,9 @@
+0.11.4 (In SVN)
+  * Fixed bug: added null check in Stage when destroying the app when there is no Scene.
+  * Fixed bug: key releases were not correct for shift, alt, ctrl when both left and right 
+    versions were pressed.
+  * Fixed bug: setTransparentColor() was broken on AnimatedImage
+  
 0.11.3 (May 4, 2008) 
   * API: Added CoreSystem.isJava16u10orNewer()
   * API: Added Sprite getViewX() and getViewY(). 

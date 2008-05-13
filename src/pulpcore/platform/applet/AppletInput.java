@@ -444,6 +444,7 @@ public class AppletInput implements KeyListener, MouseListener,
     }
     
     public void keyPressed(KeyEvent e) {
+        //pulpcore.CoreSystem.print("Press: " + e);
         int keyCode = getKeyCode(e);
         keyEvent(keyCode, true);
         
@@ -467,11 +468,31 @@ public class AppletInput implements KeyListener, MouseListener,
     }
 
     public void keyReleased(KeyEvent e) {
-        keyEvent(getKeyCode(e), false);
+        //pulpcore.CoreSystem.print("Release: " + e);
+        switch (e.getKeyCode()) {
+            // Looks like a cross-platform AWT bug when both shift keys are down.
+            // We need to release them both when either is released.
+            case KeyEvent.VK_SHIFT:
+                keyEvent(Input.KEY_LEFT_SHIFT, false);
+                keyEvent(Input.KEY_RIGHT_SHIFT, false);
+                break;
+            case KeyEvent.VK_CONTROL:
+                keyEvent(Input.KEY_LEFT_CONTROL, false);
+                keyEvent(Input.KEY_RIGHT_CONTROL, false);
+                break;
+            case KeyEvent.VK_ALT:
+                keyEvent(Input.KEY_LEFT_ALT, false);
+                keyEvent(Input.KEY_RIGHT_ALT, false);
+                break;
+            default:
+                keyEvent(getKeyCode(e), false);
+                break;
+        }
         consume(e);
     }
 
     public void keyTyped(KeyEvent e) {
+        //pulpcore.CoreSystem.print("Type: " + e);
         if (e.isMetaDown()) {
             // On Mac OS X, press and release events are not sent if the meta key is down
             // Press and release this key
