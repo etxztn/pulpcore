@@ -338,7 +338,7 @@ public class AnimatedImage extends CoreImage {
     //
     // Image Manipulation - overrides CoreImage's methods
     //
-
+    
     public CoreImage crop(int x, int y, int w, int h) {
         CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
@@ -447,6 +447,14 @@ public class AnimatedImage extends CoreImage {
     //
     // ARGB filters 
     //
+    
+    public CoreImage setTransparentColor(int rgbColor) {
+        AnimatedImage newImage = new AnimatedImage(this);
+        for (int i = 0; i < frames.length; i++) {
+            newImage.frames[i] = frames[i].setTransparentColor(rgbColor);
+        }
+        return newImage;
+    }
     
     public CoreImage tint(int rgbColor) {
         AnimatedImage newImage = new AnimatedImage(this);
