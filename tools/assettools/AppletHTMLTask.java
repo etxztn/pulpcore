@@ -50,7 +50,6 @@ import org.apache.tools.ant.taskdefs.Copy;
 public class AppletHTMLTask extends Task {
     
     // Matches those values in pulpcore.js
-    private static final String DEFAULT_SPLASH = "splash.gif";
     private static final String DEFAULT_CLASS_NAME = "pulpcore.platform.applet.CoreApplet.class";
     private static final String DEFAULT_ARCHIVE = "project.jar";
     private static final String DEFAULT_BGCOLOR = "#000000";
@@ -65,8 +64,8 @@ public class AppletHTMLTask extends Task {
     private File destDir;
     private File template = null;
     private File displaySource = null;
-
-    private String splash = DEFAULT_SPLASH;
+    private String splash = null;
+    
     private String className = DEFAULT_CLASS_NAME;
     private String archive = DEFAULT_ARCHIVE;
     private String bgcolor = DEFAULT_BGCOLOR;
@@ -172,7 +171,7 @@ public class AppletHTMLTask extends Task {
         if (!equals(DEFAULT_CLASS_NAME, className)) {
             appletParams += "pulpcore_class = \"" + className + "\";\n";
         }
-        if (!equals(DEFAULT_SPLASH, splash)) {
+        if (splash != null && splash.length() > 0) {
             appletParams += "pulpcore_splash = \"" + splash + "\";\n";
         }
         if (!equals(DEFAULT_ARCHIVE, archive)) {
@@ -278,8 +277,15 @@ public class AppletHTMLTask extends Task {
         writeTextFile(new File(destDir, "index.html"), appletHTML);
         writeTextFile(new File(destDir, "pulpcore.js"),
             readTextFile(getClass().getResourceAsStream("/pulpcore.js")));
-        writeBinaryFile(new File(destDir, "splash.gif"),
-            readBinaryFile(getClass().getResourceAsStream("/splash.gif")));        
+        if (splash == null || splash.length() == 0) {
+            writeBinaryFile(new File(destDir, "splash.gif"),
+                readBinaryFile(getClass().getResourceAsStream("/splash.gif")));
+        }
+        else if (!splash.startsWith("http://")) {
+            File splashFile = new File(getProject().getBaseDir(), splash);
+            writeBinaryFile(new File(destDir, splash),
+                readBinaryFile(new FileInputStream(splashFile)));
+        }
     }
     
     private String getProjectTitle() {
