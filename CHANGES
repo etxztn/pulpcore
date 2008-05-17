@@ -1,4 +1,5 @@
 0.11.4 (In SVN)
+  * Fixed bug: custom splash gifs weren't working properly.
   * Fixed bug: added null check in Stage when destroying the app when there is no Scene.
   * Fixed bug: key releases were not correct for shift, alt, ctrl when both left and right 
     versions were pressed.
