@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -40,7 +40,6 @@ import pulpcore.math.CoreMath;
 import pulpcore.sprite.Group;
 import pulpcore.util.StringUtil;
 
-
 /**
     The Label is a Sprite that displays text. The text can be formatted
     using printf-style parameters 
@@ -60,16 +59,13 @@ public class Label extends Sprite {
     
     public final Int numDisplayChars = new Int(this);
     
-    
     public Label(String text, int x, int y) {
         this(null, text, x, y, -1, -1);
     }
     
-    
     public Label(String text, double x, double y) {
         this(null, text, x, y, -1, -1);
     }
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -79,7 +75,6 @@ public class Label extends Sprite {
         this(null, text, x, y, w, h);
     }
     
-    
     /**
         If height < 0, the height is automatically set to fit the font
         height.
@@ -88,16 +83,13 @@ public class Label extends Sprite {
         this(null, text, x, y, w, h);
     }
     
-    
     public Label(CoreFont font, String text, int x, int y) {
         this(font, text, x, y, -1, -1);
     }
     
-    
     public Label(CoreFont font, String text, double x, double y) {
         this(font, text, x, y, -1, -1);
     }
-    
     
     /**
         If height < 0, the height is automatically set to fit the font
@@ -109,7 +101,6 @@ public class Label extends Sprite {
         init(font, text, w < 0, h < 0);
     }
     
-    
     /**
         If height < 0, the height is automatically set to fit the font
         height.
@@ -119,7 +110,6 @@ public class Label extends Sprite {
         
         init(font, text, w < 0, h < 0); 
     }
-    
     
     private void init(CoreFont font, String text, boolean autoWidth, boolean autoHeight) {
         if (font == null) {
@@ -135,9 +125,7 @@ public class Label extends Sprite {
         setText(text);
     }
     
-    
     public void propertyChange(Property p) {
-        
         super.propertyChange(p);
         
         if (p == numDisplayChars || 
@@ -158,7 +146,6 @@ public class Label extends Sprite {
         }
     }
     
-    
     protected int getNaturalWidth() {
         int w = stringWidth;
         if (numDisplayChars.get() < displayText.length()) {
@@ -167,11 +154,9 @@ public class Label extends Sprite {
         return CoreMath.toFixed(w);
     }
     
-    
     protected int getNaturalHeight() {
         return CoreMath.toFixed(font.getHeight());
     }
-    
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
@@ -182,9 +167,7 @@ public class Label extends Sprite {
         fontImage.update(elapsedTime);
     }
     
-    
     private void pack() {
-        
         if (autoWidth) {
             setDirty(true);
             if (autoHeight) {
@@ -195,7 +178,6 @@ public class Label extends Sprite {
                     getNaturalHeight()));
             }
         }
-        
         if (autoHeight) {
             setDirty(true);
             if (autoWidth) {
@@ -215,6 +197,13 @@ public class Label extends Sprite {
         return font;
     }
     
+    /**
+        Set this Label's font and resizes it if necessary.
+    */
+    public void setFont(CoreFont font) {
+        this.font = font;
+        format();
+    }
     
     /**
         @return the formatted display text.
@@ -223,17 +212,14 @@ public class Label extends Sprite {
         return displayText;
     }
     
-    
     public void setText(String text) {
         this.formatText = text;
         format();
     }
     
-    
     public void setFormatArg(Object arg) {
         setFormatArgs(new Object[] { arg });
     }
-    
     
     public void setFormatArgs(Object[] args) {
         removeFormatArgListeners();
@@ -253,7 +239,6 @@ public class Label extends Sprite {
         format();
     }
     
-    
     private void checkFormatArgListeners(Property p) {
         PropertyListener[] listeners = p.getListeners();
         for (int i = 0; i < listeners.length; i++) {
@@ -266,7 +251,6 @@ public class Label extends Sprite {
         }
     }
     
-    
     private void removeFormatArgListeners() {
         if (formatArgs != null && formatArgListener != null) {
             for (int i = 0; i < formatArgs.length; i++) {
@@ -276,7 +260,6 @@ public class Label extends Sprite {
             }
         }
     }
-    
     
     private void format() {
         displayText = StringUtil.format(formatText, formatArgs);
@@ -289,9 +272,7 @@ public class Label extends Sprite {
         pack();
     }
     
-    
     protected void drawSprite(CoreGraphics g) {
-        
         CoreImage fontImage = font.getImage();
 
         String currDisplayText = displayText;
@@ -301,7 +282,6 @@ public class Label extends Sprite {
         
         drawText(g, currDisplayText);
     }
-    
     
     protected void drawText(CoreGraphics g, String text) {
         g.setFont(getFont());
@@ -335,7 +315,6 @@ public class Label extends Sprite {
         }
     }
     
-    
     /**
         Creates a Group of Labels with the system font. The newline ('\n') character can be used 
         to specify explicit line breaks.
@@ -344,7 +323,6 @@ public class Label extends Sprite {
         return createMultilineLabel(new Group(x, y), CoreFont.getSystemFont(),
             StringUtil.split(text, '\n'));
     }
-            
     
     /**
         Creates a Group of Labels with the system font. Word-wrapping is used to confine the
@@ -356,7 +334,6 @@ public class Label extends Sprite {
             StringUtil.wordWrap(text, CoreFont.getSystemFont(), viewWidth));
     }         
     
-                                      
     /**
         Creates a Group of Labels with the system font. The newline ('\n') character can be used 
         to specify explicit line breaks.
@@ -365,7 +342,6 @@ public class Label extends Sprite {
         return createMultilineLabel(new Group(x, y), CoreFont.getSystemFont(),
             StringUtil.split(text, '\n'));
     }                                 
-                                      
     
     /**
         Creates a Group of Labels with the system font. Word-wrapping is used to confine the
@@ -377,7 +353,6 @@ public class Label extends Sprite {
             StringUtil.wordWrap(text, CoreFont.getSystemFont(), viewWidth));
     }
     
-    
     /**
         Creates a Group of Labels with the specified Font. The newline ('\n') character can be used 
         to specify explicit line breaks.
@@ -385,7 +360,6 @@ public class Label extends Sprite {
     public static Group createMultilineLabel(CoreFont font, String text, int x, int y) {
         return createMultilineLabel(new Group(x, y), font, StringUtil.split(text, '\n'));
     }
-    
     
     /**
         Creates a Group of Labels with the specified Font. Word-wrapping is used to confine the
@@ -399,7 +373,6 @@ public class Label extends Sprite {
             StringUtil.wordWrap(text, font, viewWidth));
     }
     
-    
     /**
         Creates a Group of Labels with the specified Font. The newline ('\n') character can be used 
         to specify explicit line breaks.
@@ -407,7 +380,6 @@ public class Label extends Sprite {
     public static Group createMultilineLabel(CoreFont font, String text, double x, double y) {
         return createMultilineLabel(new Group(x, y), font, StringUtil.split(text, '\n'));
     }
-    
     
     /**
         Creates a Group of Labels with the specified Font. Word-wrapping is used to confine the
@@ -421,7 +393,6 @@ public class Label extends Sprite {
             StringUtil.wordWrap(text, font, viewWidth));
     }
     
-    
     private static Group createMultilineLabel(Group group, CoreFont font, String[] lines) {
         int lineSpacing = font.getHeight() + (font.getHeight() / 8);
         for (int i = 0; i < lines.length; i++) {
@@ -430,5 +401,4 @@ public class Label extends Sprite {
         group.pack();
         return group;
     }
-    
 }
