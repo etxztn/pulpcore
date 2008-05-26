@@ -5,6 +5,9 @@
   * Fixed bug: key releases were not correct for shift, alt, ctrl when both left and right 
     versions were pressed.
   * Fixed bug: setTransparentColor() was broken on AnimatedImage
+  * Fixed bug: inverseTransformY() was broken if the scale-y and scale-x were different, and there 
+    was no rotation. This affected pixel-level intersections, sprite.getLocalY(), and 
+    sprite.contains().
   
 0.11.3 (May 4, 2008) 
   * API: Added CoreSystem.isJava16u10orNewer()
