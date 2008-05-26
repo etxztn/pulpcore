@@ -135,7 +135,7 @@ public class Transform {
             if (m00 == 0 || m11 == 0) {
                 return Integer.MAX_VALUE;
             }
-            return CoreMath.div(fy, m00);
+            return CoreMath.div(fy, m11);
         }
         else {
             return fy;
