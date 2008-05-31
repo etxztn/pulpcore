@@ -108,7 +108,7 @@ public final class AppletAppContext extends AppContext {
     }
     
     private boolean isMozillaFamily() {
-        String browserName = getAppProperty("browsername");
+        String browserName = getAppProperty("pulpcore_browser_name");
         if (browserName == null) {
             return false;
         }
@@ -247,8 +247,14 @@ public final class AppletAppContext extends AppContext {
         Component inputComponent = app;
         surface = null;
         boolean useBufferStrategy = false;
+        String useBufferStrategyParam = getAppProperty("pulpcore_use_bufferstrategy");
+        if (useBufferStrategyParam != null) {
+            useBufferStrategyParam = useBufferStrategyParam.toLowerCase();
+        }
         
         /*
+            If "pulpcore_use_bufferstrategy" is neither "true" or "false", then:
+            
             On Java 6, use BufferStrategy on all platforms.
             
             On Java 5, use BufferedImageSurface on Windows and Linux
@@ -265,7 +271,13 @@ public final class AppletAppContext extends AppContext {
             use more processor in some cases, but it's hard to judge because of the different
             arch.
         */
-        if (CoreSystem.isJava16orNewer()) {
+        if ("true".equals(useBufferStrategyParam)) {
+            useBufferStrategy = true;
+        }
+        else if ("false".equals(useBufferStrategyParam)) {
+            useBufferStrategy = false;
+        }
+        else if (CoreSystem.isJava16orNewer()) {
             useBufferStrategy = true;
         }
         else if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {

@@ -482,7 +482,7 @@ public final class AppletPlatform implements Platform {
     */
     public String getBrowserName() {
         AppletAppContext context = (AppletAppContext)getThisAppContext();
-        return context.getAppProperty("browsername");
+        return context.getAppProperty("pulpcore_browser_name");
     }
     
     /**
@@ -490,6 +490,6 @@ public final class AppletPlatform implements Platform {
     */
     public String getBrowserVersion() {
         AppletAppContext context = (AppletAppContext)getThisAppContext();
-        return context.getAppProperty("browserversion");
+        return context.getAppProperty("pulpcore_browser_version");
     }
 }

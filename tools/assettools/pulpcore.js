@@ -280,8 +280,6 @@ var pulpCoreObject = {
 		var objectParams =
 			'  <param name="code" value="' + code + '" />\n' +
 			'  <param name="archive" value="' + archive + '" />\n' +
-			
-			// For the plugin
 			'  <param name="name" value="' + name + '" />\n' +
 			'  <param name="mayscript" value="true" />\n' +
 			'  <param name="scriptable" value="true" />\n' +
@@ -289,14 +287,21 @@ var pulpCoreObject = {
 			'  <param name="boxfgcolor" value="' + fgcolor + '" />\n' +
 			'  <param name="boxmessage" value="" />\n' +
 			'  <param name="codebase_lookup" value="false" />\n' +
-			
-			// For PulpCore
-			'  <param name="browsername" value="' + pulpCoreObject.browserName + '" />\n' +
-			'  <param name="browserversion" value="' + pulpCoreObject.browserVersion + '" />\n';
+			'  <param name="pulpcore_browser_name" value="' + pulpCoreObject.browserName + '" />\n' +
+			'  <param name="pulpcore_browser_version" value="' + pulpCoreObject.browserVersion + '" />\n';
 			
 		// For Java 6u10 plugin2
 		if (pulpCoreObject.isPlugin2()) {
 			var args = pulpCoreObject.javaArguments;
+			
+			// NOTE: fastest performance of the software renderer on Windows is by
+			// disabling both D3D and BufferStrategy
+			// See http://bugs.sun.com/view_bug.do?bug_id=6652116
+			if (pulpCoreObject.osName == "Windows") {
+				args += " -Dsun.java2d.d3d=false";
+				objectParams += '  <param name="pulpcore_use_bufferstrategy" value="false" />\n';
+			}
+			
 			objectParams += 
 				'  <param name="boxborder" value="false" />\n' +
 				'  <param name="image" value="' + splash + '" />\n' +
@@ -398,7 +403,7 @@ var pulpCoreObject = {
 				'  style="width: ' + width + 'px; ' + 
 				'height: ' + height + 'px; text-align: center; ' + 
 				'display: table-cell; vertical-align: middle">\n' +
-				'  <img alt="Loading..." src="' + splash + '"\n' +
+				'  <img alt="" src="' + splash + '"\n' +
 				'  onload="pulpCoreObject.splashLoaded(this)" />\n' + 
 				'</div>\n' +
 				spacer +
