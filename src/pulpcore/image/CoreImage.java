@@ -129,7 +129,7 @@ public class CoreImage {
         return new CoreGraphics(this);
     }
     
-    /* package-private */ public final void setOpaque(boolean isOpaque) {
+    /* package-private */ final void setOpaque(boolean isOpaque) {
         this.isOpaque = isOpaque;
     }
     
