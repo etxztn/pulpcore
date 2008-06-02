@@ -46,6 +46,7 @@ import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
 import pulpcore.sprite.Label;
+import pulpcore.sprite.ScrollArea;
 import pulpcore.sprite.Slider;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
@@ -107,14 +108,13 @@ public class ConsoleScene extends Scene2D {
         
         private static final int LINE_SPACING = CoreFont.getSystemFont().getHeight() + 2;
         
-        /*
-            Use a slider as a scrollbar. Ideally a real scroll bar would look better (a thumb
-            image that changes its dimensions based on the size of the extent, and up/down arrows) 
-            but using a slider works for now.
-        */
+        //
+        //  Use a slider as a scrollbar. Ideally a real scroll bar would look better (a thumb
+        //  image that changes its dimensions based on the size of the extent, and up/down arrows) 
+        //  but using a slider works for now.
+        //
         private Slider scrollBar;
-        private Group viewport;
-        private Group contents;
+        private ScrollArea scrollArea;
         
         private String lastLine;
         
@@ -128,16 +128,13 @@ public class ConsoleScene extends Scene2D {
             scrollBar.setAnimationDuration(60, 250);
             add(scrollBar);
             
-            contents = new Group();
-            viewport = new Group(0, 0, w - scrollBar.width.get() - 2, h);
-            viewport.createBackBuffer();
-            viewport.add(contents);
-            add(viewport);
+            scrollArea = new ScrollArea(0, 0, w - scrollBar.width.getAsIntCeil() - 2, h);
+            add(scrollArea);
             
             scrollBar.value.addListener(new PropertyListener() {
                 public void propertyChange(Property p) {
                     // Set as integer to prevent text blurring
-                    contents.y.set((int)Math.round(-scrollBar.value.get() * LINE_SPACING));
+                    scrollArea.scrollY.set((int)Math.round(-scrollBar.value.get() * LINE_SPACING));
                 }
             });
             
@@ -210,10 +207,10 @@ public class ConsoleScene extends Scene2D {
                 lastLine = null;
             }
             
-            contents.removeAll();
+            scrollArea.removeAll();
             int numLines = 0;
             int y = 0;
-            int w = viewport.width.getAsInt();
+            int w = scrollArea.width.getAsInt();
             Iterator i = logLines.iterator();
             while (i.hasNext()) {
                 String[] text = StringUtil.wordWrap((String)i.next(), null, w);
@@ -223,7 +220,7 @@ public class ConsoleScene extends Scene2D {
                 }
                 for (int j = 0; j < text.length; j++) {
                     String line = StringUtil.replace(text[j], "\t", "    ");
-                    contents.add(new Label(line, 0, y));
+                    scrollArea.add(new Label(line, 0, y));
                     y += LINE_SPACING;
                     numLines++;
                 }

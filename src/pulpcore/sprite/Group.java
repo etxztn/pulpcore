@@ -49,7 +49,7 @@ import pulpcore.Stage;
 public class Group extends Sprite {
     
     /** Immuatable list of sprites. A new array is created when the list changes. */
-    private Sprite[] sprites = new Sprite[0];
+    /* package private */ Sprite[] sprites = new Sprite[0];
     /** The list of sprites at the last call to getRemovedSprites() */
     private Sprite[] previousSprites = null;
     
@@ -266,6 +266,7 @@ public class Group extends Sprite {
     
     //
     // Sprite list modifications
+    // NOTE: if adding another modication method, also add it to ScrollArea
     //
     
     /**
@@ -418,13 +419,14 @@ public class Group extends Sprite {
             int minY = Integer.MAX_VALUE;
             int maxX = Integer.MIN_VALUE;
             int maxY = Integer.MIN_VALUE;
+            Rect bounds = new Rect();
             
             for (int i = 0; i < snapshot.length; i++) {
                 Sprite sprite = snapshot[i];
                 if (sprite instanceof Group) {
                     ((Group)sprite).pack();
                 }
-                Rect bounds = sprite.getRelativeBounds();
+                sprite.getRelativeBounds(bounds);
                 minX = Math.min(minX, bounds.x);
                 maxX = Math.max(maxX, bounds.x + bounds.width);
                 minY = Math.min(minY, bounds.y);
