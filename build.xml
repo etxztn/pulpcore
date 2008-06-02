@@ -26,6 +26,7 @@
         <delete dir="${build.temp}" failonerror="false" />
         <mkdir dir="${build}" />
         <mkdir dir="${build.temp}" />
+        <mkdir dir="${build.temp}/assets" />
         <mkdir dir="${build.temp}/player" />
         <mkdir dir="${build.temp}/assettools" />
     </target>
@@ -156,9 +157,12 @@
 
     
     <target name="jar-core" depends="compile-core, ctags">
+        <taskdef resource="tasks.properties" classpath="${build}/${assettools.jar.file}" /> 
+        <pulpcore-assets srcDir="${res}/jar" destDir="${build.temp}/assets" /> 
+        
         <jar destfile="${build}/${core.jar.file}" level="9">
             <fileset dir="${build.temp}" includes="**/*.class" />
-            <fileset dir="${build}" includes="system.font.png" />
+            <fileset dir="${build.temp}/assets" includes="**/*" />
         </jar>
         
         <!-- clean up-->
@@ -255,10 +259,6 @@
             <format property="build.date" pattern="yyyy/MM/dd HH:mm:ss" />
         </tstamp>
         
-        <!-- Create the system font  -->
-        <taskdef resource="tasks.properties" classpath="${build}/${assettools.jar.file}" /> 
-        <pulpcore-assets srcDir="${res}" destDir="${build}" /> 
-        
         <antcall target="jar-core" >
             <param name="debug" value="true"/>
             <param name="core.jar.file" value="${project.debug.jar.file}" />
@@ -268,11 +268,7 @@
             <param name="debug" value="false"/>
             <param name="core.jar.file" value="${project.release.jar.file}" />
         </antcall>
-        
-        <delete>
-            <fileset dir="${build}" includes="*.font.png"/>
-        </delete>
-        
+
     </target>
     
     
