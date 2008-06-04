@@ -376,7 +376,6 @@ public final class AppletPlatform implements Platform {
                 while (attemptsLeft > 0) {
                     try {
                         clipboard.setContents(data, data);
-                        if (Build.DEBUG) CoreSystem.print("System success");
                         // Success
                         return;
                     }
@@ -390,11 +389,9 @@ public final class AppletPlatform implements Platform {
                         attemptsLeft--;
                     }
                 }
-                if (Build.DEBUG) CoreSystem.print("Access fail");
             }
             catch (SecurityException ex) {
                 // The applet doesn't have permission - ignore and try again
-                if (Build.DEBUG) CoreSystem.print("Clipboard fail");
             }
         }
         
