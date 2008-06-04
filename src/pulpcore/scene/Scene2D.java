@@ -815,25 +815,31 @@ public class Scene2D extends Scene {
     private void addDirtyRectangles(Group group, Rect parentClip, boolean parentDirty) {
         
         parentDirty |= group.isDirty();
-        // If the group itself is dirty, it could be because the value of 
-        // contentsConstrainedToBounds() changed.
-        if (!group.isDirty() && group.contentsConstrainedToBounds()) {
+        
+        // Groups only have a dirty rect if contentsConstrainedToBounds() is true
+        Rect clip = group.getDirtyRect();
+        if (clip != null) {
+            Rect clip2 = new Rect(clip);
             group.updateDirtyRect();
-            Rect clip = group.getDirtyRect();
+            clip = group.getDirtyRect();
             if (clip != null) {
+                clip2.union(clip);
                 if (parentClip == null) {
-                    parentClip = new Rect(clip);
+                    parentClip = clip2;
                 }
                 else {
-                    parentClip.intersection(clip);
+                    parentClip.intersection(clip2);
                 }
             }
+        }
+        else {
+            group.updateDirtyRect();
         }
         
         ArrayList removedSprites = group.getRemovedSprites();
         if (removedSprites != null) {
             for (int i = 0; i < removedSprites.size(); i++) {
-                notifyRemovedSprite((Sprite)removedSprites.get(i));
+                notifyRemovedSprite(parentClip, (Sprite)removedSprites.get(i));
             }
         }
         
@@ -859,7 +865,7 @@ public class Scene2D extends Scene {
         }
     }
         
-    private final void notifyRemovedSprite(Sprite sprite) {
+    private final void notifyRemovedSprite(Rect parentClip, Sprite sprite) {
         if (dirtyRectangles.isOverflowed()) {
             return;
         }
@@ -867,11 +873,11 @@ public class Scene2D extends Scene {
         if (sprite instanceof Group) {
             Group group = (Group)sprite;
             for (int i = 0; i < group.size(); i++) {
-                notifyRemovedSprite(group.get(i));
+                notifyRemovedSprite(parentClip, group.get(i));
             }
         }
         else if (sprite != null) {
-            addDirtyRectangle(null, sprite.getDirtyRect());
+            addDirtyRectangle(parentClip, sprite.getDirtyRect());
         }
     }
     

@@ -329,9 +329,11 @@ public abstract class Sprite implements PropertyListener {
     public final boolean updateDirtyRect() {
         
         boolean changed = false;
+        boolean isUnconstrainedGroup = 
+            (this instanceof Group) && !((Group)this).contentsConstrainedToBounds();
         
-        if (visible.get() == false || alpha.get() <= 0) {
-            changed = (dirtyRect != null && dirtyRect.width > 0);
+        if (visible.get() == false || alpha.get() <= 0 || isUnconstrainedGroup) {
+            changed = (getDirtyRect() != null);
             clearDirtyRect();
         }
         else {
@@ -350,13 +352,10 @@ public abstract class Sprite implements PropertyListener {
                 t.concatenate(viewTransform);
             }
             
-            // TODO: if an ancestor has a back-buffer, clip the dirty rect to the back-buffer bounds
-            
             changed |= t.getBounds(getNaturalWidth(), getNaturalHeight(), dirtyRect);
         }
         
         return changed;
-       
     }
     
     /**
