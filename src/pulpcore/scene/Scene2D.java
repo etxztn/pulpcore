@@ -457,7 +457,7 @@ public class Scene2D extends Scene {
     // Dirty Rectangles
     //
     
-    private void addDirtyRectangle(Rect r) {
+    private void addDirtyRectangle(Rect parentClip, Rect r) {
         if (r == null) {
             return;
         }
@@ -465,17 +465,17 @@ public class Scene2D extends Scene {
         subRects.clear();
         
         // Increase bounds to correct off-by-one miscalculation in some rare rotated sprites.
-        addDirtyRectangle(r.x - dirtyRectPadX, r.y - dirtyRectPadY, 
+        addDirtyRectangle(parentClip, r.x - dirtyRectPadX, r.y - dirtyRectPadY, 
             r.width + dirtyRectPadX*2, r.height + dirtyRectPadY*2, MAX_NON_DIRTY_AREA);
         
         int originalSize = subRects.size();
         for (int i = 0; i < subRects.size() && !dirtyRectangles.isOverflowed(); i++) {
             Rect r2 = subRects.get(i);
             if (i < originalSize) {
-                addDirtyRectangle(r2.x, r2.y, r2.width, r2.height, MAX_NON_DIRTY_AREA);
+                addDirtyRectangle(parentClip, r2.x, r2.y, r2.width, r2.height, MAX_NON_DIRTY_AREA);
             }
             else {
-                addDirtyRectangle(r2.x, r2.y, r2.width, r2.height, 0);
+                addDirtyRectangle(parentClip, r2.x, r2.y, r2.width, r2.height, 0);
             }
             if (subRects.isOverflowed()) {
                 // Ah, crap.
@@ -493,13 +493,18 @@ public class Scene2D extends Scene {
         //}
     }
     
-    private void addDirtyRectangle(int x, int y, int w, int h, int maxNonDirtyArea) {
+    private void addDirtyRectangle(Rect parentClip, int x, int y, int w, int h, 
+        int maxNonDirtyArea) 
+    {
         if (w <= 0 || h <= 0 || dirtyRectangles.isOverflowed()) {
             return;
         }
         
         newRect.setBounds(x, y, w, h);
         newRect.intersection(drawBounds);
+        if (parentClip != null) {
+            newRect.intersection(parentClip);
+        }
         if (newRect.width <= 0 || newRect.height <= 0) {
             return;
         }
@@ -723,7 +728,7 @@ public class Scene2D extends Scene {
         
         if (dirtyRectanglesEnabled) {
             // Add dirty rectangles
-            addDirtyRectangles(layers, needsFullRedraw);
+            addDirtyRectangles(layers, null, needsFullRedraw);
             layers.setDirty(false);
             
             // Add dirty rectangle for the custom cursor
@@ -747,10 +752,10 @@ public class Scene2D extends Scene {
                             overlay.updateDirtyRect();
                         }
                         else {
-                            addDirtyRectangle(overlay.getDirtyRect());
+                            addDirtyRectangle(null, overlay.getDirtyRect());
                             boolean boundsChanged = overlay.updateDirtyRect();
                             if (boundsChanged) {
-                                addDirtyRectangle(overlay.getDirtyRect());
+                                addDirtyRectangle(null, overlay.getDirtyRect());
                             }
                         }
                     }
@@ -807,9 +812,23 @@ public class Scene2D extends Scene {
         Recursive function to loop through all the child sprites of the 
         specified group.
     */
-    private void addDirtyRectangles(Group group, boolean parentDirty) {
+    private void addDirtyRectangles(Group group, Rect parentClip, boolean parentDirty) {
         
         parentDirty |= group.isDirty();
+        // If the group itself is dirty, it could be because the value of 
+        // contentsConstrainedToBounds() changed.
+        if (!group.isDirty() && group.contentsConstrainedToBounds()) {
+            group.updateDirtyRect();
+            Rect clip = group.getDirtyRect();
+            if (clip != null) {
+                if (parentClip == null) {
+                    parentClip = new Rect(clip);
+                }
+                else {
+                    parentClip.intersection(clip);
+                }
+            }
+        }
         
         ArrayList removedSprites = group.getRemovedSprites();
         if (removedSprites != null) {
@@ -821,17 +840,17 @@ public class Scene2D extends Scene {
         for (int i = 0; i < group.size(); i++) {
             Sprite sprite = group.get(i);
             if (sprite instanceof Group) {
-                addDirtyRectangles((Group)sprite, parentDirty);
+                addDirtyRectangles((Group)sprite, parentClip, parentDirty);
             }
             else if (parentDirty || sprite.isDirty()) {
                 if (dirtyRectangles.isOverflowed()) {
                     sprite.updateDirtyRect();
                 }
                 else {
-                    addDirtyRectangle(sprite.getDirtyRect());
+                    addDirtyRectangle(parentClip, sprite.getDirtyRect());
                     boolean boundsChanged = sprite.updateDirtyRect();
                     if (boundsChanged) {
-                        addDirtyRectangle(sprite.getDirtyRect());
+                        addDirtyRectangle(parentClip, sprite.getDirtyRect());
                     }
                 }
             }
@@ -852,7 +871,7 @@ public class Scene2D extends Scene {
             }
         }
         else if (sprite != null) {
-            addDirtyRectangle(sprite.getDirtyRect());
+            addDirtyRectangle(null, sprite.getDirtyRect());
         }
     }
     
