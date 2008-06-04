@@ -46,18 +46,20 @@ import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
 import pulpcore.sprite.Label;
-import pulpcore.sprite.ScrollArea;
-import pulpcore.sprite.Slider;
+import pulpcore.sprite.ScrollPane;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
 import pulpcore.util.StringUtil;
 
 public class ConsoleScene extends Scene2D {
     
+    private static final int LINE_SPACING = CoreFont.getSystemFont().getHeight() + 2;
+        
+    private String lastLine;
     private Button backButton;
     private Button clearButton;
     private Button copyButton;
-    private TextBox textbox;
+    private ScrollPane textbox;
     
     public void load() {
         
@@ -74,8 +76,12 @@ public class ConsoleScene extends Scene2D {
             clearButton.x.getAsInt() + clearButton.width.getAsInt() + 5, Stage.getHeight() - 5);
         copyButton.setAnchor(Sprite.SOUTH_WEST);
         
-        textbox = new TextBox(5, 5, Stage.getWidth() - 10, 
+        textbox = new ScrollPane(5, 5, Stage.getWidth() - 10, 
             Stage.getHeight() - 15 - clearButton.height.getAsInt());
+        textbox.setScrollUnitSize(LINE_SPACING);
+        textbox.setAnimationDuration(60, 250);
+        refresh();
+        textbox.scrollEnd();
         addLayer(textbox);
         
         add(clearButton);
@@ -89,6 +95,11 @@ public class ConsoleScene extends Scene2D {
     
     
     public void update(int elapsedTime) {
+        
+        if (needsRefresh()) {
+            refresh();
+        }
+            
         if (clearButton.isClicked()) {
             CoreSystem.clearLog();
         }
@@ -104,135 +115,41 @@ public class ConsoleScene extends Scene2D {
         }
     }
     
-    static class TextBox extends Group {
-        
-        private static final int LINE_SPACING = CoreFont.getSystemFont().getHeight() + 2;
-        
-        //
-        //  Use a slider as a scrollbar. Ideally a real scroll bar would look better (a thumb
-        //  image that changes its dimensions based on the size of the extent, and up/down arrows) 
-        //  but using a slider works for now.
-        //
-        private Slider scrollBar;
-        private ScrollArea scrollArea;
-        
-        private String lastLine;
-        
-        public TextBox(int x, int y, int w, int h) {
-            super(x, y, w, h);
-            
-            scrollBar = createScrollBar(w - 1, 0, 16, h);
-            scrollBar.setAnchor(Sprite.NORTH_EAST);
-            scrollBar.value.set(0);
-            scrollBar.setRange(0, 10, h / LINE_SPACING);
-            scrollBar.setAnimationDuration(60, 250);
-            add(scrollBar);
-            
-            scrollArea = new ScrollArea(0, 0, w - scrollBar.width.getAsIntCeil() - 2, h);
-            add(scrollArea);
-            
-            scrollBar.value.addListener(new PropertyListener() {
-                public void propertyChange(Property p) {
-                    // Set as integer to prevent text blurring
-                    scrollArea.scrollY.set((int)Math.round(-scrollBar.value.get() * LINE_SPACING));
-                }
-            });
-            
-            refresh();
-            scrollBar.scrollEnd();
+    private boolean needsRefresh() {
+        LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
+        String line = null;
+        if (logLines.size() > 0) {
+            line = (String)logLines.getLast();
+        }
+        return (lastLine != line);
+    }
+    
+    private void refresh() {
+        LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
+        if (logLines.size() > 0) {
+            lastLine = (String)logLines.getLast();
+        }
+        else {
+            lastLine = null;
         }
         
-        private Slider createScrollBar(int x, int y, int w, int h) {
-            CoreImage background = new CoreImage(w, h);
-            CoreGraphics g = background.createGraphics();
-            g.setColor(Colors.gray(224));
-            g.fill();
-            g.setColor(Colors.gray(192));
-            g.drawRect(0, 0, w, h);
+        textbox.removeAll();
+        int numLines = 0;
+        int y = 0;
+        // Off by one error in wordWrap() ?
+        int w = textbox.width.getAsInt() - ScrollPane.SCROLL_BAR_WIDTH - 1;
+        Iterator i = logLines.iterator();
+        while (i.hasNext()) {
+            String[] text = StringUtil.wordWrap((String)i.next(), null, w);
             
-            CoreImage thumb = new CoreImage(w, Math.max(w, h/5));
-            g = thumb.createGraphics();
-            g.setColor(Colors.gray(64));
-            g.fill();
-            
-            Slider slider = new Slider(background, thumb, x, y);
-            slider.setOrientation(Slider.VERTICAL);
-            return slider;
-        }
-        
-        public void update(int elapsedTime) {
-            super.update(elapsedTime);
-            if (needsRefresh()) {
-                refresh();
+            if (text.length == 0) {
+                text = new String[] { " " };
             }
-            
-            if (Input.isPressed(Input.KEY_HOME)) {
-                scrollBar.scrollHome();
-            }
-            if (Input.isPressed(Input.KEY_END)) {
-                scrollBar.scrollEnd();
-            }
-            if (Input.isTyped(Input.KEY_UP)) {
-                scrollBar.scrollUp();
-            }
-            if (Input.isTyped(Input.KEY_DOWN)) {
-                scrollBar.scrollDown();
-            }
-            if (Input.isTyped(Input.KEY_PAGE_UP)) {
-                scrollBar.scrollPageUp();
-            }
-            if (Input.isTyped(Input.KEY_PAGE_DOWN)) {
-                scrollBar.scrollPageDown();
-            }
-            if (isMouseWheelRotated()) {
-                scrollBar.scroll(Input.getMouseWheelRotation() * 3);
-            }            
-        }
-        
-        private boolean needsRefresh() {
-            LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
-            String line = null;
-            if (logLines.size() > 0) {
-                line = (String)logLines.getLast();
-            }
-            return (lastLine != line);
-        }
-        
-        private void refresh() {
-            LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
-            if (logLines.size() > 0) {
-                lastLine = (String)logLines.getLast();
-            }
-            else {
-                lastLine = null;
-            }
-            
-            scrollArea.removeAll();
-            int numLines = 0;
-            int y = 0;
-            int w = scrollArea.width.getAsInt();
-            Iterator i = logLines.iterator();
-            while (i.hasNext()) {
-                String[] text = StringUtil.wordWrap((String)i.next(), null, w);
-                
-                if (text.length == 0) {
-                    text = new String[] { " " };
-                }
-                for (int j = 0; j < text.length; j++) {
-                    String line = StringUtil.replace(text[j], "\t", "    ");
-                    scrollArea.add(new Label(line, 0, y));
-                    y += LINE_SPACING;
-                    numLines++;
-                }
-            }
-            
-            scrollBar.setRange(0, numLines, scrollBar.getExtent());
-            if (scrollBar.getExtent() >= numLines) {
-                scrollBar.visible.set(false);
-                scrollBar.value.set(0);
-            }
-            else {
-                scrollBar.visible.set(true);
+            for (int j = 0; j < text.length; j++) {
+                String line = StringUtil.replace(text[j], "\t", "    ");
+                textbox.add(new Label(line, 0, y));
+                y += LINE_SPACING;
+                numLines++;
             }
         }
     }

@@ -148,6 +148,19 @@ public class Group extends Sprite {
     }
     
     /**
+        Returns {@code true} if sprites inside this Group are not visible outside the 
+        natural bounds of this Group. 
+        
+        The default implementation returns {@code true} if the Group has a back 
+        buffer and the back buffer doesn't cover the entire stage.
+        @see #getNaturalWidth()
+        @see #getNaturalHeight()
+    */
+    public boolean contentsConstrainedToBounds() {
+        return (hasBackBuffer() && !backBufferCoversStage);
+    }
+    
+    /**
         Finds the top-most sprite at the specified location, or null if none is found.
         All sprites in this Group and any child Groups are searched until a sprite is found.
         This method never returns a Group.
@@ -156,10 +169,10 @@ public class Group extends Sprite {
         @return The top-most sprite at the specified location, or null if none is found.
     */
     public Sprite pick(int viewX, int viewY) {
-        if (hasBackBuffer() && !backBufferCoversStage) {
-            if (viewX < 0 || viewY < 0 || 
-                viewX >= backBuffer.getWidth() || viewY >= backBuffer.getHeight()) 
-            {
+        if (contentsConstrainedToBounds()) {
+            int w = CoreMath.toIntCeil(getNaturalWidth());
+            int h = CoreMath.toIntCeil(getNaturalHeight());
+            if (viewX < 0 || viewY < 0 || viewX >= w || viewY >= h) {
                 return null;
             }
         }
@@ -195,10 +208,10 @@ public class Group extends Sprite {
         if none is found.
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
-        if (hasBackBuffer() && !backBufferCoversStage) {
-            if (viewX < 0 || viewY < 0 || 
-                viewX >= backBuffer.getWidth() || viewY >= backBuffer.getHeight()) 
-            {
+        if (contentsConstrainedToBounds()) {
+            int w = CoreMath.toIntCeil(getNaturalWidth());
+            int h = CoreMath.toIntCeil(getNaturalHeight());
+            if (viewX < 0 || viewY < 0 || viewX >= w || viewY >= h) {
                 return null;
             }
         }

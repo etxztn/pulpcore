@@ -71,8 +71,10 @@ public class AnimatedImage extends CoreImage {
         
         setSequence(image.frameSequence, image.frameDuration, image.loop);
         differentHotSpotPerFrame = image.differentHotSpotPerFrame;
-        setFrame(0);
-        playing = true;
+        animTime = image.animTime;
+        currentFrame = image.currentFrame;
+        lastFrame = image.lastFrame;
+        playing = image.playing;
     }
     
     /**
@@ -449,34 +451,34 @@ public class AnimatedImage extends CoreImage {
     //
     
     public CoreImage setTransparentColor(int rgbColor) {
-        AnimatedImage newImage = new AnimatedImage(this);
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].setTransparentColor(rgbColor);
+            newFrames[i] = frames[i].setTransparentColor(rgbColor);
         }
-        return newImage;
+        return new AnimatedImage(this, newFrames);
     }
     
     public CoreImage tint(int rgbColor) {
-        AnimatedImage newImage = new AnimatedImage(this);
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].tint(rgbColor);
+            newFrames[i] = frames[i].tint(rgbColor);
         }
-        return newImage;
+        return new AnimatedImage(this, newFrames);   
     }
     
     public CoreImage background(int argbColor) {
-        AnimatedImage newImage = new AnimatedImage(this);
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].background(argbColor);
+            newFrames[i] = frames[i].background(argbColor);
         }
-        return newImage;
+        return new AnimatedImage(this, newFrames);
     }
     
     public CoreImage fade(int alpha) {
-        AnimatedImage newImage = new AnimatedImage(this);
+        CoreImage[] newFrames = new CoreImage[frames.length];
         for (int i = 0; i < frames.length; i++) {
-            newImage.frames[i] = frames[i].fade(alpha);
+            newFrames[i] = frames[i].fade(alpha);
         }
-        return newImage;
+        return new AnimatedImage(this, newFrames);
     }
 }

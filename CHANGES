@@ -1,6 +1,6 @@
 0.11.4 (In SVN)
   * API: Added Label.setFont()
-  * API: Added ScrollArea. TODO: ScrollPane (ScrollArea + Slider)
+  * API: Added ScrollArea and (a very simple) ScrollPane.
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
     "true", "false" or "default" (PulpCore chooses the best). 
   * Fixed bug: custom splash gifs weren't working properly.
