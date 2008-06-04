@@ -44,6 +44,24 @@ public final class StringUtil {
     // Prevent instantiation
     private StringUtil() { }
     
+    public static String rtrim(String s) {
+        int off = s.length() - 1;
+        while (off >= 0 && s.charAt(off) <= ' ') {
+            off--;
+        }
+            
+        return off < s.length() - 1 ? s.substring(0, off+1) : s;
+    }
+    
+    public static String ltrim(String s) {
+        int off = 0;
+        while (off < s.length() && s.charAt(off) <= ' ') {
+            off++;
+        }
+            
+        return off > 0 ? s.substring(off) : s;
+    }
+    
     /**
         Calls {@code StringUtil.format(message, new Object[] { arg });}
     */
@@ -217,7 +235,6 @@ public final class StringUtil {
         return buffer.toString();
     }
     
-    
     /**
         Replace all instances of target in string str with the replacement string.
     */
@@ -231,7 +248,6 @@ public final class StringUtil {
             str = str.substring(0, index) + replacement + str.substring(index + target.length());
         }
     }
-    
     
     /**
         Word-wraps a line of text to multiple lines. Newline characters ('\n')
@@ -254,7 +270,7 @@ public final class StringUtil {
                 lastGoodIndex = i;
             }
             else if (ch == '\n') {
-                splitText.add(text.substring(startIndex, i));
+                splitText.add(rtrim(text.substring(startIndex, i)));
                 startIndex = i + 1;
                 lastGoodIndex = -1;
             }
@@ -270,7 +286,7 @@ public final class StringUtil {
                 else { // if (startIndex == i)
                     // this 1 character doesn't fit on the line... add it anyway
                 }
-                splitText.add(text.substring(startIndex, i + 1));
+                splitText.add(rtrim(text.substring(startIndex, i + 1)));
                 startIndex = i + 1;
                 lastGoodIndex = -1;
             }
@@ -278,7 +294,7 @@ public final class StringUtil {
         
         // add remaining chars
         if (startIndex < text.length()) {
-            splitText.add(text.substring(startIndex));
+            splitText.add(rtrim(text.substring(startIndex)));
         }
         
         // convert to String array
@@ -286,7 +302,6 @@ public final class StringUtil {
         splitText.toArray(retVal);
         return retVal;
     }
-    
     
     /**
         Splits a string into an array of strings seperated by the specified delimiter.
@@ -319,7 +334,6 @@ public final class StringUtil {
         }
         return results;
     }
-    
     
     /**
         Safe equality check for two strings. Returns true if two strings are null or if
