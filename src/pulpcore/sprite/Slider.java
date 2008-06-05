@@ -161,9 +161,10 @@ public class Slider extends Sprite {
                 dragMode = DRAG_NONE;
             }
             else {
-                if (Input.isMouseMoving()) {
-                    dragGutterDir = 0;
-                }
+                // This can cause craziness when the extent is near the size of (max-min)
+                //if (Input.isMouseMoving()) {
+                //    dragGutterDir = 0;
+                //}
                 dragGutterDelay -= elapsedTime;
                 if (dragGutterDelay <= 0) {
                     dragGutterDelay = DRAG_GUTTER_DELAY;
@@ -449,6 +450,14 @@ public class Slider extends Sprite {
             }
             positionKnob();
         }
+    }
+    
+    /**
+        Gets the orientation of this Slider.
+        @return either {@link #HORIZONTAL} or {@link #VERTICAL}.
+    */
+    public int getOrientation() {
+        return isHorizontal() ? HORIZONTAL : VERTICAL; 
     }
     
     /**

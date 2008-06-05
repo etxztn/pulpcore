@@ -43,14 +43,15 @@ import pulpcore.math.CoreMath;
 
 /**
     A ScrollPane is a {@link ScrollArea} with scroll bars that appear as needed. 
-    The scroll bars' appearance is limited (no arrow buttons, no dynamic thumb size) and may
-    change in future versions.
+    Note, the scroll bars' appearance is currently limited (no dynamic thumb size).
 */
 public class ScrollPane extends Group {
     
     public static final int SCROLL_BAR_WIDTH = 16;
-    private static final int GUTTER_COLOR = Colors.gray(224);
-    private static final int THUMB_COLOR = Colors.gray(128);
+    private static final int COLOR1 = Colors.gray(200);
+    private static final int COLOR2 = Colors.gray(0x48);
+    private static AnimatedImage GLYPHS1 = null;
+    private static AnimatedImage GLYPHS2 = null;
     
     /**
         The scroll x location. Identical to {@code getContentPane().x}.
@@ -73,8 +74,8 @@ public class ScrollPane extends Group {
         image that changes its dimensions based on the size of the extent, and up/down arrows) 
         but using a slider works for now.
     */
-    private Slider verticalScrollBar;
-    private Slider horizontalScrollBar;
+    private ScrollBar verticalScrollBar;
+    private ScrollBar horizontalScrollBar;
     private final ScrollArea scrollArea;
     private boolean hasFocus;
     
@@ -132,19 +133,11 @@ public class ScrollPane extends Group {
                 if (verticalScrollBar != null) {
                     super.remove(verticalScrollBar);
                 }
-                verticalScrollBar = createVerticalScrollBar(innerHeight);
-                verticalScrollBar.x.bindTo(width);
-                verticalScrollBar.y.set(0);
-                verticalScrollBar.height.set(innerHeight);
-                verticalScrollBar.setAnchor(Sprite.NORTH_EAST);
-                verticalScrollBar.setRange(0, h, innerHeight);
-                verticalScrollBar.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
-                
-                verticalScrollBar.value.bindTo(new NegativeFunction(scrollArea.scrollY));
-                scrollArea.scrollY.bindTo(new NegativeFunction(verticalScrollBar.value));
+                verticalScrollBar = new ScrollBar(createUpButton(), createDownButton(),
+                    Slider.VERTICAL, innerHeight);
                 super.add(verticalScrollBar);
             }
-            verticalScrollBar.setRange(0, h, innerHeight);
+            verticalScrollBar.slider.setRange(0, h, innerHeight);
         }
         else if (verticalScrollBar != null) {
             super.remove(verticalScrollBar);
@@ -159,19 +152,11 @@ public class ScrollPane extends Group {
                 if (horizontalScrollBar != null) {
                     super.remove(horizontalScrollBar);
                 }
-                horizontalScrollBar = createHorizontalScrollBar(innerWidth);
-                horizontalScrollBar.x.set(0);
-                horizontalScrollBar.y.bindTo(height);
-                horizontalScrollBar.width.set(innerWidth);
-                horizontalScrollBar.setAnchor(Sprite.SOUTH_WEST);
-                horizontalScrollBar.setRange(0, w, innerWidth);
-                horizontalScrollBar.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
-                
-                horizontalScrollBar.value.bindTo(new NegativeFunction(scrollArea.scrollX));
-                scrollArea.scrollX.bindTo(new NegativeFunction(horizontalScrollBar.value));
+                horizontalScrollBar = new ScrollBar(createLeftButton(), createRightButton(),
+                    Slider.HORIZONTAL, innerWidth);
                 super.add(horizontalScrollBar);
             }
-            horizontalScrollBar.setRange(0, w, innerWidth);
+            horizontalScrollBar.slider.setRange(0, w, innerWidth);
         }
         else if (horizontalScrollBar != null) {
             super.remove(horizontalScrollBar);
@@ -226,17 +211,147 @@ public class ScrollPane extends Group {
         }
     }
     
+    private class ScrollBar extends Group {
+        
+        public final Button up;
+        public final Button down;
+        public final Slider slider;
+        private final Fixed bindValue;
+        private boolean rebindOnNext;
+        
+        public ScrollBar(Button up, Button down, int orientation, int length) {
+            this.up = up;
+            this.down = down;
+            
+            double x = 0;
+            double y = 0;
+            
+            // Create slider
+            if (orientation == Slider.VERTICAL) {
+                int l = length;
+                if (up != null) {
+                    l -= up.height.getAsInt();
+                }
+                if (down != null) {
+                    l -= down.height.getAsInt();
+                }
+                slider = createVerticalScrollBar(l);
+                slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
+                this.width.set(slider.width.get());
+                this.height.set(length);
+            }
+            else {
+                int l = length;
+                if (up != null) {
+                    l -= up.width.getAsInt();
+                }
+                if (down != null) {
+                    l -= down.height.getAsInt();
+                }
+                slider = createHorizontalScrollBar(l);
+                this.width.set(length);
+                this.height.set(slider.height.get());
+            }
+            add(slider);
+            
+            // Up arrow
+            if (up != null) {
+                up.setLocation(x, y);
+                add(up);
+                if (orientation == Slider.VERTICAL) {
+                    y += up.height.get();
+                }
+                else {
+                    x += up.width.get();
+                }
+            }
+            
+            // Position slider
+            slider.setLocation(x, y);
+            if (orientation == Slider.VERTICAL) {
+                y += slider.height.get();
+            }
+            else {
+                x += slider.width.get();
+            }
+            
+            // Down arrow
+            if (down != null) {
+                down.setLocation(x, y);
+                add(down);
+            }
+            
+            if (orientation == Slider.VERTICAL) {
+                setAnchor(Sprite.NORTH_EAST);
+                this.x.bindTo(ScrollPane.this.width);
+                this.y.set(0);
+                slider.setRange(0, getContentHeight(), length);
+                bindValue = scrollArea.scrollY;
+            }
+            else {
+                setAnchor(Sprite.SOUTH_WEST);
+                this.x.set(0);
+                this.y.bindTo(ScrollPane.this.height);
+                slider.setRange(0, getContentWidth(), length);
+                bindValue = scrollArea.scrollX;
+            }
+            rebind();
+        }
+        
+        private void rebind() {
+            slider.value.bindTo(new NegativeFunction(bindValue));
+            bindValue.bindTo(new NegativeFunction(slider.value));
+        }
+        
+        public void update(int elapsedTime) {
+            super.update(elapsedTime);
+            
+            if (up != null && up.isMouseDown()) {
+                slider.scroll(-scrollUnitSize);
+            }
+            if (down != null && down.isMouseDown()) {
+                slider.scroll(scrollUnitSize);
+            }
+            
+            // Fix bindings
+            if (!slider.isAdjusting() && (slider.value.getBehavior() == null || 
+                bindValue.getBehavior() == null))
+            {
+                if (rebindOnNext) {
+                    rebind();
+                }
+                else {
+                    rebindOnNext = true;
+                }
+            }
+            else {
+                rebindOnNext = false;
+            }
+        }
+    }
+    
+    private void loadGlyphImages() {
+        if (GLYPHS1 == null) {
+            GLYPHS1 = (AnimatedImage)CoreImage.load("glyphs.png").tint(COLOR1);
+        }
+        if (GLYPHS2 == null) {
+            GLYPHS2 = (AnimatedImage)CoreImage.load("glyphs.png").tint(COLOR2);
+        }
+    }
+    
     /**
         Creates a vertical scroll bar with the default appearance. 
         <p>Subclasses may override this method to provide a custom look and feel. 
         The location, range, and value of the Slider is set automatically.
     */
     protected Slider createVerticalScrollBar(int height) {
+        loadGlyphImages();
+        
         int w = SCROLL_BAR_WIDTH;
         int h = height;
         Slider slider = new Slider(
-            createVerticalBarImage(GUTTER_COLOR, h),
-            createVerticalBarImage(THUMB_COLOR, Math.max(w, h/5)), 0, 0);
+            createVerticalBarImage(GLYPHS1, COLOR1, h),
+            createVerticalBarImage(GLYPHS2, COLOR2, Math.max(w, h/5)), 0, 0);
         slider.setOrientation(Slider.VERTICAL);
         return slider;
     }
@@ -247,18 +362,72 @@ public class ScrollPane extends Group {
         The location, range, and value of the Slider is set automatically.
     */
     protected Slider createHorizontalScrollBar(int width) {
+        loadGlyphImages();
+        
         int w = width;
         int h = SCROLL_BAR_WIDTH;
         Slider slider = new Slider(
-            createHorizontalBarImage(GUTTER_COLOR, width),
-            createHorizontalBarImage(THUMB_COLOR, Math.max(h, w/5)), 0, 0);
+            createHorizontalBarImage(GLYPHS1, COLOR1, width),
+            createHorizontalBarImage(GLYPHS2, COLOR2, Math.max(h, w/5)), 0, 0);
         slider.setOrientation(Slider.HORIZONTAL);
         return slider;
     }
     
-    private CoreImage createVerticalBarImage(int color, int height) {
-        AnimatedImage glpyhs = (AnimatedImage)(CoreImage.load("glyphs.png").tint(color));
+    /**
+        Creates an up arrow button for the vertical scroll bar, using the default appearance. 
+        <p>Subclasses may override this method to provide a custom look and feel, and may return
+        null to allow no up button. The location of the Button is set automatically.
+    */
+    protected Button createUpButton() {
+        loadGlyphImages();
+        return createButton(0);
+    }
+    
+    /**
+        Creates a down arrow button for the vertical scroll bar, using the default appearance. 
+        <p>Subclasses may override this method to provide a custom look and feel, and may return
+        null to allow no down button. The location of the Button is set automatically.
+    */
+    protected Button createDownButton() {
+        loadGlyphImages();
+        return createButton(2);
+    }
+    
+    /**
+        Creates a left arrow button for the horizontal scroll bar, using the default appearance. 
+        <p>Subclasses may override this method to provide a custom look and feel, and may return
+        null to allow no left button. The location of the Button is set automatically.
+    */
+    protected Button createLeftButton() {
+        loadGlyphImages();
+        return createButton(3);
+    }
+    
+    /**
+        Creates a right arrow button for the vertical scroll bar, using the default appearance. 
+        <p>Subclasses may override this method to provide a custom look and feel, and may return
+        null to allow no right button. The location of the Button is set automatically.
+    */
+    protected Button createRightButton() {
+        loadGlyphImages();
+        return createButton(1);
+    }
+    
+    private Button createButton(int frame) {
+        CoreImage arrow = GLYPHS2.getImage(frame);
+        CoreImage dot = GLYPHS1.getImage(4);
+        CoreImage combo = new CoreImage(16, 16, false);
+        CoreGraphics g = combo.createGraphics();
+        g.drawImage(dot, 0, 0);
+        g.drawImage(arrow, 0, 0);
         
+        Button button = new Button(new CoreImage[] { arrow, arrow, combo }, 0, 0);
+        button.setCursor(Input.CURSOR_DEFAULT);
+        button.setPixelLevelChecks(false);
+        return button;
+    }
+    
+    private CoreImage createVerticalBarImage(AnimatedImage glpyhs, int color, int height) {
         CoreImage bar = new CoreImage(16, height, false);
         CoreGraphics g = bar.createGraphics();
         g.drawImage(glpyhs.getImage(4).crop(0, 0, 16, 8), 0, 0);
@@ -269,9 +438,7 @@ public class ScrollPane extends Group {
         return bar;
     }
     
-    private CoreImage createHorizontalBarImage(int color, int width) {
-        AnimatedImage glpyhs = (AnimatedImage)(CoreImage.load("glyphs.png").tint(color));
-        
+    private CoreImage createHorizontalBarImage(AnimatedImage glpyhs, int color, int width) {
         CoreImage bar = new CoreImage(width, 16, false);
         CoreGraphics g = bar.createGraphics();
         g.drawImage(glpyhs.getImage(4).crop(0, 0, 8, 16), 0, 0);
@@ -332,10 +499,10 @@ public class ScrollPane extends Group {
         this.unitDuration = unitDuration;
         this.pageDuration = pageDuration;
         if (verticalScrollBar != null) {
-            verticalScrollBar.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
+            verticalScrollBar.slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
         }
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
+            horizontalScrollBar.slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
         }
     }
     
@@ -345,10 +512,10 @@ public class ScrollPane extends Group {
     public void setScrollUnitSize(int scrollUnitSize) {
         this.scrollUnitSize = scrollUnitSize;
         if (verticalScrollBar != null) {
-            verticalScrollBar.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
+            verticalScrollBar.slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
         }
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
+            horizontalScrollBar.slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
         }
     }
     
@@ -367,7 +534,7 @@ public class ScrollPane extends Group {
     public void scrollVertical(int units) {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scroll(units * scrollUnitSize);
+            verticalScrollBar.slider.scroll(units * scrollUnitSize);
         }
     }
     
@@ -379,7 +546,7 @@ public class ScrollPane extends Group {
     public void scrollHorizontal(int units) {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scroll(units * scrollUnitSize);
+            horizontalScrollBar.slider.scroll(units * scrollUnitSize);
         }
     }
     
@@ -389,7 +556,7 @@ public class ScrollPane extends Group {
     public void scrollHome() {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scrollHome();
+            verticalScrollBar.slider.scrollHome();
         }
     }
     
@@ -399,7 +566,7 @@ public class ScrollPane extends Group {
     public void scrollEnd() {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scrollEnd();
+            verticalScrollBar.slider.scrollEnd();
         }
     }
     
@@ -409,7 +576,7 @@ public class ScrollPane extends Group {
     public void scrollLeftSide() {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scrollHome();
+            horizontalScrollBar.slider.scrollHome();
         }
     }
     
@@ -419,7 +586,7 @@ public class ScrollPane extends Group {
     public void scrollRightSide() {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scrollEnd();
+            horizontalScrollBar.slider.scrollEnd();
         }
     }
     
@@ -431,7 +598,7 @@ public class ScrollPane extends Group {
     public void scrollUp() {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scroll(-scrollUnitSize);
+            verticalScrollBar.slider.scroll(-scrollUnitSize);
         }
     }
     
@@ -443,7 +610,7 @@ public class ScrollPane extends Group {
     public void scrollDown() {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scroll(scrollUnitSize);
+            verticalScrollBar.slider.scroll(scrollUnitSize);
         }
     }
     
@@ -455,7 +622,7 @@ public class ScrollPane extends Group {
     public void scrollLeft() {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scroll(-scrollUnitSize);
+            horizontalScrollBar.slider.scroll(-scrollUnitSize);
         }
     }
     
@@ -467,7 +634,7 @@ public class ScrollPane extends Group {
     public void scrollRight() {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scroll(scrollUnitSize);
+            horizontalScrollBar.slider.scroll(scrollUnitSize);
         }
     }
     
@@ -478,7 +645,7 @@ public class ScrollPane extends Group {
     public void scrollPageUp() {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scrollPageUp();
+            verticalScrollBar.slider.scrollPageUp();
         }
     }
     
@@ -489,7 +656,7 @@ public class ScrollPane extends Group {
     public void scrollPageDown() {
         updateScrollBars();
         if (verticalScrollBar != null) {
-            verticalScrollBar.scrollPageDown();
+            verticalScrollBar.slider.scrollPageDown();
         }
     }
     
@@ -500,7 +667,7 @@ public class ScrollPane extends Group {
     public void scrollPageLeft() {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scrollPageUp();
+            horizontalScrollBar.slider.scrollPageUp();
         }
     }
     
@@ -511,7 +678,7 @@ public class ScrollPane extends Group {
     public void scrollPageRight() {
         updateScrollBars();
         if (horizontalScrollBar != null) {
-            horizontalScrollBar.scrollPageDown();
+            horizontalScrollBar.slider.scrollPageDown();
         }
     }
     
