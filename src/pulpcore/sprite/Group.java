@@ -156,7 +156,7 @@ public class Group extends Sprite {
         @see #getNaturalWidth()
         @see #getNaturalHeight()
     */
-    public boolean contentsConstrainedToBounds() {
+    public boolean isOverflowClipped() {
         return (hasBackBuffer() && !backBufferCoversStage);
     }
     
@@ -169,7 +169,7 @@ public class Group extends Sprite {
         @return The top-most sprite at the specified location, or null if none is found.
     */
     public Sprite pick(int viewX, int viewY) {
-        if (contentsConstrainedToBounds()) {
+        if (isOverflowClipped()) {
             int w = CoreMath.toIntCeil(getNaturalWidth());
             int h = CoreMath.toIntCeil(getNaturalHeight());
             if (viewX < 0 || viewY < 0 || viewX >= w || viewY >= h) {
@@ -208,7 +208,7 @@ public class Group extends Sprite {
         if none is found.
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
-        if (contentsConstrainedToBounds()) {
+        if (isOverflowClipped()) {
             int w = CoreMath.toIntCeil(getNaturalWidth());
             int h = CoreMath.toIntCeil(getNaturalHeight());
             if (viewX < 0 || viewY < 0 || viewX >= w || viewY >= h) {

@@ -330,7 +330,7 @@ public abstract class Sprite implements PropertyListener {
         
         boolean changed = false;
         boolean isUnconstrainedGroup = 
-            (this instanceof Group) && !((Group)this).contentsConstrainedToBounds();
+            (this instanceof Group) && !((Group)this).isOverflowClipped();
         
         if (visible.get() == false || alpha.get() <= 0 || isUnconstrainedGroup) {
             changed = (getDirtyRect() != null);

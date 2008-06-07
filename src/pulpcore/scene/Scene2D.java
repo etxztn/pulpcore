@@ -728,7 +728,7 @@ public class Scene2D extends Scene {
         
         if (dirtyRectanglesEnabled) {
             // Add dirty rectangles
-            addDirtyRectangles(layers, null, needsFullRedraw);
+            addDirtyRectangles(layers, null, null, needsFullRedraw);
             layers.setDirty(false);
             
             // Add dirty rectangle for the custom cursor
@@ -812,48 +812,55 @@ public class Scene2D extends Scene {
         Recursive function to loop through all the child sprites of the 
         specified group.
     */
-    private void addDirtyRectangles(Group group, Rect parentClip, boolean parentDirty) {
-        
+    private void addDirtyRectangles(Group group, Rect oldParentClip, Rect parentClip, 
+        boolean parentDirty)
+    {
         parentDirty |= group.isDirty();
         
-        // Groups only have a dirty rect if contentsConstrainedToBounds() is true
+        // Update the Group dirty rect.
+        // Groups only have a dirty rect if isOverflowClipped() is true
         Rect clip = group.getDirtyRect();
         if (clip != null) {
-            Rect clip2 = new Rect(clip);
-            group.updateDirtyRect();
-            clip = group.getDirtyRect();
-            if (clip != null) {
-                clip2.union(clip);
-                if (parentClip == null) {
-                    parentClip = clip2;
-                }
-                else {
-                    parentClip.intersection(clip2);
-                }
+            if (oldParentClip == null) {
+                oldParentClip = new Rect(clip);
+            }
+            else {
+                oldParentClip = new Rect(oldParentClip);
+                oldParentClip.intersection(clip);
             }
         }
-        else {
-            group.updateDirtyRect();
+        group.updateDirtyRect();
+        clip = group.getDirtyRect();
+        if (clip != null) {
+            if (parentClip == null) {
+                parentClip = new Rect(clip);
+            }
+            else {
+                parentClip = new Rect(parentClip);
+                parentClip.intersection(clip);
+            }
         }
         
+        // Add dirty rects for removed sprites
         ArrayList removedSprites = group.getRemovedSprites();
         if (removedSprites != null) {
             for (int i = 0; i < removedSprites.size(); i++) {
-                notifyRemovedSprite(parentClip, (Sprite)removedSprites.get(i));
+                notifyRemovedSprite(oldParentClip, (Sprite)removedSprites.get(i));
             }
         }
         
+        // Add dirty rects for the sprites
         for (int i = 0; i < group.size(); i++) {
             Sprite sprite = group.get(i);
             if (sprite instanceof Group) {
-                addDirtyRectangles((Group)sprite, parentClip, parentDirty);
+                addDirtyRectangles((Group)sprite, oldParentClip, parentClip, parentDirty);
             }
             else if (parentDirty || sprite.isDirty()) {
                 if (dirtyRectangles.isOverflowed()) {
                     sprite.updateDirtyRect();
                 }
                 else {
-                    addDirtyRectangle(parentClip, sprite.getDirtyRect());
+                    addDirtyRectangle(oldParentClip, sprite.getDirtyRect());
                     boolean boundsChanged = sprite.updateDirtyRect();
                     if (boundsChanged) {
                         addDirtyRectangle(parentClip, sprite.getDirtyRect());

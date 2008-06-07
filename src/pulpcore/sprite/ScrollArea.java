@@ -94,7 +94,7 @@ public class ScrollArea extends Group {
     /**
         Returns {@code true}.
     */
-    public boolean contentsConstrainedToBounds() {
+    public boolean isOverflowClipped() {
         return true;
     }
     
