@@ -38,10 +38,10 @@ import pulpcore.math.Transform;
 import pulpcore.math.Tuple2i;
 
 /**
-    A {@code ScrollArea} is a {@code Group} whose contents can scroll, and the contents outside the 
+    A {@code Viewport} is a {@code Group} whose contents can scroll, and the contents outside the 
     bounds of the {@code Group} are not visible.
 */
-public class ScrollArea extends Group {
+public class Viewport extends Group {
     
     /**
         The scroll x location. Identical to {@code getContentPane().x}.
@@ -61,7 +61,7 @@ public class ScrollArea extends Group {
     
     private final Group contents;
     
-    public ScrollArea(int x, int y, int w, int h) {
+    public Viewport(int x, int y, int w, int h) {
         super(x, y, w, h);
         contents = new Group();
         scrollX = getContentPane().x;
@@ -99,31 +99,29 @@ public class ScrollArea extends Group {
     }
     
     private void calcContentDimension() {
-        Tuple2i contentDimension = new Tuple2i(0, 0);
-        getMaxLocation(contents, contentDimension);
+        Tuple2i contentDimension = getMaxLocation(contents);
         contents.width.set(contentDimension.x);
         contents.height.set(contentDimension.y);
     }
     
-    private static void getMaxLocation(Group group, Tuple2i p) {
-        
-        Sprite[] snapshot = group.sprites;
-        
-        if (snapshot.length > 0) {
-            Rect bounds = new Rect();
-            
-            for (int i = 0; i < snapshot.length; i++) {
-                Sprite sprite = snapshot[i];
-                if (sprite instanceof Group) {
-                    getMaxLocation((Group)sprite, p);
-                }
-                else {
-                    sprite.getRelativeBounds(bounds);
-                    p.x = Math.max(p.x, bounds.x + bounds.width);
-                    p.y = Math.max(p.y, bounds.y + bounds.height);
-                }
+    private static Tuple2i getMaxLocation(Group group) {
+        Tuple2i p = new Tuple2i(0, 0);
+        Rect bounds = new Rect();
+        for (int i = 0; i < group.size(); i++) {
+            Sprite sprite = group.get(i);
+            if (sprite instanceof Group) {
+                Tuple2i subP = getMaxLocation((Group)sprite);
+                Transform transform = new Transform();
+                sprite.updateTransform(null, transform);
+                transform.getBounds(subP.x, subP.y, bounds);
             }
+            else if (sprite != null) {
+                sprite.getRelativeBounds(bounds);
+            }
+            p.x = Math.max(p.x, bounds.x + bounds.width);
+            p.y = Math.max(p.y, bounds.y + bounds.height);
         }
+        return p;
     }
     
     public void update(int elapsedTime) {

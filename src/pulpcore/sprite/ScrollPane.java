@@ -42,12 +42,32 @@ import pulpcore.Input;
 import pulpcore.math.CoreMath;
 
 /**
-    A ScrollPane is a {@link ScrollArea} with scroll bars that appear as needed. 
+    A ScrollPane is a {@link Viewport} with scroll bars that appear as needed. 
     Note, the scroll bars' appearance is currently limited (no dynamic thumb size).
+    <p>
+    To avoid a horizontal scroll bar automatically appearing, set the width of the ScrollPane to
+    {@code maxContentWidth + ScrollPane.SCROLLBAR_WIDTH + 1}.
 */
 public class ScrollPane extends Group {
     
-    public static final int SCROLL_BAR_WIDTH = 16;
+    public static final int SCROLLBAR_WIDTH = 16;
+    
+    /**
+        The scrollbar never appears.
+    */
+    public static final int SCROLLBAR_NEVER = 0;
+    /**
+        The scrollbar always appears.
+    */
+    public static final int SCROLLBAR_ALWAYS = 1;
+    /**
+        The scrollbar always automatically as needed.
+    */
+    public static final int SCROLLBAR_AUTO = 2;
+    
+    private static final int SCROLL_FIRST_DELAY = 400;
+    private static final int SCROLL_DELAY = 50;
+    
     private static final int COLOR1 = Colors.gray(200);
     private static final int COLOR2 = Colors.gray(0x48);
     private static AnimatedImage GLYPHS1 = null;
@@ -76,22 +96,44 @@ public class ScrollPane extends Group {
     */
     private ScrollBar verticalScrollBar;
     private ScrollBar horizontalScrollBar;
-    private final ScrollArea scrollArea;
+    private final int verticalScrollBarAppears;
+    private final int horizontalScrollBarAppears;
+    private final Viewport viewport;
     private boolean hasFocus;
     
     private int scrollUnitSize = 1;
     private int pageDuration = 0;
     private int unitDuration = 0;
-    
+
+    /**
+        Creates a ScrollPane where both the horizontal and vertical scrollbars appear 
+        automatically as needed.
+    */
     public ScrollPane(int x, int y, int w, int h) {
+        this(x, y, w, h, SCROLLBAR_AUTO, SCROLLBAR_AUTO);
+    }
+    
+    /**
+        Creates a ScrollPane where both the horizontal and vertical scrollbars appear 
+        according the the specified flags.
+        @param verticalScrollBarAppears one of {@link #SCROLLBAR_NEVER}, 
+            {@link #SCROLLBAR_ALWAYS}, or {@link #SCROLLBAR_AUTO}. 
+        @param horizontalScrollBarAppears one of {@link #SCROLLBAR_NEVER}, 
+            {@link #SCROLLBAR_ALWAYS}, or {@link #SCROLLBAR_AUTO}. 
+    */
+    public ScrollPane(int x, int y, int w, int h, int verticalScrollBarAppears,
+        int horizontalScrollBarAppears) 
+    {
         super(x, y, w, h);
+        this.verticalScrollBarAppears = verticalScrollBarAppears;
+        this.horizontalScrollBarAppears = horizontalScrollBarAppears;
         hasFocus = true;
-        scrollArea = new ScrollArea(0, 0, w, h);
+        viewport = new Viewport(0, 0, w, h);
         scrollX = getContentPane().x;
         scrollY = getContentPane().y;
         scrollPixelSnapping = getContentPane().pixelSnapping;
         scrollPixelSnapping.set(true);
-        super.add(scrollArea);
+        super.add(viewport);
     }
     
     /**
@@ -124,9 +166,13 @@ public class ScrollPane extends Group {
         int h = vMax();
         int innerWidth = hExtent();
         int innerHeight = vExtent();
+        boolean shouldHaveVSB = (verticalScrollBarAppears == SCROLLBAR_ALWAYS ||
+            (verticalScrollBarAppears == SCROLLBAR_AUTO && h > innerHeight));
+        boolean shouldHaveHSB = (horizontalScrollBarAppears == SCROLLBAR_ALWAYS ||
+            (horizontalScrollBarAppears == SCROLLBAR_AUTO && w > innerWidth));
         
         // Create or remove vertical scroll bar
-        if (h > innerHeight) {
+        if (shouldHaveVSB) {
             if (verticalScrollBar == null || 
                 verticalScrollBar.height.getAsInt() != innerHeight)
             {
@@ -145,7 +191,7 @@ public class ScrollPane extends Group {
         }
         
         // Create or remove hortizontal scroll bar
-        if (w > innerWidth) {
+        if (shouldHaveHSB) {
             if (horizontalScrollBar == null || 
                 horizontalScrollBar.width.getAsInt() != innerWidth)
             {
@@ -164,8 +210,8 @@ public class ScrollPane extends Group {
         }
         
         // Set scroll area dimensions
-        scrollArea.width.set(hExtent());
-        scrollArea.height.set(vExtent());
+        viewport.width.set(hExtent());
+        viewport.height.set(vExtent());
     }
     
     private void checkInput() {
@@ -218,6 +264,7 @@ public class ScrollPane extends Group {
         public final Slider slider;
         private final Fixed bindValue;
         private boolean rebindOnNext;
+        private int scrollDelay = 0;
         
         public ScrollBar(Button up, Button down, int orientation, int length) {
             this.up = up;
@@ -286,14 +333,14 @@ public class ScrollPane extends Group {
                 this.x.bindTo(ScrollPane.this.width);
                 this.y.set(0);
                 slider.setRange(0, getContentHeight(), length);
-                bindValue = scrollArea.scrollY;
+                bindValue = viewport.scrollY;
             }
             else {
                 setAnchor(Sprite.SOUTH_WEST);
                 this.x.set(0);
                 this.y.bindTo(ScrollPane.this.height);
                 slider.setRange(0, getContentWidth(), length);
-                bindValue = scrollArea.scrollX;
+                bindValue = viewport.scrollX;
             }
             rebind();
         }
@@ -305,16 +352,27 @@ public class ScrollPane extends Group {
         
         public void update(int elapsedTime) {
             super.update(elapsedTime);
+            if (scrollDelay > 0) {
+                scrollDelay -= elapsedTime;
+            }
             
-            if (up != null && up.isMouseDown()) {
+            boolean adjusting = false;
+            
+            if (up != null && up.isMouseDown() && scrollDelay <= 0) {
                 slider.scroll(-scrollUnitSize);
+                adjusting = true;
+                scrollDelay = up.isMousePressed() ? SCROLL_FIRST_DELAY : SCROLL_DELAY;
             }
-            if (down != null && down.isMouseDown()) {
+            else if (down != null && down.isMouseDown() && scrollDelay <= 0) {
                 slider.scroll(scrollUnitSize);
+                adjusting = true;
+                scrollDelay = down.isMousePressed() ? SCROLL_FIRST_DELAY : SCROLL_DELAY;
             }
+            
+            adjusting |= slider.isAdjusting();
             
             // Fix bindings
-            if (!slider.isAdjusting() && (slider.value.getBehavior() == null || 
+            if (!adjusting && (slider.value.getBehavior() == null || 
                 bindValue.getBehavior() == null))
             {
                 if (rebindOnNext) {
@@ -347,7 +405,7 @@ public class ScrollPane extends Group {
     protected Slider createVerticalScrollBar(int height) {
         loadGlyphImages();
         
-        int w = SCROLL_BAR_WIDTH;
+        int w = SCROLLBAR_WIDTH;
         int h = height;
         Slider slider = new Slider(
             createVerticalBarImage(GLYPHS1, COLOR1, h),
@@ -365,7 +423,7 @@ public class ScrollPane extends Group {
         loadGlyphImages();
         
         int w = width;
-        int h = SCROLL_BAR_WIDTH;
+        int h = SCROLLBAR_WIDTH;
         Slider slider = new Slider(
             createHorizontalBarImage(GLYPHS1, COLOR1, width),
             createHorizontalBarImage(GLYPHS2, COLOR2, Math.max(h, w/5)), 0, 0);
@@ -458,7 +516,7 @@ public class ScrollPane extends Group {
     }
     
     private int vMax() {
-        return scrollArea.getContentHeight();
+        return viewport.getContentHeight();
     }
     
     private int vExtent() {
@@ -475,7 +533,7 @@ public class ScrollPane extends Group {
     }
     
     private int hMax() {
-        return scrollArea.getContentWidth();
+        return viewport.getContentWidth();
     }
     
     private int hExtent() {
@@ -510,7 +568,7 @@ public class ScrollPane extends Group {
         Set the amount to scroll when using the arrow keys. By default, the value is 1.
     */
     public void setScrollUnitSize(int scrollUnitSize) {
-        this.scrollUnitSize = scrollUnitSize;
+        this.scrollUnitSize = Math.max(1, scrollUnitSize);
         if (verticalScrollBar != null) {
             verticalScrollBar.slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
         }
@@ -687,77 +745,77 @@ public class ScrollPane extends Group {
     //
     
     public Group getContentPane() {
-        return scrollArea.getContentPane();
+        return viewport.getContentPane();
     }
     
     public int getContentWidth() {
-        return scrollArea.getContentWidth();
+        return viewport.getContentWidth();
     }
     
     public int getContentHeight() {
-        return scrollArea.getContentHeight();
+        return viewport.getContentHeight();
     }
     
     /**
-        Calls {@code add(sprite)} on the internal {@link ScrollArea}.
+        Calls {@code add(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void add(Sprite sprite) {
-        scrollArea.add(sprite);
+        viewport.add(sprite);
     }
     
     /**
-        Calls {@code remove(sprite)} on the internal {@link ScrollArea}.
+        Calls {@code remove(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void remove(Sprite sprite) {
-        scrollArea.remove(sprite);
+        viewport.remove(sprite);
     }
     
     /**
-        Calls {@code removeAll()} on the internal {@link ScrollArea}.
+        Calls {@code removeAll()} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void removeAll() {
-        scrollArea.removeAll();
+        viewport.removeAll();
     }
     
     /**
-        Calls {@code moveToTop(sprite)} on the internal {@link ScrollArea}.
+        Calls {@code moveToTop(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void moveToTop(Sprite sprite) {
-        scrollArea.moveToTop(sprite);
+        viewport.moveToTop(sprite);
     }
     
     /**
-        Calls {@code moveToBottom(sprite)} on the internal {@link ScrollArea}.
+        Calls {@code moveToBottom(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void moveToBottom(Sprite sprite) {
-        scrollArea.moveToBottom(sprite);
+        viewport.moveToBottom(sprite);
     }
     
     /**
-        Calls {@code moveUp(sprite)} on the internal {@link ScrollArea}.
+        Calls {@code moveUp(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void moveUp(Sprite sprite) {
-        scrollArea.moveUp(sprite);
+        viewport.moveUp(sprite);
     }
     
     /**
-        Calls {@code moveDown(sprite)} on the internal {@link ScrollArea}.
+        Calls {@code moveDown(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}
     */
     public void moveDown(Sprite sprite) {
-        scrollArea.moveDown(sprite);
+        viewport.moveDown(sprite);
     }
 }

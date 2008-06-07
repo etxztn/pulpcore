@@ -49,7 +49,7 @@ import pulpcore.Stage;
 public class Group extends Sprite {
     
     /** Immuatable list of sprites. A new array is created when the list changes. */
-    /* package private */ Sprite[] sprites = new Sprite[0];
+    private Sprite[] sprites = new Sprite[0];
     /** The list of sprites at the last call to getRemovedSprites() */
     private Sprite[] previousSprites = null;
     
@@ -279,7 +279,7 @@ public class Group extends Sprite {
     
     //
     // Sprite list modifications
-    // NOTE: if adding another modication method, also add it to ScrollArea
+    // NOTE: if adding another modication method, also add it to Viewport and ScrollPane
     //
     
     /**

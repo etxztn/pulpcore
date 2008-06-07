@@ -136,7 +136,7 @@ public class ConsoleScene extends Scene2D {
         textbox.removeAll();
         int numLines = 0;
         int y = 0;
-        int w = textbox.width.getAsInt() - ScrollPane.SCROLL_BAR_WIDTH;
+        int w = textbox.width.getAsInt() - ScrollPane.SCROLLBAR_WIDTH;
         Iterator i = logLines.iterator();
         while (i.hasNext()) {
             String[] text = StringUtil.wordWrap((String)i.next(), null, w);

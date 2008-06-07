@@ -472,7 +472,7 @@ public abstract class Sprite implements PropertyListener {
     */
     /* package-private */ final void getRelativeBounds(Rect bounds) {
         Transform transform = new Transform();
-        updateTransform(IDENTITY, transform);
+        updateTransform(null, transform);
         transform.getBounds(getNaturalWidth(), getNaturalHeight(), bounds);
     }
     

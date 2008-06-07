@@ -178,6 +178,8 @@ public class Transform {
         int boundsX2 = Math.max( Math.max(x1, x2), Math.max(x3, x4) );
         int boundsY2 = Math.max( Math.max(y1, y2), Math.max(y3, y4) );
         
+        // The +1 is because some sprites consider the integer locations are in the middle
+        // of the pixel?
         int boundsX = CoreMath.toIntFloor(boundsX1);
         int boundsY = CoreMath.toIntFloor(boundsY1);
         int boundsW = CoreMath.toIntCeil(boundsX2) - boundsX + 1;
