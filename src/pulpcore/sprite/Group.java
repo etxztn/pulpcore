@@ -493,16 +493,18 @@ public class Group extends Sprite {
     */
     public void createBackBuffer(BlendMode blendMode) {
         setBackBufferBlendMode(blendMode);
+        int w = getNaturalWidth();
+        int h = getNaturalHeight();
         int backBufferWidth;
         int backBufferHeight;
-        if (fNaturalWidth == 0 || fNaturalHeight == 0) {
+        if (w == 0 || h == 0) {
             backBufferWidth = Stage.getWidth();
             backBufferHeight = Stage.getHeight();
             backBufferCoversStage = true;
         }
         else {
-            backBufferWidth = CoreMath.toIntCeil(fNaturalWidth);
-            backBufferHeight = CoreMath.toIntCeil(fNaturalHeight);
+            backBufferWidth = CoreMath.toIntCeil(w);
+            backBufferHeight = CoreMath.toIntCeil(h);
             backBufferCoversStage = false;
         }
         if (backBuffer == null || 
