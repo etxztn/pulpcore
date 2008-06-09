@@ -3,6 +3,7 @@
   * API: Added ScrollArea (useful for scrolly worlds) and a simple ScrollPane.
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
     "true", "false" or "default" (PulpCore chooses the best). 
+  * Fixed bug: borders when drawing with a large scale weren't correct.
   * Fixed bug: custom splash gifs weren't working properly.
   * Fixed bug: added null check in Stage when destroying the app when there is no Scene.
   * Fixed bug: key releases were not correct for shift, alt, ctrl when both left and right 

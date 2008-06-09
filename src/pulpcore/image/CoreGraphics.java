@@ -1207,7 +1207,7 @@ public class CoreGraphics {
         }
         
         if (bilinear) {
-            // ??? Not sure if this is right - it's based off DrawScaled. It looks correct in Milpa.
+            // ??? 
             uY += ((duX - CoreMath.ONE) >> 1);
             vY += ((dvY - CoreMath.ONE) >> 1);
         }
@@ -1834,7 +1834,7 @@ public class CoreGraphics {
         }
         
         if (bilinear) {
-            // ??? Not sure if this is right - it's based off DrawScaled. It looks correct in Milpa.
+            // ??? 
             uY += ((duX - CoreMath.ONE) >> 1);
             vY += ((dvY - CoreMath.ONE) >> 1);
         }

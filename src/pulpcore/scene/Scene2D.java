@@ -659,6 +659,7 @@ public class Scene2D extends Scene {
                 CoreMath.toInt(t.getTranslateY()),
                 CoreMath.toInt(Stage.getWidth() * t.getScaleX()),
                 CoreMath.toInt(Stage.getHeight() * t.getScaleY()));
+            // Based off of BackBufferTest scaled to full screen
             dirtyRectPadX = 1 + CoreMath.toIntCeil(t.getScaleX());
             dirtyRectPadY = 1 + CoreMath.toIntCeil(t.getScaleY());
         }

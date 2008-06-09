@@ -46,7 +46,7 @@ import pulpcore.math.CoreMath;
     Note, the scroll bars' appearance is currently limited (no dynamic thumb size).
     <p>
     To avoid a horizontal scroll bar automatically appearing, set the width of the ScrollPane to
-    {@code maxContentWidth + ScrollPane.SCROLLBAR_WIDTH + 1}.
+    {@code maxContentWidth + ScrollPane.SCROLLBAR_WIDTH}.
 */
 public class ScrollPane extends Group {
     

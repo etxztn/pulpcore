@@ -926,11 +926,11 @@ public class Stage implements Runnable {
                         CoreMath.floor(CoreMath.toFixed((surface.getWidth() - newWidth) / 2)),
                         CoreMath.floor(CoreMath.toFixed((surface.getHeight() - newHeight) / 2)));
                     // Kind of weird - looks good with the Flashlight example at various sizes
-                    defaultTransform.scale(
-                        (int)Math.floor(CoreMath.ONE * newWidth / w - 1),
-                        (int)Math.floor(CoreMath.ONE * newHeight / h - 1));
-                    //defaultTransform.scale(CoreMath.toFixed(newWidth / w),
-                    //    CoreMath.toFixed(newHeight / h));
+                    int scaleX = (int)Math.floor(CoreMath.ONE * newWidth / w - 1);
+                    int scaleY = (int)Math.floor(CoreMath.ONE * newHeight / h - 1);
+                    // Scale both identically
+                    int scale = (scaleX + scaleY)/2;
+                    defaultTransform.scale(scale, scale);
                     break;
             }
         }

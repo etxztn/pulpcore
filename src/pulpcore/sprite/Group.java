@@ -645,10 +645,10 @@ public class Group extends Sprite {
                     p1.y = p2.y;
                     p2.y = t;
                 }
-                clipX = CoreMath.toIntFloor(p1.x);
-                clipY = CoreMath.toIntFloor(p1.y);
-                clipW = CoreMath.toIntCeil(p2.x) - clipX + 1;
-                clipH = CoreMath.toIntCeil(p2.y) - clipY + 1;
+                clipX = CoreMath.toIntFloor(p1.x) - 1;
+                clipY = CoreMath.toIntFloor(p1.y) - 1;
+                clipW = CoreMath.toIntCeil(p2.x) - clipX + 2;
+                clipH = CoreMath.toIntCeil(p2.y) - clipY + 2;
             }
             g2.setClip(clipX, clipY, clipW, clipH);
             g2.clear();

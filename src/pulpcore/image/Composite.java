@@ -289,37 +289,7 @@ import pulpcore.math.CoreMath;
                 bottomRightPixel = bottomLeftPixel;
             }
         }
-        
-        //if (x >= 0 && x < srcWidth - 1) {
-        //    if (offsetTop != -1) {
-        //        topLeftPixel = imageData[offsetTop + x];
-        //    }
-        //    if (offsetBottom != -1) {
-        //        bottomLeftPixel = imageData[offsetBottom + x];
-        //    }
-        //}
-        //else if (fx >= -CoreMath.ONE_HALF) {
-        //    if (offsetTop != -1) {
-        //        topLeftPixel = imageData[offsetTop];
-        //    }
-        //    if (offsetBottom != -1) {
-        //        bottomLeftPixel = imageData[offsetBottom];
-        //    }
-        //}
-        //
-        //if (fx >= -CoreMath.ONE_HALF && x < srcWidth-1) {
-        //    if (offsetTop != -1) {
-        //        topRightPixel = imageData[offsetTop + x + 1];
-        //    }
-        //    if (offsetBottom != -1) {
-        //        bottomRightPixel = imageData[offsetBottom + x + 1];
-        //    }
-        //}
-        //else if (fx <= (srcWidth << 16) - CoreMath.ONE_HALF) {
-        //    topRightPixel = topLeftPixel;
-        //    bottomRightPixel = bottomLeftPixel;
-        //}
-           
+      
         // If all pixels are the same color, return the color. 
         // Faster for solid-colored and transparent areas.
         if (topLeftPixel == topRightPixel && 
