@@ -1082,11 +1082,11 @@ public class CoreGraphics {
         int u = CoreMath.mul(CoreMath.toFixed(objectX) - fX, du);
         int v = CoreMath.mul(CoreMath.toFixed(objectY) - fY, dv);
         
-        // ??? Removed - it caused an out-of-bounds error in Milpa when scaling around 2X
-        //if (bilinear) {
-        //    u += ((du - CoreMath.ONE) >> 1);
-        //    v += ((dv - CoreMath.ONE) >> 1);
-        //}
+        // ???
+        if (bilinear) {
+            u += ((du - CoreMath.ONE) >> 1);
+            v += ((dv - CoreMath.ONE) >> 1);
+        }
         
         for (int j = 0; j < objectHeight; j++) {
             int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;

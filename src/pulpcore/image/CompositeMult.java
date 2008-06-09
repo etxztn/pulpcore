@@ -209,7 +209,7 @@ final class CompositeMult extends Composite {
                     }
                     else if (imageY == srcHeight - 1) {
                         offsetTop = srcOffset - (u >> 16);
-                        offsetBottom = -1;
+                        offsetBottom = offsetTop;
                     }
                     else {
                         offsetTop = -1;
@@ -217,8 +217,8 @@ final class CompositeMult extends Composite {
                     }
                 }
                 else if (imageY == -1) {
-                    offsetTop = -1;
-                    offsetBottom = srcX + srcY * srcScanSize;
+                    offsetTop = srcX + srcY * srcScanSize;
+                    offsetBottom = offsetTop;
                 }
                 else {
                     offsetTop = -1;

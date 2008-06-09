@@ -29,6 +29,8 @@
 
 package pulpcore.image;
 
+import pulpcore.math.CoreMath;
+
 /* package-private */ abstract class Composite {
     
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB);
@@ -153,6 +155,7 @@ package pulpcore.image;
             blueChannel;
     }
     
+    // For rotation
     protected final int getPixelBilinearTranslucent(int[] data, int srcScanSize,
         int srcX, int srcY, int srcWidth, int srcHeight,
         int fx, int fy)
@@ -168,18 +171,18 @@ package pulpcore.image;
                 top = srcX + (y + srcY) * srcScanSize;
                 bottom = top + srcScanSize;
             }
-            else if (y == srcHeight - 1) {
+            else if (fy <= (srcHeight << 16) - CoreMath.ONE_HALF) {
                 top = srcX + (y + srcY)  * srcScanSize;
-                bottom = -1;
+                bottom = top;
             }
             else {
                 top = -1;
                 bottom = -1;
             }
         }
-        else if (y == -1) {
-            top = -1;
+        else if (fy >= -CoreMath.ONE_HALF) {
             bottom = srcX + srcY * srcScanSize;
+            top = bottom;
         }
         else {
             top = -1;
@@ -254,24 +257,68 @@ package pulpcore.image;
         int bottomRightPixel = 0;
         
         // Find left and right location
-        
-        if (x >= 0 && x < srcWidth) {
+        if (x >= 0) {
+            if (x < srcWidth - 1) {
+                if (offsetTop != -1) {
+                    topLeftPixel = imageData[offsetTop + x];
+                    topRightPixel = imageData[offsetTop + x + 1];
+                }
+                if (offsetBottom != -1) {
+                    bottomLeftPixel = imageData[offsetBottom + x];
+                    bottomRightPixel = imageData[offsetBottom + x + 1];
+                }
+            }
+            else if (fx <= (srcWidth << 16) - CoreMath.ONE_HALF) {
+                if (offsetTop != -1) {
+                    topLeftPixel = imageData[offsetTop + x];
+                    topRightPixel = topLeftPixel;
+                }
+                if (offsetBottom != -1) {
+                    bottomLeftPixel = imageData[offsetBottom + x];
+                    bottomRightPixel = bottomLeftPixel;
+                }
+            }
+        }
+        else if (fx >= -CoreMath.ONE_HALF) {
             if (offsetTop != -1) {
-                topLeftPixel = imageData[offsetTop + x];
+                topLeftPixel = imageData[offsetTop];
+                topRightPixel = topLeftPixel;
             }
             if (offsetBottom != -1) {
-                bottomLeftPixel = imageData[offsetBottom + x];
+                bottomLeftPixel = imageData[offsetBottom];
+                bottomRightPixel = bottomLeftPixel;
             }
         }
         
-        if (x >= -1 && x < srcWidth-1) {
-            if (offsetTop != -1) {
-                topRightPixel = imageData[offsetTop + x + 1];
-            }
-            if (offsetBottom != -1) {
-                bottomRightPixel = imageData[offsetBottom + x + 1];
-            }
-        }
+        //if (x >= 0 && x < srcWidth - 1) {
+        //    if (offsetTop != -1) {
+        //        topLeftPixel = imageData[offsetTop + x];
+        //    }
+        //    if (offsetBottom != -1) {
+        //        bottomLeftPixel = imageData[offsetBottom + x];
+        //    }
+        //}
+        //else if (fx >= -CoreMath.ONE_HALF) {
+        //    if (offsetTop != -1) {
+        //        topLeftPixel = imageData[offsetTop];
+        //    }
+        //    if (offsetBottom != -1) {
+        //        bottomLeftPixel = imageData[offsetBottom];
+        //    }
+        //}
+        //
+        //if (fx >= -CoreMath.ONE_HALF && x < srcWidth-1) {
+        //    if (offsetTop != -1) {
+        //        topRightPixel = imageData[offsetTop + x + 1];
+        //    }
+        //    if (offsetBottom != -1) {
+        //        bottomRightPixel = imageData[offsetBottom + x + 1];
+        //    }
+        //}
+        //else if (fx <= (srcWidth << 16) - CoreMath.ONE_HALF) {
+        //    topRightPixel = topLeftPixel;
+        //    bottomRightPixel = bottomLeftPixel;
+        //}
            
         // If all pixels are the same color, return the color. 
         // Faster for solid-colored and transparent areas.
