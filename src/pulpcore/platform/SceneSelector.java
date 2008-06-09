@@ -44,6 +44,7 @@ import pulpcore.scene.Scene;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
+import pulpcore.sprite.ScrollPane;
 import pulpcore.Stage;
 
 /**
@@ -69,26 +70,35 @@ public class SceneSelector extends Scene2D {
         
         add(new FilledSprite(Colors.WHITE));
         
-        int x = 5;
-        int y = 5;
+        int spacing = 5;
+        int x = 0;
+        int y = 0;
+        ScrollPane scrollPane = new ScrollPane(spacing, spacing, 
+            Stage.getWidth() - spacing*2, Stage.getHeight() - spacing*2);
         
-        cancel = Button.createLabeledButton("<< Back", x, y);
-        add(cancel);
-        y += cancel.height.get() + 5;
+        if (Stage.canPopScene()) {
+            cancel = Button.createLabeledButton("<< Back", x, y);
+            scrollPane.add(cancel);
+            y += cancel.height.get() + spacing;
+        }
         
         buttons = new Button[scenes.size()];
         for (int i = 0; i < scenes.size(); i++) {
             Class c = (Class)scenes.get(i);
-            buttons[i] = Button.createLabeledButton("Switch to " + c.getName(), x, y);
-            add(buttons[i]);
+            buttons[i] = Button.createLabeledButton(c.getName(), x, y);
+            scrollPane.add(buttons[i]);
             
-            y += buttons[i].height.get() + 5;
+            y += buttons[i].height.get() + spacing;
         }
+        if (buttons.length > 0) {
+            scrollPane.setScrollUnitSize(buttons[0].height.getAsInt() + spacing);
+            scrollPane.setAnimationDuration(100, 250);
+        }
+        add(scrollPane);
     }
     
-    
     public void update(int elapsedTime) {
-        if (cancel.isClicked()) {
+        if (cancel != null && cancel.isClicked()) {
             Stage.popScene();
             return;
         }
@@ -108,7 +118,6 @@ public class SceneSelector extends Scene2D {
             }
         }
     }
-    
     
     //
     // Private methods to find scenes
@@ -135,7 +144,6 @@ public class SceneSelector extends Scene2D {
         }
         return sceneClasses;
     }
-    
     
     /**
         Checks is a class is a public, non-abstract Scene with a public no-argument constructor.
@@ -173,7 +181,6 @@ public class SceneSelector extends Scene2D {
         
     }
     
-    
     /**
         Converts a class filename into a Java class name.
     */
@@ -187,7 +194,6 @@ public class SceneSelector extends Scene2D {
         
         return filename.replace('/', '.');
     }
-    
     
     /**
         Gets a list of all the classes inside a jar.
@@ -215,7 +221,6 @@ public class SceneSelector extends Scene2D {
         return classes;
     }
     
-    
     /**
         Gets a list of all the jars that are available to this class loader.
     */
@@ -241,5 +246,4 @@ public class SceneSelector extends Scene2D {
             return new ArrayList();
         }
     }
-    
 }
