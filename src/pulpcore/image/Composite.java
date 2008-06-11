@@ -33,6 +33,11 @@ import pulpcore.math.CoreMath;
 
 /* package-private */ abstract class Composite {
     
+    // Image edge drawing for bilinear images. 
+    // NOTE: scaled-up fonts look bad with this set to true. Each char would need a 1-pixel
+    // transparent border. Also, it break's PulpCore's anti-aliasing
+    protected static final boolean EDGE_CLAMP = false;
+    
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB);
     
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB, 
@@ -171,18 +176,18 @@ import pulpcore.math.CoreMath;
                 top = srcX + (y + srcY) * srcScanSize;
                 bottom = top + srcScanSize;
             }
-            else if (fy <= (srcHeight << 16) - CoreMath.ONE_HALF) {
+            else if (fy < (srcHeight << 16)) {
                 top = srcX + (y + srcY)  * srcScanSize;
-                bottom = top;
+                bottom = EDGE_CLAMP ? top : -1;
             }
             else {
                 top = -1;
                 bottom = -1;
             }
         }
-        else if (fy >= -CoreMath.ONE_HALF) {
+        else if (fy > -CoreMath.ONE) {
             bottom = srcX + srcY * srcScanSize;
-            top = bottom;
+            top = EDGE_CLAMP ? bottom : -1;
         }
         else {
             top = -1;
@@ -268,28 +273,28 @@ import pulpcore.math.CoreMath;
                     bottomRightPixel = imageData[offsetBottom + x + 1];
                 }
             }
-            else if (fx <= (srcWidth << 16) - CoreMath.ONE_HALF) {
+            else if (fx < (srcWidth << 16)) {
                 if (offsetTop != -1) {
                     topLeftPixel = imageData[offsetTop + x];
-                    topRightPixel = topLeftPixel;
+                    topRightPixel = EDGE_CLAMP ? topLeftPixel : 0;
                 }
                 if (offsetBottom != -1) {
                     bottomLeftPixel = imageData[offsetBottom + x];
-                    bottomRightPixel = bottomLeftPixel;
+                    bottomRightPixel = EDGE_CLAMP ? bottomLeftPixel : 0;
                 }
             }
         }
-        else if (fx >= -CoreMath.ONE_HALF) {
+        else if (fx > -CoreMath.ONE) {
             if (offsetTop != -1) {
-                topLeftPixel = imageData[offsetTop];
-                topRightPixel = topLeftPixel;
+                topRightPixel = imageData[offsetTop];
+                topLeftPixel = EDGE_CLAMP ? topRightPixel : 0;
             }
             if (offsetBottom != -1) {
-                bottomLeftPixel = imageData[offsetBottom];
-                bottomRightPixel = bottomLeftPixel;
+                bottomRightPixel = imageData[offsetBottom];
+                bottomLeftPixel = EDGE_CLAMP ? bottomRightPixel : 0;
             }
         }
-      
+        
         // If all pixels are the same color, return the color. 
         // Faster for solid-colored and transparent areas.
         if (topLeftPixel == topRightPixel && 
@@ -298,7 +303,7 @@ import pulpcore.math.CoreMath;
         {
             return topLeftPixel;
         }
-
+        
         // Blend all 4 pixels. (17 mults per pixel here)
     
         // Calculate the weights of each pixel. 

@@ -44,6 +44,11 @@ import pulpcore.math.Transform;
 */
 public class CoreGraphics {
     
+    // Image edge drawing for rotated bilinear images. 
+    // <= 0.11.3 PulpCore: EDGE_SIZE = <1.0 (0xffff)
+    protected static final int EDGE_SIZE_FOR_RECT = CoreMath.ONE-1;
+    protected static final int EDGE_SIZE = CoreMath.ONE_HALF;//CoreMath.ONE-1;
+    
     // Line drawing options
     private static final boolean CENTER_PIXEL = true;
     private static final boolean SWAP_POINTS = true;
@@ -1211,10 +1216,6 @@ public class CoreGraphics {
             uY += ((duX - CoreMath.ONE) >> 1);
             vY += ((dvY - CoreMath.ONE) >> 1);
         }
-        else {
-            uY += CoreMath.ONE >> 1;
-            vY += CoreMath.ONE >> 1;
-        }
         
         // Start Render
         int[] srcData = image.getData();
@@ -1222,7 +1223,24 @@ public class CoreGraphics {
         int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
         int fSrcWidth = CoreMath.toFixed(srcWidth);
         int fSrcHeight = CoreMath.toFixed(srcHeight);
-        int lowerLimit = bilinear ? -0xff00 : 0;
+        
+        int d = Math.max(Math.abs(duX), Math.abs(dvX));
+        int uMin;
+        int uMax;
+        int vMin;
+        int vMax;
+        if (bilinear) {
+            uMin = -CoreMath.ONE_HALF - (d >> 1);
+            uMax = fSrcWidth - 1 - CoreMath.ONE_HALF + (d >> 1);
+            vMin = -CoreMath.ONE_HALF - (d >> 1);
+            vMax = fSrcHeight - 1 - CoreMath.ONE_HALF + (d >> 1);
+        }
+        else {
+            uMin = 0;
+            uMax = fSrcWidth - 1;
+            vMin = 0;
+            vMax = fSrcHeight - 1;
+        }
         
         for (int j = 0; j < objectHeight; j++) {
             
@@ -1238,46 +1256,46 @@ public class CoreGraphics {
             int endX = objectWidth - 1;
             
             // Scan convert - left edge
-            if (u < lowerLimit) {
+            if (u < uMin) {
                 if (duX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - u, duX);
+                    int n = CoreMath.intDivCeil(uMin - u, duX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
                 }
             }
-            else if (u > fSrcWidth - 1) {
+            else if (u > uMax) {
                 if (duX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcWidth - 1) - u, duX);
+                    int n = CoreMath.intDivCeil(uMax - u, duX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
                 }
             }
             
-            if (v < lowerLimit) {
+            if (v < vMin) {
                 if (dvX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - v, dvX);
+                    int n = CoreMath.intDivCeil(vMin - v, dvX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
                 }
             }
-            else if (v > fSrcHeight - 1) {
+            else if (v > vMax) {
                 if (dvX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcHeight - 1) - v, dvX);
+                    int n = CoreMath.intDivCeil(vMax - v, dvX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
@@ -1286,41 +1304,41 @@ public class CoreGraphics {
             
             // Scan convert - right edge
             int u2 = u + (endX - startX + 1) * duX;
-            if (u2 < lowerLimit) {
+            if (u2 < uMin) {
                 if (duX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - u2, duX);
+                    int n = CoreMath.intDivCeil(uMin - u2, duX);
                     endX += n;
                 }
             }
-            else if (u2 > fSrcWidth - 1) {
+            else if (u2 > uMax) {
                 if (duX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcWidth - 1) - u2, duX);
+                    int n = CoreMath.intDivCeil(uMax - u2, duX);
                     endX += n;
                 }
             }
             
             int v2 = v + (endX - startX + 1) * dvX;
-            if (v2 < lowerLimit) {
+            if (v2 < vMin) {
                 if (dvX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - v2, dvX);
+                    int n = CoreMath.intDivCeil(vMin - v2, dvX);
                     endX += n;
                 }
             }
-            else if (v2 > fSrcHeight - 1) {
+            else if (v2 > vMax) {
                 if (dvX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fSrcHeight - 1) - v2, dvX);
+                    int n = CoreMath.intDivCeil(vMax - v2, dvX);
                     endX += n;
                 }
             }
@@ -1690,9 +1708,17 @@ public class CoreGraphics {
         
         // Start Render
         int surfaceOffset = objectX + objectY * surfaceWidth;
-        int lowerLimit = bilinear ? -0xff00 : 0;
-        int wLimit = fw - CoreMath.ONE;
-        int hLimit = fh - CoreMath.ONE;
+        int d = CoreMath.ONE;
+        int uMin = -CoreMath.ONE_HALF - (d >> 1);
+        int uMax = fw - 1 - CoreMath.ONE_HALF + (d >> 1);
+        int vMin = -CoreMath.ONE_HALF - (d >> 1);
+        int vMax = fh - 1 - CoreMath.ONE_HALF + (d >> 1);
+        
+        int minU = uMin + CoreMath.ONE;
+        int minV = vMin + CoreMath.ONE;
+        int maxU = uMax - CoreMath.ONE;
+        int maxV = vMax - CoreMath.ONE;
+            
         int v = CoreMath.toFixed(objectY) - boundsY1;
         for (int j = 0; j < objectHeight; j++) {
             int u = CoreMath.toFixed(objectX) - boundsX1;
@@ -1701,17 +1727,37 @@ public class CoreGraphics {
             int runLength = 0;
             for (int x = 0; x < objectWidth; x++) {
                 int rectAlpha = 0xff;
-                if (u < 0) {
-                    rectAlpha = (rectAlpha * ((u >> 8) & 0xff)) >> 8;
+                if (u < minU) {
+                    if (u < minU - CoreMath.ONE) {
+                        rectAlpha = 0;
+                    }
+                    else {
+                        rectAlpha = (rectAlpha * (((u-minU) >> 8) & 0xff)) >> 8;
+                    }
                 }
-                else if (u > wLimit) {
-                    rectAlpha = (rectAlpha * (((wLimit-u) >> 8) & 0xff)) >> 8;
+                else if (u > maxU) {
+                    if (u > maxU + CoreMath.ONE) {
+                        rectAlpha = 0;
+                    }
+                    else {
+                        rectAlpha = (rectAlpha * (((maxU-u) >> 8) & 0xff)) >> 8;
+                    }
                 }
-                if (v < 0) {
-                    rectAlpha = (rectAlpha * ((v >> 8) & 0xff)) >> 8;
+                if (v < minV) {
+                    if (v < minV - CoreMath.ONE) {
+                        rectAlpha = 0;
+                    }
+                    else {
+                        rectAlpha = (rectAlpha * (((v-minV) >> 8) & 0xff)) >> 8;
+                    }
                 }
-                else if (v > hLimit) {
-                    rectAlpha = (rectAlpha * (((hLimit-v) >> 8) & 0xff)) >> 8;
+                else if (v > maxV) {
+                    if (v > maxV + CoreMath.ONE) {
+                        rectAlpha = 0;
+                    }
+                    else {
+                        rectAlpha = (rectAlpha * (((maxV-v) >> 8) & 0xff)) >> 8;
+                    }
                 }
                 
                 if (rectAlpha == lastAlpha) {
@@ -1833,19 +1879,19 @@ public class CoreGraphics {
             dvY = CoreMath.ONE;
         }
         
-        if (bilinear) {
+        //if (bilinear) {
             // ??? 
             uY += ((duX - CoreMath.ONE) >> 1);
             vY += ((dvY - CoreMath.ONE) >> 1);
-        }
-        else {
-            uY += CoreMath.ONE >> 1;
-            vY += CoreMath.ONE >> 1;
-        }
+        //}
         
         // Start Render
         int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
-        int lowerLimit = bilinear ? -0xff00 : 0;
+        int d = Math.max(Math.abs(duX), Math.abs(dvX));
+        int uMin = -CoreMath.ONE_HALF - (d >> 1);
+        int uMax = fw - 1 - CoreMath.ONE_HALF + (d >> 1);
+        int vMin = -CoreMath.ONE_HALF - (d >> 1);
+        int vMax = fh - 1 - CoreMath.ONE_HALF + (d >> 1);
         
         for (int j = 0; j < objectHeight; j++) {
             
@@ -1861,46 +1907,46 @@ public class CoreGraphics {
             int endX = objectWidth - 1;
             
             // Scan convert - left edge
-            if (u < lowerLimit) {
+            if (u < uMin) {
                 if (duX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - u, duX);
+                    int n = CoreMath.intDivCeil(uMin - u, duX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
                 }
             }
-            else if (u > fw - 1) {
+            else if (u > uMax) {
                 if (duX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fw - 1) - u, duX);
+                    int n = CoreMath.intDivCeil(uMax - u, duX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
                 }
             }
             
-            if (v < lowerLimit) {
+            if (v < vMin) {
                 if (dvX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - v, dvX);
+                    int n = CoreMath.intDivCeil(vMin - v, dvX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
                 }
             }
-            else if (v > fh - 1) {
+            else if (v > vMax) {
                 if (dvX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fh - 1) - v, dvX);
+                    int n = CoreMath.intDivCeil(vMax - v, dvX);
                     startX += n;
                     u += n * duX;
                     v += n * dvX;
@@ -1909,76 +1955,66 @@ public class CoreGraphics {
             
             // Scan convert - right edge
             int u2 = u + (endX - startX + 1) * duX;
-            if (u2 < lowerLimit) {
+            if (u2 < uMin) {
                 if (duX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - u2, duX);
+                    int n = CoreMath.intDivCeil(uMin - u2, duX);
                     endX += n;
                 }
             }
-            else if (u2 > fw - 1) {
+            else if (u2 > uMax) {
                 if (duX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fw - 1) - u2, duX);
+                    int n = CoreMath.intDivCeil(uMax - u2, duX);
                     endX += n;
                 }
             }
             
             int v2 = v + (endX - startX + 1) * dvX;
-            if (v2 < lowerLimit) {
+            if (v2 < vMin) {
                 if (dvX >= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil(lowerLimit - v2, dvX);
+                    int n = CoreMath.intDivCeil(vMin - v2, dvX);
                     endX += n;
                 }
             }
-            else if (v2 > fh - 1) {
+            else if (v2 > vMax) {
                 if (dvX <= 0) {
                     continue;
                 }
                 else {
-                    int n = CoreMath.intDivCeil((fh - 1) - v2, dvX);
+                    int n = CoreMath.intDivCeil(vMax - v2, dvX);
                     endX += n;
                 }
             }
             
-         
-            int wLimit = fw - CoreMath.ONE;
-            int hLimit = fh - CoreMath.ONE;
+            int minU = uMin + CoreMath.ONE;
+            int minV = vMin + CoreMath.ONE;
+            int maxU = uMax - CoreMath.ONE;
+            int maxV = vMax - CoreMath.ONE;
             // OPTIMIZE: less virtual calls? less work per pixel?
             int lastAlpha = -1;
             int runLength = 0;
             for (int x = startX; x <= endX; x++) {
                 int rectAlpha = 0xff;
-                if (u < 0) {
-                    rectAlpha = (rectAlpha * ((u >> 8) & 0xff)) >> 8;
+                if (u < minU) {
+                    rectAlpha = (rectAlpha * (((u-minU) >> 8) & 0xff)) >> 8;
                 }
-                else if (u > wLimit) {
-                    rectAlpha = (rectAlpha * (((wLimit-u) >> 8) & 0xff)) >> 8;
+                else if (u > maxU) {
+                    rectAlpha = (rectAlpha * (((maxU-u) >> 8) & 0xff)) >> 8;
                 }
-                if (v < 0) {
-                    rectAlpha = (rectAlpha * ((v >> 8) & 0xff)) >> 8;
+                if (v < minV) {
+                    rectAlpha = (rectAlpha * (((v-minV) >> 8) & 0xff)) >> 8;
                 }
-                else if (v > hLimit) {
-                    rectAlpha = (rectAlpha * (((hLimit-v) >> 8) & 0xff)) >> 8;
+                else if (v > maxV) {
+                    rectAlpha = (rectAlpha * (((maxV-v) >> 8) & 0xff)) >> 8;
                 }
-                
-                // Trying out oval rendering.
-                // This is a naive technique: lots of calcs per pixel, no anti-aliasing.
-                // Needs scan converting instead.
-                //int a = fw / 2;
-                //int b = fh / 2;
-                //int m = CoreMath.div(u-a, a);
-                //int n = CoreMath.div(v-b, b);
-                //if (CoreMath.mul(m, m) + CoreMath.mul(n, n) > CoreMath.ONE) {
-                //    rectAlpha = 0;
-                //}
                 
                 if (rectAlpha == lastAlpha) {
                     runLength++;

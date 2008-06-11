@@ -204,18 +204,18 @@ final class CompositeSrcOver extends Composite {
                         offsetTop = srcOffset - (u >> 16);
                         offsetBottom = offsetTop + srcScanSize;
                     }
-                    else if (imageY == srcHeight - 1) {
+                    else if (v < (srcHeight << 16)) {
                         offsetTop = srcOffset - (u >> 16);
-                        offsetBottom = offsetTop;
+                        offsetBottom = EDGE_CLAMP ? offsetTop : -1;
                     }
                     else {
                         offsetTop = -1;
                         offsetBottom = -1;
                     }
                 }
-                else if (imageY == -1) {
-                    offsetTop = srcX + srcY * srcScanSize;
-                    offsetBottom = offsetTop;
+                else if (v > -(1<<16)) {
+                    offsetBottom = srcX + srcY * srcScanSize;
+                    offsetTop = EDGE_CLAMP ? offsetBottom : -1;
                 }
                 else {
                     offsetTop = -1;
