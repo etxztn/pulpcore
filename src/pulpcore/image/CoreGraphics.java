@@ -1224,16 +1224,17 @@ public class CoreGraphics {
         int fSrcWidth = CoreMath.toFixed(srcWidth);
         int fSrcHeight = CoreMath.toFixed(srcHeight);
         
-        int d = Math.max(Math.abs(duX), Math.abs(dvX));
         int uMin;
         int uMax;
         int vMin;
         int vMax;
         if (bilinear) {
-            uMin = -CoreMath.ONE_HALF - (d >> 1);
-            uMax = fSrcWidth - 1 - CoreMath.ONE_HALF + (d >> 1);
-            vMin = -CoreMath.ONE_HALF - (d >> 1);
-            vMax = fSrcHeight - 1 - CoreMath.ONE_HALF + (d >> 1);
+            int ud = Math.max(Math.abs(duX), Math.abs(duY));
+            int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
+            uMin = -CoreMath.ONE_HALF - (ud >> 1);
+            uMax = fSrcWidth - 1 - CoreMath.ONE_HALF + (ud >> 1);
+            vMin = -CoreMath.ONE_HALF - (vd >> 1);
+            vMax = fSrcHeight - 1 - CoreMath.ONE_HALF + (vd >> 1);
         }
         else {
             uMin = 0;
@@ -1887,11 +1888,12 @@ public class CoreGraphics {
         
         // Start Render
         int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
-        int d = Math.max(Math.abs(duX), Math.abs(dvX));
-        int uMin = -CoreMath.ONE_HALF - (d >> 1);
-        int uMax = fw - 1 - CoreMath.ONE_HALF + (d >> 1);
-        int vMin = -CoreMath.ONE_HALF - (d >> 1);
-        int vMax = fh - 1 - CoreMath.ONE_HALF + (d >> 1);
+        int ud = Math.max(Math.abs(duX), Math.abs(duY));
+        int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
+        int uMin = -CoreMath.ONE_HALF - (ud >> 1);
+        int uMax = fw - 1 - CoreMath.ONE_HALF + (ud >> 1);
+        int vMin = -CoreMath.ONE_HALF - (vd >> 1);
+        int vMax = fh - 1 - CoreMath.ONE_HALF + (vd >> 1);
         
         for (int j = 0; j < objectHeight; j++) {
             
