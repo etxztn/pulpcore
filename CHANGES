@@ -1,8 +1,11 @@
 0.11.4 (In SVN)
   * API: Added Label.setFont()
-  * API: Added ScrollArea (useful for scrolly worlds) and a simple ScrollPane.
+  * API: Added Viewport (useful for scrolly worlds). 
+  * API: Added ScrollPane.
+  * Contrib: Added StretchableImage (Christoffer Lerno). 
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
-    "true", "false" or "default" (PulpCore chooses the best). 
+    "true" (always use), "false" (never use) or "default" (PulpCore chooses the best). Most 
+    developers won't need to change this value.
   * Fixed bug: borders when drawing with a large scale weren't correct.
   * Fixed bug: custom splash gifs weren't working properly.
   * Fixed bug: added null check in Stage when destroying the app when there is no Scene.
