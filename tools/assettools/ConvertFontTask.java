@@ -151,13 +151,14 @@ public class ConvertFontTask extends Task {
     private boolean monospace;
     private boolean monospaceNumerals;
     
+    private boolean antiAlias;
+    
     private final boolean useGlyphBearingInfo = true;
     
     // Kerning: Java 6 only (work in progress)
     private final boolean useKerningInfo = true;
     
-    private final FontRenderContext context = 
-        new FontRenderContext(new AffineTransform(), true, true);
+    private FontRenderContext context;
     
     private void create() throws IOException, FontFormatException {
         try {
@@ -299,9 +300,11 @@ public class ConvertFontTask extends Task {
         }
         
         numColors = props.getIntProperty("colors", 0);
-        
+        antiAlias = props.getProperty("antialias", "true").equals("true");
         monospace = props.getProperty("monospace", "false").equals("true");
         monospaceNumerals = props.getProperty("monospace.numerals", "false").equals("true");
+        
+        context = new FontRenderContext(new AffineTransform(), antiAlias, antiAlias);
         
         Iterator<String> i = props.getUnrequestedKeys();
         while (i.hasNext()) {
@@ -547,7 +550,6 @@ public class ConvertFontTask extends Task {
     private void getBearing(Font font, char ch, int imageWidth) {
         // See http://developer.apple.com/documentation/Carbon/Conceptual/ATSUI_Concepts/art/glyphterms.gif
         // w = advance - lsb - rsb;
-        
         GlyphMetrics metrics = getMetrics(font, ch);
         float w = (float)metrics.getBounds2D().getWidth();
         if (w > 0) {
@@ -621,7 +623,7 @@ public class ConvertFontTask extends Task {
         g.translate(x, y);
 
         // Draw the shadow
-        if (shadowPaint != null) {
+        if (antiAlias && shadowPaint != null) {
             g.translate(shadowX, shadowY);
             g.setPaint(shadowPaint);
             g.fill(shape);
@@ -637,12 +639,19 @@ public class ConvertFontTask extends Task {
         }
         
         // Draw the character
-        g.setPaint(fillPaint);
-        g.fill(shape);
-        if (stroke != null) {
-            g.setPaint(strokePaint);
-            g.setStroke(stroke);
-            g.draw(shape);
+        if (antiAlias) {
+            g.setPaint(fillPaint);
+            g.fill(shape);
+            if (stroke != null) {
+                g.setPaint(strokePaint);
+                g.setStroke(stroke);
+                g.draw(shape);
+            }
+        }
+        else {
+            g.setPaint(fillPaint);
+            g.setFont(font);
+            g.drawString(Character.toString(ch), 0, 0);
         }
         
         return image;
@@ -651,22 +660,34 @@ public class ConvertFontTask extends Task {
     private void setHighQuality(Graphics2D g) {
         g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
             RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY); 
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-            RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING,
             RenderingHints.VALUE_COLOR_RENDER_QUALITY);
         g.setRenderingHint(RenderingHints.KEY_DITHERING,
             RenderingHints.VALUE_DITHER_DISABLE);
-        g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
-            RenderingHints.VALUE_FRACTIONALMETRICS_ON);
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
             RenderingHints.VALUE_INTERPOLATION_BICUBIC);
         g.setRenderingHint(RenderingHints.KEY_RENDERING,
-            RenderingHints.VALUE_RENDER_QUALITY);         
-        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
-            RenderingHints.VALUE_STROKE_PURE);
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-            RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            RenderingHints.VALUE_RENDER_QUALITY);       
+        if (antiAlias) {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
+                RenderingHints.VALUE_STROKE_PURE);
+            g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
+                RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+       }
+       else {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_OFF);
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL,
+                RenderingHints.VALUE_STROKE_NORMALIZE);
+            g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
+                RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+       }
     }
     
     private GlyphMetrics getMetrics(Font font, char ch) {
