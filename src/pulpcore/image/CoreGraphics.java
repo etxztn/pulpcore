@@ -44,11 +44,6 @@ import pulpcore.math.Transform;
 */
 public class CoreGraphics {
     
-    // Image edge drawing for rotated bilinear images. 
-    // <= 0.11.3 PulpCore: EDGE_SIZE = <1.0 (0xffff)
-    protected static final int EDGE_SIZE_FOR_RECT = CoreMath.ONE-1;
-    protected static final int EDGE_SIZE = CoreMath.ONE_HALF;//CoreMath.ONE-1;
-    
     // Line drawing options
     private static final boolean CENTER_PIXEL = true;
     private static final boolean SWAP_POINTS = true;
