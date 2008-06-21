@@ -2,7 +2,9 @@
   * API: Added Label.setFont()
   * API: Added Viewport (useful for scrolly worlds). 
   * API: Added ScrollPane.
-  * Contrib: Added StretchableImage (Christoffer Lerno). 
+  * Contrib: Added StretchableImage (Christoffer Lerno).
+  * Tools: Font creator can now render fonts with anti-aliasing disabled.
+  * Core: Tinted fonts are now cached.
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
     "true" (always use), "false" (never use) or "default" (PulpCore chooses the best). Most 
     developers won't need to change this value.

@@ -30,6 +30,7 @@
 package pulpcore.image;
 
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import pulpcore.Build;
@@ -57,6 +58,9 @@ public class CoreFont {
     private int tracking;
     private int[] bearingLeft;
     private int[] bearingRight;
+    
+    // HashMap<Integer, SoftReference<CoreFont>>
+    private HashMap tintedFonts;
     
     public static CoreFont getSystemFont() {
         if (systemFont == null) {
@@ -279,19 +283,49 @@ public class CoreFont {
     /**
         Returns a new CoreFont with every pixel set to the specified color,
         without changing the alpha of each pixel. 
+        <p>
+        Tinted fonts are internally cached using SoftReferences.
     */
     public CoreFont tint(int rgbColor) {
+        
+        Integer color = new Integer(rgbColor);
+        
+        if (tintedFonts == null) {
+            tintedFonts = new HashMap();
+        }
+        else {
+            // Attempt to load from the cache
+            SoftReference fontRef = (SoftReference)tintedFonts.get(color);
+            if (fontRef != null) {
+                CoreFont font = (CoreFont)fontRef.get();
+                if (font != null) {
+                    return font;
+                }
+                else {
+                    tintedFonts.remove(color);
+                }
+            }
+        }
+        
+        // Create a new tinted font
         CoreFont tintedFont = new CoreFont(this);
         tintedFont.image = image.tint(rgbColor);
+        tintedFonts.put(color, new SoftReference(tintedFont));
         return tintedFont;
     }
-    
+   
+    /**
+        @deprecated Background colors do not appear correctly
+    */
     public CoreFont background(int argbColor) {
         CoreFont newFont = new CoreFont(this);
         newFont.image = image.background(argbColor);
         return newFont;
     }
     
+    /**
+        @deprecated Fade dynamically using a Label instead
+    */
     public CoreFont fade(int alpha) {
         CoreFont fadedFont = new CoreFont(this);
         fadedFont.image = image.fade(alpha);
@@ -300,6 +334,7 @@ public class CoreFont {
     
     /**
         Creates a scaled instance of this font.
+        @deprecated Scale dynamically using a Label instead
     */
     public CoreFont scale(double scale) {
         
