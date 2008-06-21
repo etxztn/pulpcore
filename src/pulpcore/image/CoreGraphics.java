@@ -90,6 +90,9 @@ public class CoreGraphics {
     /** If true, bilinear filtering is used when scaling images. */
     private boolean bilinear;
     
+    /** For bilinear interpolation, if true, edges are clamped (hard edges) */
+    private boolean edgeClamp;
+    
     private boolean fractionalMetrics;
     
     /** The current alpha value. 0 is fully tranaparent, 255 is fully opaque. */
@@ -143,6 +146,7 @@ public class CoreGraphics {
             <li>alpha = 255</li>
             <li>blendMode = BlendMode.SrcOver()</li>
             <li>interpolation = INTERPOLATION_BILINEAR</li>
+            <li>edgeClamp = false</li>
             <li>font = null</li>
         </ul>
     */
@@ -152,6 +156,7 @@ public class CoreGraphics {
         setColor(Colors.BLACK);
         setBlendMode(BlendMode.SrcOver());
         bilinear = true;
+        edgeClamp = false;
         fractionalMetrics = true;
         font = null;
         
@@ -181,6 +186,18 @@ public class CoreGraphics {
     
     public int getInterpolation() {
         return bilinear ? INTERPOLATION_BILINEAR : INTERPOLATION_NEAREST_NEIGHBOR;
+    }
+    
+    /**
+        Sets the edge mode for bilinear interpolated scaled images. If true, edges appear "hard"
+        otherwise edges appear "soft". The default is false.
+    */
+    public void setEdgeClamp(boolean edgeClamp) {
+        this.edgeClamp = edgeClamp;
+    }
+    
+    public boolean getEdgeClamp() {
+        return edgeClamp;
     }
     
     public void setFractionalMetrics(boolean useFractionalMetrics) {
@@ -955,7 +972,7 @@ public class CoreGraphics {
             }
         }
         else {
-            composite.blend(srcData, srcScanSize, image.isOpaque(), 
+            composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
                 srcX, srcY, srcWidth, srcHeight, srcOffset,
                 u, v,
                 (1 << 16), 0,
@@ -1091,7 +1108,7 @@ public class CoreGraphics {
         for (int j = 0; j < objectHeight; j++) {
             int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
             
-            composite.blend(srcData, srcScanSize, image.isOpaque(), 
+            composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
                 srcX, srcY, srcWidth, srcHeight, srcOffset,
                 u, v,
                 du, 0,
@@ -1340,7 +1357,7 @@ public class CoreGraphics {
             }
             
             int srcOffset = -1;
-            composite.blend(srcData, srcScanSize, image.isOpaque(), 
+            composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
                 srcX, srcY, srcWidth, srcHeight, srcOffset,
                 u, v,
                 duX, dvX,

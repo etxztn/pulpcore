@@ -28,9 +28,6 @@ import pulpcore.image.CoreGraphics;
  *     }
  * }
  * </pre>
- * Due to a limitation in PulpCore's software renderer, the sides and center are scaled with
- * nearest-neighbor interpolation. Future versions of the software renderer will allow
- * bilinear interpolation. 
  *
  * @author Christoffer Lerno
  * @version $Revision$ $Date$   $Author$
@@ -93,7 +90,7 @@ public class StretchableImage extends CoreImage
 	{
 		CoreImage scaledImage = new CoreImage(width, height, false);
 		CoreGraphics g = scaledImage.createGraphics();
-		g.setInterpolation(CoreGraphics.INTERPOLATION_NEAREST_NEIGHBOR);
+		g.setEdgeClamp(true);
 		int xParts = m_hSections.getParts();
 		int yParts = m_vSections.getParts();
 		Sections hScaled = m_hSections.scale(width);

@@ -180,8 +180,8 @@ final class CompositeAdd extends Composite {
             }
         }
     }
-
-    void blend(int[] srcData, int srcScanSize, boolean srcOpaque, 
+    
+    void blend(int[] srcData, int srcScanSize, boolean srcOpaque, boolean edgeClamp, 
         int srcX, int srcY, int srcWidth, int srcHeight, int srcOffset, 
         int u, int v, int du, int dv, 
         boolean rotation,
@@ -226,7 +226,7 @@ final class CompositeAdd extends Composite {
                     }
                     else if (v < (srcHeight << 16)) {
                         offsetTop = srcOffset - (u >> 16);
-                        offsetBottom = EDGE_CLAMP ? offsetTop : -1;
+                        offsetBottom = edgeClamp ? offsetTop : -1;
                     }
                     else {
                         offsetTop = -1;
@@ -235,7 +235,7 @@ final class CompositeAdd extends Composite {
                 }
                 else if (v > -(1<<16)) {
                     offsetBottom = srcX + srcY * srcScanSize;
-                    offsetTop = EDGE_CLAMP ? offsetBottom : -1;
+                    offsetTop = edgeClamp ? offsetBottom : -1;
                 }
                 else {
                     offsetTop = -1;
@@ -255,7 +255,7 @@ final class CompositeAdd extends Composite {
                 if (renderBilinear) {
                     for (int i = 0; i < numPixels; i++) {
                         int srcARGB = getPixelBilinearTranslucent(srcData, 
-                                srcScanSize, srcX, srcY, srcWidth, srcHeight, u, v);
+                                srcScanSize, srcX, srcY, srcWidth, srcHeight, edgeClamp, u, v);
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
                             blendOpaquePixel(destData, destOffset, srcARGB);
@@ -297,7 +297,7 @@ final class CompositeAdd extends Composite {
                 }
                 else {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearTranslucent(srcData,
+                        int srcARGB = getPixelBilinearTranslucent(srcData, edgeClamp, 
                             offsetTop, offsetBottom, u, v, srcWidth);
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
@@ -372,7 +372,7 @@ final class CompositeAdd extends Composite {
                 if (renderBilinear) {
                     for (int i = 0; i < numPixels; i++) {
                         int srcARGB = getPixelBilinearTranslucent(srcData, 
-                                srcScanSize, srcX, srcY, srcWidth, srcHeight, u, v);
+                                srcScanSize, srcX, srcY, srcWidth, srcHeight, edgeClamp, u, v);
                         if ((srcARGB >>> 24) > 0) {
                             blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
@@ -406,7 +406,7 @@ final class CompositeAdd extends Composite {
                 }
                 else {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearTranslucent(srcData,
+                        int srcARGB = getPixelBilinearTranslucent(srcData, edgeClamp, 
                             offsetTop, offsetBottom, u, v, srcWidth);
                         if ((srcARGB >>> 24) > 0) {
                             blendPixel(destData, destOffset, srcARGB, renderAlpha);

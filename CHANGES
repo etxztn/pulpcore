@@ -2,6 +2,8 @@
   * API: Added Label.setFont()
   * API: Added Viewport (useful for scrolly worlds). 
   * API: Added ScrollPane.
+  * API: Added CoreGraphics.setEdgeClamp() to choose between hard and soft edges when scaling
+    with bilinear interpolation.
   * Contrib: Added StretchableImage (Christoffer Lerno).
   * Tools: Font creator can now render fonts with anti-aliasing disabled.
   * Core: Tinted fonts are now cached.

@@ -33,11 +33,6 @@ import pulpcore.math.CoreMath;
 
 /* package-private */ abstract class Composite {
     
-    // Image edge drawing for bilinear images. 
-    // NOTE: scaled-up fonts look bad with this set to true. Each char would need a 1-pixel
-    // transparent border. Also, it break's PulpCore's anti-aliasing
-    protected static final boolean EDGE_CLAMP = false;
-    
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB);
     
     /* package-private */ abstract void blend(int[] destData, int destOffset, int srcARGB, 
@@ -62,6 +57,7 @@ import pulpcore.math.CoreMath;
         @param numRows only used if rotation == false, renderBilinear == false
     */
     /* package-private */ abstract void blend(int[] srcData, int srcScanSize, boolean srcOpaque, 
+        boolean edgeClamp, 
         int srcX, int srcY, int srcWidth, int srcHeight, int srcOffset, 
         int u, int v, int du, int dv, 
         boolean rotation,
@@ -162,7 +158,7 @@ import pulpcore.math.CoreMath;
     
     // For rotation
     protected final int getPixelBilinearTranslucent(int[] data, int srcScanSize,
-        int srcX, int srcY, int srcWidth, int srcHeight,
+        int srcX, int srcY, int srcWidth, int srcHeight, boolean edgeClamp,
         int fx, int fy)
     {
         int y = fy >> 16;
@@ -178,7 +174,7 @@ import pulpcore.math.CoreMath;
             }
             else if (fy < (srcHeight << 16)) {
                 top = srcX + (y + srcY)  * srcScanSize;
-                bottom = EDGE_CLAMP ? top : -1;
+                bottom = edgeClamp ? top : -1;
             }
             else {
                 top = -1;
@@ -187,7 +183,7 @@ import pulpcore.math.CoreMath;
         }
         else if (fy > -CoreMath.ONE) {
             bottom = srcX + srcY * srcScanSize;
-            top = EDGE_CLAMP ? bottom : -1;
+            top = edgeClamp ? bottom : -1;
         }
         else {
             top = -1;
@@ -196,6 +192,7 @@ import pulpcore.math.CoreMath;
         
         return getPixelBilinearTranslucent(
             data, 
+            edgeClamp,
             top,
             bottom,
             fx, 
@@ -237,7 +234,7 @@ import pulpcore.math.CoreMath;
         @param fy fixed-point vertical distance from srcY
         @param srcWidth the maximum width to retrieve pixel data from the image.
     */
-    protected final int getPixelBilinearTranslucent(int[] imageData,
+    protected final int getPixelBilinearTranslucent(int[] imageData, boolean edgeClamp, 
         int offsetTop, int offsetBottom, 
         int fx, int fy,
         int srcWidth) 
@@ -276,22 +273,22 @@ import pulpcore.math.CoreMath;
             else if (fx < (srcWidth << 16)) {
                 if (offsetTop != -1) {
                     topLeftPixel = imageData[offsetTop + x];
-                    topRightPixel = EDGE_CLAMP ? topLeftPixel : 0;
+                    topRightPixel = edgeClamp ? topLeftPixel : 0;
                 }
                 if (offsetBottom != -1) {
                     bottomLeftPixel = imageData[offsetBottom + x];
-                    bottomRightPixel = EDGE_CLAMP ? bottomLeftPixel : 0;
+                    bottomRightPixel = edgeClamp ? bottomLeftPixel : 0;
                 }
             }
         }
         else if (fx > -CoreMath.ONE) {
             if (offsetTop != -1) {
                 topRightPixel = imageData[offsetTop];
-                topLeftPixel = EDGE_CLAMP ? topRightPixel : 0;
+                topLeftPixel = edgeClamp ? topRightPixel : 0;
             }
             if (offsetBottom != -1) {
                 bottomRightPixel = imageData[offsetBottom];
-                bottomLeftPixel = EDGE_CLAMP ? bottomRightPixel : 0;
+                bottomLeftPixel = edgeClamp ? bottomRightPixel : 0;
             }
         }
         
