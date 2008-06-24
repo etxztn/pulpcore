@@ -250,8 +250,8 @@ public class CoreMath {
     */
     public static final String toString(int f) {
         return formatNumber(
-            toInt(f),
-            fracPart(f) << (32 - FRACTION_BITS),
+            abs(toInt(f)),
+            fracPart(f) << (32 - FRACTION_BITS), (f < 0),
             1, 7, false);
     }
         
@@ -262,11 +262,63 @@ public class CoreMath {
     */
     public static final String toString(int f, int numFractionalDigits) {
         return formatNumber(
-            toInt(f),
-            fracPart(f) << (32 - FRACTION_BITS),
+            abs(toInt(f)),
+            fracPart(f) << (32 - FRACTION_BITS), (f < 0),
             numFractionalDigits, numFractionalDigits, false);
     }
     
+    /**
+        Converts a fixed-point number to a base-10 string representation.
+        @param f the fixed-point number
+        @param minFracDigits the minimum number of digits to show after
+        the decimal point.
+        @param maxFracDigits the maximum number of digits to show after
+        the decimal point.
+        @param grouping if (true, uses the grouping character (',') 
+        to seperate groups in the integer portion of the number.
+    */
+    public static String toString(int f, 
+        int minFracDigits, int maxFracDigits, boolean grouping)
+    {
+        return formatNumber(
+            abs(toInt(f)),
+            fracPart(f) << (32 - FRACTION_BITS), (f < 0),
+            minFracDigits, maxFracDigits, grouping); 
+    }
+    
+    /**
+        Converts an integer to a base-10 string representation.
+    */
+    public static final String intToString(int n) {
+        return formatNumber(abs(n), 0, (n < 0), 0, 0, false); 
+    }
+        
+        
+    /**
+        Converts a integer to a base-10 string representation using 
+        the specified number of fractional digits. 
+    */
+    public static final String intToString(int n, int numFractionalDigits) {
+        return formatNumber(abs(n), 0, (n < 0), 
+            numFractionalDigits, numFractionalDigits, false); 
+    }
+    
+    /**
+        Converts an integer to a base-10 string representation.
+        @param n the integer
+        @param minFracDigits the minimum number of digits to show after
+        the decimal point.
+        @param maxFracDigits the maximum number of digits to show after
+        the decimal point.
+        @param grouping if (true, uses the grouping character (',') 
+        to seperate groups in the integer portion of the number.
+    */
+    public static String intToString(int n, 
+        int minFracDigits, int maxFracDigits, boolean grouping)
+    {
+        return formatNumber(abs(n), 0, (n < 0), 
+            minFracDigits, maxFracDigits, grouping); 
+    }
     
     /**
         Converts a number to a base-10 string representation.
@@ -279,19 +331,13 @@ public class CoreMath {
         @param intPartGrouping if (true, uses the groupong character (',') 
         to seperate groups in the integer portion of the number.
     */
-    public static String formatNumber(int intPart, int fracPart, 
+    private static String formatNumber(int intPart, int fracPart, boolean negative, 
         int minFracDigits, int maxFracDigits, boolean intPartGrouping)
     {
         StringBuffer buffer = new StringBuffer();
-        boolean negative = false;
         long one = 1L << 32;
         long mask = one - 1;
         long frac = ((long)fracPart) & mask;
-        
-        if (intPart < 0) {
-            negative = true;
-            intPart = -intPart;
-        }
         
         // Round up if needed
         if (maxFracDigits < 10) {

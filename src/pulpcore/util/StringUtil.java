@@ -173,18 +173,18 @@ public final class StringUtil {
                     Object arg = (currentArg < args.length) ? args[currentArg] : "?";
                     if (arg instanceof Integer) {
                         int value = ((Integer)arg).intValue();
-                        buffer.append(CoreMath.formatNumber(value, 0, 0, 0, grouping));
+                        buffer.append(CoreMath.intToString(value, 0, 0, grouping));
                     }
                     else if (arg instanceof Int) {
                         int value = ((Int)arg).get();
-                        buffer.append(CoreMath.formatNumber(value, 0, 0, 0, grouping));
+                        buffer.append(CoreMath.intToString(value, 0, 0, grouping));
                     }
                     else if (arg instanceof Fixed) {
                         int value = ((Fixed)arg).getAsIntRound();
-                        buffer.append(CoreMath.formatNumber(value, 0, 0, 0, grouping));
+                        buffer.append(CoreMath.intToString(value, 0, 0, grouping));
                     }
                     else {
-                        buffer.append((String)arg);
+                        buffer.append(arg.toString());
                     }
                 }
                 else if (ch == 'f') {
@@ -194,23 +194,20 @@ public final class StringUtil {
                     Object arg = (currentArg < args.length) ? args[currentArg] : "?";
                     if (arg instanceof Integer) {
                         int value = ((Integer)arg).intValue();
-                        buffer.append(CoreMath.formatNumber(value, 0, minDigits, maxDigits, 
+                        buffer.append(CoreMath.intToString(value, minDigits, maxDigits, 
                             grouping));
                     }
                     else if (arg instanceof Int) {
                         int value = ((Int)arg).get();
-                        buffer.append(CoreMath.formatNumber(value, 0, minDigits, maxDigits, 
+                        buffer.append(CoreMath.intToString(value, minDigits, maxDigits, 
                             grouping));
                     }
                     else if (arg instanceof Fixed) {
                         int f = ((Fixed)arg).getAsFixed();
-                        int intPart = CoreMath.toInt(f);
-                        int fracPart = CoreMath.fracPart(f) << (32 - CoreMath.FRACTION_BITS);
-                        buffer.append(CoreMath.formatNumber(intPart, fracPart, minDigits, maxDigits, 
-                            grouping));
+                        buffer.append(CoreMath.toString(f, minDigits, maxDigits, grouping));
                     }
                     else {
-                        buffer.append((String)arg);
+                        buffer.append(arg.toString());
                     }
                 }
                 else if (decimal && ch >= '0' && ch <= '9') {
