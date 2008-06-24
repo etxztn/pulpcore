@@ -766,6 +766,15 @@ public class ScrollPane extends Group {
     }
     
     /**
+        Calls {@code add(index, sprite)} on the internal {@link Viewport}.
+        <p>
+        {@inheritDoc}
+    */
+    public void add(int index, Sprite sprite) {
+        viewport.add(index, sprite);
+    }
+    
+    /**
         Calls {@code remove(sprite)} on the internal {@link Viewport}.
         <p>
         {@inheritDoc}

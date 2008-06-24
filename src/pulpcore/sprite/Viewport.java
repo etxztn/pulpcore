@@ -154,6 +154,16 @@ public class Viewport extends Group {
         getContentPane().add(sprite);
         calcContentDimension();
     }
+
+    /**
+        Calls {@code getContentPane().add(index, sprite);}.
+        <p>
+        {@inheritDoc}
+    */
+    public void add(int index, Sprite sprite) {
+        getContentPane().add(index, sprite);
+        calcContentDimension();
+    }
     
     /**
         Calls {@code getContentPane().remove(sprite);}.

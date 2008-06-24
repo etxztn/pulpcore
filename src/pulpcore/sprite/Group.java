@@ -148,6 +148,25 @@ public class Group extends Sprite {
     }
     
     /**
+        Returns {@code true} if this Group is an ancestor of the specified Sprite.
+    */
+    public boolean isAncestorOf(Sprite sprite) {
+        // Depth-first search
+        Sprite[] snapshot = sprites;
+        int count = 0;
+        for (int i = 0; i < snapshot.length; i++) {
+            Sprite s = snapshot[i];
+            if (s == sprite) {
+                return true;
+            }
+            else if (s instanceof Group && ((Group)s).isAncestorOf(sprite)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
         Returns {@code true} if sprites inside this Group are not visible outside the 
         natural bounds of this Group. 
         
@@ -296,6 +315,30 @@ public class Group extends Sprite {
                 }
                 Sprite[] snapshot = sprites;
                 sprites = add(snapshot, sprite, snapshot.length);
+                sprite.setParent(this);
+            }
+        }
+    }
+    
+    /**
+        Inserts a Sprite to this Group at the specified position. The Sprite at the current
+        position (if any) and any subsequent Sprites are moved up in the z-order
+        (adds one to their indices).
+        <p>
+        If the index is less than zero, the sprite is inserted at position zero (the bottom in the 
+        z-order).
+        If the index is greater than or equal to {@link #size()}, the sprite is inserted at 
+        position {@link #size()} (the top in the z-order).
+    */
+    public void add(int index, Sprite sprite) {
+        if (sprite != null) {
+            synchronized (getTreeLock()) {
+                Group parent = sprite.getParent();
+                if (parent != null) {
+                    parent.remove(sprite);
+                }
+                Sprite[] snapshot = sprites;
+                sprites = add(snapshot, sprite, index);
                 sprite.setParent(this);
             }
         }
