@@ -509,7 +509,8 @@ public abstract class Sprite implements PropertyListener {
     }
     
     /**
-        @return the fixed-point x anchor.
+        @return the fixed-point x anchor, typically from 0 to 
+        {@code getNaturalWidth() - CoreMath.ONE}.
     */
     protected int getAnchorX() {
         if ((anchor & HCENTER) != 0) {
@@ -525,7 +526,8 @@ public abstract class Sprite implements PropertyListener {
     }
     
     /**
-        @return the fixed-point y anchor.
+        @return the fixed-point y anchor, typically from 0 to 
+        {@code getNaturalHeight() - CoreMath.ONE}.
     */
     protected int getAnchorY() {
         if ((anchor & VCENTER) != 0) {
@@ -923,8 +925,8 @@ public abstract class Sprite implements PropertyListener {
         for (int i = 0; i < 4; i++) {
             Tuple2i p = bp[i];
             bt.transform(p);
-            at.inverseTransform(p);
-            if (p.x == Integer.MAX_VALUE || p.y == Integer.MAX_VALUE) {
+            boolean success = at.inverseTransform(p);
+            if (!success) {
                 return false;
             }
         }
@@ -936,7 +938,7 @@ public abstract class Sprite implements PropertyListener {
             new Tuple2i(bp[1].y - bp[0].y, bp[0].x - bp[1].x),
             new Tuple2i(bp[3].y - bp[0].y, bp[0].x - bp[3].x)
         };
-        int[] perpLengths = {
+        long[] perpLengths = {
             aw,
             ah,
             perps[2].length(),
@@ -947,18 +949,18 @@ public abstract class Sprite implements PropertyListener {
         // For each perpendicular, the span of projected points from sprite A must intersect 
         // the span of projected points from sprite B
         for (int i = 0; i < perps.length; i++) {
-            int amin = Integer.MAX_VALUE;
-            int amax = Integer.MIN_VALUE;
-            int bmin = Integer.MAX_VALUE;
-            int bmax = Integer.MIN_VALUE;
-            int len = perpLengths[i];
+            long amin = Long.MAX_VALUE;
+            long amax = Long.MIN_VALUE;
+            long bmin = Long.MAX_VALUE;
+            long bmax = Long.MIN_VALUE;
+            long len = perpLengths[i];
             Tuple2i p = perps[i];
             
             if (len <= 0) {
                 return false;
             }
             for (int j = 0; j < ap.length; j++) {
-                int v = CoreMath.div(p.dot(ap[j]), len);
+                long v = CoreMath.div(p.dot(ap[j]), len);
                 if (v < amin) {
                     amin = v;
                 }
@@ -967,7 +969,7 @@ public abstract class Sprite implements PropertyListener {
                 }
             }
             for (int j = 0; j < bp.length; j++) {
-                int v = CoreMath.div(p.dot(bp[j]), len);
+                long v = CoreMath.div(p.dot(bp[j]), len);
                 if (v < bmin) {
                     bmin = v;
                 }

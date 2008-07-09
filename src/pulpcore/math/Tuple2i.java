@@ -82,17 +82,10 @@ public class Tuple2i {
     }
     
     /**
-        Interpreting this Tuple2i as a fixed-point vector, return the square of its length.
-    */
-    public int lengthSquared() {
-        return CoreMath.mul(x, x) + CoreMath.mul(y, y);
-    }
-    
-    /**
         Interpreting this Tuple2i as a fixed-point vector, return its length.
     */
-    public int length() {
-        int l2 = lengthSquared();
+    public long length() {
+        long l2 = CoreMath.mul((long)x, x) + CoreMath.mul((long)y, y);
         if (l2 > 0) {
             return CoreMath.sqrt(l2);
         }
@@ -105,7 +98,7 @@ public class Tuple2i {
         Interpreting this Tuple2i and the specified Tuple2i as a fixed-point vector, 
         return the dot product of the two vectors.
     */
-    public int dot(Tuple2i t) {
-        return CoreMath.mul(x, t.x) + CoreMath.mul(y, t.y);
+    public long dot(Tuple2i t) {
+        return CoreMath.mul((long)x, t.x) + CoreMath.mul((long)y, t.y);
     }
 }
