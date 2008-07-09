@@ -179,6 +179,20 @@ public class CoreImage {
         }
     }
     
+    /**
+        Gets the ARGB color at the specified location.
+        @throws IllegalArgumentException if the specified location is out of bounds.
+        @return the ARGB color in non-premultiplied format.
+    */
+    public final int getARGB(int x, int y) {
+        if (x < 0 || y < 0 || x >= width || y >= height) {
+            throw new IllegalArgumentException();
+        }
+        else {
+            return Colors.unpremultiply(data[x + y * width]);
+        }
+    }
+    
     /* package-private */ final void setData(int[] data) {
         this.data = data;
     }

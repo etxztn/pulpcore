@@ -491,14 +491,18 @@ public class Colors {
     
     /* package-private */ static int unpremultiply(int pmColor) {
         int a = pmColor >>> 24;
-        int r = (pmColor >> 16) & 0xff;
-        int g = (pmColor >> 8) & 0xff;
-        int b = pmColor & 0xff;
         
         if (a == 0) {
             return 0;
         }
+        else if (a == 255) {
+            return pmColor;
+        }
         else {
+            int r = (pmColor >> 16) & 0xff;
+            int g = (pmColor >> 8) & 0xff;
+            int b = pmColor & 0xff;
+        
             r = 255 * r / a;
             g = 255 * g / a;
             b = 255 * b / a;
