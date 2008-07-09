@@ -105,7 +105,8 @@ public class Transform {
                 return Integer.MAX_VALUE;
             }
             return (int)(((long)fx * m11 - (long)fy * m01) / det);
-        } else if ((type & Transform.TYPE_SCALE) != 0) {
+        }
+        else if ((type & Transform.TYPE_SCALE) != 0) {
             if (m00 == 0 || m11 == 0) {
                 return Integer.MAX_VALUE;
             }
