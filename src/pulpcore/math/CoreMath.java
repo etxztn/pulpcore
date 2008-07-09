@@ -803,8 +803,15 @@ public class CoreMath {
             fx = -PI - fx;
         }
         
-        if (fx == 0) {
+        // Helps with rotation appearance near 90, 180, 270, 360, etc.
+        if (abs(fx) < 32) {
             return 0;
+        }
+        else if (abs(fx - ONE_HALF_PI) < 32) {
+            return ONE;
+        }
+        else if (abs(fx + ONE_HALF_PI) < 32) {
+            return -ONE;
         }
         
         // Maclaurin power series
