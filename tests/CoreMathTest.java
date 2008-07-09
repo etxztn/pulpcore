@@ -84,7 +84,7 @@ public class CoreMathTest {
             double angle = CoreMath.rand(-2*Math.PI, 2*Math.PI);
             double expectedResult = Math.cos(angle);
             double actualResult = CoreMath.toDouble(CoreMath.cos(CoreMath.toFixed(angle)));
-            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.000037);
+            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.0009);
         }
     }
     
@@ -102,7 +102,7 @@ public class CoreMathTest {
             double angle = CoreMath.rand(-2*Math.PI, 2*Math.PI);
             double expectedResult = Math.sin(angle);
             double actualResult = CoreMath.toDouble(CoreMath.sin(CoreMath.toFixed(angle)));
-            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.000037);
+            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.0009);
         }
     }
     
@@ -120,7 +120,7 @@ public class CoreMathTest {
             double angle = CoreMath.rand(-Math.PI/4, Math.PI/4);
             double expectedResult = Math.tan(angle);
             double actualResult = CoreMath.toDouble(CoreMath.tan(CoreMath.toFixed(angle)));
-            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.0001);
+            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.0009);
         }
     }
     
