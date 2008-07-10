@@ -84,6 +84,11 @@ public class CoreGraphics {
     private int objectWidth;
     private int objectHeight;
     
+    // Scan line
+    private int scanY;
+    private int scanStartX;
+    private int scanEndX;
+    
     private Composite composite;
     private BlendMode blendMode;
     
@@ -762,13 +767,12 @@ public class CoreGraphics {
             return;
         }
         
-        boolean currFractional = fractionalMetrics & bilinear;
         int type = transform.getType();
         
         if (type == Transform.TYPE_IDENTITY || type == Transform.TYPE_TRANSLATE) {
             int x = transform.getTranslateX();
             int y = transform.getTranslateY();
-            if (currFractional && (CoreMath.fracPart(x) != 0 || CoreMath.fracPart(y) != 0)) { 
+            if (fractionalMetrics && (CoreMath.fracPart(x) != 0 || CoreMath.fracPart(y) != 0)) { 
                 internalDrawScaledImage(image, srcX, srcY, srcWidth, srcHeight);
             }
             else {
@@ -960,11 +964,11 @@ public class CoreGraphics {
         int surfaceOffset = objectX + objectY * surfaceWidth;
         int u = ((objectX - x) << 16);
         int v = ((objectY - y) << 16);          
-        int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
 
         if ((alpha == 0xff) && (blendMode == BlendMode.SrcOver() && image.isOpaque())) {
-            // Fatest case - don't use the compositor.
+            // Fastest case - don't use the compositor.
             // Great optimization for background rendering.
+            int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
             for (int j = 0; j < objectHeight; j++) {
                 System.arraycopy(srcData, srcOffset, surfaceData, surfaceOffset, objectWidth);
                 srcOffset += srcScanSize;
@@ -973,27 +977,12 @@ public class CoreGraphics {
         }
         else {
             composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
-                srcX, srcY, srcWidth, srcHeight, srcOffset,
+                srcX, srcY, srcWidth, srcHeight, 
                 u, v,
                 (1 << 16), 0,
                 false,
                 false, alpha,
                 surfaceData, surfaceWidth, surfaceOffset, objectWidth, objectHeight);
-          
-            /*for (int j = 0; j < objectHeight; j++) {
-                composite.blend(srcData, srcScanSize, image.isOpaque, 
-                    srcX, srcY, srcWidth, srcHeight, srcOffset,
-                    u, v,
-                    (1 << 16), 0,
-                    false,
-                    false, alpha,
-                    surfaceData, surfaceOffset, objectWidth);
-                
-                v += (1 << 16);
-                surfaceOffset += surfaceWidth;
-                srcOffset += srcScanSize;
-            }
-            */
         }
     }
     
@@ -1038,13 +1027,12 @@ public class CoreGraphics {
             return;
         }
         
-        boolean currFractional = fractionalMetrics & bilinear;
         int fW = sx * srcWidth;
         int fH = sy * srcHeight;
         int du;
         int dv;
         
-        if (!currFractional) {
+        if (!fractionalMetrics) {
             fW = CoreMath.floor(fW);
             fH = CoreMath.floor(fH);
             
@@ -1063,7 +1051,7 @@ public class CoreGraphics {
         internalDrawScaledImage(image, fW, fH, du, dv,
             srcX, srcY, srcWidth, srcHeight);
     }
-        
+    
     private void internalDrawScaledImage(CoreImage image,
         int fW, int fH, int du, int dv,
         int srcX, int srcY, int srcWidth, int srcHeight)
@@ -1074,19 +1062,36 @@ public class CoreGraphics {
             return;
         }
         
-        boolean currFractional = fractionalMetrics & bilinear;
+        boolean currFractionalMetrics = fractionalMetrics & (bilinear | edgeClamp);
+        
         int fX = transform.getTranslateX();
         int fY = transform.getTranslateY();
         
-        if (!currFractional) {
+        if (!currFractionalMetrics) {
             fX = CoreMath.floor(fX);
             fY = CoreMath.floor(fY);
         }
-        
-        int x = CoreMath.toIntFloor(fX);
-        int y = CoreMath.toIntFloor(fY);
-        int w = CoreMath.toIntCeil(fW + CoreMath.fracPart(fX));
-        int h = CoreMath.toIntCeil(fH + CoreMath.fracPart(fY));
+        else if (!bilinear && edgeClamp) {
+            fY = CoreMath.floor(fY);
+        }
+        int x;
+        int y;
+        int w;
+        int h;
+        if (edgeClamp) {
+            // offset based on StretchableImageTest
+            int offset = CoreMath.ONE_HALF - 1;
+            x = CoreMath.toIntFloor(fX + offset);
+            y = CoreMath.toIntFloor(fY + offset);
+            w = CoreMath.toIntFloor(fX + fW + offset) - x;
+            h = CoreMath.toIntFloor(fY + fH + offset) - y;
+        }
+        else {
+            x = CoreMath.toIntFloor(fX);
+            y = CoreMath.toIntFloor(fY);
+            w = CoreMath.toIntCeil(fW + CoreMath.fracPart(fX));
+            h = CoreMath.toIntCeil(fH + CoreMath.fracPart(fY));
+        }
         
         clipObject(x, y, w, h);
         if (objectWidth <= 0 || objectHeight <= 0) {
@@ -1101,15 +1106,17 @@ public class CoreGraphics {
         
         // ???
         if (bilinear) {
-            u += ((du - CoreMath.ONE) >> 1);
-            v += ((dv - CoreMath.ONE) >> 1);
+            u += (du >> 1) - CoreMath.ONE_HALF;
+            v += (dv >> 1) - CoreMath.ONE_HALF;
+        }
+        else if (edgeClamp) {
+            u = CoreMath.floor(u);
+            v = CoreMath.floor(v);
         }
         
         for (int j = 0; j < objectHeight; j++) {
-            int srcOffset = srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize;
-            
             composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
-                srcX, srcY, srcWidth, srcHeight, srcOffset,
+                srcX, srcY, srcWidth, srcHeight,
                 u, v,
                 du, 0,
                 false,
@@ -1130,241 +1137,172 @@ public class CoreGraphics {
             return;
         }
         
-        boolean currFractional = fractionalMetrics & bilinear;
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
         
-        if (!currFractional) {
-            x1 = CoreMath.floor(x1);
-            y1 = CoreMath.floor(y1);
-        }
-        
         // Find the bounding rectangle
-        
         int x2 = transform.getScaleX() * srcWidth;
         int y2 = transform.getShearY() * srcWidth;
         int x3 = transform.getShearX() * srcHeight;
         int y3 = transform.getScaleY() * srcHeight;
+        int x4 = x2 + x3;
+        int y4 = y2 + y3;
         
-        int x4 = x1 + x2 + x3;
-        int y4 = y1 + y2 + y3;
+        if (!fractionalMetrics) {
+            x1 = CoreMath.floor(x1);
+            y1 = CoreMath.floor(y1);
+        }
+        
         x2 += x1;
         y2 += y1;
         x3 += x1;
         y3 += y1;
+        x4 += x1;
+        y4 += y1;
         
         int boundsX1 = Math.min( Math.min(x1, x2), Math.min(x3, x4) );
         int boundsY1 = Math.min( Math.min(y1, y2), Math.min(y3, y4) );
         int boundsX2 = Math.max( Math.max(x1, x2), Math.max(x3, x4) );
         int boundsY2 = Math.max( Math.max(y1, y2), Math.max(y3, y4) );
         
-        int boundsX = CoreMath.toIntFloor(boundsX1) - 1;
-        int boundsY = CoreMath.toIntFloor(boundsY1) - 1;
-        int boundsW = CoreMath.toIntCeil(boundsX2) - boundsX + 2;
-        int boundsH = CoreMath.toIntCeil(boundsY2) - boundsY + 2;
+        int x = CoreMath.toIntFloor(boundsX1) - 1;
+        int y = CoreMath.toIntFloor(boundsY1) - 1;
+        int w = CoreMath.toIntCeil(boundsX2) - x + 2;
+        int h = CoreMath.toIntCeil(boundsY2) - y + 2;
         
         // Clip
-        
-        clipObject(boundsX, boundsY, boundsW, boundsH);
+        clipObject(x, y, w, h);
         if (objectWidth <= 0 || objectHeight <= 0) {
             return;
         }
         
-        // Debug: draw bounds
-        //debugDrawObjectBounds();
-        
         // Calc deltas
-    
-        int duX;
-        int dvX;
-        int duY;
-        int dvY;
-        int type = transform.getType();
-        int uY = CoreMath.toFixed(objectX) - x1;
-        int vY = CoreMath.toFixed(objectY) - y1;
+        int u = CoreMath.toFixed(objectX) - x1;
+        int v = CoreMath.toFixed(objectY) - y1;
+        int det = transform.getDeterminant();
+        if (det == 0) {
+            // Determinant is 0
+            return;
+        }
+        int duX = CoreMath.div(transform.getScaleY(), det);
+        int dvX = CoreMath.div(-transform.getShearY(), det);
+        int duY = CoreMath.div(-transform.getShearX(), det);
+        int dvY = CoreMath.div(transform.getScaleX(), det);
         
-        if ((type & Transform.TYPE_ROTATE) != 0) {
-            int det = transform.getDeterminant();
-            if (det == 0) {
-                // Determinant is 0
-                return;
-            }
-            duX = CoreMath.div(transform.getScaleY(), det);
-            dvX = CoreMath.div(-transform.getShearY(), det);
-            duY = CoreMath.div(-transform.getShearX(), det);
-            dvY = CoreMath.div(transform.getScaleX(), det);
-            
-            int newUY = (int)(((long)uY * transform.getScaleY() -
-                (long)vY * transform.getShearX()) / det);
-            int newVY = (int)(((long)vY * transform.getScaleX() - 
-                (long)uY * transform.getShearY()) / det);
-            
-            uY = newUY;
-            vY = newVY;
-        }
-        else if ((type & Transform.TYPE_SCALE) != 0) {
-            int sx = transform.getScaleX();
-            int sy = transform.getScaleY();
-            if (sx == 0 || sy == 0) {
-                // Determinant is 0
-                return;
-            }
-            duX = CoreMath.div(CoreMath.ONE, sx);
-            dvX = 0;
-            duY = 0;
-            dvY = CoreMath.div(CoreMath.ONE, sy);
-            uY = CoreMath.div(uY, sx);
-            vY = CoreMath.div(vY, sy);
-        }
-        else {
-            duX = CoreMath.ONE;
-            dvX = 0;
-            duY = 0;
-            dvY = CoreMath.ONE;
-        }
+        int newU = (int)(((long)u * transform.getScaleY() -
+            (long)v * transform.getShearX()) / det);
+        int newV = (int)(((long)v * transform.getScaleX() - 
+            (long)u * transform.getShearY()) / det);
         
-        if (bilinear) {
-            // ??? 
-            uY += ((duX - CoreMath.ONE) >> 1);
-            vY += ((dvY - CoreMath.ONE) >> 1);
-        }
+        u = newU;
+        v = newV;
         
         // Start Render
         int[] srcData = image.getData();
         int srcScanSize = image.getWidth();
-        int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
+        int surfaceOffset = objectX + objectY * surfaceWidth;
         int fSrcWidth = CoreMath.toFixed(srcWidth);
         int fSrcHeight = CoreMath.toFixed(srcHeight);
         
-        int uMin;
-        int uMax;
-        int vMin;
-        int vMax;
         if (bilinear) {
             int ud = Math.max(Math.abs(duX), Math.abs(duY));
             int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
-            uMin = -CoreMath.ONE_HALF - (ud >> 1);
-            uMax = fSrcWidth - 1 - CoreMath.ONE_HALF + (ud >> 1);
-            vMin = -CoreMath.ONE_HALF - (vd >> 1);
-            vMax = fSrcHeight - 1 - CoreMath.ONE_HALF + (vd >> 1);
-        }
-        else {
-            uMin = 0;
-            uMax = fSrcWidth - 1;
-            vMin = 0;
-            vMax = fSrcHeight - 1;
+            // ???
+            u += (ud >> 1) - CoreMath.ONE_HALF;
+            v += (vd >> 1) - CoreMath.ONE_HALF;
+            
+            if (edgeClamp) {
+                if ((transform.getShearX() == 0 && transform.getShearY() == 0) ||
+                    (transform.getScaleX() == 0 && transform.getScaleY() == 0)) 
+                {
+                    // From StretchableImageTest
+                    int xOffset = CoreMath.ONE_HALF + 1;
+                    int yOffset = CoreMath.sign(y1 - y2) * xOffset;
+                    x1 += xOffset;
+                    x2 += xOffset;
+                    x3 += xOffset;
+                    x4 += xOffset;
+                    y1 += yOffset;
+                    y2 += yOffset;
+                    y3 += yOffset;
+                    y4 += yOffset;
+                }
+            }
+            else {
+                // For anti-aliasing
+                int uMin = -ud;
+                int uMax = fSrcWidth;
+                int vMin = -vd;
+                int vMax = fSrcHeight;
+                x1 = transform.transformX(uMin, vMin);
+                y1 = transform.transformY(uMin, vMin);
+                x2 = transform.transformX(uMax, vMin);
+                y2 = transform.transformY(uMax, vMin);
+                x3 = transform.transformX(uMin, vMax);
+                y3 = transform.transformY(uMin, vMax);
+                x4 = transform.transformX(uMax, vMax);
+                y4 = transform.transformY(uMax, vMax);
+            }
         }
         
         for (int j = 0; j < objectHeight; j++) {
             
+            // Scan convert
+            startScan((objectY + j) << 16);
+            scan(x1, y1, x2, y2);
+            scan(x1, y1, x3, y3);
+            scan(x2, y2, x4, y4);
+            scan(x3, y3, x4, y4);
+            
+            // Check bounds
+            if (hasScan()) {
+                scanStartX = CoreMath.toIntCeil(scanStartX) - objectX;
+                scanEndX = CoreMath.toIntCeil(scanEndX) - objectX;
+                
+                scanStartX = CoreMath.clamp(scanStartX, 0, objectWidth);
+                scanEndX = CoreMath.clamp(scanEndX, 0, objectWidth);
+                
+                if (scanStartX < scanEndX) {
+                    // Draw
+                    composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
+                        srcX, srcY, srcWidth, srcHeight, 
+                        u + scanStartX * duX, v + scanStartX * dvX,
+                        duX, dvX,
+                        true,
+                        bilinear, alpha,
+                        surfaceData, surfaceWidth, surfaceOffset + scanStartX, 
+                        scanEndX - scanStartX, 1);
+                }
+            }
+            u += duY;
+            v += dvY;
             surfaceOffset += surfaceWidth;
-            int u = uY;
-            int v = vY;
-            
-            // Calc uY and vY for the next iteration
-            uY += duY;
-            vY += dvY;
-            
-            int startX = 0;
-            int endX = objectWidth - 1;
-            
-            // Scan convert - left edge
-            if (u < uMin) {
-                if (duX <= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(uMin - u, duX);
-                    startX += n;
-                    u += n * duX;
-                    v += n * dvX;
-                }
+        }
+    }
+    
+    private void startScan(int y) {
+        scanY = y;
+        scanStartX = Integer.MAX_VALUE;
+        scanEndX = Integer.MIN_VALUE;
+    }
+     
+    private boolean hasScan() {
+        return (scanStartX != Integer.MAX_VALUE && scanEndX != Integer.MIN_VALUE);
+    }
+    
+    private void scan(int x1, int y1, int x2, int y2) {
+        if ((scanY < y1) == (scanY < y2)) {
+            // Out of bounds, or y1 == y2
+            // Do nothing
+        }
+        else {
+            int x = x1 + CoreMath.mulDiv(scanY - y1, x2 - x1, y2 - y1);
+            if (x < scanStartX) {
+                scanStartX = x;
             }
-            else if (u > uMax) {
-                if (duX >= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(uMax - u, duX);
-                    startX += n;
-                    u += n * duX;
-                    v += n * dvX;
-                }
+            if (x > scanEndX) {
+                scanEndX = x;
             }
-            
-            if (v < vMin) {
-                if (dvX <= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(vMin - v, dvX);
-                    startX += n;
-                    u += n * duX;
-                    v += n * dvX;
-                }
-            }
-            else if (v > vMax) {
-                if (dvX >= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(vMax - v, dvX);
-                    startX += n;
-                    u += n * duX;
-                    v += n * dvX;
-                }
-            }
-            
-            // Scan convert - right edge
-            int u2 = u + (endX - startX + 1) * duX;
-            if (u2 < uMin) {
-                if (duX >= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(uMin - u2, duX);
-                    endX += n;
-                }
-            }
-            else if (u2 > uMax) {
-                if (duX <= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(uMax - u2, duX);
-                    endX += n;
-                }
-            }
-            
-            int v2 = v + (endX - startX + 1) * dvX;
-            if (v2 < vMin) {
-                if (dvX >= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(vMin - v2, dvX);
-                    endX += n;
-                }
-            }
-            else if (v2 > vMax) {
-                if (dvX <= 0) {
-                    continue;
-                }
-                else {
-                    int n = CoreMath.intDivCeil(vMax - v2, dvX);
-                    endX += n;
-                }
-            }
-            
-            int srcOffset = -1;
-            composite.blend(srcData, srcScanSize, image.isOpaque(), edgeClamp,
-                srcX, srcY, srcWidth, srcHeight, srcOffset,
-                u, v,
-                duX, dvX,
-                true,
-                bilinear, alpha,
-                surfaceData, surfaceWidth, surfaceOffset + startX, endX - startX + 1, 1);
-            
         }
     }
     
@@ -1797,6 +1735,10 @@ public class CoreGraphics {
         }
     }
     
+    /*
+        This uses the "old" scan conversion process, and it should probably be updated to 
+        use the scan converter from internalDrawRotatedImage(). 
+    */
     private void internalFillRotatedRect(int fw, int fh) { 
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
@@ -1892,12 +1834,6 @@ public class CoreGraphics {
             dvY = CoreMath.ONE;
         }
         
-        //if (bilinear) {
-            // ??? 
-            uY += ((duX - CoreMath.ONE) >> 1);
-            vY += ((dvY - CoreMath.ONE) >> 1);
-        //}
-        
         // Start Render
         int surfaceOffset = objectX + (objectY-1) * surfaceWidth;
         int ud = Math.max(Math.abs(duX), Math.abs(duY));
@@ -1906,6 +1842,12 @@ public class CoreGraphics {
         int uMax = fw - 1 - CoreMath.ONE_HALF + (ud >> 1);
         int vMin = -CoreMath.ONE_HALF - (vd >> 1);
         int vMax = fh - 1 - CoreMath.ONE_HALF + (vd >> 1);
+        
+        //if (bilinear) {
+            // ??? 
+            uY += (ud >> 1) - CoreMath.ONE_HALF;
+            vY += (vd >> 1) - CoreMath.ONE_HALF;
+        //}
         
         for (int j = 0; j < objectHeight; j++) {
             

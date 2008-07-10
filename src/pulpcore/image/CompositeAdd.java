@@ -29,6 +29,8 @@
 
 package pulpcore.image;
 
+import pulpcore.math.CoreMath;
+
 /*
     Additive (for premultiplied images)
     
@@ -182,7 +184,7 @@ final class CompositeAdd extends Composite {
     }
     
     void blend(int[] srcData, int srcScanSize, boolean srcOpaque, boolean edgeClamp, 
-        int srcX, int srcY, int srcWidth, int srcHeight, int srcOffset, 
+        int srcX, int srcY, int srcWidth, int srcHeight, 
         int u, int v, int du, int dv, 
         boolean rotation,
         boolean renderBilinear, int renderAlpha,
@@ -196,54 +198,80 @@ final class CompositeAdd extends Composite {
         // Pre-calc for bilinear scaling
         //
         
+        int srcOffset = 0;
         int offsetTop = 0;
         int offsetBottom = 0;
-        if (!rotation && renderBilinear) {
-            int imageY = v >> 16;
-            if (srcOpaque) {
-                if (imageY >= srcHeight - 1) {
-                    offsetTop = srcX + (srcY + srcHeight - 1) * srcScanSize;
-                    offsetBottom = offsetTop;
-                }
-                else if (imageY < 0) {
-                    offsetTop = srcX + srcY * srcScanSize;
-                    offsetBottom = offsetTop;
-                }
-                else if ((v & 0xffff) == 0) {
-                    offsetTop = srcOffset - (u >> 16);
-                    offsetBottom = offsetTop;
-                }
-                else {
-                    offsetTop = srcOffset - (u >> 16);
-                    offsetBottom = offsetTop + srcScanSize;
-                }
-            }
-            else {
-                if (imageY >= 0) {
-                    if (imageY < srcHeight - 1) {
-                        offsetTop = srcOffset - (u >> 16);
+        if (!rotation) {
+            if (renderBilinear) {
+                int imageY = v >> 16;
+                if (srcOpaque) {
+                    if (imageY >= srcHeight - 1) {
+                        offsetTop = srcX + (srcY + srcHeight - 1) * srcScanSize;
+                        offsetBottom = offsetTop;
+                    }
+                    else if (imageY < 0) {
+                        offsetTop = srcX + srcY * srcScanSize;
+                        offsetBottom = offsetTop;
+                    }
+                    else if ((v & 0xffff) == 0) {
+                        offsetTop = srcX + (srcY + (v >> 16)) * srcScanSize;
+                        offsetBottom = offsetTop;
+                    }
+                    else {
+                        offsetTop = srcX + (srcY + (v >> 16)) * srcScanSize;
                         offsetBottom = offsetTop + srcScanSize;
                     }
-                    else if (v < (srcHeight << 16)) {
-                        offsetTop = srcOffset - (u >> 16);
-                        offsetBottom = edgeClamp ? offsetTop : -1;
+                }
+                else {
+                    if (imageY >= 0) {
+                        if (imageY < srcHeight - 1) {
+                            offsetTop = srcX + (srcY + (v >> 16)) * srcScanSize;
+                            offsetBottom = offsetTop + srcScanSize;
+                        }
+                        else if (edgeClamp) {
+                            offsetTop = srcX + (srcY + srcHeight - 1) * srcScanSize;
+                            offsetBottom = offsetTop;
+                        }
+                        else if (v < (srcHeight << 16)) {
+                            offsetTop = srcX + (srcY + (v >> 16)) * srcScanSize;
+                            offsetBottom = -1;
+                        }
+                        else {
+                            offsetTop = -1;
+                            offsetBottom = -1;
+                        }
+                    }
+                    else if (edgeClamp) {
+                        offsetBottom = srcX + srcY * srcScanSize;
+                        offsetTop = offsetBottom;
+                    }
+                    else if (v > -(1<<16)) {
+                        offsetBottom = srcX + srcY * srcScanSize;
+                        offsetTop = -1;
                     }
                     else {
                         offsetTop = -1;
                         offsetBottom = -1;
                     }
                 }
-                else if (v > -(1<<16)) {
-                    offsetBottom = srcX + srcY * srcScanSize;
-                    offsetTop = edgeClamp ? offsetBottom : -1;
+            }
+            else {
+                srcOffset = srcX;
+                if ((u >> 16) >= srcWidth - 1) {
+                    srcOffset += srcWidth - 1;
                 }
-                else {
-                    offsetTop = -1;
-                    offsetBottom = -1;
+                else if (u > 0) {
+                    srcOffset += (u >> 16);
+                }
+                
+                if ((v >> 16) >= srcHeight - 1) {
+                    srcOffset += (srcY + srcHeight - 1) * srcScanSize;
+                }
+                else if (v >= 0) {
+                    srcOffset += (srcY + (v >> 16)) * srcScanSize;
                 }
             }
         }
- 
         
         //
         // Opaque blending 
@@ -271,7 +299,9 @@ final class CompositeAdd extends Composite {
                 else {
                     srcOffset = srcX + srcY * srcScanSize;
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = srcData[srcOffset + (u >> 16) + (v >> 16) * srcScanSize];
+                        int x = CoreMath.clamp(u >> 16, 0, srcWidth - 1);
+                        int y = CoreMath.clamp(v >> 16, 0, srcHeight - 1);
+                        int srcARGB = srcData[srcOffset + x + y * srcScanSize];
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
                             blendOpaquePixel(destData, destOffset, srcARGB);
@@ -384,7 +414,9 @@ final class CompositeAdd extends Composite {
                 else {
                     srcOffset = srcX + srcY * srcScanSize;
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = srcData[srcOffset + (u >> 16) + (v >> 16) * srcScanSize];
+                        int x = CoreMath.clamp(u >> 16, 0, srcWidth - 1);
+                        int y = CoreMath.clamp(v >> 16, 0, srcHeight - 1);
+                        int srcARGB = srcData[srcOffset + x + y * srcScanSize];
                         if ((srcARGB >>> 24) > 0) {
                             blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }

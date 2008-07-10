@@ -52,13 +52,11 @@ import pulpcore.math.CoreMath;
     
     /**
         Rasterize a horizontal row of pixels.
-        @param srcOffset srcX + (u >> 16) + (srcY + (v >> 16)) * srcScanSize, 
-        only used if rotation == false
         @param numRows only used if rotation == false, renderBilinear == false
     */
     /* package-private */ abstract void blend(int[] srcData, int srcScanSize, boolean srcOpaque, 
         boolean edgeClamp, 
-        int srcX, int srcY, int srcWidth, int srcHeight, int srcOffset, 
+        int srcX, int srcY, int srcWidth, int srcHeight, 
         int u, int v, int du, int dv, 
         boolean rotation,
         boolean renderBilinear, int renderAlpha,
@@ -172,18 +170,26 @@ import pulpcore.math.CoreMath;
                 top = srcX + (y + srcY) * srcScanSize;
                 bottom = top + srcScanSize;
             }
+            else if (edgeClamp) {
+                top = srcX + (srcHeight - 1 + srcY)  * srcScanSize;
+                bottom = top;
+            }
             else if (fy < (srcHeight << 16)) {
                 top = srcX + (y + srcY)  * srcScanSize;
-                bottom = edgeClamp ? top : -1;
+                bottom = -1;
             }
             else {
                 top = -1;
                 bottom = -1;
             }
         }
+        else if (edgeClamp) {
+            top = srcX + srcY * srcScanSize;
+            bottom = top;
+        }
         else if (fy > -CoreMath.ONE) {
+            top = -1;
             bottom = srcX + srcY * srcScanSize;
-            top = edgeClamp ? bottom : -1;
         }
         else {
             top = -1;
@@ -270,25 +276,37 @@ import pulpcore.math.CoreMath;
                     bottomRightPixel = imageData[offsetBottom + x + 1];
                 }
             }
+            else if (edgeClamp) {
+                topLeftPixel = imageData[offsetTop + srcWidth - 1];
+                topRightPixel = topLeftPixel;
+                bottomLeftPixel = imageData[offsetBottom + srcWidth - 1];
+                bottomRightPixel = bottomLeftPixel;
+            }
             else if (fx < (srcWidth << 16)) {
                 if (offsetTop != -1) {
                     topLeftPixel = imageData[offsetTop + x];
-                    topRightPixel = edgeClamp ? topLeftPixel : 0;
+                    topRightPixel = 0;
                 }
                 if (offsetBottom != -1) {
                     bottomLeftPixel = imageData[offsetBottom + x];
-                    bottomRightPixel = edgeClamp ? bottomLeftPixel : 0;
+                    bottomRightPixel = 0;
                 }
             }
+        }
+        else if (edgeClamp) {
+            topRightPixel = imageData[offsetTop];
+            topLeftPixel = topRightPixel;
+            bottomRightPixel = imageData[offsetBottom];
+            bottomLeftPixel = bottomRightPixel;
         }
         else if (fx > -CoreMath.ONE) {
             if (offsetTop != -1) {
                 topRightPixel = imageData[offsetTop];
-                topLeftPixel = edgeClamp ? topRightPixel : 0;
+                topLeftPixel = 0;
             }
             if (offsetBottom != -1) {
                 bottomRightPixel = imageData[offsetBottom];
-                bottomLeftPixel = edgeClamp ? bottomRightPixel : 0;
+                bottomLeftPixel = 0;
             }
         }
         
