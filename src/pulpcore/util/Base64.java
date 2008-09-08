@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -169,9 +169,10 @@ public class Base64 {
             return null;
         }
         
-        // Remove all carriage returns
+        // Remove all carriage returns, spaces
         srcData = StringUtil.replace(srcData, "\n", "");
         srcData = StringUtil.replace(srcData, "\r", "");
+        srcData = StringUtil.replace(srcData, " ", "");
         
         // Ignore padding at end
         int srcLength = srcData.length();
