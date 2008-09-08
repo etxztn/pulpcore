@@ -582,7 +582,7 @@ var pulpCoreObject = {
 	// Browser detection
 	// Based on a script from Peter-Paul Koch at QuirksMode:
 	// http://www.quirksmode.org/js/detect.html
-	// Up-to-date as of October 19, 2007
+	// Up-to-date as of September 7, 2008
 	
 	versionSearchString: "",
 	browserName: "",
@@ -647,6 +647,11 @@ var pulpCoreObject = {
 	},
 	
 	dataBrowser: [
+		{
+			string: navigator.userAgent,
+			subString: "Chrome",
+			identity: "Chrome"
+		},
 		{
 			string: navigator.userAgent,
 			subString: "OmniWeb",

@@ -13,12 +13,13 @@
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
     "true" (always use), "false" (never use) or "default" (PulpCore chooses the best). Most 
     developers won't need to change this value.
+  * Core: pulpcore.js fix for Google Chrome
   * Fixed bug: Fixed overflow in some Tuple2i methods, which fixed 
     intersection tests between large, rotated sprites.
   * Fixed bug: rendering was incorrect when rotating at or near 90 or 270 degrees. It was
     offset by half a pixel, causing minor blurriness.
   * Fixed bug: string representation of fixed-point numbers between -1 < f < 0.
-  * Fixed bug: borders when drawing with a large scale weren't correct.
+  * Fixed bug: borders when drawing images with a large scale weren't correct.
   * Fixed bug: custom splash gifs weren't working properly.
   * Fixed bug: added null check in Stage when destroying the app when there is no Scene.
   * Fixed bug: key releases were not correct for shift, alt, ctrl when both left and right 
