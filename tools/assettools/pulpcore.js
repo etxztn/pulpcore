@@ -123,11 +123,31 @@ var pulpCoreObject = {
 	getJavaURL: "http://java.sun.com/webapps/getjava/BrowserRedirect?host=java.com" +
 		'&returnPage=' + document.location,
 		
+	// Special URL for Google Chrome (requires 6u10)
+	getJavaChromeURL: "http://java.sun.com/javase/downloads/ea.jsp",
+		
 	deploymentToolkitMimeType: 'application/npruntime-scriptable-plugin;DeploymentToolkit',
 		
 	// The Applet HTML (inserted after a delay)
 	appletHTML: "",
 	appletInserted: false,
+	
+	// Text defaults
+	
+	getRestartMessage: function() {
+		return window.pulpcore_text_restart ||
+			"Java installed! To play, you may need to restart your browser.";
+	},
+	
+	getInstallMessage: function() {
+		return window.pulpcore_text_install ||
+			"To play, install Java now.";
+	},
+	
+	getChromeInstallMessage: function() {
+		return window.pulpcore_text_install_chrome ||
+			"To play in Google Chrome, install Java 6 update 10.";
+	},
 	
 	// Gets the codebase from the document URL
 	getCodeBase: function() {
@@ -179,6 +199,10 @@ var pulpCoreObject = {
     },
 	
     isPlugin2: function() {
+		// Chrome can only run plugin2, but can't detect it?
+		if (pulpCoreObject.browserName == "Chrome") {
+			return true;
+		}
 		var deploymentToolkit = document.getElementById('deploymentToolkit');
         if (deploymentToolkit !== null) {
             try {
@@ -467,6 +491,17 @@ var pulpCoreObject = {
 			version = pulpCoreObject.getHighestInstalledJavaViaMimeTypes();
 			return pulpCoreObject.isAcceptableJREVersion(version);
 		}
+		else if (pulpCoreObject.browserName == "Chrome") {
+			// Is this ok? Return true if special mimetype exists
+			if (navigator.mimeTypes && navigator.mimeTypes.length) {
+				for (var i = 0; i < navigator.mimeTypes.length; i++) {
+					if (navigator.mimeTypes[i].type == "application/x-java-vm-npruntime") {
+						return true;
+                    }
+                }
+			}
+			return false;
+		}
 		else {
 			// Couldn't detect - let the browser handle it
 			return true;
@@ -537,9 +572,16 @@ var pulpCoreObject = {
 		if (pulpCoreObject.shouldInstallXPI()) {
 			extraAttributes = ' onclick="pulpCoreObject.installXPI();return false;"';
 		}
-		return '<p id="pulpcore_install" style="text-align: center">To play, ' +
-			'<a href="' + pulpCoreObject.getJavaURL + '"' + extraAttributes + '>' +
-			'install Java now</a>.</p>\n';
+		if (pulpCoreObject.browserName == "Chrome") {
+			return '<p id="pulpcore_install" style="text-align: center">' +
+				'<a href="' + pulpCoreObject.getJavaChromeURL + '">' + 
+				pulpCoreObject.getChromeInstallMessage() + '</a></p>\n';
+		}
+		else {
+			return '<p id="pulpcore_install" style="text-align: center">' +
+				'<a href="' + pulpCoreObject.getJavaURL + '"' + extraAttributes + '>' + 
+				pulpCoreObject.getInstallMessage() + '</a></p>\n';
+		}
 	},
 	
 	shouldInstallXPI: function() {
@@ -568,7 +610,7 @@ var pulpCoreObject = {
 				// TODO: re-evaluate if JRE 1.5 is defined as the minimum. Does JRE 1.4 also
 				// "take over"?
 				var install = document.getElementById('pulpcore_install');
-				install.innerHTML = "Java installed! To play, you may need to restart your browser.";
+				install.innerHTML = pulpCoreObject.getRestartMessage();
 			}
 			else {
 				// If no Java previously installed, automagically start the game 
