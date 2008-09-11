@@ -189,9 +189,11 @@ public class Group extends Sprite {
     */
     public Sprite pick(int viewX, int viewY) {
         if (isOverflowClipped()) {
-            int w = CoreMath.toIntCeil(getNaturalWidth());
-            int h = CoreMath.toIntCeil(getNaturalHeight());
-            if (viewX < 0 || viewY < 0 || viewX >= w || viewY >= h) {
+            double x = getLocalX(viewX, viewY);
+            double y = getLocalY(viewX, viewY);
+            double w = CoreMath.toFloat(getNaturalWidth());
+            double h = CoreMath.toFloat(getNaturalHeight());
+            if (x < 0 || y < 0 || x >= w || y >= h) {
                 return null;
             }
         }
@@ -228,9 +230,11 @@ public class Group extends Sprite {
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
         if (isOverflowClipped()) {
-            int w = CoreMath.toIntCeil(getNaturalWidth());
-            int h = CoreMath.toIntCeil(getNaturalHeight());
-            if (viewX < 0 || viewY < 0 || viewX >= w || viewY >= h) {
+            double x = getLocalX(viewX, viewY);
+            double y = getLocalY(viewX, viewY);
+            double w = CoreMath.toFloat(getNaturalWidth());
+            double h = CoreMath.toFloat(getNaturalHeight());
+            if (x < 0 || y < 0 || x >= w || y >= h) {
                 return null;
             }
         }
