@@ -31,6 +31,7 @@ package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
 import pulpcore.animation.Color;
+import pulpcore.CoreSystem;
 import pulpcore.image.AnimatedImage;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
@@ -123,14 +124,15 @@ public class Button extends ImageSprite {
     }
     
     /**
-        Gets the key bindings for this button. A button has no key bindings by default.
+        Gets a copy of the key bindings for this button. A button has no key bindings by 
+        default.
         @return the key bindings for this button, or null if there are no key bindings.
         @see #setKeyBinding(int)
         @see #setKeyBinding(int[])
         @see #clearKeyBinding()
     */
     public int[] getKeyBinding() {
-        return keyBinding;
+        return CoreSystem.arraycopy(keyBinding);
     }
     
     /**
@@ -162,7 +164,7 @@ public class Button extends ImageSprite {
         @see #clearKeyBinding()
     */
     public void setKeyBinding(int[] keyCodes) {
-        keyBinding = keyCodes;
+        keyBinding = CoreSystem.arraycopy(keyCodes);
     }
     
     /**

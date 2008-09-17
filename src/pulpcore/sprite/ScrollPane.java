@@ -299,12 +299,12 @@ public class ScrollPane extends Group {
                 this.width.set(length);
                 this.height.set(slider.height.get());
             }
-            add(slider);
+            super.add(slider);
             
             // Up arrow
             if (up != null) {
                 up.setLocation(x, y);
-                add(up);
+                super.add(up);
                 if (orientation == Slider.VERTICAL) {
                     y += up.height.get();
                 }
@@ -325,18 +325,18 @@ public class ScrollPane extends Group {
             // Down arrow
             if (down != null) {
                 down.setLocation(x, y);
-                add(down);
+                super.add(down);
             }
             
             if (orientation == Slider.VERTICAL) {
-                setAnchor(Sprite.NORTH_EAST);
+                super.setAnchor(Sprite.NORTH_EAST);
                 this.x.bindTo(ScrollPane.this.width);
                 this.y.set(0);
                 slider.setRange(0, getContentHeight(), length);
                 bindValue = viewport.scrollY;
             }
             else {
-                setAnchor(Sprite.SOUTH_WEST);
+                super.setAnchor(Sprite.SOUTH_WEST);
                 this.x.set(0);
                 this.y.bindTo(ScrollPane.this.height);
                 slider.setRange(0, getContentWidth(), length);

@@ -62,9 +62,9 @@ public abstract class TimelineEvent extends Animation implements Runnable {
     
     protected void updateState(int animTime) {
         if (!hasExecuted) {
-            hasExecuted = true;
             run();
             synchronized (this) {
+                hasExecuted = true;
                 this.notify();
             }
         }

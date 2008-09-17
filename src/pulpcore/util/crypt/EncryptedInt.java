@@ -131,4 +131,12 @@ public class EncryptedInt extends Int implements PropertyListener {
         buffer.reset();
         return buffer.readInt();
     }
+    
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+    
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

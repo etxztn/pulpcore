@@ -174,7 +174,7 @@
         Use Douglas Crockford's JavaScript checker
         See http://jslint.com/
     -->
-    <target name="jslint" if="do.jslint" depends="check-dependencies">
+    <target name="jslint" if="do.jslint" depends="check-dependencies" description="Run JSLint">
         <java classname="org.mozilla.javascript.tools.shell.Main">
             <classpath>
                 <pathelement location="${rhino.path}"/>
@@ -312,7 +312,7 @@
             classname="edu.umd.cs.findbugs.anttask.FindBugsTask" 
             classpath="${findbugs.path}/lib/findbugs-ant.jar"/>
             
-        <findbugs home="${findbugs.path}" output="emacs">
+        <findbugs home="${findbugs.path}" output="emacs" jvmargs="-Xmx512m">
             <auxClasspath path="${library.path}" />
             <sourcePath path="${src}" />
             <class location="${build}/${project.debug.jar.file}" />

@@ -360,7 +360,6 @@ public class Colors {
             return (a << 24) | v;
         }
         
-        int sum = maxRGB + minRGB;
         int diff = maxRGB - minRGB;
         
         // Saturation

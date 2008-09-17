@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -54,11 +54,9 @@ public class Win32Timer extends SystemTimer implements Runnable {
     
     private Thread timerThread;
     
-    
     public String getName() {
         return "Win32Timer";
     }
-
     
     public void start() {
         super.start();
@@ -76,22 +74,18 @@ public class Win32Timer extends SystemTimer implements Runnable {
         timerThread.start();
     }
     
-    
     public void stop() {
         super.stop();
         timerThread = null;
     }
     
-    
     public long getTimeMillis() {
         return getTimeMicros() / 1000;
     }
     
-    
     public long getTimeMicros() {
         return Math.max(estTime, System.currentTimeMillis() * 1000);
     }
-    
     
     public long sleepUntilTimeMicros(long timeMicros) {
         while (true) {
@@ -111,7 +105,6 @@ public class Win32Timer extends SystemTimer implements Runnable {
         }
     }
     
-    
     public void run() {
         
         Thread thisThread = Thread.currentThread();
@@ -125,32 +118,30 @@ public class Win32Timer extends SystemTimer implements Runnable {
             update();
         }
     }
-
     
     private void update() {
-        long time = System.currentTimeMillis();
-        
-        if (time > lastTime) {
-            // Use the newly updated system time
-            estTime = Math.max(estTime, time * 1000L);
-        }
-        else if (numSamples > 0) {
-            // Make an estimate on how much time has passed since the last update.
-            estTime += 1000L * (time - getFirstSample()) / numSamples;
-        }
-        else {
-            estTime = time * 1000L;
-        }
-        
-        addSample(time);
-        lastTime = time;
-        
         synchronized (this) {
+            long time = System.currentTimeMillis();
+            
+            if (time > lastTime) {
+                // Use the newly updated system time
+                estTime = Math.max(estTime, time * 1000L);
+            }
+            else if (numSamples > 0) {
+                // Make an estimate on how much time has passed since the last update.
+                estTime += 1000L * (time - getFirstSample()) / numSamples;
+            }
+            else {
+                estTime = time * 1000L;
+            }
+            
+            addSample(time);
+            lastTime = time;
+        
             notifyAll();
         }
     }
     
-
     private void addSample(long sample) {
         
         samples[(firstIndex + numSamples) & NUM_SAMPLES_MASK] = sample;
@@ -162,7 +153,6 @@ public class Win32Timer extends SystemTimer implements Runnable {
             numSamples++;
         }
     }
-    
     
     private long getFirstSample() {
         return samples[firstIndex];

@@ -119,4 +119,9 @@ public final class Bool extends Property {
             return false;
         }
     }
+    
+    public int hashCode() {
+        // Same as java.lang.Boolean
+        return get() ? 1231 : 1237;
+    }
 }

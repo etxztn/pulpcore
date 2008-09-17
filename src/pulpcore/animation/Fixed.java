@@ -142,6 +142,11 @@ public final class Fixed extends Property {
         }
     }
     
+    public int hashCode() {
+        // Same as java.lang.Float
+        return Float.floatToIntBits(CoreMath.toFloat(super.getValue()));
+    }
+    
     //
     // Setters - 3 methods
     //

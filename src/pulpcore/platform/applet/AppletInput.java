@@ -588,8 +588,10 @@ public class AppletInput implements KeyListener, MouseListener,
     }
 
     public void mouseExited(MouseEvent e) {
-        mouseMoved(e);
-        appletIsMouseInside = false;
+        synchronized (this) {
+            mouseMoved(e);
+            appletIsMouseInside = false;
+        }
     }
 
     public void mouseDragged(MouseEvent e) {
@@ -626,11 +628,15 @@ public class AppletInput implements KeyListener, MouseListener,
     }
 
     public void focusGained(FocusEvent e) {
-        appletHasKeyboardFocus = true;
+        synchronized (this) {
+            appletHasKeyboardFocus = true;
+        }
     }
     
     public void focusLost(FocusEvent e) {
-        appletHasKeyboardFocus = false;
-        clear();
+        synchronized (this) {
+            appletHasKeyboardFocus = false;
+            clear();
+        }
     }
 }

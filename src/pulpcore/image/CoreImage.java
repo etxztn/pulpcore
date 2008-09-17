@@ -244,8 +244,8 @@ public class CoreImage {
     */
     public static CoreImage getBrokenImage() {
         if (brokenImage == null) {
-            brokenImage = new CoreImage(16, 16, true);
-            CoreGraphics g = brokenImage.createGraphics();
+            CoreImage image = new CoreImage(16, 16, true);
+            CoreGraphics g = image.createGraphics();
             g.setColor(Colors.WHITE);
             g.fill();
             g.setColor(Colors.BLACK);
@@ -253,6 +253,8 @@ public class CoreImage {
             g.setColor(Colors.RED);
             g.drawLine(2, 2, 13, 13);
             g.drawLine(13, 2, 2, 13);
+            
+            brokenImage = image;
         }
         
         return brokenImage;

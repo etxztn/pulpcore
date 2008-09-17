@@ -453,6 +453,7 @@ var pulpCoreObject = {
 	*/
 	isAcceptableJRE: function() {
 		var version;
+		var i;
 		
 		if (pulpCoreObject.browserName == "Explorer") {
 			// IE can install via the CAB
@@ -465,7 +466,7 @@ var pulpCoreObject = {
 		else if (pulpCoreObject.browserName == "Safari" && 
 			navigator.plugins && navigator.plugins.length) 
 		{
-			for (var i = 0; i < navigator.plugins.length; i++) {
+			for (i = 0; i < navigator.plugins.length; i++) {
 				var s = navigator.plugins[i].description;
 				// Based on code from the Deployment Toolkit
 				if (s.search(/^Java Switchable Plug-in/) != -1) {
@@ -492,10 +493,11 @@ var pulpCoreObject = {
 			return pulpCoreObject.isAcceptableJREVersion(version);
 		}
 		else if (pulpCoreObject.browserName == "Chrome") {
-			// Is this ok? Return true if special mimetype exists
+			// Chrome requires 1.6.0_10 as the minimum. 
+			// So, if the mime type is available, return true.
 			if (navigator.mimeTypes && navigator.mimeTypes.length) {
-				for (var i = 0; i < navigator.mimeTypes.length; i++) {
-					if (navigator.mimeTypes[i].type == "application/x-java-vm-npruntime") {
+				for (i = 0; i < navigator.mimeTypes.length; i++) {
+					if (navigator.mimeTypes[i].type == "application/x-java-applet") {
 						return true;
                     }
                 }

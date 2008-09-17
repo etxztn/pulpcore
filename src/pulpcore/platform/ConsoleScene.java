@@ -117,9 +117,9 @@ public class ConsoleScene extends Scene2D {
     
     private boolean needsRefresh() {
         LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
-        String line = null;
+        Object line = null;
         if (logLines.size() > 0) {
-            line = (String)logLines.getLast();
+            line = logLines.getLast();
         }
         return (lastLine != line);
     }

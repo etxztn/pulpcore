@@ -100,6 +100,11 @@ public class Color extends Property {
             return false;
         }
     }
+    
+    public int hashCode() {
+        // Same as java.lang.Integer
+        return get();
+    }
 
     //
     // Convenience methods

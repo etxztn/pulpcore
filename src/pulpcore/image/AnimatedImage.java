@@ -157,22 +157,8 @@ public class AnimatedImage extends CoreImage {
         frameDuration must be the same length as the number of physical frames.
     */
     public void setSequence(int[] frameSequence, int[] frameDuration, boolean loop) {
-        if (frameSequence == null) {
-            this.frameSequence = null;
-        }
-        else {
-            this.frameSequence = new int[frameSequence.length];
-            System.arraycopy(frameSequence, 0, this.frameSequence, 0, frameSequence.length);
-        }
-        
-        if (frameDuration == null) {
-            this.frameDuration = null;
-        }
-        else {
-            this.frameDuration = new int[frameDuration.length];
-            System.arraycopy(frameDuration, 0, this.frameDuration, 0, frameDuration.length);
-        }
-            
+        this.frameSequence = CoreSystem.arraycopy(frameSequence);
+        this.frameDuration = CoreSystem.arraycopy(frameDuration);
         this.loop = loop;
         setFrame(0);
     }

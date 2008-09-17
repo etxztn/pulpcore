@@ -53,12 +53,13 @@ public abstract class Sound {
     // For u-law conversion. 132 * ((1 << i) - 1)
     private static final int[] EXP_TABLE = { 
         0, 132, 396, 924, 1980, 4092, 8316, 16764
-    };    
+    };
+    
+    private static final int SAMPLE_SIZE = 2;
     
     // HashMap<String, WeakReference<Sound>>
     private static HashMap loadedSounds = new HashMap();
     
-    private final int sampleSize = 2;
     private final int sampleRate;
     
     /**
@@ -81,7 +82,7 @@ public abstract class Sound {
         This method always returns 2.
     */
     public final int getSampleSize() {
-        return sampleSize;
+        return SAMPLE_SIZE;
     }
   
     /**

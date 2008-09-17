@@ -195,7 +195,7 @@ public class JavaSound implements SoundEngine {
     }    
     
     public int[] getSupportedSampleRates() {
-        return sampleRates;
+        return CoreSystem.arraycopy(sampleRates);
     }
     
     public synchronized void destroy() {

@@ -67,7 +67,6 @@ public class CoreSystem {
         IS_JAVA_1_6 = (javaVersion.compareTo("1.6") >= 0);
         IS_JAVA_1_6_U_10 = (javaVersion.compareTo("1.6.0_10") >= 0);
         IS_JAVA_1_7 = (javaVersion.compareTo("1.7") >= 0);
-        
     }
 
     private static final boolean IS_MAC_OS_X;
@@ -187,6 +186,114 @@ public class CoreSystem {
     */
     public static final boolean isWindowsXPorNewer() {
         return IS_WINDOWS_XP;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static boolean[] arraycopy(boolean[] src) {
+        boolean[] dest = null;
+        if (src != null) {
+            dest = new boolean[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static byte[] arraycopy(byte[] src) {
+        byte[] dest = null;
+        if (src != null) {
+            dest = new byte[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static short[] arraycopy(short[] src) {
+        short[] dest = null;
+        if (src != null) {
+            dest = new short[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static char[] arraycopy(char[] src) {
+        char[] dest = null;
+        if (src != null) {
+            dest = new char[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static int[] arraycopy(int[] src) {
+        int[] dest = null;
+        if (src != null) {
+            dest = new int[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static long[] arraycopy(long[] src) {
+        long[] dest = null;
+        if (src != null) {
+            dest = new long[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static float[] arraycopy(float[] src) {
+        float[] dest = null;
+        if (src != null) {
+            dest = new float[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static double[] arraycopy(double[] src) {
+        double[] dest = null;
+        if (src != null) {
+            dest = new double[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
+    }
+    
+    /**
+        Returns a copy of the specified array, or {@code null} if the array is null.
+    */
+    public static Object[] arraycopy(Object[] src) {
+        Object[] dest = null;
+        if (src != null) {
+            dest = new Object[src.length];
+            System.arraycopy(src, 0, dest, 0, src.length);
+        }
+        return dest;
     }
 
     //

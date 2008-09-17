@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -35,7 +35,6 @@ package pulpcore.math;
     does not have.
 */
     
-
 /**
     The Rect class is used internally for dirty rectangles.
 */
@@ -53,32 +52,26 @@ public class Rect {
     /** The bitmask that indicates the bottom segment of a rectangle. */
     public static final int LEFT = 8;
     
-    
     public int x;
     public int y;
     public int width;
     public int height;
     
-    
     public Rect() {
         setBounds(0, 0, 0, 0);
     }
-    
     
     public Rect(int x, int y, int width, int height) {
         setBounds(x, y, width, height);
     }
     
-    
     public Rect(Rect r) {
         setBounds(r.x, r.y, r.width, r.height);
     }
     
-    
     public void setBounds(Rect r) {
         setBounds(r.x, r.y, r.width, r.height);
     }
-    
     
     public void setBounds(int x, int y, int width, int height) {
         this.x = x;
@@ -87,23 +80,24 @@ public class Rect {
         this.height = height;
     }
     
+    public int hashCode() {
+        int result = 1;
+        result = 37*result + x;
+        result = 37*result + y;
+        result = 37*result + width;
+        result = 37*result + height;
+        return result;
+    }
     
-    /*
     public boolean equals(Object obj) {
         if (obj instanceof Rect) {
-            return equals((Rect)obj);
+            Rect r = (Rect)obj;
+            return equals(r.x, r.y, r.width, r.height);
         }
         else {
             return false;
         }
     }
-    */
-    
-    
-    public boolean equals(Rect r) {
-        return equals(r.x, r.y, r.width, r.height);
-    }
-    
     
     public boolean equals(int x, int y, int width, int height) {
         return (
@@ -113,11 +107,9 @@ public class Rect {
             this.height == height);
     }
     
-    
     public int getArea() {
         return width * height;
     }
-    
     
     public boolean contains(int x, int y) {
         return (
@@ -127,7 +119,6 @@ public class Rect {
             y < this.y + this.height);
     }
     
-    
     public boolean contains(int x, int y, int width, int height) {
         return (
             x >= this.x && 
@@ -136,16 +127,13 @@ public class Rect {
             y + height <= this.y + this.height);
     }
     
-    
     public boolean contains(Rect r) {
         return contains(r.x, r.y, r.width, r.height);
     }
     
-    
     public boolean intersects(Rect r) {
         return intersects(r.x, r.y, r.width, r.height);
     }
-    
     
     public boolean intersects(int x, int y, int width, int height) {
         return 
@@ -155,7 +143,6 @@ public class Rect {
             y < this.y + this.height;
     }
     
-    
     /**
         Sets this rectangle to the intersection of this rectangle and the specified
         rectangle. If the rectangles don't intersect, the width and height
@@ -164,7 +151,6 @@ public class Rect {
     public void intersection(Rect r) {
         intersection(r.x, r.y, r.width, r.height);
     }
-    
     
     /**
         Sets this rectangle to the intersection of this rectangle and the specified
@@ -179,7 +165,6 @@ public class Rect {
         setBounds(x1, y1, Math.max(0, x2 - x1 + 1), Math.max(0, y2 - y1 + 1));
     }
     
-    
     /**
         Sets this rectangle to the union of this rectangle and the specified
         rectangle.
@@ -187,7 +172,6 @@ public class Rect {
     public void union(Rect r) {
         union(r.x, r.y, r.width, r.height);
     }
-    
     
     /**
         Sets this rectangle to the union of this rectangle and the specified
@@ -201,12 +185,10 @@ public class Rect {
         setBounds(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
     }
 
-
     // TOP to BOTTOM,  LEFT to RIGHT, TOP|LEFT to BOTTOM|RIGHT, TOP|BOTTOM to TOP|BOTTOM
     public static int getOppositeSide(int side) {
         return ((side << 2) & 0xc) | ((side >> 2) & 0x3);
     }
-    
     
     /**
         Returns the {@link #LEFT} (x), {@link #TOP} (y), 
@@ -222,7 +204,6 @@ public class Rect {
             default: return x;
         }
     }
-    
     
     public void setBoundary(int side, int boundary) {
         switch (side) {
@@ -250,7 +231,6 @@ public class Rect {
         }
     }
     
-    
     public void setOutsideBoundary(int side, int boundary) {
         switch (side) {
             case LEFT: 
@@ -277,7 +257,6 @@ public class Rect {
         }
     }    
     
-    
     /**
         Determines which segments of the specified rectangle are completely or
         partially inside this rectangle. The result is a binary OR of the codes
@@ -287,7 +266,6 @@ public class Rect {
     public int getIntersectionCode(Rect r) {
         return getIntersectionCode(r.x, r.y, r.width, r.height);
     }
-    
     
     /**
         Determines which segments of the specified rectangle are completely or
@@ -329,7 +307,6 @@ public class Rect {
         
         return code;
     }
-    
     
     public String toString() {
         return "Rectangle: " + x + "," + y + " " + width + "x" + height;

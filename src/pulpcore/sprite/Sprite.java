@@ -995,8 +995,6 @@ public abstract class Sprite implements PropertyListener {
     private boolean isPixelLevelCollision(Sprite sprite, Rect intersection) {
         Sprite a = this;
         Sprite b = sprite;
-        Transform at = a.getViewTransform();
-        Transform bt = b.getViewTransform();
         int x1 = CoreMath.toIntFloor(intersection.x);
         int y1 = CoreMath.toIntFloor(intersection.y);
         int x2 = CoreMath.toIntCeil(intersection.x + intersection.width);

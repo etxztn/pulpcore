@@ -683,17 +683,19 @@ public class Scene2D extends Scene {
         if (!paused) {
             layers.update(elapsedTime);
             // Update timelines
-            for (int i = 0; i < timelines.size(); i++) {
-                Timeline timeline = (Timeline)timelines.get(i);
-                timeline.update(elapsedTime);
-            }
-            // Remove finished timelines (seperate in case any timeline updates actually
-            // modify the list of timelines)
-            for (int i = 0; i < timelines.size(); i++) {
-                Timeline timeline = (Timeline)timelines.get(i);
-                if (timeline.isFinished()) {
-                    timelines.remove(i);
-                    i--;
+            synchronized (this) {
+                for (int i = 0; i < timelines.size(); i++) {
+                    Timeline timeline = (Timeline)timelines.get(i);
+                    timeline.update(elapsedTime);
+                }
+                // Remove finished timelines (seperate in case any timeline updates actually
+                // modify the list of timelines)
+                for (int i = 0; i < timelines.size(); i++) {
+                    Timeline timeline = (Timeline)timelines.get(i);
+                    if (timeline.isFinished()) {
+                        timelines.remove(i);
+                        i--;
+                    }
                 }
             }
         }

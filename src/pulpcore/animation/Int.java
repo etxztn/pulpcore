@@ -112,6 +112,11 @@ public class Int extends Property {
         }
     }
     
+    public int hashCode() {
+        // Same as java.lang.Integer
+        return get();
+    }
+    
     protected void setValue(Number value) {
         setValue(value.intValue());
     }

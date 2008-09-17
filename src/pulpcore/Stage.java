@@ -785,7 +785,9 @@ public class Stage implements Runnable {
             try {
                 t.setDaemon(false);
             }
-            catch (Exception ex) { }
+            catch (Exception ex) { 
+                // Ignore
+            }
             t.start();
         }
     }

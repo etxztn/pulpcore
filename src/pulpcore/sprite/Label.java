@@ -33,6 +33,7 @@ import java.lang.ref.WeakReference;
 import pulpcore.animation.Int;
 import pulpcore.animation.Property;
 import pulpcore.animation.PropertyListener;
+import pulpcore.CoreSystem;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -223,7 +224,7 @@ public class Label extends Sprite {
     
     public void setFormatArgs(Object[] args) {
         removeFormatArgListeners();
-        formatArgs = args;
+        formatArgs = CoreSystem.arraycopy(args);
         if (formatArgs != null) {
             if (formatArgListener == null) {
                 formatArgListener = new WeakListener(this);
@@ -273,8 +274,6 @@ public class Label extends Sprite {
     }
     
     protected void drawSprite(CoreGraphics g) {
-        CoreImage fontImage = font.getImage();
-
         String currDisplayText = displayText;
         if (numDisplayChars.get() < displayText.length()) {
             currDisplayText = displayText.substring(0, numDisplayChars.get());

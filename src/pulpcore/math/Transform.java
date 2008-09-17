@@ -71,6 +71,17 @@ public class Transform {
         }
     }
     
+    public int hashCode() {
+        int result = 1;
+        result = 37*result + m00;
+        result = 37*result + m01;
+        result = 37*result + m02;
+        result = 37*result + m10;
+        result = 37*result + m11;
+        result = 37*result + m12;
+        return result;
+    }
+    
     public int transformX(int fx, int fy) {
         // [ x']   [  m00  m01  m02  ] [ x ]   [ m00x + m01y + m02 ]
         // [ y'] = [  m10  m11  m12  ] [ y ] = [ m10x + m11y + m12 ]

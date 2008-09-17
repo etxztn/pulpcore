@@ -116,7 +116,6 @@ public class Path {
     private final int[] pPoints;
     
     private int totalLength;
-    private float area = 0;
     
     private transient int lastCalcP = -1;
     private transient int[] lastCalcPoint = new int[2];
@@ -451,7 +450,7 @@ public class Path {
         int high = numPoints - 1;
         int low = 0;
         while (high - low > 1) {
-            int index = (high + low) / 2;
+            int index = (high + low) >>> 1;
           
             if (pPoints[index] > p) {
                 high = index;
@@ -490,7 +489,7 @@ public class Path {
         int high = numPoints - 1;
         int low = 0;
         while (high - low > 1) {
-            int index = (high + low) / 2;
+            int index = (high + low) >>> 1;
           
             if (pPoints[index] > p) {
                 high = index;

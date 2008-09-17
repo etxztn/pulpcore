@@ -59,6 +59,13 @@ public class Tuple2i {
         }        
     }
     
+    public int hashCode() {
+        int result = 1;
+        result = 37*result + x;
+        result = 37*result + y;
+        return result;
+    }
+    
     public void set(int x, int y) {
         this.x = x;
         this.y = y;
