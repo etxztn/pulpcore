@@ -46,10 +46,12 @@ public class AnimatedImage extends CoreImage {
     
     /** Duration of each frame (virtual is it exists; otherwise, physical) */
     private int[] frameDuration;
+    private int totalDuration;
     private boolean loop;
     
     // Fields used during animation
     private boolean playing;
+    /** Elapsed time in the current frame */
     private int animTime;
     private int currentFrame;
     
@@ -92,6 +94,7 @@ public class AnimatedImage extends CoreImage {
             this.frames[i] = new CoreImage(frames[i]);
         }
         
+        totalDuration = 0;
         differentHotSpotPerFrame = true;
         setFrame(0);
         playing = true;
@@ -124,6 +127,7 @@ public class AnimatedImage extends CoreImage {
             
         frames = image.split(numFramesAcross, numFramesDown);
         differentHotSpotPerFrame = false;
+        totalDuration = 0;
         setFrame(0);
         playing = true;
     }
@@ -139,6 +143,7 @@ public class AnimatedImage extends CoreImage {
         
         this.loop = loop;
         this.frameSequence = null;
+        this.totalDuration = duration * frames.length;
         
         for (int i = 0; i < frameDuration.length; i++) {
             frameDuration[i] = duration;
@@ -160,6 +165,12 @@ public class AnimatedImage extends CoreImage {
         this.frameSequence = CoreSystem.arraycopy(frameSequence);
         this.frameDuration = CoreSystem.arraycopy(frameDuration);
         this.loop = loop;
+        this.totalDuration = 0;
+        if (frameDuration != null) {
+            for (int i = 0; i < frameDuration.length; i++) {
+                this.totalDuration += frameDuration[i];
+            }
+        }
         setFrame(0);
     }
 
@@ -188,13 +199,7 @@ public class AnimatedImage extends CoreImage {
         Gets the total duration of this AnimatedImage.
     */
     public int getDuration() {
-        int duration = 0;
-        if (frameDuration != null) {
-            for (int i = 0; i < frameDuration.length; i++) {
-                duration += frameDuration[i];
-            }
-        }
-        return duration;
+        return totalDuration;
     }
     
     /**
@@ -225,8 +230,14 @@ public class AnimatedImage extends CoreImage {
         Sets the current frame. 
     */
     public void setFrame(int frame) {
+        setFrame(frame, true);
+    }
+    
+    private void setFrame(int frame, boolean resetAnimTime) {
         currentFrame = frame;
-        animTime = 0;
+        if (resetAnimTime) {
+            animTime = 0;
+        }
         
         CoreImage image = getImage(frame);
         setData(image.getData());
@@ -249,7 +260,7 @@ public class AnimatedImage extends CoreImage {
     }
 
     public boolean update(int elapsedTime) {
-        if (!playing || frameDuration == null) {
+        if (!playing || frameDuration == null || totalDuration <= 0) {
             return false;
         }
         
@@ -259,7 +270,7 @@ public class AnimatedImage extends CoreImage {
             animTime -= frameDuration[currentFrame];
             if (currentFrame == frameDuration.length - 1) {
                 if (loop) {
-                    setFrame(0);
+                    setFrame(0, false);
                 }
                 else {
                     playing = false;
@@ -267,7 +278,7 @@ public class AnimatedImage extends CoreImage {
                 }
             }
             else {
-                setFrame(currentFrame + 1);
+                setFrame(currentFrame + 1, false);
             }
         }
         
