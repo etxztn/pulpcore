@@ -54,19 +54,15 @@ import pulpcore.util.StringUtil;
     errors by allowing the user to retry a failed download.
     <p>
     The default implementation creates a solid-colored background with a progress bar in
-    the middle of the stage. Subclassess can change this appearance by invoking 
+    the middle of the stage. Subclasses can change this appearance by invoking 
     {@code getMainLayer().removeAll()} and adding other visual elements.
 */
 public class LoadingScene extends Scene2D {
     
-    //private static final String ERROR_MESSAGE = "Oops! There was a problem\ndownloading the game.";
     private static final String ERROR_MESSAGE = "Oops! A download error occurred.";
     private static final String TRY_AGAIN = "Try Again";
     
     private static final int FADE_OUT_DURATION = 300;
-    
-    private static final int DEFAULT_BACKGROUND_COLOR = Colors.BLACK;
-    private static final int DEFAULT_FONT_COLOR = Colors.gray(170);
     
     private static final int PROGRESS_BAR_WIDTH = 100 + 4;
     private static final int PROGRESS_BAR_HEIGHT = 10;
@@ -90,11 +86,11 @@ public class LoadingScene extends Scene2D {
     private Download download;
     
     public LoadingScene(String assetCatalogFile) {
-        this(assetCatalogFile, null, DEFAULT_BACKGROUND_COLOR, null);
+        this(assetCatalogFile, null, CoreSystem.getDefaultBackgroundColor(), null);
     }
     
     public LoadingScene(String assetCatalogFile, Scene nextScene) {
-        this(assetCatalogFile, nextScene, DEFAULT_BACKGROUND_COLOR, null);
+        this(assetCatalogFile, nextScene, CoreSystem.getDefaultBackgroundColor(), null);
     }
     
     public LoadingScene(String assetCatalogFile, Scene nextScene, int backgroundColor, 
@@ -104,7 +100,7 @@ public class LoadingScene extends Scene2D {
         this.backgroundColor = backgroundColor;
         
         if (font == null) {
-            font = CoreFont.getSystemFont().tint(DEFAULT_FONT_COLOR);
+            font = CoreFont.getSystemFont().tint(CoreSystem.getDefaultForegroundColor());
         }
         this.font = font;
         
@@ -120,10 +116,16 @@ public class LoadingScene extends Scene2D {
         int w = PROGRESS_BAR_WIDTH;
         int h = PROGRESS_BAR_HEIGHT;
         int x = Stage.getWidth() / 2 - w / 2;
-        int y = Stage.getHeight() / 2;  
-        int progressBarColor = 0x00ffffff ^ backgroundColor;
-        int progressBarBackgroundColor = Colors.darker(Colors.darker(progressBarColor));
-        progressBarBackground = new FilledSprite(x, y, w, h, progressBarBackgroundColor);
+        int y = Stage.getHeight() / 2;
+        int progressBarColor;
+        if (backgroundColor == CoreSystem.getDefaultBackgroundColor()) {
+            progressBarColor = CoreSystem.getDefaultForegroundColor();
+        }
+        else {
+            progressBarColor = 0x00ffffff ^ backgroundColor;
+        }
+        progressBarBackground = new FilledSprite(x, y, w, h, 
+            Colors.rgba(progressBarColor, 56));
         progressBarBackground.visible.set(false);
         progressBar = new FilledSprite(x + 2, y + 2, w - 4, h - 4, progressBarColor);
         progressBar.visible.set(false);

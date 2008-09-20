@@ -62,14 +62,26 @@ public final class CoreApplet extends Applet {
     }
     
     private AppletAppContext context;
-
-    public final void init() {
-        String bgColor = getParameter("boxbgcolor");
-        if (bgColor != null) {
+    
+    private Color getColorParameter(String param) {
+        String color = getParameter(param);
+        if (color != null) {
             try {
-                setBackground(Color.decode(bgColor));
+                return Color.decode(color);
             }
             catch (NumberFormatException ex) { }
+        }
+        return null;
+    }
+
+    public final void init() {
+        Color bgColor = getColorParameter("boxbgcolor");
+        if (bgColor != null) {
+            setBackground(bgColor);
+        }
+        Color fgColor = getColorParameter("boxfgcolor");
+        if (fgColor != null) {
+            setForeground(fgColor);
         }
         
         if (context != null) {

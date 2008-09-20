@@ -297,8 +297,22 @@ public class CoreSystem {
     }
 
     //
-    // Shorcut methods to AppContext
+    // Shortcut methods to AppContext
     //
+    
+    /**
+        Gets the default background color.
+    */
+    public static int getDefaultBackgroundColor() {
+        return getThisAppContext().getDefaultBackgroundColor();
+    }
+    
+    /**
+        Gets the default foreground color.
+    */
+    public static int getDefaultForegroundColor() {
+        return getThisAppContext().getDefaultForegroundColor();
+    }
     
     /**
         Gets a named property for this application instance. Returns null if the named parameter

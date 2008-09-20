@@ -40,6 +40,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.net.Upload;
@@ -202,6 +203,14 @@ public abstract class AppContext {
                 r.notifyAll();
             }
         }
+    }
+    
+    public int getDefaultBackgroundColor() {
+        return Colors.BLACK;
+    }
+    
+    public int getDefaultForegroundColor() {
+        return Colors.rgb(170, 170, 170);
     }
     
     public abstract String getAppProperty(String name);

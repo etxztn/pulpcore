@@ -354,8 +354,11 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         osBackground = new Color(osBackground.getRGB());
         
         // Setup the JFrame
+        // TODO: get colors defined in params?
         setBackground(Color.BLACK);
         getContentPane().setBackground(Color.BLACK);
+        setForeground(new Color(170, 170, 170));
+        getContentPane().setForeground(new Color(170, 170, 170));
         setTitle(getProjectTitle(archive));
         setLocationByPlatform(true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);

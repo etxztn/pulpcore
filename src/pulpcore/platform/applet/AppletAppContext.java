@@ -137,6 +137,14 @@ public final class AppletAppContext extends AppContext {
         return applet;
     }
     
+    public int getDefaultBackgroundColor() {
+        return applet.getBackground().getRGB();
+    }
+    
+    public int getDefaultForegroundColor() {
+        return applet.getForeground().getRGB();
+    }
+    
     public String getAppProperty(String name) {
         return applet.getParameter(name);
     }
