@@ -66,7 +66,6 @@ public final class AppletPlatform implements Platform {
     private AppletAppContext mainContext = null;
     private List allContexts = null;
     
-    private boolean soundEngineCreated;
     private SoundEngine soundEngine;
     
     public static AppletPlatform getInstance() {
@@ -239,7 +238,6 @@ public final class AppletPlatform implements Platform {
                 soundEngine.destroy();
                 soundEngine = null;
             }
-            soundEngineCreated = false;
         }
     }
     
@@ -435,28 +433,14 @@ public final class AppletPlatform implements Platform {
     //
     
     public boolean isSoundEngineCreated() {
-        return soundEngineCreated;
+        return (soundEngine != null);
     }
     
     public SoundEngine getSoundEngine() {
-        if (soundEngineCreated) {
-            return soundEngine;
-        }
-        
-        try {
-            soundEngine = new JavaSound();
+        if (soundEngine == null) {
+            soundEngine = JavaSound.create();
             CoreSystem.setTalkBackField("pulpcore.platform.sound", "javax.sound");
         }
-        catch (Exception ex) {
-            // Ignore
-        }
-       
-        if (soundEngine == null) {
-            CoreSystem.setTalkBackField("pulpcore.platform.sound", "none");
-        }
-        
-        soundEngineCreated = true;
-        
         return soundEngine;
     }
     

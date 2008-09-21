@@ -48,7 +48,7 @@ import pulpcore.util.ByteArray;
 */
 public abstract class Sound {
     
-    private static final SoundClip NO_SOUND = new SoundClip(new byte[0], 8000, false);
+    private static final SoundClip NO_SOUND = new SoundClip("null", new byte[0], 8000, false);
     
     // For u-law conversion. 132 * ((1 << i) - 1)
     private static final int[] EXP_TABLE = { 
@@ -119,7 +119,7 @@ public abstract class Sound {
     /**
         Plays this sound clip. The Sound is played at full volume with no panning.
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -132,7 +132,7 @@ public abstract class Sound {
         Plays this sound clip with the specified colume level (0.0 to 1.0). 
         The level may have a property animation attached.
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -145,7 +145,7 @@ public abstract class Sound {
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0).
         The level and pan may have a property animation attached. 
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -158,7 +158,7 @@ public abstract class Sound {
         Plays this sound clip with the specified level (0.0 to 1.0) and pan (-1.0 to 1.0),
         optionally looping. The level and pan may have a property animation attached.
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -189,7 +189,7 @@ public abstract class Sound {
     /**
         Loops this sound clip. The Sound is played at full volume with no panning.
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -202,7 +202,7 @@ public abstract class Sound {
         Loops this sound clip with the specified volume level (0.0 to 1.0). 
         The level may have a property animation attached.
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -215,7 +215,7 @@ public abstract class Sound {
         Loops this sound clip with the specified volume level (0.0 to 1.0) and pan (-1.0 to 1.0).
         The level and pan may have a property animation attached. 
         @return a Playback object for this unique sound playback (one Sound can have many 
-        simultaneous Playback objects)
+        simultaneous Playback objects) or {@code null} if the sound could not be played.
         @see pulpcore.animation.event.SoundEvent
         @see pulpcore.CoreSystem#setMute(boolean)
         @see pulpcore.CoreSystem#isMute()
@@ -239,11 +239,11 @@ public abstract class Sound {
         }
         
         // Check sample rate
-        if (data == null || !isSupportedSampleRate("raw", sampleRate)) {
+        if (data == null) {
             return NO_SOUND;
         }
         try {
-            return new SoundClip(data, sampleRate, stereo);
+            return new SoundClip("raw", data, sampleRate, stereo);
         }
         catch (IllegalArgumentException ex) {
             if (Build.DEBUG) CoreSystem.print("Data length invalid");
@@ -349,11 +349,6 @@ public abstract class Sound {
             return NO_SOUND;
         }
         
-        // Check sample rate
-        if (!isSupportedSampleRate(soundAsset, sampleRate)) {
-            return NO_SOUND;
-        }
-        
         // Skip to the data section
         in.setPosition(offset);
         
@@ -366,7 +361,7 @@ public abstract class Sound {
             offset+=2;
         }
     
-        return new SoundClip(data, sampleRate, stereo);
+        return new SoundClip(soundAsset, data, sampleRate, stereo);
     }
     
     private static Sound loadWAV(ByteArray in, String soundAsset) throws EOFException {
@@ -421,11 +416,6 @@ public abstract class Sound {
                     }
                     return NO_SOUND;
                 }
-                
-                // Check sample rate
-                if (!isSupportedSampleRate(soundAsset, sampleRate)) {
-                    return NO_SOUND;
-                }
             }
             else if (chunkID == DATA) {
                 if (sampleRate == -1) {
@@ -437,7 +427,8 @@ public abstract class Sound {
                 byte[] data = in.getData();
                 int dataOffset = in.position();
                 int dataLength = chunkSize;
-                return new SoundClip(data, dataOffset, dataLength, sampleRate, stereo);
+                return new SoundClip(soundAsset, data, dataOffset, dataLength, sampleRate, 
+                    stereo);
             }
             else {
                 // Skip this unknown chunk
@@ -483,21 +474,7 @@ public abstract class Sound {
             return NO_SOUND;
         }
     }
-    
-    private static boolean isSupportedSampleRate(String soundAsset, int sampleRate) {
-        int[] sampleRates = CoreSystem.getPlatform().getSoundEngine().getSupportedSampleRates();
-        for (int i = 0; i < sampleRates.length; i++) {
-            if (sampleRate == sampleRates[i]) {
-                return true;
-            }
-        }
         
-        if (Build.DEBUG) {
-            CoreSystem.print("Unsupported sample rate (" + sampleRate + "Hz): " + soundAsset);
-        }
-        return false;
-    }
-    
     //
     // For u-law conversion
     //

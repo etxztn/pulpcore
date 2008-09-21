@@ -644,9 +644,18 @@ public class CoreSystem {
     
     /**
         Returns true if the user's system can play sound.
+        
+        <p>As of PulpCore 0.11.4, the sound engine is loaded asynchronously. While the engine is 
+        loading, this method returns true, but may later return false if the initialization
+        fails.
     */
     public static boolean isSoundEngineAvailable() {
-        return (getPlatform().getSoundEngine() != null);
+        SoundEngine soundEngine = getPlatform().getSoundEngine();
+        int state = SoundEngine.STATE_FAILURE;
+        if (soundEngine != null) {
+            state = soundEngine.getState();
+        }
+        return (state == SoundEngine.STATE_INIT || state == SoundEngine.STATE_READY);
     }
     
     /**

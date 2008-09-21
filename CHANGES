@@ -14,6 +14,8 @@
     "true" (always use), "false" (never use) or "default" (PulpCore chooses the best). Most 
     developers won't need to change this value.
   * Core: pulpcore.js fix for Google Chrome
+  * Core: Default loading scene now uses colors pulpcore_bgcolor and pulpcore_fgcolor.
+  * Core: sound engine is now loaded asynchronously.
   * Fixed bug: Fixed overflow in some Tuple2i methods, which fixed 
     intersection tests between large, rotated sprites.
   * Fixed bug: rendering was incorrect when rotating at or near 90 or 270 degrees. It was

@@ -37,6 +37,7 @@ import pulpcore.platform.SoundStream;
 */
 /* package-private */ class SoundClip extends Sound {
     
+    private final String assetName; 
     private final byte[] data;
     private final int dataOffset;
     private final int dataLength;
@@ -48,8 +49,8 @@ import pulpcore.platform.SoundStream;
         Creates an sound clip with the specified samples 
         (signed, little endian, 16-bit PCM format). 
     */
-    public SoundClip(byte[] data, int sampleRate, boolean stereo) {
-        this(data, 0, data.length, sampleRate, stereo);
+    public SoundClip(String assetName, byte[] data, int sampleRate, boolean stereo) {
+        this(assetName, data, 0, data.length, sampleRate, stereo);
     }
         
     
@@ -57,8 +58,11 @@ import pulpcore.platform.SoundStream;
         Creates an sound clip with the specified samples 
         (signed, little endian, 16-bit PCM format). 
     */
-    public SoundClip(byte[] data, int dataOffset, int dataLength, int sampleRate, boolean stereo) {
+    public SoundClip(String assetName, byte[] data, int dataOffset, int dataLength, 
+        int sampleRate, boolean stereo) 
+    {
         super(sampleRate);
+        this.assetName = assetName;
         this.data = data;
         this.dataOffset = dataOffset;
         this.dataLength = dataLength;
@@ -125,5 +129,9 @@ import pulpcore.platform.SoundStream;
     
     private void setSample(int offset, int sample) {
         SoundStream.setSample(data, offset, sample);
+    }
+    
+    public String toString() {
+        return assetName;
     }
 }

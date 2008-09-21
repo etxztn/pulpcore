@@ -76,17 +76,7 @@ public class JOrbisAdapter extends Sound {
             return false;
         }
             
-        int[] sampleRates = CoreSystem.getPlatform().getSoundEngine().getSupportedSampleRates();
-        for (int i = 0; i < sampleRates.length; i++) {
-            if (sampleRate == sampleRates[i]) {
-                return true;
-            }
-        }
-        
-        if (Build.DEBUG) {
-            CoreSystem.print("Unsupported sample rate (" + sampleRate + "Hz): " + soundAsset);
-        }
-        return false;
+        return true;
     }
         
     // Sound interface
@@ -153,6 +143,10 @@ public class JOrbisAdapter extends Sound {
     
     private Playback playImpl(Fixed level, Fixed pan, boolean loop) {
         return super.play(level, pan, loop);
+    }
+    
+    public String toString() {
+        return filename;
     }
     
     /*
