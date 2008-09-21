@@ -48,7 +48,7 @@ import pulpcore.Stage;
 */
 public class Group extends Sprite {
     
-    /** Immuatable list of sprites. A new array is created when the list changes. */
+    /** Immutable list of sprites. A new array is created when the list changes. */
     private Sprite[] sprites = new Sprite[0];
     /** The list of sprites at the last call to getRemovedSprites() */
     private Sprite[] previousSprites = null;
@@ -151,16 +151,13 @@ public class Group extends Sprite {
         Returns {@code true} if this Group is an ancestor of the specified Sprite.
     */
     public boolean isAncestorOf(Sprite sprite) {
-        // Depth-first search
-        Sprite[] snapshot = sprites;
-        int count = 0;
-        for (int i = 0; i < snapshot.length; i++) {
-            Sprite s = snapshot[i];
-            if (s == sprite) {
+        Group parent = (sprite == null) ? null : sprite.getParent();
+        while (parent != null) {
+            if (parent == this) {
                 return true;
             }
-            else if (s instanceof Group && ((Group)s).isAncestorOf(sprite)) {
-                return true;
+            else {
+                parent = parent.getParent();
             }
         }
         return false;
@@ -302,7 +299,7 @@ public class Group extends Sprite {
     
     //
     // Sprite list modifications
-    // NOTE: if adding another modication method, also add it to Viewport and ScrollPane
+    // NOTE: if adding another modification method, also add it to Viewport and ScrollPane
     //
     
     /**
@@ -449,7 +446,7 @@ public class Group extends Sprite {
             previousSprites = sprites;
         }
         else if (previousSprites != sprites) {
-            // Modifications occured - get list of all removed sprites.
+            // Modifications occurred - get list of all removed sprites.
             // NOTE: we make the list here, rather than in remove(), because if the list was
             // creating in remove() and this method was never called (non-Scene2D implementation)
             // the removedSprites list would continue to grow, resulting in a memory leak.
