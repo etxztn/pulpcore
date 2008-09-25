@@ -7,8 +7,8 @@
   * API: Added CoreGraphics.setEdgeClamp() to choose between hard and soft edges when scaling
     with bilinear interpolation.
   * API: Added CoreImage.getARGB(x, y)
-  * Contrib: Added StretchableImage (Christoffer Lerno).
   * Tools: Font creator can now render fonts with anti-aliasing disabled.
+  * Core: Added StretchableSprite (based off of code from Christoffer Lerno).
   * Core: Tinted fonts are now cached.
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
     "true" (always use), "false" (never use) or "default" (PulpCore chooses the best). Most 
