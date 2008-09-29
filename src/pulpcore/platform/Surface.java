@@ -30,6 +30,7 @@
 package pulpcore.platform;
 
 import pulpcore.CoreSystem;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.Rect;
@@ -68,6 +69,12 @@ public abstract class Surface {
         imageData = new int[w * h];
         image = new CoreImage(w, h, true, imageData);
         g = image.createGraphics();
+        int bgColor = CoreSystem.getDefaultBackgroundColor();
+        if (bgColor != Colors.BLACK) {
+            g.setColor(bgColor);
+            g.fill();
+            g.reset();
+        }
         notifyResized();
     }
     
