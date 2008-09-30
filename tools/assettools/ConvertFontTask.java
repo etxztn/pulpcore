@@ -43,12 +43,8 @@ import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
-import java.awt.image.ConvolveOp;
 import java.awt.image.DataBufferInt;
-import java.awt.image.Kernel;
 import java.awt.Paint;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
@@ -191,12 +187,11 @@ public class ConvertFontTask extends Task {
             }
         }
         else {
-            for (int i = 0; i < charsets.length; i++) {
-                String charset = charsets[i];
-                if (charset == null) {
-                    continue;
+            for (String charset : charsets) {
+                if (charset == null || charset.length() == 0) {
+                    charList.add(' ');
                 }
-                if (charset.length() == 1) {
+                else if (charset.length() == 1) {
                     charList.add(charset.charAt(0));
                 }
                 else if (charset.length() == 3 && charset.charAt(1) == '-') {
