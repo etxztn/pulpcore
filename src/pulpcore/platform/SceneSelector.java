@@ -46,6 +46,9 @@ import pulpcore.sprite.Button;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.ScrollPane;
 import pulpcore.Stage;
+import pulpcore.math.CoreMath;
+import pulpcore.sprite.Group;
+import pulpcore.sprite.Sprite;
 
 /**
     Provides an interface to switch to other Scenes. The Scene selector is activated by pressing 
@@ -71,25 +74,23 @@ public class SceneSelector extends Scene2D {
         add(new FilledSprite(Colors.WHITE));
         
         int spacing = 5;
-        int x = 0;
-        int y = 0;
         ScrollPane scrollPane = new ScrollPane(spacing, spacing, 
             Stage.getWidth() - spacing*2, Stage.getHeight() - spacing*2);
         
         if (Stage.canPopScene()) {
-            cancel = Button.createLabeledButton("<< Back", x, y);
+            cancel = Button.createLabeledButton("<< Back", 0, 0);
             scrollPane.add(cancel);
-            y += cancel.height.get() + spacing;
         }
         
         buttons = new Button[scenes.size()];
         for (int i = 0; i < scenes.size(); i++) {
             Class c = (Class)scenes.get(i);
-            buttons[i] = Button.createLabeledButton(c.getName(), x, y);
+            buttons[i] = Button.createLabeledButton(c.getName(), 0, 0);
             scrollPane.add(buttons[i]);
             
-            y += buttons[i].height.get() + spacing;
         }
+        organizeInColumns(scrollPane.getContentPane(), 
+                Stage.getWidth() - ScrollPane.SCROLLBAR_WIDTH, spacing);
         if (buttons.length > 0) {
             scrollPane.setScrollUnitSize(buttons[0].height.getAsInt() + spacing);
             scrollPane.setAnimationDuration(100, 250);
@@ -115,6 +116,34 @@ public class SceneSelector extends Scene2D {
                 catch (Throwable t) {
                     if (Build.DEBUG) CoreSystem.print("Couldn't create class " + c, t);
                 }
+            }
+        }
+    }
+
+    private void organizeInColumns(Group group, int width, int spacing) {
+        // Easy algorithm: all columns have the same width, assume all sprites have the
+        // same height.
+        int columnWidth = 0;
+        for (int i = 0; i < group.size(); i++) {
+            columnWidth = Math.max(columnWidth, group.get(i).width.getAsInt());
+        }
+        columnWidth += spacing;
+
+        int numColumns = (width + spacing) / columnWidth;
+        if (numColumns < 1) {
+            numColumns = 1;
+        }
+        int spritesPerColumn = CoreMath.intDivCeil(group.size(), numColumns);
+        int x = 0;
+        int y = 0;
+        for (int i = 0; i < group.size(); i++) {
+            group.get(i).setLocation(x, y);
+            if (((i + 1) % spritesPerColumn) == 0) {
+                x += columnWidth;
+                y = 0;
+            }
+            else {
+                y += group.get(i).height.getAsInt() + spacing;
             }
         }
     }
@@ -197,7 +226,7 @@ public class SceneSelector extends Scene2D {
     
     /**
         Gets a list of all the classes inside a jar.
-        TODO: Use pulpcore.net.Download in the background
+        (Assumes the jar is in the cache or local file system)
     */
     private List getClasses(String jar) throws Throwable {
         List classes = new ArrayList();
