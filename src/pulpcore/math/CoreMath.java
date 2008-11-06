@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,7 +29,6 @@
 
 package pulpcore.math;
 
-
 /**
     The CoreMath class contains fixed-point arithmetic functions and other 
     useful math functions.
@@ -49,7 +48,6 @@ package pulpcore.math;
     
 */
 public class CoreMath {
-    
     
     public static final int FRACTION_BITS = 16;
     
@@ -103,10 +101,8 @@ public class CoreMath {
     /** Number of fractional bits used for some internal calculations */
     private static final int INTERNAL_BITS = 24;
     
-    
     // Prevent instantiation
     private CoreMath() { }
-    
     
     /**
         Converts an integer to a fixed-point value.
@@ -123,7 +119,6 @@ public class CoreMath {
         }
     }
 
-
     /**
         Converts a float to a fixed-point value.
     */
@@ -138,7 +133,6 @@ public class CoreMath {
             return Math.round(n * ONE);
         }
     }
-    
     
     /**
         Converts a double-percsion float to a fixed-point value.
@@ -155,7 +149,6 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Converts a String representing a double-percsion float into a fixed-point value.
         @throws NumberFormatException if the string does not contain a parsable number.
@@ -164,14 +157,12 @@ public class CoreMath {
         return toFixed(Double.valueOf(n).doubleValue());
     }
     
-    
     /**
         Converts a fixed-point value to a float.
     */
     public static final float toFloat(int f) {
         return (float)f / ONE;
     }
-
     
     /**
         Converts a fixed-point value to a double.
@@ -179,7 +170,6 @@ public class CoreMath {
     public static final double toDouble(int f) {
         return (double)f / ONE;
     }
-
 
     /**
         Converts a fixed-point value to an integer. Same behavior as casting
@@ -194,14 +184,12 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Converts a fixed-point value to an integer.
     */
     public static final int toIntFloor(int f) {
         return f >> FRACTION_BITS;
     }
-    
     
     /**
         Converts a fixed-point value to an integer.
@@ -210,14 +198,12 @@ public class CoreMath {
         return toIntFloor(f + ONE_HALF);
     }
     
-    
     /**
         Converts a fixed-point value to an integer.
     */
     public static final int toIntCeil(int f) {
         return -toIntFloor(-f);
     }
-
 
     /**
         Returns the fractional part of a fixed-point value (removes the
@@ -227,7 +213,6 @@ public class CoreMath {
         return abs(f) & FRACTION_MASK;
     }
     
-    
     /**
         Returns the floor of a fixed-point value (removes the
         fractional part).
@@ -236,7 +221,6 @@ public class CoreMath {
         return f & ~FRACTION_MASK;
     }
     
-    
     /**
         Returns the ceil of a fixed-point value.
     */
@@ -244,7 +228,13 @@ public class CoreMath {
         return -floor(-f);
     }
     
-
+    /**
+        Returns the fixed-point value rounded to the nearest integer location.
+    */
+    public static final int round(int f) {
+        return floor(f + ONE_HALF);
+    }
+    
     /**
         Converts a fixed-point number to a base-10 string representation.
     */
@@ -254,7 +244,6 @@ public class CoreMath {
             fracPart(f) << (32 - FRACTION_BITS), (f < 0),
             1, 7, false);
     }
-        
         
     /**
         Converts a fixed-point number to a base-10 string representation using 
@@ -292,7 +281,6 @@ public class CoreMath {
     public static final String intToString(int n) {
         return formatNumber(abs(n), 0, (n < 0), 0, 0, false); 
     }
-        
         
     /**
         Converts a integer to a base-10 string representation using 
@@ -417,11 +405,9 @@ public class CoreMath {
         return buffer.toString();
     }
     
-    
     //
     // Bit manipulation
     //
-    
     
     /**
         Returns true if the number (greater than 1) is a power of two.
@@ -429,7 +415,6 @@ public class CoreMath {
     public static final boolean isPowerOfTwo(int n) {
         return (n & (n - 1)) == 0;
     }
-    
   
     /**
         Counts the number of "on" bits in an integer.
@@ -451,7 +436,6 @@ public class CoreMath {
         count = ((count >> 16) & 0x0000FFFF) + (count & 0x0000FFFF);
         return count;
     }
-    
     
     /**
         Returns the log base 2 of an integer greater than 0. The returned value
@@ -498,11 +482,9 @@ public class CoreMath {
 */
     }
     
-
     //
     // Integer math
     //
-    
     
     /**
         Clamps a number between two values. If the number <= min returns min; if the number >= max
@@ -520,7 +502,6 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Clamps a number between two values. If the number <= min returns min; if the number >= max
         returns max; otherwise returns the number. 
@@ -537,7 +518,6 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Returns the sign of a number.
     */
@@ -553,7 +533,6 @@ public class CoreMath {
         return (n > 0)?1:((n < 0)?-1:0);
     }
     
-    
     /**
         Returns the absolute value of a number.
     */
@@ -561,7 +540,6 @@ public class CoreMath {
         return (n >= 0)?n:-n;
         //return (n ^ (n >> 31)) - (n >> 31);
     }
-    
     
     /**
         Divides the number, n, by the divisor, d, rounding the result to the 
@@ -575,7 +553,6 @@ public class CoreMath {
             return (n + (d >> 1)) / d;
         }
     }
-    
     
     /**
         Divides the number, n, by the divisor, d, returning the nearest integer 
@@ -604,7 +581,6 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Divides the number, n, by the divisor, d, returning the nearest integer 
         greater than or equal to the result.
@@ -613,11 +589,9 @@ public class CoreMath {
         return -intDivFloor(-n, d);
     }
     
-    
     //
     // Fixed-point math
     //
-    
     
     /**
         Multiplies two fixed-point numbers together.
@@ -626,14 +600,12 @@ public class CoreMath {
         return (int)(((long)f1 * f2) >> FRACTION_BITS);
     }
     
-    
     /**
         Multiplies two fixed-point numbers together.
     */
     public static final long mul(long f1, long f2) {
         return (f1 * f2) >> FRACTION_BITS;
     }
-    
     
     /**
         Divides the first fixed-point number by the second fixed-point number.
@@ -642,14 +614,12 @@ public class CoreMath {
         return (int)(((long)f1 << FRACTION_BITS) / f2);
     }
     
-    
     /**
         Divides the first fixed-point number by the second fixed-point number.
     */
     public static final long div(long f1, long f2) {
         return (f1 << FRACTION_BITS) / f2;
     }
-    
     
     /**
         Multiplies the first two fixed-point numbers together, then divides by
@@ -659,7 +629,6 @@ public class CoreMath {
         return (int)((long)f1 * f2 / f3);
     }
     
-    
     /**
         Multiplies the first two fixed-point numbers together, then divides by
         the third fixed-point number.
@@ -667,7 +636,6 @@ public class CoreMath {
     public static final long mulDiv(long f1, long f2, long f3) {
         return f1 * f2 / f3;
     }
-    
     
     //
     // Logs and powers
@@ -714,7 +682,6 @@ public class CoreMath {
         return l;
     }
     
-    
     public static final long sqrt(long fx) {
         if (fx < 0) {
             throw new ArithmeticException("NaN");
@@ -756,18 +723,15 @@ public class CoreMath {
         return l;
     }
     
-    
     public static long dist(int x1, int y1, int x2, int y2) {
         long dx = x1 - x2;
         long dy = y1 - y2;
         return sqrt(mul(dx, dx) + mul(dy, dy));
     }
     
-    
     //
     // Fixed-point Trigonometry
     //
-    
     
     /**
         Returns the sine of the specified fixed-point radian value.
@@ -824,7 +788,6 @@ public class CoreMath {
         return sine >> (INTERNAL_BITS - FRACTION_BITS);
     }
     
-
     /**
         Returns the cosine of the specified fixed-point radian value.
     */
@@ -841,7 +804,6 @@ public class CoreMath {
         }
     }
     
-
     /**
         Returns the tangent of the specified fixed-point radian value.
     */
@@ -855,7 +817,6 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Returns the cotangent of the specified fixed-point radian value.
     */
@@ -868,7 +829,6 @@ public class CoreMath {
             return div(cos(fx), sin);
         }
     }
-    
     
     /**
         Returns the arcsine of the specified fixed-point value.
@@ -888,14 +848,12 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Returns the arccosine of the specified fixed-point value.
     */
     public static final int acos(int fx) {
         return ONE_HALF_PI - asin(fx);
     }
-
 
     /**
         Returns the arctangent of the specified fixed-point value.
@@ -933,7 +891,6 @@ public class CoreMath {
             answer = -answer;
         }
         return answer;
-        
     }
     
     /**
@@ -977,14 +934,12 @@ public class CoreMath {
     // Random number generation and Noise functions
     //
     
-    
     /**
         Returns a random integer from 0 to max, inclusive
     */
     public static final int rand(int max) {
         return rand(0, max);
     }
-    
     
     /**
         Returns a random integer from min to max, inclusive
@@ -1007,14 +962,12 @@ public class CoreMath {
         }
     }
     
-    
     /**
         Returns a random double from 0 to max, inclusive
     */
     public static final double rand(double max) {
         return rand(0, max);
     }
-    
     
     /**
         Returns a random double from min to max, inclusive
@@ -1023,14 +976,12 @@ public class CoreMath {
         return min + (Math.random()*(max-min));
     }
     
-    
     /**
         Returns a random boolean.
     */
     public static final boolean rand() {
         return (rand(0, 1) == 0);
     }
-    
     
     /**
         Returns true if a random event occurs. 
@@ -1039,7 +990,6 @@ public class CoreMath {
     public static final boolean randChance(int percent) {
         return (rand(1, 100) <= percent);
     }
-    
     
     /**
         @return a 32-bit signed integer
@@ -1051,7 +1001,6 @@ public class CoreMath {
         n = (n << 13) ^ n;
         return  n * (n * n * 15731 + 789221) + 1376312589;
     }
-  
     
     /**
         @return a 32-bit signed integer
@@ -1060,14 +1009,12 @@ public class CoreMath {
         return noise(x + y * 57);
     }
     
-    
     /**
         @return a 32-bit signed integer
     */
     public static final int smoothNoise(int x) {
         return (int)(((long)noise(x) >> 1) + ((long)noise(x-1) >> 2) + ((long)noise(x+1) >> 2));
     }
-    
     
     /**
         @return a 32-bit signed integer
@@ -1089,7 +1036,6 @@ public class CoreMath {
         return (int)(corners + sides + center);
     }
     
-    
     /**
         @return a 32-bit signed integer
     */
@@ -1108,7 +1054,6 @@ public class CoreMath {
             return cosineInterpolate(n1 , n2, f);
         }
     }
-     
     
     /**
         @return a 32-bit signed integer
@@ -1152,7 +1097,6 @@ public class CoreMath {
         return (int)total;
     }
     
-    
     /**
         @param fx fixed-point value
         @param fy fixed-point value
@@ -1177,11 +1121,9 @@ public class CoreMath {
         return (int)total;
     }
     
-    
     //
     // Interpolation
     //
-    
     
     /**
         Performs a 1-dimensional linear interpolation between values n1 and n2. The f 
@@ -1196,7 +1138,6 @@ public class CoreMath {
         // return n1 + mul(n2 - n1, f);
     }
     
-    
     /**
         Performs a 1-dimensional cosine interpolation between values n1 and n2. The f 
         parameter is a fixed-point value from 0.0 to 1.0.
@@ -1209,7 +1150,6 @@ public class CoreMath {
         
         return interpolate(n1, n2, f);
     }
-    
     
     // This supposedly resemembles cosine interpolation by using the graph
     // y = 3x^2 - 2x^3
@@ -1224,7 +1164,6 @@ public class CoreMath {
         
         return mul(n1, 3*fiSquared - 2*fiCubed) + mul(n2, 3*fSquared - 2*fCubed);
     }
-    
     
     /**
         Performs a 1-dimensional cubic interpolation between values n1 and n2. The f 
@@ -1242,5 +1181,4 @@ public class CoreMath {
     
         return (int)(mul(p, f3) + mul(q, f2) + mul(r, f) + s);
     }
-    
 }
