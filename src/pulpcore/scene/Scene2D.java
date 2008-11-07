@@ -30,14 +30,11 @@
 package pulpcore.scene;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import pulpcore.animation.event.TimelineEvent;
 import pulpcore.animation.Timeline;
 import pulpcore.Build;
-import pulpcore.CoreSystem;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
-import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
@@ -100,7 +97,7 @@ public class Scene2D extends Scene {
     
     // Layers
     
-    private final Group layers = new Group() {
+    private final Group root = new Group() {
         public Scene2D getScene2D() {
             return Scene2D.this;
         }
@@ -160,7 +157,7 @@ public class Scene2D extends Scene {
     private void reset() {
         needsFullRedraw = true;
         timelines = new ArrayList();
-        layers.removeAll();
+        root.removeAll();
         addLayer(new Group()); 
     }
     
@@ -187,7 +184,7 @@ public class Scene2D extends Scene {
         @see #getCursor()
     */
     public final synchronized void setCursor(int cursor) {
-        layers.setCursor(cursor);
+        root.setCursor(cursor);
     }
     
     /**
@@ -196,7 +193,7 @@ public class Scene2D extends Scene {
         @see #setCursor(int)
     */
     public final synchronized int getCursor() {
-        int cursor = layers.getCursor();
+        int cursor = root.getCursor();
         if (cursor == -1) {
             return Input.CURSOR_DEFAULT;
         }
@@ -215,7 +212,7 @@ public class Scene2D extends Scene {
             this.dirtyRectanglesEnabled = dirtyRectanglesEnabled;
             needsFullRedraw = true;
             if (!this.dirtyRectanglesEnabled) {
-                clearDirtyRects(layers);
+                clearDirtyRects(root);
             }
         }
     }
@@ -401,14 +398,14 @@ public class Scene2D extends Scene {
         Returns the main (bottom) layer. This layer cannot be removed.
     */
     public synchronized Group getMainLayer() {
-        return (Group)layers.get(0);
+        return (Group)root.get(0);
     }
     
     /**
         Adds the specified Group as the top-most layer.
     */
     public synchronized void addLayer(Group layer) {
-        layers.add(layer);
+        root.add(layer);
     }
     
     /**
@@ -417,7 +414,7 @@ public class Scene2D extends Scene {
     */
     public synchronized void removeLayer(Group layer) {
         if (layer != getMainLayer()) {
-            layers.remove(layer);
+            root.remove(layer);
         }
     }
     
@@ -425,14 +422,14 @@ public class Scene2D extends Scene {
         Returns the total number of sprites in all layers.
     */
     public synchronized int getNumSprites() {
-        return layers.getNumSprites();
+        return root.getNumSprites();
     }
 
     /**
         Returns the total number of visible sprites in all layers.
     */
     public synchronized int getNumVisibleSprites() {
-        return layers.getNumVisibleSprites();
+        return root.getNumVisibleSprites();
     }
         
     //
@@ -681,7 +678,7 @@ public class Scene2D extends Scene {
         
         // Update timelines, layers, and sprites
         if (!paused) {
-            layers.update(elapsedTime);
+            root.update(elapsedTime);
             // Update timelines
             synchronized (this) {
                 for (int i = 0; i < timelines.size(); i++) {
@@ -705,7 +702,7 @@ public class Scene2D extends Scene {
         // Set cursor
         int cursor = Input.CURSOR_DEFAULT;
         if (Input.isMouseInside()) {
-            Sprite pick = layers.pickEnabledAndVisible(Input.getMouseX(), Input.getMouseY());
+            Sprite pick = root.pickEnabledAndVisible(Input.getMouseX(), Input.getMouseY());
             if (pick != null) {
                 cursor = pick.getCursor();
             }
@@ -720,7 +717,7 @@ public class Scene2D extends Scene {
         }
         
         if (needsFullRedraw) {
-            layers.setDirty(true);
+            root.setDirty(true);
             if (Build.DEBUG) {
                 Sprite overlay = Stage.getInfoOverlay();
                 if (overlay != null) {
@@ -731,8 +728,8 @@ public class Scene2D extends Scene {
         
         if (dirtyRectanglesEnabled) {
             // Add dirty rectangles
-            addDirtyRectangles(layers, null, null, needsFullRedraw);
-            layers.setDirty(false);
+            addDirtyRectangles(root, null, null, needsFullRedraw);
+            root.setDirty(false);
             
             // Add dirty rectangle for the custom cursor
             // TODO: custom cursor may be broken for non-identity parent transforms
@@ -767,7 +764,7 @@ public class Scene2D extends Scene {
             }
         }
         else {
-            updateTransforms(layers);
+            updateTransforms(root);
         }
     }
     
@@ -908,7 +905,7 @@ public class Scene2D extends Scene {
         
         if (!dirtyRectanglesEnabled || needsFullRedraw || dirtyRectangles.isOverflowed()) {
             g.setClip(drawBounds);
-            layers.draw(g);
+            root.draw(g);
             if (Build.DEBUG && drawOverlay) {
                 Stage.getInfoOverlay().draw(g);
             }
@@ -916,7 +913,7 @@ public class Scene2D extends Scene {
         }
         else if (Build.DEBUG && showDirtyRectangles) {
             g.setClip(drawBounds);
-            layers.draw(g);
+            root.draw(g);
             if (Build.DEBUG && drawOverlay) {
                 Stage.getInfoOverlay().draw(g);
             }
@@ -935,7 +932,7 @@ public class Scene2D extends Scene {
             for (int i = 0; i < dirtyRectangles.size(); i++) {
                 Rect r = dirtyRectangles.get(i);
                 g.setClip(r.x, r.y, r.width, r.height);
-                layers.draw(g);
+                root.draw(g);
                 if (Build.DEBUG && drawOverlay) {
                     Stage.getInfoOverlay().draw(g);
                 }
