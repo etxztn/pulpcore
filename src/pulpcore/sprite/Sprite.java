@@ -35,7 +35,6 @@ import pulpcore.animation.Fixed;
 import pulpcore.animation.Int;
 import pulpcore.animation.Property;
 import pulpcore.animation.PropertyListener;
-import pulpcore.Build;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.BlendMode;
 import pulpcore.Input;
@@ -184,7 +183,7 @@ public abstract class Sprite implements PropertyListener {
         <p>
         This value is false by default.
     */
-    public final Bool pixelSnapping = new Bool(false);
+    public final Bool pixelSnapping = new Bool(this, false);
     
     //
     // Private fields
@@ -434,13 +433,7 @@ public abstract class Sprite implements PropertyListener {
         transform.set(parentTransform);
             
         // Translate
-        if (pixelSnapping.get()) {
-            transform.translate(CoreMath.floor(x.getAsFixed()), 
-                CoreMath.floor(y.getAsFixed()));
-        }
-        else {
-            transform.translate(x.getAsFixed(), y.getAsFixed());
-        }
+        transform.translate(x.getAsFixed(), y.getAsFixed());
         
         // Rotate
         if (cosAngle != CoreMath.ONE || sinAngle != 0) {
@@ -459,11 +452,11 @@ public abstract class Sprite implements PropertyListener {
         }
         
         // Adjust for anchor
+        transform.translate(-getAnchorX(), -getAnchorY());
+
+        // Snap to the nearest integer location
         if (pixelSnapping.get()) {
-            transform.translate(CoreMath.floor(-getAnchorX()), CoreMath.floor(-getAnchorY()));
-        }
-        else {
-            transform.translate(-getAnchorX(), -getAnchorY());
+            transform.roundTranslation();
         }
     }
     
@@ -1000,9 +993,9 @@ public abstract class Sprite implements PropertyListener {
         int x2 = CoreMath.toIntCeil(intersection.x + intersection.width);
         int y2 = CoreMath.toIntCeil(intersection.y + intersection.height);
         
-        for (int y = y1; y < y2; y++) {
-            for (int x = x1; x < x2; x++) {
-                if (a.contains(x, y) && b.contains(x, y)) {
+        for (int py = y1; py < y2; py++) {
+            for (int px = x1; px < x2; px++) {
+                if (a.contains(px, py) && b.contains(px, py)) {
                     return true;
                 }
             }
