@@ -377,6 +377,11 @@ public class Transform {
         type |= TYPE_TRANSLATE;
     }
     
+    public void roundTranslation() {
+        m02 = CoreMath.round(m02);
+        m12 = CoreMath.round(m12);
+    }
+    
     public void scale(int fx, int fy) {
         // [   x   0   0   ]
         // [   0   y   0   ]
