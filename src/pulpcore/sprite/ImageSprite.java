@@ -33,7 +33,6 @@ import pulpcore.animation.Bool;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
-import pulpcore.math.Transform;
 
 /**
     An image-based sprite. The image can be an {@link pulpcore.image.AnimatedImage}.
@@ -47,6 +46,12 @@ public class ImageSprite extends Sprite {
     
     private CoreImage image;
     private boolean pixelLevel = true;
+    
+    /**
+        Flag indicating whether the edges of this ImageSprite are anti-aliased when rotating or
+        drawing at fractional locations. The default value is {@code true}.
+    */
+    public final Bool antiAlias = new Bool(this, true);
     
     /**
         Creates an ImageSprite that has the same dimensions as the image.
@@ -151,6 +156,8 @@ public class ImageSprite extends Sprite {
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         
+        antiAlias.update(elapsedTime);
+        
         if (image != null) {
             boolean changed = image.update(elapsedTime);
             if (changed) {
@@ -221,7 +228,10 @@ public class ImageSprite extends Sprite {
     
     protected void drawSprite(CoreGraphics g) {
         if (image != null) {
+            boolean oldEdgeClamp = g.getEdgeClamp();
+            g.setEdgeClamp(!antiAlias.get());
             g.drawImage(image);
+            g.setEdgeClamp(oldEdgeClamp);
         }
     }
 }
