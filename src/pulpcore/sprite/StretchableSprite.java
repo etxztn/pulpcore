@@ -411,13 +411,12 @@ public class StretchableSprite extends ImageSprite {
             Section ySection = leftSections[i];
             int srcY = ySection.position + borderSize;
             int srcHeight = ySection.length;
-            int sectionHeight;
+            int scaleY;
             if (ySection.stretchable) {
-                sectionHeight = CoreMath.div(srcHeight * localStetchableHeight,
-                        fStretchableHeight);
+                scaleY = CoreMath.div(localStetchableHeight, fStretchableHeight);
             }
             else {
-                sectionHeight = CoreMath.toFixed(srcHeight);
+                scaleY = CoreMath.ONE;
             }
             
             int fx = 0;
@@ -425,28 +424,27 @@ public class StretchableSprite extends ImageSprite {
                 Section xSection = topSections[j];
                 int srcX = xSection.position + borderSize;
                 int srcWidth = xSection.length;
-                int sectionWidth;
+                int scaleX;
                 if (xSection.stretchable) {
-                    sectionWidth = CoreMath.div(srcWidth * localStetchableWidth,
-                            fStretchableWidth);
+                    scaleX = CoreMath.div(localStetchableWidth, fStretchableWidth);
                 }
                 else {
-                    sectionWidth = CoreMath.toFixed(srcWidth);
+                    scaleX = CoreMath.ONE;
                 }
                 
                 // Draw
                 g.pushTransform();
                 g.getTransform().translate(fx, fy); 
                 if (xSection.stretchable || ySection.stretchable) {
-                    g.getTransform().scale(sectionWidth / srcWidth, sectionHeight / srcHeight);
+                    g.getTransform().scale(scaleX, scaleY);
                 }
                 g.drawImage(image, srcX, srcY, srcWidth, srcHeight);
                 g.popTransform();
 
-                fx += sectionWidth;
+                fx += scaleX * srcWidth;
             }
             
-            fy += sectionHeight;
+            fy += scaleY * srcHeight;
         }
     }
 }
