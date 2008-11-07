@@ -98,8 +98,6 @@ public class CoreGraphics {
     /** For bilinear interpolation, if true, edges are clamped (hard edges) */
     private boolean edgeClamp;
     
-    private boolean fractionalMetrics;
-    
     /** The current alpha value. 0 is fully tranaparent, 255 is fully opaque. */
     private int alpha;
     
@@ -162,7 +160,6 @@ public class CoreGraphics {
         setBlendMode(BlendMode.SrcOver());
         bilinear = true;
         edgeClamp = false;
-        fractionalMetrics = true;
         font = null;
         
         transformStackSize = 0;
@@ -203,14 +200,6 @@ public class CoreGraphics {
     
     public boolean getEdgeClamp() {
         return edgeClamp;
-    }
-    
-    public void setFractionalMetrics(boolean useFractionalMetrics) {
-        this.fractionalMetrics = useFractionalMetrics;
-    }
-    
-    public boolean getFractionalMetrics() {
-        return fractionalMetrics;
     }
     
     public void setFont(CoreFont font) {
@@ -433,15 +422,29 @@ public class CoreGraphics {
         Draws a line using the current color.
     */
     public void drawLine(int x1, int y1, int x2, int y2) {
-        // Disable fractional metrics so that the last pixel is drawn
-        boolean oldFractionalMetrics = fractionalMetrics;
-        fractionalMetrics = false;
-        drawLineFixedPoint(
-            CoreMath.toFixed(x1),
-            CoreMath.toFixed(y1),
-            CoreMath.toFixed(x2),
-            CoreMath.toFixed(y2));
-        fractionalMetrics = oldFractionalMetrics;
+        x1 = CoreMath.toFixed(x1);
+        y1 = CoreMath.toFixed(y1);
+        x2 = CoreMath.toFixed(x2);
+        y2 = CoreMath.toFixed(y2);
+
+        int dx = x2 - x1;
+        int dy = y2 - y1;
+        if (dx == 0 || dy == 0) {
+            if (dx == 0 && dy == 0) {
+                // Do nothing
+            }
+            else {
+                // Horizontal and vertical lines
+                pushTransform();
+                transform.clear();
+                transform.translate(Math.min(x1, x2), Math.min(y1, y2));
+                internalFillRect(CoreMath.abs(dx) + CoreMath.ONE, CoreMath.abs(dy) + CoreMath.ONE);
+                popTransform();
+            }
+        }
+        else {
+            internalDrawLine(x1, y1, x2, y2, true);
+        }
     }
     
     /**
@@ -459,7 +462,7 @@ public class CoreGraphics {
         Draws a line (at fixed-point coordinates) using the current color.
     */
     public void drawLineFixedPoint(int x1, int y1, int x2, int y2) {
-        internalDrawLine(x1, y1, x2, y2);
+        internalDrawLine(x1, y1, x2, y2, false);
     }
     
     /**
@@ -549,11 +552,10 @@ public class CoreGraphics {
             int y = transform.getTranslateY();
             int w = CoreMath.mul(transform.getScaleX(), fw);
             int h = CoreMath.mul(transform.getScaleY(), fh);
-            if (fractionalMetrics && (
-                CoreMath.fracPart(x) != 0 || 
+            if (CoreMath.fracPart(x) != 0 || 
                 CoreMath.fracPart(y) != 0 || 
                 CoreMath.fracPart(w) != 0 || 
-                CoreMath.fracPart(h) != 0))
+                CoreMath.fracPart(h) != 0)
             {
                 internalFillRectFixedPoint(fw, fh);
             }
@@ -563,36 +565,6 @@ public class CoreGraphics {
         }
         
         popTransform();
-    }
-    
-    /**
-        Draws the bounds of the current object. For debugging.
-    */
-    private void debugDrawObjectBounds() {
-        int x = objectX;
-        int y = objectY;
-        int w = objectWidth;
-        int h = objectHeight;
-        
-        // Save state
-        pushTransform();
-        int color = getColor();
-        int alpha = getAlpha();
-        
-        // Draw
-        clearTransform();
-        setColor(Colors.BLACK);
-        setAlpha(0xff);
-        drawRect(x, y, w, h);
-        
-        // Restore state
-        popTransform();
-        setColor(color);
-        setAlpha(alpha);
-        objectX = x;
-        objectY = y;
-        objectWidth = w;
-        objectHeight = h;
     }
     
     //
@@ -761,7 +733,9 @@ public class CoreGraphics {
     public void drawImage(CoreImage image, 
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
             return;
@@ -772,7 +746,7 @@ public class CoreGraphics {
         if (type == Transform.TYPE_IDENTITY || type == Transform.TYPE_TRANSLATE) {
             int x = transform.getTranslateX();
             int y = transform.getTranslateY();
-            if (fractionalMetrics && (CoreMath.fracPart(x) != 0 || CoreMath.fracPart(y) != 0)) { 
+            if (CoreMath.fracPart(x) != 0 || CoreMath.fracPart(y) != 0) { 
                 internalDrawScaledImage(image, srcX, srcY, srcWidth, srcHeight);
             }
             else {
@@ -804,7 +778,9 @@ public class CoreGraphics {
     public void drawImage(CoreImage image, int x, int y,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
             return;
@@ -830,7 +806,9 @@ public class CoreGraphics {
     public void drawScaledImage(CoreImage image, int x, int y, int w, int h,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
             return;
@@ -908,7 +886,9 @@ public class CoreGraphics {
         int cosAngle, int sinAngle,
         int srcX, int srcY, int srcWidth, int srcHeight)
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
             return;
@@ -945,7 +925,9 @@ public class CoreGraphics {
     private void internalDrawImage(CoreImage image,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
             return;
@@ -997,7 +979,9 @@ public class CoreGraphics {
     private void internalDrawScaledImage(CoreImage image, int w, int h,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0 || w == 0 || h == 0) {
             return;
@@ -1018,7 +1002,9 @@ public class CoreGraphics {
     private void internalDrawScaledImage(CoreImage image, 
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         int sx = transform.getScaleX();
         int sy = transform.getScaleY();
@@ -1029,24 +1015,8 @@ public class CoreGraphics {
         
         int fW = sx * srcWidth;
         int fH = sy * srcHeight;
-        int du;
-        int dv;
-        
-        if (!fractionalMetrics) {
-            fW = CoreMath.floor(fW);
-            fH = CoreMath.floor(fH);
-            
-            if (fW == 0 || fH == 0) {
-                return;
-            }
-        
-            du = CoreMath.div(CoreMath.toFixed(srcWidth), fW);
-            dv = CoreMath.div(CoreMath.toFixed(srcHeight), fH);
-        }
-        else {
-            du = CoreMath.div(CoreMath.ONE, sx);
-            dv = CoreMath.div(CoreMath.ONE, sy);
-        }
+        int du = CoreMath.div(CoreMath.ONE, sx);
+        int dv = CoreMath.div(CoreMath.ONE, sy);
     
         internalDrawScaledImage(image, fW, fH, du, dv,
             srcX, srcY, srcWidth, srcHeight);
@@ -1056,46 +1026,55 @@ public class CoreGraphics {
         int fW, int fH, int du, int dv,
         int srcX, int srcY, int srcWidth, int srcHeight)
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0 || fW == 0 || fH == 0) {
             return;
         }
-        
-        boolean currFractionalMetrics = fractionalMetrics & (bilinear | edgeClamp);
-        
+
         int fX = transform.getTranslateX();
         int fY = transform.getTranslateY();
-        
-        if (!currFractionalMetrics) {
-            fX = CoreMath.floor(fX);
-            fY = CoreMath.floor(fY);
-        }
-        else if (!bilinear && edgeClamp) {
-            fY = CoreMath.floor(fY);
-        }
+
         int x;
         int y;
         int w;
         int h;
-        if (edgeClamp) {
-            // offset based on StretchableImageTest
-            int offset = CoreMath.ONE_HALF - 1;
-            x = CoreMath.toIntFloor(fX + offset);
-            y = CoreMath.toIntFloor(fY + offset);
-            w = CoreMath.toIntFloor(fX + fW + offset) - x;
-            h = CoreMath.toIntFloor(fY + fH + offset) - y;
+        if (!bilinear) {
+            x = CoreMath.toIntRound(fX);
+            y = CoreMath.toIntRound(fY);
+            w = CoreMath.toIntRound(fX + fW) - x;
+            h = CoreMath.toIntRound(fY + fH) - y;
+            fX = CoreMath.toFixed(x);
+            fY = CoreMath.toFixed(y);
+            fW = CoreMath.toFixed(w);
+            fH = CoreMath.toFixed(h);
+        }
+        else if (edgeClamp || image.isOpaque()) {
+            // Based on StretchableImageTest and RectTest
+            x = CoreMath.toIntRound(fX);
+            y = CoreMath.toIntRound(fY);
+            w = CoreMath.toIntRound(fX + fW) - x;
+            h = CoreMath.toIntRound(fY + fH) - y;
         }
         else {
             x = CoreMath.toIntFloor(fX);
             y = CoreMath.toIntFloor(fY);
-            w = CoreMath.toIntCeil(fW + CoreMath.fracPart(fX));
-            h = CoreMath.toIntCeil(fH + CoreMath.fracPart(fY));
+            w = CoreMath.toIntCeil(fX + fW) - x;
+            h = CoreMath.toIntCeil(fY + fH) - y;
         }
         
         clipObject(x, y, w, h);
         if (objectWidth <= 0 || objectHeight <= 0) {
             return;
+        }
+
+        // Adjust for internal drawing routines that put integer locations in the middle of the
+        // pixel.
+        if (bilinear) {
+            fX -= CoreMath.ONE_HALF;
+            fY -= CoreMath.ONE_HALF;
         }
         
         int[] srcData = image.getData();
@@ -1106,12 +1085,12 @@ public class CoreGraphics {
         
         // ???
         if (bilinear) {
-            u += (du >> 1) - CoreMath.ONE_HALF;
-            v += (dv >> 1) - CoreMath.ONE_HALF;
+            u -= CoreMath.ONE_HALF;
+            v -= CoreMath.ONE_HALF;
         }
-        else if (edgeClamp) {
-            u = CoreMath.floor(u);
-            v = CoreMath.floor(v);
+        else {
+            u += du/2;
+            v += dv/2;
         }
         
         for (int j = 0; j < objectHeight; j++) {
@@ -1131,35 +1110,42 @@ public class CoreGraphics {
     private void internalDrawRotatedImage(CoreImage image, 
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
-        if (Build.DEBUG) validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        if (Build.DEBUG) {
+            validateImage(image, srcX, srcY, srcWidth, srcHeight);
+        }
         
         if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
             return;
         }
-        
+
+        // Find the bounding rectangle
         int x1 = transform.getTranslateX();
         int y1 = transform.getTranslateY();
-        
-        // Find the bounding rectangle
         int x2 = transform.getScaleX() * srcWidth;
         int y2 = transform.getShearY() * srcWidth;
         int x3 = transform.getShearX() * srcHeight;
         int y3 = transform.getScaleY() * srcHeight;
         int x4 = x2 + x3;
         int y4 = y2 + y3;
-        
-        if (!fractionalMetrics) {
-            x1 = CoreMath.floor(x1);
-            y1 = CoreMath.floor(y1);
-        }
-        
+
         x2 += x1;
         y2 += y1;
         x3 += x1;
         y3 += y1;
         x4 += x1;
         y4 += y1;
-        
+
+        if (!bilinear) {
+            x1 = CoreMath.round(x1);
+            y1 = CoreMath.round(y1);
+            x2 = CoreMath.round(x2);
+            y2 = CoreMath.round(y2);
+            x3 = CoreMath.round(x3);
+            y3 = CoreMath.round(y3);
+            x4 = CoreMath.round(x4);
+            y4 = CoreMath.round(y4);
+        }
+
         int boundsX1 = Math.min( Math.min(x1, x2), Math.min(x3, x4) );
         int boundsY1 = Math.min( Math.min(y1, y2), Math.min(y3, y4) );
         int boundsX2 = Math.max( Math.max(x1, x2), Math.max(x3, x4) );
@@ -1174,6 +1160,19 @@ public class CoreGraphics {
         clipObject(x, y, w, h);
         if (objectWidth <= 0 || objectHeight <= 0) {
             return;
+        }
+
+        // Adjust for internal drawing routines that put integer locations in the middle of the
+        // pixel.
+        if (bilinear) {
+            x1 -= CoreMath.ONE_HALF;
+            y1 -= CoreMath.ONE_HALF;
+            x2 -= CoreMath.ONE_HALF;
+            y2 -= CoreMath.ONE_HALF;
+            x3 -= CoreMath.ONE_HALF;
+            y3 -= CoreMath.ONE_HALF;
+            x4 -= CoreMath.ONE_HALF;
+            y4 -= CoreMath.ONE_HALF;
         }
         
         // Calc deltas
@@ -1203,37 +1202,33 @@ public class CoreGraphics {
         int surfaceOffset = objectX + objectY * surfaceWidth;
         int fSrcWidth = CoreMath.toFixed(srcWidth);
         int fSrcHeight = CoreMath.toFixed(srcHeight);
-        
+
         if (bilinear) {
-            int ud = Math.max(Math.abs(duX), Math.abs(duY));
-            int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
             // ???
-            u += (ud >> 1) - CoreMath.ONE_HALF;
-            v += (vd >> 1) - CoreMath.ONE_HALF;
+            u -= CoreMath.ONE_HALF;
+            v -= CoreMath.ONE_HALF;
             
             if (edgeClamp) {
-                if ((transform.getShearX() == 0 && transform.getShearY() == 0) ||
-                    (transform.getScaleX() == 0 && transform.getScaleY() == 0)) 
-                {
-                    // From StretchableImageTest
-                    int xOffset = CoreMath.ONE_HALF + 1;
-                    int yOffset = CoreMath.sign(y1 - y2) * xOffset;
-                    x1 += xOffset;
-                    x2 += xOffset;
-                    x3 += xOffset;
-                    x4 += xOffset;
-                    y1 += yOffset;
-                    y2 += yOffset;
-                    y3 += yOffset;
-                    y4 += yOffset;
-                }
+                // For RectTest at (0.5, 0.5). Fixes an off-by-one?
+                int xOffset = 1;
+                int yOffset = 1;
+                x1 += xOffset;
+                x2 += xOffset;
+                x3 += xOffset;
+                x4 += xOffset;
+                y1 += yOffset;
+                y2 += yOffset;
+                y3 += yOffset;
+                y4 += yOffset;
             }
             else {
-                // For anti-aliasing
+                // Anti-aliasing
+                int ud = Math.max(Math.abs(duX), Math.abs(duY));
+                int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
                 int uMin = -ud;
-                int uMax = fSrcWidth;
+                int uMax = fSrcWidth + ud;
                 int vMin = -vd;
-                int vMax = fSrcHeight;
+                int vMax = fSrcHeight + vd;
                 x1 = transform.transformX(uMin, vMin);
                 y1 = transform.transformY(uMin, vMin);
                 x2 = transform.transformX(uMax, vMin);
@@ -1243,6 +1238,10 @@ public class CoreGraphics {
                 x4 = transform.transformX(uMax, vMax);
                 y4 = transform.transformY(uMax, vMax);
             }
+        }
+        else {
+            u += (duX + duY) / 2;
+            v += (dvX + dvY) / 2;
         }
         
         for (int j = 0; j < objectHeight; j++) {
@@ -1314,7 +1313,7 @@ public class CoreGraphics {
         Draws a line (at fixed-point coordinates) using the current color.
         OPTIMIZE: currently there is a virtual call per pixel
     */
-    private void internalDrawLine(int ox1, int oy1, int ox2, int oy2) {
+    private void internalDrawLine(int ox1, int oy1, int ox2, int oy2, boolean solidFirstPixel) {
         if (isSrcColorTransparent) {
             return;
         }
@@ -1334,32 +1333,14 @@ public class CoreGraphics {
             y2 = transform.transformY(ox2, oy2);
         }
         
-        if (!fractionalMetrics) {
-            x1 = CoreMath.floor(x1);
-            y1 = CoreMath.floor(y1);
-            x2 = CoreMath.floor(x2);
-            y2 = CoreMath.floor(y2);
-        }
-        
         int dx = x2 - x1; 
         int dy = y2 - y1;
-        // Horizontal and vertical lines
-        if (dx == 0 || dy == 0) {
-            if (dx == 0 && dy == 0) {
-                // Do nothing
-                return;
-            }
-            else if (!fractionalMetrics) {
-                pushTransform();
-                transform.clear();
-                transform.translate(Math.min(x1, x2), Math.min(y1, y2));
-                internalFillRect(CoreMath.abs(dx) + CoreMath.ONE, CoreMath.abs(dy) + CoreMath.ONE);
-                popTransform();
-                return;
-            }
+        if (dx == 0 && dy == 0) {
+            // Do nothing
+            return;
         }
         
-        if (!fractionalMetrics) {
+        if (solidFirstPixel) {
             // Make sure the first pixel is solid
             drawPixel(CoreMath.toInt(x1), CoreMath.toInt(y1));
             
@@ -1483,7 +1464,7 @@ public class CoreGraphics {
                 }
                 else {
                     // First pixel and last pixel
-                    if (fractionalMetrics) {
+                    if (!solidFirstPixel) {
                         currAlpha = 0xff - ((x1 >> 8) & 0xff);
                         drawWuPixelHorizontal(x1, y1, currAlpha);
                         currAlpha = ((x2 >> 8) & 0xff);
@@ -1509,7 +1490,7 @@ public class CoreGraphics {
                 }
                 else {
                     // First first and last pixel
-                    if (fractionalMetrics) {
+                    if (!solidFirstPixel) {
                         currAlpha = 0xff - ((y1 >> 8) & 0xff);
                         drawWuPixelVertical(x1, y1, currAlpha);
                         currAlpha = ((y2 >> 8) & 0xff);
@@ -1627,8 +1608,6 @@ public class CoreGraphics {
         }
     }
     
-    // Only called when fractionalMetrics is true or translations is guaranteed to be
-    // an integer
     private void internalFillRectFixedPoint(int fw, int fh) {
         
         // Scale
@@ -1656,7 +1635,7 @@ public class CoreGraphics {
         if (objectWidth <= 0 || objectHeight <= 0) {
             return;
         }
-        
+
         // Start Render
         int surfaceOffset = objectX + objectY * surfaceWidth;
         int d = CoreMath.ONE;
@@ -1739,16 +1718,12 @@ public class CoreGraphics {
         This uses the "old" scan conversion process, and it should probably be updated to 
         use the scan converter from internalDrawRotatedImage(). 
     */
-    private void internalFillRotatedRect(int fw, int fh) { 
-        int x1 = transform.getTranslateX();
-        int y1 = transform.getTranslateY();
-        
-        if (!fractionalMetrics) {
-            x1 = CoreMath.floor(x1);
-            y1 = CoreMath.floor(y1);
-            fw = CoreMath.floor(fw);
-            fh = CoreMath.floor(fh);
-        }
+    private void internalFillRotatedRect(int fw, int fh) {
+
+        // Adjust for internal drawing routines that put integer locations in the middle of the
+        // pixel.
+        int x1 = transform.getTranslateX() - CoreMath.ONE_HALF;
+        int y1 = transform.getTranslateY() - CoreMath.ONE_HALF;
         
         // Find the bounding rectangle
         
@@ -1756,14 +1731,16 @@ public class CoreGraphics {
         int y2 = CoreMath.mul(transform.getShearY(), fw);
         int x3 = CoreMath.mul(transform.getShearX(), fh);
         int y3 = CoreMath.mul(transform.getScaleY(), fh);
-        
-        int x4 = x1 + x2 + x3;
-        int y4 = y1 + y2 + y3;
+        int x4 = x2 + x3;
+        int y4 = y2 + y3;
+
         x2 += x1;
         y2 += y1;
         x3 += x1;
         y3 += y1;
-        
+        x4 += x1;
+        y4 += y1;
+
         int boundsX1 = Math.min( Math.min(x1, x2), Math.min(x3, x4) );
         int boundsY1 = Math.min( Math.min(y1, y2), Math.min(y3, y4) );
         int boundsX2 = Math.max( Math.max(x1, x2), Math.max(x3, x4) );
@@ -1845,8 +1822,8 @@ public class CoreGraphics {
         
         //if (bilinear) {
             // ??? 
-            uY += (ud >> 1) - CoreMath.ONE_HALF;
-            vY += (vd >> 1) - CoreMath.ONE_HALF;
+            uY -= CoreMath.ONE_HALF;
+            vY -= CoreMath.ONE_HALF;
         //}
         
         for (int j = 0; j < objectHeight; j++) {
