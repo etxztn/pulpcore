@@ -81,8 +81,8 @@ function pulpcore_deleteCookie(name, path, domain) {
 }
 
 function pulpcore_appletLoaded() {
-	pulpCoreObject.hideSplash();
-	setTimeout(pulpCoreObject.showObject, 50);
+	pulpCoreObject.showApplet();
+    pulpCoreObject.notifyServer("loaded");
 }
 
 // Internal PulpCore code
@@ -152,6 +152,49 @@ var pulpCoreObject = {
 
 		document.write(pulpCoreObject.getObjectHTML());
 	},
+
+    showApplet: function() {
+        pulpCoreObject.hideSplash();
+        setTimeout(pulpCoreObject.showObject, 50);
+    },
+
+    /* Experimental logging.
+     * Performs a HEAD request on pulpcore.js?notify=<type> 
+     * To enable, set pulpcore_notify to true in your html. */
+    notifyServer: function(type) {
+        var allowNotify = window.pulpcore_notify || false;
+        if (allowNotify) {
+            var xmlhttp;
+            /*@cc_on @*/
+            /*@if (@_jscript_version >= 5)
+                try {
+                    xmlhttp=new ActiveXObject("Msxml2.XMLHTTP");
+                }
+                catch (e) {
+                    try {
+                        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+                    catch (E) { }
+                }
+            @end @*/
+            if (!xmlhttp && typeof XMLHttpRequest!='undefined') {
+                try {
+                    xmlhttp = new XMLHttpRequest();
+                } 
+                catch (e) { }
+            }
+            if (!xmlhttp && window.createRequest) {
+                try {
+                    xmlhttp = window.createRequest();
+                } catch (e) { }
+            }
+
+            if (xmlhttp) {
+                xmlhttp.open("HEAD", "pulpcore.js?notify=" + type, true);
+                xmlhttp.send(null);
+            }
+        }
+    },
 
 	initDeploymentToolkit: function() {
         if (pulpCoreObject.browserName == "Explorer") {
@@ -233,7 +276,7 @@ var pulpCoreObject = {
 		else {
 			pulpCoreObject.appletInserted = true;
 			gameContainer.innerHTML = pulpCoreObject.appletHTML;
-			setTimeout(pulpcore_appletLoaded,
+			setTimeout(pulpCoreObject.showApplet,
 				navigator.javaEnabled() ? pulpCoreObject.splashTimeout : 10);
 		}
 	},
