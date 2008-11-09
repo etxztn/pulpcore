@@ -31,8 +31,6 @@ package pulpcore.platform.applet;
 
 import java.awt.Component;
 import java.awt.Image;
-import java.awt.image.ColorModel;
-import java.awt.image.DirectColorModel;
 import java.awt.image.PixelGrabber;
 import java.awt.MediaTracker;
 import java.awt.Toolkit;
@@ -43,10 +41,8 @@ import java.net.URL;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
-import pulpcore.Input;
 import pulpcore.math.CoreMath;
 import pulpcore.platform.AppContext;
-import pulpcore.platform.Platform;
 import pulpcore.platform.PolledInput;
 import pulpcore.platform.Surface;
 import pulpcore.scene.Scene;
@@ -478,14 +474,23 @@ public final class AppletAppContext extends AppContext {
         
         if (success) {
             boolean isOpaque = true;
-            ColorModel model = pixelGrabber.getColorModel();
-            if (model instanceof DirectColorModel) {
-                isOpaque = ((DirectColorModel)model).getAlphaMask() == 0;
-            }
-            if (isOpaque) {
-                // Add the alpha component to the data
-                for (int i = 0; i < data.length; i++) {
-                    data[i] = 0xff000000 | data[i];
+
+            // Premultiply alpha
+            for (int i = 0; i < data.length; i++) {
+                int argbColor = data[i];
+                int a = argbColor >>> 24;
+
+                if (a < 255) {
+                    isOpaque = false;
+                    int r = (argbColor >> 16) & 0xff;
+                    int g = (argbColor >> 8) & 0xff;
+                    int b = argbColor & 0xff;
+
+                    r = (a * r + 127) / 255;
+                    g = (a * g + 127) / 255;
+                    b = (a * b + 127) / 255;
+
+                    data[i] = (a << 24) | (r << 16) | (g << 8) | b;
                 }
             }
             return new CoreImage(width, height, isOpaque, data);
