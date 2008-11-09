@@ -1095,6 +1095,8 @@ public class CoreGraphics {
             fY = CoreMath.toFixed(y);
             fW = CoreMath.toFixed(w);
             fH = CoreMath.toFixed(h);
+            du = CoreMath.div(CoreMath.toFixed(srcWidth), fW);
+            dv = CoreMath.div(CoreMath.toFixed(srcHeight), fH);
         }
         else {
             if (image.isOpaque() || (edgeClamp & EDGE_CLAMP_LEFT) != 0) {
