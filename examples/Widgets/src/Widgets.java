@@ -12,6 +12,7 @@ import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Slider;
 import pulpcore.sprite.Sprite;
+import pulpcore.sprite.StretchableSprite;
 import pulpcore.sprite.TextField;
 import pulpcore.Stage;
 import static pulpcore.image.Colors.*;
@@ -23,7 +24,6 @@ public class Widgets extends Scene2D {
     TextField passwordField;
     Button okButton;
     Button checkbox;
-    Slider slider;
     Group form;
     
     @Override
@@ -69,6 +69,7 @@ public class Widgets extends Scene2D {
         // Add the form fields to a group
         form = new Group(Stage.getWidth() / 2, Stage.getHeight() / 2);
         form.setAnchor(Sprite.CENTER);
+        form.add(new StretchableSprite("border.9.png", -225, -50, 480, 320));
         form.add(label);
         form.add(createTextFieldBackground(textField));
         form.add(textField);
@@ -102,6 +103,9 @@ public class Widgets extends Scene2D {
         }
         if (okButton.isClicked()) {
             answer.setText("Hello, " + textField.getText() + "!");
+            double w = answer.width.get();
+            double h = answer.height.get();
+            answer.scale(w*.1, h*.1, w, h, 300, Easing.BACK_OUT);
         }
         if (Input.isPressed(Input.KEY_TAB)) {
             if (textField.hasFocus()) {
