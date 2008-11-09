@@ -60,6 +60,44 @@ public class CoreGraphics {
     */
     public static final int INTERPOLATION_BILINEAR = 1;
     
+    
+    /**
+        Specifies that the left edge of the image should be clamped (not antialiased).
+        @see #setEdgeClamp(int) 
+    */
+    public static final int EDGE_CLAMP_LEFT = 1;
+    
+    /**
+        Specifies that the right edge of the image should be clamped (not antialiased).
+        @see #setEdgeClamp(int) 
+    */
+    public static final int EDGE_CLAMP_RIGHT = 2;
+    
+    /**
+        Specifies that the bottom edge of the image should be clamped (not antialiased).
+        @see #setEdgeClamp(int) 
+    */
+    public static final int EDGE_CLAMP_BOTTOM = 4;
+    
+    /**
+        Specifies that the top edge of the image should be clamped (not antialiased).
+        @see #setEdgeClamp(int) 
+    */
+    public static final int EDGE_CLAMP_TOP = 8;
+    
+    /**
+        Specifies that all edges of the image should be clamped (not antialiased).
+        @see #setEdgeClamp(int) 
+    */
+    public static final int EDGE_CLAMP_ALL = EDGE_CLAMP_LEFT | EDGE_CLAMP_RIGHT | 
+            EDGE_CLAMP_BOTTOM | EDGE_CLAMP_TOP;
+    
+    /**
+        Specifies that all edges of the image should be antialiased (not clamped).
+        @see #setEdgeClamp(int) 
+    */
+    public static final int EDGE_CLAMP_NONE = 0;
+
     // Clipping for drawLine
     private static final int CLIP_CODE_LEFT = 8;
     private static final int CLIP_CODE_RIGHT = 4;
@@ -95,8 +133,8 @@ public class CoreGraphics {
     /** If true, bilinear filtering is used when scaling images. */
     private boolean bilinear;
     
-    /** For bilinear interpolation, if true, edges are clamped (hard edges) */
-    private boolean edgeClamp;
+    /** Edge clamp mask */
+    private int edgeClamp;
     
     /** The current alpha value. 0 is fully tranaparent, 255 is fully opaque. */
     private int alpha;
@@ -149,7 +187,7 @@ public class CoreGraphics {
             <li>alpha = 255</li>
             <li>blendMode = BlendMode.SrcOver()</li>
             <li>interpolation = INTERPOLATION_BILINEAR</li>
-            <li>edgeClamp = false</li>
+            <li>edgeClamp = EDGE_CLAMP_NONE</li>
             <li>font = null</li>
         </ul>
     */
@@ -159,7 +197,7 @@ public class CoreGraphics {
         setColor(Colors.BLACK);
         setBlendMode(BlendMode.SrcOver());
         bilinear = true;
-        edgeClamp = false;
+        edgeClamp = EDGE_CLAMP_NONE;
         font = null;
         
         transformStackSize = 0;
@@ -191,14 +229,21 @@ public class CoreGraphics {
     }
     
     /**
-        Sets the edge mode for bilinear interpolated scaled images. If true, edges appear "hard"
-        otherwise edges appear "soft". The default is false.
+        Sets the edge mode for bilinear interpolated scaled images. The default is 
+        {@link #EDGE_CLAMP_NONE}. Valid values are a bitmask combination of 
+        {@link #EDGE_CLAMP_LEFT}, {@link #EDGE_CLAMP_RIGHT}, {@link #EDGE_CLAMP_BOTTOM},
+        {@link #EDGE_CLAMP_TOP}. A clamp edge appears "hard", and an unclamped edge appears "soft".
+        @param edgeClamp A bitmask defining how the edges of an image are rendered.
     */
-    public void setEdgeClamp(boolean edgeClamp) {
+    public void setEdgeClamp(int edgeClamp) {
         this.edgeClamp = edgeClamp;
     }
-    
-    public boolean getEdgeClamp() {
+
+    /**
+        Gets the edge clamp bitmask.
+        @see #setEdgeClamp(int)
+    */
+    public int getEdgeClamp() {
         return edgeClamp;
     }
     
@@ -1051,20 +1096,33 @@ public class CoreGraphics {
             fW = CoreMath.toFixed(w);
             fH = CoreMath.toFixed(h);
         }
-        else if (edgeClamp || image.isOpaque()) {
-            // Based on StretchableImageTest and RectTest
-            x = CoreMath.toIntRound(fX);
-            y = CoreMath.toIntRound(fY);
-            w = CoreMath.toIntRound(fX + fW) - x;
-            h = CoreMath.toIntRound(fY + fH) - y;
-        }
         else {
-            x = CoreMath.toIntFloor(fX);
-            y = CoreMath.toIntFloor(fY);
-            w = CoreMath.toIntCeil(fX + fW) - x;
-            h = CoreMath.toIntCeil(fY + fH) - y;
+            if (image.isOpaque() || (edgeClamp & EDGE_CLAMP_LEFT) != 0) {
+                x = CoreMath.toIntRound(fX);
+            }
+            else {
+                x = CoreMath.toIntFloor(fX);
+            }
+            if (image.isOpaque() || (edgeClamp & EDGE_CLAMP_TOP) != 0) {
+                y = CoreMath.toIntRound(fY);
+            }
+            else {
+                y = CoreMath.toIntFloor(fY);
+            }
+            if (image.isOpaque() || (edgeClamp & EDGE_CLAMP_RIGHT) != 0) {
+                w = CoreMath.toIntRound(fX + fW) - x;
+            }
+            else {
+                w = CoreMath.toIntCeil(fX + fW) - x;
+            }
+            if (image.isOpaque() || (edgeClamp & EDGE_CLAMP_BOTTOM) != 0) {
+                h = CoreMath.toIntRound(fY + fH) - y;
+            }
+            else {
+                h = CoreMath.toIntCeil(fY + fH) - y;
+            }
         }
-        
+
         clipObject(x, y, w, h);
         if (objectWidth <= 0 || objectHeight <= 0) {
             return;
@@ -1207,36 +1265,47 @@ public class CoreGraphics {
             // ???
             u -= CoreMath.ONE_HALF;
             v -= CoreMath.ONE_HALF;
-            
-            if (edgeClamp) {
-                // For RectTest at (0.5, 0.5). Fixes an off-by-one?
-                int xOffset = 1;
-                int yOffset = 1;
-                x1 += xOffset;
-                x2 += xOffset;
-                x3 += xOffset;
-                x4 += xOffset;
-                y1 += yOffset;
-                y2 += yOffset;
-                y3 += yOffset;
-                y4 += yOffset;
-            }
-            else {
-                // Anti-aliasing
-                int ud = Math.max(Math.abs(duX), Math.abs(duY));
-                int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
-                int uMin = -ud;
-                int uMax = fSrcWidth + ud;
-                int vMin = -vd;
-                int vMax = fSrcHeight + vd;
+
+            // Anti-aliasing
+            int ud = Math.max(Math.abs(duX), Math.abs(duY));
+            int vd = Math.max(Math.abs(dvX), Math.abs(dvY));
+            int uMin = (edgeClamp & EDGE_CLAMP_LEFT)   == 0 ? -ud : 0;
+            int uMax = (edgeClamp & EDGE_CLAMP_RIGHT)  == 0 ? fSrcWidth + ud : fSrcWidth;
+            int vMin = (edgeClamp & EDGE_CLAMP_TOP)    == 0 ? -vd : 0;
+            int vMax = (edgeClamp & EDGE_CLAMP_BOTTOM) == 0 ? fSrcHeight + vd : fSrcHeight;
+            int xOffsetClamp = 1; // Fixes an off-by-one error at exactly (0.5, 0.5)
+            int yOffsetClamp = 1; // See RectTest at (0.5, 0.5)
+            if ((edgeClamp & (EDGE_CLAMP_LEFT | EDGE_CLAMP_TOP)) == 0) {
                 x1 = transform.transformX(uMin, vMin);
                 y1 = transform.transformY(uMin, vMin);
+            }
+            else {
+                x1 += xOffsetClamp;
+                y1 += yOffsetClamp;
+            }
+            if ((edgeClamp & (EDGE_CLAMP_RIGHT | EDGE_CLAMP_TOP)) == 0) {
                 x2 = transform.transformX(uMax, vMin);
                 y2 = transform.transformY(uMax, vMin);
-                x3 = transform.transformX(uMin, vMax);
-                y3 = transform.transformY(uMin, vMax);
+            }
+            else {
+                x2 += xOffsetClamp;
+                y2 += yOffsetClamp;
+            }
+            if ((edgeClamp & (EDGE_CLAMP_LEFT | EDGE_CLAMP_BOTTOM)) == 0) {
+               x3 = transform.transformX(uMin, vMax);
+               y3 = transform.transformY(uMin, vMax);
+            }
+            else {
+                x3 += xOffsetClamp;
+                y3 += yOffsetClamp;
+            }
+            if ((edgeClamp & (EDGE_CLAMP_RIGHT | EDGE_CLAMP_BOTTOM)) == 0) {
                 x4 = transform.transformX(uMax, vMax);
                 y4 = transform.transformY(uMax, vMax);
+            }
+            else {
+                x4 += xOffsetClamp;
+                y4 += yOffsetClamp;
             }
         }
         else {

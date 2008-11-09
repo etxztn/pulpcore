@@ -43,11 +43,6 @@ import pulpcore.math.CoreMath;
     <a href="http://code.google.com/android/reference/available-resources.html#ninepatch">Android's 
     nine-patch format</a>. 
     <p>
-    The image sections are drawn without anti-aliasing so that they tile together correctly. If
-    you need the outside edges to appear anti-aliased (for example, when rotating, moving slowly or
-    other non-integer positioning) then the image itself should have a transparent one-pixel 
-    border between the 1-pixel guideline border and the image itself.
-    <p>
     Example:
     <pre>
     import pulpcore.image.Colors;
@@ -394,9 +389,9 @@ public class StretchableSprite extends ImageSprite {
     protected void drawSprite(CoreGraphics g) {
         CoreImage image = getImage();
         if (image != null) {
-            g.setEdgeClamp(true);
+            int oldEdgeClamp = g.getEdgeClamp();
             drawSections(g, image);
-            g.setEdgeClamp(false);
+            g.setEdgeClamp(oldEdgeClamp);
         }
     }
     
@@ -431,6 +426,22 @@ public class StretchableSprite extends ImageSprite {
                 else {
                     scaleX = CoreMath.ONE;
                 }
+
+                // Set edge clamp
+                int clamp = 0;
+                if (i > 0) {
+                    clamp |= CoreGraphics.EDGE_CLAMP_TOP;
+                }
+                if (i < leftSections.length-1) {
+                    clamp |= CoreGraphics.EDGE_CLAMP_BOTTOM;
+                }
+                if (j > 0) {
+                    clamp |= CoreGraphics.EDGE_CLAMP_LEFT;
+                }
+                if (j < topSections.length-1) {
+                    clamp |= CoreGraphics.EDGE_CLAMP_RIGHT;
+                }
+                g.setEdgeClamp(clamp);
                 
                 // Draw
                 g.pushTransform();

@@ -166,7 +166,7 @@ final class CompositeMult extends Composite {
         }
     }
     
-    void blend(int[] srcData, int srcScanSize, boolean srcOpaque, boolean edgeClamp, 
+    void blend(int[] srcData, int srcScanSize, boolean srcOpaque, int edgeClamp,
         int srcX, int srcY, int srcWidth, int srcHeight, 
         int u, int v, int du, int dv, 
         boolean rotation,
@@ -211,7 +211,7 @@ final class CompositeMult extends Composite {
                             offsetTop = srcX + (srcY + (v >> 16)) * srcScanSize;
                             offsetBottom = offsetTop + srcScanSize;
                         }
-                        else if (edgeClamp) {
+                        else if ((edgeClamp & CoreGraphics.EDGE_CLAMP_BOTTOM) != 0) {
                             offsetTop = srcX + (srcY + srcHeight - 1) * srcScanSize;
                             offsetBottom = offsetTop;
                         }
@@ -224,7 +224,7 @@ final class CompositeMult extends Composite {
                             offsetBottom = -1;
                         }
                     }
-                    else if (edgeClamp) {
+                    else if ((edgeClamp & CoreGraphics.EDGE_CLAMP_TOP) != 0) {
                         offsetBottom = srcX + srcY * srcScanSize;
                         offsetTop = offsetBottom;
                     }

@@ -228,8 +228,10 @@ public class ImageSprite extends Sprite {
     
     protected void drawSprite(CoreGraphics g) {
         if (image != null) {
-            boolean oldEdgeClamp = g.getEdgeClamp();
-            g.setEdgeClamp(!antiAlias.get());
+            int oldEdgeClamp = g.getEdgeClamp();
+            int newEdgeClamp = antiAlias.get() ? CoreGraphics.EDGE_CLAMP_NONE :
+                CoreGraphics.EDGE_CLAMP_ALL;
+            g.setEdgeClamp(newEdgeClamp);
             g.drawImage(image);
             g.setEdgeClamp(oldEdgeClamp);
         }

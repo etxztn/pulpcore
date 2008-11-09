@@ -55,7 +55,7 @@ import pulpcore.math.CoreMath;
         @param numRows only used if rotation == false, renderBilinear == false
     */
     /* package-private */ abstract void blend(int[] srcData, int srcScanSize, boolean srcOpaque, 
-        boolean edgeClamp, 
+        int edgeClamp,
         int srcX, int srcY, int srcWidth, int srcHeight, 
         int u, int v, int du, int dv, 
         boolean rotation,
@@ -156,7 +156,7 @@ import pulpcore.math.CoreMath;
     
     // For rotation
     protected final int getPixelBilinearTranslucent(int[] data, int srcScanSize,
-        int srcX, int srcY, int srcWidth, int srcHeight, boolean edgeClamp,
+        int srcX, int srcY, int srcWidth, int srcHeight, int edgeClamp,
         int fx, int fy)
     {
         int y = fy >> 16;
@@ -170,7 +170,7 @@ import pulpcore.math.CoreMath;
                 top = srcX + (y + srcY) * srcScanSize;
                 bottom = top + srcScanSize;
             }
-            else if (edgeClamp) {
+            else if ((edgeClamp & CoreGraphics.EDGE_CLAMP_BOTTOM) != 0) {
                 top = srcX + (srcHeight - 1 + srcY)  * srcScanSize;
                 bottom = top;
             }
@@ -183,7 +183,7 @@ import pulpcore.math.CoreMath;
                 bottom = -1;
             }
         }
-        else if (edgeClamp) {
+        else if ((edgeClamp & CoreGraphics.EDGE_CLAMP_TOP) != 0) {
             top = srcX + srcY * srcScanSize;
             bottom = top;
         }
@@ -240,7 +240,7 @@ import pulpcore.math.CoreMath;
         @param fy fixed-point vertical distance from srcY
         @param srcWidth the maximum width to retrieve pixel data from the image.
     */
-    protected final int getPixelBilinearTranslucent(int[] imageData, boolean edgeClamp, 
+    protected final int getPixelBilinearTranslucent(int[] imageData, int edgeClamp,
         int offsetTop, int offsetBottom, 
         int fx, int fy,
         int srcWidth) 
@@ -276,11 +276,15 @@ import pulpcore.math.CoreMath;
                     bottomRightPixel = imageData[offsetBottom + x + 1];
                 }
             }
-            else if (edgeClamp) {
-                topLeftPixel = imageData[offsetTop + srcWidth - 1];
-                topRightPixel = topLeftPixel;
-                bottomLeftPixel = imageData[offsetBottom + srcWidth - 1];
-                bottomRightPixel = bottomLeftPixel;
+            else if ((edgeClamp & CoreGraphics.EDGE_CLAMP_RIGHT) != 0) {
+                if (offsetTop != -1) {
+                    topLeftPixel = imageData[offsetTop + srcWidth - 1];
+                    topRightPixel = topLeftPixel;
+                }
+                if (offsetBottom != -1) {
+                    bottomLeftPixel = imageData[offsetBottom + srcWidth - 1];
+                    bottomRightPixel = bottomLeftPixel;
+                }
             }
             else if (fx < (srcWidth << 16)) {
                 if (offsetTop != -1) {
@@ -293,11 +297,15 @@ import pulpcore.math.CoreMath;
                 }
             }
         }
-        else if (edgeClamp) {
-            topRightPixel = imageData[offsetTop];
-            topLeftPixel = topRightPixel;
-            bottomRightPixel = imageData[offsetBottom];
-            bottomLeftPixel = bottomRightPixel;
+        else if ((edgeClamp & CoreGraphics.EDGE_CLAMP_LEFT) != 0) {
+            if (offsetTop != -1) {
+                topRightPixel = imageData[offsetTop];
+                topLeftPixel = topRightPixel;
+            }
+            if (offsetBottom != -1) {
+                bottomRightPixel = imageData[offsetBottom];
+                bottomLeftPixel = bottomRightPixel;
+            }
         }
         else if (fx > -CoreMath.ONE) {
             if (offsetTop != -1) {
