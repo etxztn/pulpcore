@@ -1,5 +1,5 @@
 // Don't import Int - Scala will be confused
-import pulpcore.animation.{ Fixed, Bool, Color, Easing, Tween }
+import pulpcore.animation.{ Property, Fixed, Bool, Color, Easing, Tween }
 import pulpcore.math.CoreMath._
 
 /**
@@ -7,79 +7,64 @@ import pulpcore.math.CoreMath._
 */
 object PulpCore {
 
-  // Convert properties to numbers
+  // Convert PulpCore properties to numbers
   implicit def Int2int(v: pulpcore.animation.Int):Int = v.get
   implicit def Fixed2double(v: Fixed):Double = v.get
   implicit def Bool2bool(v: Bool):Boolean = v.get
   implicit def Color2int(v: Color):Int = v.get
 
-  // Add methods to existing properties
+  // Add methods to PulpCore properties
   implicit def Fixed2FixedView(prop: Fixed) = new FixedView(prop)
   implicit def Int2IntView(prop: pulpcore.animation.Int) = new IntView(prop)
   implicit def Bool2BoolView(prop: Bool) = new BoolView(prop)
   implicit def Color2ColorView(prop: Color) = new ColorView(prop)
 
-  // Convert to Tweens
-  implicit def Tuple2RichFixedTween(v: Tuple2[Double, Double]) = new RichFixedTween(
-    new Tween(toFixed(v._1), toFixed(v._2), 1000))
-  implicit def Tuple2RichIntTween(v: Tuple2[Int, Int]) = new RichIntTween(
-    new Tween(v._1, v._2, 1000))
-  implicit def Int2RichToIntTween(v: Int) = new RichToIntTween(new Tween(0, v, 0))
-  implicit def Double2RichToFixedTween(v: Double) = new RichToFixedTween(
-    new Tween(0, toFixed(v), 0))
-
+  // Create a new Tween animation
+  implicit def Range2TweenBuilder(v: Range) = new TweenBuilder(
+    true, v.start, v.end, 1000, null, 0)
+  implicit def Int2TweenBuilder(v: Int) = new TweenBuilder(
+    false, 0, v, 1000, null, 0)
+  implicit def Double2TweenBuilder(v: Double) = new TweenBuilder(
+    false, 0, v, 1000, null, 0)
+  implicit def Double2MyDouble(v: Double) = new MyDouble(v)
 }
 
-class RichFixedTween(val tween: Tween) {
-
-  def dur(duration:Int) = new RichFixedTween(new Tween(tween.getFromValue, tween.getToValue,
-    duration, tween.getEasing, tween.getStartDelay))
-
-  def ease(easing:Easing) = new RichFixedTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, easing, tween.getStartDelay))
-
-  def delay(startDelay:Int) = new RichFixedTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, tween.getEasing, startDelay))
-
+class MyDouble(val v: Double) {
+  // This isn't the best solution because (Int to Double) is illegal
+  // But we can't put to(Double) in TweenBuilder because Int already has to(Int)
+  def to(toValue: Double) = new TweenBuilder(true, v, toValue, 1000, null, 0)
 }
 
-class RichToFixedTween(val tween: Tween) {
+class TweenBuilder(val useFromValue: Boolean,
+                   val fromValue: Double, val toValue: Double,
+                   val duration: Int, val easing: Easing, val delay: Int) {
 
-  def dur(duration:Int) = new RichToFixedTween(new Tween(tween.getFromValue, tween.getToValue,
-    duration, tween.getEasing, tween.getStartDelay))
+  def dur(newDuration:Int) = new TweenBuilder(useFromValue, fromValue,
+    toValue, newDuration, easing, delay)
 
-  def ease(easing:Easing) = new RichToFixedTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, easing, tween.getStartDelay))
+  def ease(newEasing:Easing) = new TweenBuilder(useFromValue, fromValue,
+    toValue, duration, newEasing, delay)
 
-  def delay(startDelay:Int) = new RichToFixedTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, tween.getEasing, startDelay))
+  def delay(newDelay:Int) = new TweenBuilder(useFromValue, fromValue,
+    toValue, duration, easing, newDelay)
 
-}
+  def setBehavior(prop: Fixed) {
+      if (useFromValue) {
+          prop.animate(fromValue, toValue, duration, easing, delay)
+      }
+      else {
+          prop.animateTo(toValue, duration, easing, delay)
+      }
+  }
 
-class RichIntTween(val tween: Tween) {
-
-  def dur(duration:Int) = new RichIntTween(new Tween(tween.getFromValue, tween.getToValue,
-    duration, tween.getEasing, tween.getStartDelay))
-
-  def ease(easing:Easing) = new RichIntTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, easing, tween.getStartDelay))
-
-  def delay(startDelay:Int) = new RichIntTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, tween.getEasing, startDelay))
-
-}
-
-class RichToIntTween(val tween: Tween) {
-
-  def dur(duration:Int) = new RichToIntTween(new Tween(tween.getFromValue, tween.getToValue,
-    duration, tween.getEasing, tween.getStartDelay))
-
-  def ease(easing:Easing) = new RichToIntTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, easing, tween.getStartDelay))
-
-  def delay(startDelay:Int) = new RichToIntTween(new Tween(tween.getFromValue, tween.getToValue,
-    tween.getDuration, tween.getEasing, startDelay))
-
+  def setBehavior(prop: pulpcore.animation.Int) {
+      if (useFromValue) {
+          prop.animate(fromValue.toInt, toValue.toInt, duration, easing, delay)
+      }
+      else {
+          prop.animateTo(toValue.toInt, duration, easing, delay)
+      }
+  }
 }
 
 class FixedView(val prop: Fixed) extends Ordered[Double] {
@@ -91,24 +76,13 @@ class FixedView(val prop: Fixed) extends Ordered[Double] {
     case that        => prop.get equals that
   }
 
-  def :=(v: RichFixedTween) {
-    prop.setBehavior(v.tween);
+  def :=(v: TweenBuilder) {
+    v.setBehavior(prop)
   }
 
-  def :=(v: RichToFixedTween) {
-    val t = v.tween
-    prop.animateToFixed(t.getToValue, t.getDuration, t.getEasing, t.getStartDelay)
-  }
-
-  def :=(v: RichIntTween) {
-    val t = v.tween
-    prop.animateAsFixed(toFixed(t.getFromValue), toFixed(t.getToValue),
-      t.getDuration, t.getEasing, t.getStartDelay)
-  }
-
-  def :=(v: RichToIntTween) {
-    val t = v.tween
-    prop.animateToFixed(toFixed(t.getToValue), t.getDuration, t.getEasing, t.getStartDelay)
+  def :=(v:Double) {
+    prop.set(v)
+    prop
   }
 
   def +=(v:Double) = {
@@ -138,24 +112,13 @@ class IntView(val prop: pulpcore.animation.Int) extends Ordered[Double] {
     case that        => prop.get equals that
   }
 
-  def :=(v: RichFixedTween) {
-    val t = v.tween
-    prop.animate(toInt(t.getFromValue), toInt(t.getToValue),
-      t.getDuration, t.getEasing, t.getStartDelay)
+  def :=(v: TweenBuilder) {
+    v.setBehavior(prop)
   }
 
-  def :=(v: RichToFixedTween) {
-    val t = v.tween
-    prop.animateTo(toInt(t.getToValue), t.getDuration, t.getEasing, t.getStartDelay)
-  }
-
-  def :=(v: RichIntTween) {
-    prop.setBehavior(v.tween);
-  }
-
-  def :=(v: RichToIntTween) {
-    val t = v.tween
-    prop.animateTo(t.getToValue, t.getDuration, t.getEasing, t.getStartDelay)
+  def :=(v:Int) {
+    prop.set(v)
+    prop
   }
 
   def +=(v:Int) = {
