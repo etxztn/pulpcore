@@ -237,7 +237,7 @@ public final class AppletAppContext extends AppContext {
                 // This works fine in Firefox
                 try {
                     applet.getAppletContext().showDocument(
-                        new URL("javascript: pulpcore_appletLoaded();"));
+                        new URL("javascript:pulpcore_appletLoaded();"), "_self");
                 }
                 catch (Exception ex) {
                     if (Build.DEBUG) CoreSystem.print("pulpcore_appletLoaded", ex);
