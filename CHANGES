@@ -10,7 +10,9 @@
   * API: Added CoreImage.getARGB(x, y)
   * API: Removed CoreGraphics.setFractionalMetrics(). PulpCore always keeps it enabled, and
     the extra testing was cumbersome.
+  * Templates: Scala script updated. Now requires Scala 2.7.2.
   * Tools: Font creator can now render fonts with anti-aliasing disabled.
+  * Tools: Console output from the Player will now display in NetBeans' Ant output.
   * Core: Tinted fonts are now cached.
   * Core: The "pulpcore_use_bufferstrategy" applet param can now be specified. Valid values are
     "true" (always use), "false" (never use) or "default" (PulpCore chooses the best). Most 
