@@ -32,14 +32,10 @@ package pulpcore.platform.applet;
 import java.applet.Applet;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.PrintStream;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
@@ -275,6 +271,15 @@ public final class CoreApplet extends Applet {
         }
         else {
             return null;
+        }
+    }
+
+    // Called via PulpCore Player via reflection
+    // For IDEs
+    private void setOut(PrintStream out) {
+        AppletAppContext c = context;
+        if (c != null) {
+            c.setOut(out);
         }
     }
 }

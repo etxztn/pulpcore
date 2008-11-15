@@ -48,13 +48,7 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.Toolkit;
 import java.awt.Window;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -241,6 +235,9 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         
         // Only wait if this is not the EDT
         waitUntilClosed = waitUntilClosed && !EventQueue.isDispatchThread();
+
+        final PipedOutputStream ps = new PipedOutputStream();
+        PrintStream os = new PrintStream(ps);
         
         synchronized (players) {
             if (!waitUntilClosed) {
@@ -252,7 +249,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             }
             
             try {
-                player = new PulpCorePlayer(key, documentURL, archive, width, height, params);
+                player = new PulpCorePlayer(key, documentURL, archive, width, height, params,
+                        waitUntilClosed ? os : null);
             }
             catch (MalformedURLException ex) {
                 System.out.println("Path problem: " + ex);
@@ -270,12 +268,38 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
         
         if (waitUntilClosed) {
+            // Redirect output from AWT thread to this thread (for IDEs)
+            final PulpCorePlayer p = player;
+            Thread t = new Thread() {
+                public void run() {
+                    try {
+                        BufferedReader r = new BufferedReader(
+                                new InputStreamReader(
+                                new PipedInputStream(ps)));
+                        while (p.running) {
+                            String input = r.readLine();
+                            if (input != null) {
+                                System.out.println(input);
+                            }
+                        }
+                    }
+                    catch (java.io.InterruptedIOException ex) {
+                        // Ignore
+                    }
+                    catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            };
+            t.start();
+
             synchronized (key) {
                 player.showFrame();
                 try {
                     key.wait();
                 }
                 catch (InterruptedException ex) { }
+                t.interrupt();
             }
         }
     }
@@ -296,15 +320,20 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     private String savedScene;
     
     private Color osBackground;
+
+    private PrintStream out;
+    private boolean running;
     
     public PulpCorePlayer(String key, String documentURL, String archive, 
-        int width, int height, Map<String, String> params) 
+        int width, int height, Map<String, String> params, PrintStream out)
         throws MalformedURLException, IOException
     { 
         this.key = key;
         this.width = width;
         this.height = height;
         this.params = params;
+        this.out = out;
+        this.running = true;
         params.put("browsername", "PulpCore Player");
         params.put("browserversion", Build.VERSION);
         
@@ -374,7 +403,9 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             public void windowClosing(WindowEvent e) {
                 GraphicsEnvironment.getLocalGraphicsEnvironment().
                     getDefaultScreenDevice().setFullScreenWindow(null);
-                    
+
+                running = false;
+
                 synchronized (players) {
                     players.remove(PulpCorePlayer.this.key);
                     unloadApplet();
@@ -503,6 +534,11 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             c.revalidate();
         }
         applet.init();
+
+        // For IDEs that won't capture System.out printed from the EDT
+        if (out != null) {
+            scripting.invoke("setOut", new Class[] { PrintStream.class }, new Object[] { out });
+        }
         
         // Do later
         EventQueue.invokeLater(new Runnable() {

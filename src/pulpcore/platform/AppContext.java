@@ -29,6 +29,7 @@
 
 package pulpcore.platform;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
@@ -42,7 +43,6 @@ import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreImage;
-import pulpcore.Input;
 import pulpcore.net.Upload;
 import pulpcore.scene.Scene;
 import pulpcore.Stage;
@@ -59,7 +59,8 @@ public abstract class AppContext {
     private Thread animationThread;
     private ThreadGroup threadGroup;
     private Map talkbackFields = new HashMap();
-    private ArrayList runnables = new ArrayList();
+    private final ArrayList runnables = new ArrayList();
+    private PrintStream out = System.out;
 
     // Logging
 
@@ -285,7 +286,10 @@ public abstract class AppContext {
     }
 
     public void setTalkBackField(String name, Throwable t) {
-        setTalkBackField(name, stackTraceToString(t));
+        talkbackFields.remove(name);
+        talkbackFields.put(name, stackTraceToString(t));
+        
+        if (Build.DEBUG) print(name + ":", t);
     }
 
     public void clearTalkBackFields() {
@@ -370,27 +374,25 @@ public abstract class AppContext {
             statement = "null";
         }
         if (consoleOut) {
-            System.out.println(statement);
+            out.println(statement);
         }
 
-        if (!Build.DEBUG) {
-            return;
-        }
-        
-        // Split statement by newlines
-        while (true) {
-            int index = statement.indexOf('\n');
-            if (index == -1) {
-                break;
+        if (Build.DEBUG) {
+            // Split statement by newlines
+            while (true) {
+                int index = statement.indexOf('\n');
+                if (index == -1) {
+                    break;
+                }
+                logLines.add(statement.substring(0, index));
+                statement = statement.substring(index + 1);
             }
-            logLines.add(statement.substring(0, index));
-            statement = statement.substring(index + 1);
-        }
-        logLines.add(statement);
-        
-        // Trim the log if there are too many lines.
-        while (logLines.size() > MAX_LOG_LINES) {
-            logLines.removeFirst();
+            logLines.add(statement);
+
+            // Trim the log if there are too many lines.
+            while (logLines.size() > MAX_LOG_LINES) {
+                logLines.removeFirst();
+            }
         }
     }
 
@@ -399,7 +401,16 @@ public abstract class AppContext {
     */
     public void print(String statement, Throwable t) {
         print(statement);
-        print(stackTraceToString(t));
+
+        if (consoleOut) {
+            consoleOut = false;
+            print(stackTraceToString(t));
+            t.printStackTrace(out);
+            consoleOut = true;
+        }
+        else {
+            print(stackTraceToString(t));
+        }
     }
 
     private String stackTraceToString(Throwable t) {
@@ -446,6 +457,13 @@ public abstract class AppContext {
         }
 
         lastMemory = currentMemory;
+    }
+
+    /*
+     For IDEs
+     */
+    public void setOut(PrintStream out) {
+        this.out = out;
     }
     
     public void setMute(boolean m) {

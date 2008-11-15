@@ -64,6 +64,17 @@ public class Scripting {
             return null;
         }
     }
+
+    public Object invoke(String methodName, Class[] argsClasses, Object[] args) {
+        Method method = getMethod("pulpcore.platform.applet.CoreApplet", methodName, argsClasses);
+        try {
+            return method.invoke(applet, args);
+        }
+        catch (Throwable t) {
+            t.printStackTrace();
+            return null;
+        }
+    }
     
     public Object invokeInAnimationThread(String methodName) {
         Method method = getMethod("pulpcore.platform.applet.CoreApplet", methodName);
