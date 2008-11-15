@@ -53,6 +53,11 @@
     <property name="proguard.path" value="" />
     <property name="library.path" value="" /> 
     <property name="scala.home" value="C:\Program Files\Scala" />
+    <!--
+        Use the fast Scala compiler. It may not work in all situations, and
+        calls System.exit() on error (as of Scala 2.7.2), which may shutdown your IDE.
+    -->
+    <property name="scala.use.fsc" value="false" />
     
     <!--
         Normally you won't need to edit anything below this line 
@@ -174,6 +179,10 @@
         </condition>
         -->
         
+        <condition property="do.fsc">
+            <istrue value="${scala.use.fsc}" />
+        </condition>
+
         <condition property="display.src" value="${src}/${project.scene}.java" else="">
             <istrue value="${include.src}" />
         </condition>
@@ -192,11 +201,23 @@
     
 
     <!-- Compiles the code -->
-    <target name="compile" depends="init">
+    <target name="compile-fsc" depends="init" if="do.fsc">
+        <fsc srcdir="${src}"
+            destdir="${build.classes}"
+            classpath="${scala-library.jar};${core.jar.file}"
+            target="jvm-${pulpcore.java.language}"
+            deprecation= "on"
+            force="changed">
+          <include name="**/*.scala"/>
+        </fsc>
+    </target>
+
+    <target name="compile-scalac" depends="init" unless="do.fsc">
         <scalac srcdir="${src}"
             destdir="${build.classes}"
             classpath="${scala-library.jar};${core.jar.file}"
             target="jvm-${pulpcore.java.language}"
+            deprecation= "on"
             force="changed">
           <include name="**/*.scala"/>
         </scalac>
@@ -204,8 +225,8 @@
     
 
     <!-- Creates a jar of the compiled code -->
-    <target name="jar" depends="compile">
-        <jar destfile="${build}/${project.jar}">
+    <target name="jar" depends="compile-scalac, compile-fsc">
+        <jar destfile="${build}/${project.jar}" keepcompression="true">
             <fileset dir="${build.classes}" includes="**/*.class" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
             <zipfileset src="${scala-library.jar}" excludes="META-INF/**/*" />
