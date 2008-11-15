@@ -73,32 +73,129 @@ public class StretchableSprite extends ImageSprite {
     }
     
     /** The border size defining section and padding sizes */
-    private int borderSize = 1;
+    private final int borderSize;
     private Section[] topSections;
     private Section[] leftSections;
     private int fStretchableWidth;
     private int fStretchableHeight;
     private int paddingTop, paddingRight, paddingBottom, paddingLeft;
-    
+    private boolean autoParse = false;
+
+    /**
+     Creates a StretchableSprite from an image with defined stretchable sections.
+     The format used is identical to
+     <a href="http://code.google.com/android/reference/available-resources.html#ninepatch">Android's
+     nine-patch format</a>
+     */
     public StretchableSprite(String imageName, double x, double y) {
         this(CoreImage.load(imageName), x, y);
     }
     
+    /**
+     Creates a StretchableSprite from an image with defined stretchable sections.
+     The format used is identical to
+     <a href="http://code.google.com/android/reference/available-resources.html#ninepatch">Android's
+     nine-patch format</a>
+     */
     public StretchableSprite(String imageName, double x, double y, double w, double h) {
         this(CoreImage.load(imageName), x, y, w, h);
     }
-    
+
+    /**
+     Creates a StretchableSprite from an image with defined stretchable sections.
+     The format used is identical to
+     <a href="http://code.google.com/android/reference/available-resources.html#ninepatch">Android's
+     nine-patch format</a>
+     */
     public StretchableSprite(CoreImage image, double x, double y) {
         this(image, x, y, image.getWidth() - 2, image.getHeight() - 2);
     }
     
+    /**
+     Creates a StretchableSprite from an image with defined stretchable sections.
+     The format used is identical to
+     <a href="http://code.google.com/android/reference/available-resources.html#ninepatch">Android's
+     nine-patch format</a>
+     */
     public StretchableSprite(CoreImage image, double x, double y, double w, double h) {
         super(image, x, y, w, h);
+        autoParse = true;
+        borderSize = 1;
+        parseImage();
+    }
+
+    /**
+     Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
+     not stretched.
+     */
+    public StretchableSprite(String imageName, int capWidth, int capHeight, double x, double y) {
+        this(CoreImage.load(imageName), capWidth, capHeight, x, y);
+    }
+
+    /**
+     Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
+     not stretched.
+     */
+    public StretchableSprite(String imageName, int capWidth, int capHeight,
+            double x, double y, double w, double h)
+    {
+        this(CoreImage.load(imageName), capWidth, capHeight, x, y, w, h);
+    }
+
+    /**
+     Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
+     not stretched.
+     */
+    public StretchableSprite(CoreImage image, int capWidth, int capHeight, double x, double y) {
+        this(image, capWidth, capHeight, x, y, image.getWidth(), image.getHeight());
+    }
+
+    /**
+     Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
+     not stretched.
+     */
+    public StretchableSprite(CoreImage image, int capWidth, int capHeight,
+            double x, double y, double w, double h)
+    {
+        super(image, x, y, w, h);
+        borderSize = 0;
+        setCapSize(capWidth, capHeight);
     }
     
     public void setImage(CoreImage image) {
         super.setImage(image);
-        parseImage();
+        if (autoParse) {
+            parseImage();
+        }
+        else if (topSections != null && leftSections != null) {
+            setCapSize(topSections[0].length, leftSections[0].length);
+        }
+    }
+
+    private void setCapSize(int capWidth, int capHeight) {
+        int w = getImage().getWidth();
+        int h = getImage().getHeight();
+        if (capWidth*2 >= w) {
+            capWidth = (w-1)/2;
+        }
+        if (capHeight*2 >= h) {
+            capHeight = (h-1)/2;
+        }
+        topSections = new Section[3];
+        topSections[0] = new Section(0, capWidth, false);
+        topSections[1] = new Section(capWidth, w - capWidth*2, true);
+        topSections[2] = new Section(w - capWidth, capWidth, false);
+        leftSections = new Section[3];
+        leftSections[0] = new Section(0, capHeight, false);
+        leftSections[1] = new Section(capHeight, h - capHeight*2, true);
+        leftSections[2] = new Section(h - capHeight, capHeight, false);
+        
+        fStretchableWidth = CoreMath.toFixed(w - capWidth*2);
+        fStretchableHeight = CoreMath.toFixed(h - capHeight*2);
+        paddingTop = capHeight;
+        paddingRight = capWidth;
+        paddingBottom = capHeight;
+        paddingLeft = capWidth;
     }
     
     /**
@@ -161,7 +258,6 @@ public class StretchableSprite extends ImageSprite {
     private void parseImage() {
         CoreImage image = getImage();
         if (image != null) {
-            borderSize = 1;
             int w = image.getWidth();
             int h = image.getHeight();
             
