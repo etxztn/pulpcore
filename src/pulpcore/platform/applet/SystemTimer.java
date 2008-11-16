@@ -137,42 +137,28 @@ public class SystemTimer {
     }
     
     public long sleepUntilTimeMicros(long goalTimeMicros) {
-        
-        if (CoreSystem.isWindowsXPorNewer()) {
-            boolean firstIteration = true;
-            while (true) {
-                long currentTimeMicros = getTimeMicros();
-                long diff = goalTimeMicros - currentTimeMicros;
-                if (diff <= 50) {
-                    return currentTimeMicros;
-                }
-                else if (diff <= 1500) {
-                    Thread.yield();
-                }
-                else {
-                    if (!getHighSleepGranularity()) {
-                        // We need to sleep, so make sure the sleep granularity is high
-                        setHighSleepGranularity(true);
-                    }
-                    try {
-                        Thread.sleep(1);
-                    }
-                    catch (InterruptedException ex) { }
-                }
-                // Only set if we didn't return immediately on the first check
-                sleptThisFrame = true;
+        long yieldLimit = CoreSystem.isWindows() ? 2000 : 1000;
+        while (true) {
+            long currentTimeMicros = getTimeMicros();
+            long diff = goalTimeMicros - currentTimeMicros;
+            if (diff <= 0) {
+                return currentTimeMicros;
             }
-        }
-        else {
-            long time = goalTimeMicros - getTimeMicros();
-            if (time >= 500) {
-                sleptThisFrame = true;
+            else if (diff <= yieldLimit) {
+                Thread.yield();
+            }
+            else {
+                if (!getHighSleepGranularity()) {
+                    // We need to sleep, so make sure the sleep granularity is high
+                    setHighSleepGranularity(true);
+                }
                 try {
-                    Thread.sleep((int)((time + 500) / 1000));
+                    Thread.sleep(1);
                 }
                 catch (InterruptedException ex) { }
             }
-            return getTimeMicros();
+            // Only set if we didn't return immediately on the first check
+            sleptThisFrame = true;
         }
     }
 }

@@ -42,7 +42,6 @@ import pulpcore.platform.AppContext;
 import pulpcore.platform.ConsoleScene;
 import pulpcore.platform.PolledInput;
 import pulpcore.platform.SceneSelector;
-import pulpcore.platform.SoundEngine;
 import pulpcore.platform.Surface;
 import pulpcore.scene.Scene;
 import pulpcore.scene.Scene2D;
@@ -109,6 +108,7 @@ public class Stage implements Runnable {
     
     // Stage info
     private int desiredFPS = DEFAULT_FPS;
+    private long frameRateDelay = 1000000L / desiredFPS;
     private double actualFPS = -1;
     private long remainderMicros;
     private Thread animationThread;
@@ -233,12 +233,25 @@ public class Stage implements Runnable {
         }
         
         Stage instance = getThisStage();
-        if (desiredFPS != instance.desiredFPS) {
+        if (instance.desiredFPS != desiredFPS) {
+            instance.desiredFPS = desiredFPS;
             instance.remainderMicros = 0;
         }
-        instance.desiredFPS = desiredFPS;
-        if (instance.surface.canChangeRefreshRate()) {
-            instance.surface.setRefreshRate(desiredFPS);
+        if (desiredFPS == MAX_FPS) {
+            instance.frameRateDelay = 0;
+        }
+        else {
+            int fps = desiredFPS;
+            // Apply 55 fps limit on old Java 5 versions on Leopard
+            if (fps > 55 && CoreSystem.isMacOSXLeopardOrNewer()) {
+                try {
+                    if (System.getProperty("java.version").compareTo("1.5.0_16") < 0) {
+                        fps = 55;
+                    }
+                }
+                catch (Exception ex) { }
+            }
+            instance.frameRateDelay = 1000000L / fps;
         }
     }
     
@@ -561,6 +574,7 @@ public class Stage implements Runnable {
         Thread currentThread = Thread.currentThread();
         
         long lastTimeMicros = CoreSystem.getTimeMicros();
+        long nextTimeMicros = lastTimeMicros + frameRateDelay;
         int elapsedTime = 0;
         
         while (animationThread == currentThread) {
@@ -573,6 +587,7 @@ public class Stage implements Runnable {
                 }
                 catch (InterruptedException ex) { }
                 lastTimeMicros = CoreSystem.getTimeMicros();
+                nextTimeMicros = lastTimeMicros + frameRateDelay;
                 elapsedTime = 0;
                 remainderMicros = 0;
                 continue;
@@ -618,6 +633,7 @@ public class Stage implements Runnable {
             }
             if (hasNewScene()) {
                 lastTimeMicros = CoreSystem.getTimeMicros();
+                nextTimeMicros = lastTimeMicros + frameRateDelay;
                 elapsedTime = 0;
                 remainderMicros = 0;
             }
@@ -672,20 +688,21 @@ public class Stage implements Runnable {
             CoreGraphics g = surface.getGraphics();
             
             // Update and draw scene
-            synchronized (currentScene) {
+            final Scene scene = currentScene;
+            synchronized (scene) {
                 appContext.runEvents();
                 
-                currentScene.updateScene(elapsedTime);
+                scene.updateScene(elapsedTime);
                 
                 // Set the transform
                 // (Don't set the default transform for a Scene2D - it already handles it)
                 g.reset();
-                if (!(currentScene instanceof Scene2D)) {
+                if (!(scene instanceof Scene2D)) {
                     g.getTransform().concatenate(defaultTransform);
                 }
                 
                 try {
-                    currentScene.drawScene(g);
+                    scene.drawScene(g);
                     renderingErrorOccurred = false;
                 }
                 catch (ArrayIndexOutOfBoundsException ex) {
@@ -730,19 +747,23 @@ public class Stage implements Runnable {
             appContext.notifyFrameComplete();
             
             // Sleep to create correct frame rate
-            if (desiredFPS == MAX_FPS || surface.getRefreshRate() > 0) {
-                if (surfaceSleepTimeMicros == 0) {
-                    Thread.yield();
-                }
+            long currTimeMicros;
+            if (frameRateDelay == 0) {
                 if (Build.DEBUG) {
                     overlaySleepTime += surfaceSleepTimeMicros / 1000;
                 }
+                currTimeMicros = CoreSystem.getTimeMicros();
             }
             else {
-                long goalTimeMicros = lastTimeMicros + 1000000L / desiredFPS;
                 long priorToSleepTime = CoreSystem.getTimeMicros();
-                long currTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(goalTimeMicros);
-                
+                currTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(nextTimeMicros);
+
+                // Get next sleep time
+                nextTimeMicros += frameRateDelay;
+                if (currTimeMicros > nextTimeMicros) {
+                    nextTimeMicros = currTimeMicros + frameRateDelay;
+                }
+
                 if (Build.DEBUG) {
                     long sleepTimeMicros = currTimeMicros - priorToSleepTime;
                     overlaySleepTime += (surfaceSleepTimeMicros + sleepTimeMicros) / 1000;
@@ -750,12 +771,11 @@ public class Stage implements Runnable {
             }
             
             // Update elapsed time
-            long currTimeMicros = CoreSystem.getTimeMicros();
             long elapsedTimeMicros = currTimeMicros - lastTimeMicros + remainderMicros;
             elapsedTime = (int)(elapsedTimeMicros / 1000);
             remainderMicros = elapsedTimeMicros - elapsedTime * 1000;
             lastTimeMicros = currTimeMicros;
-            
+          
             if (Build.DEBUG && speed != 1) {
                 float e = elapsedTime * speed + elapsedTimeRemainder;
                 elapsedTime = (int)e;
@@ -1151,11 +1171,11 @@ public class Stage implements Runnable {
             if (this.max != -1) {
                 return this.max;
             }
-            int max = Integer.MIN_VALUE;
+            int calculatedMax = Integer.MIN_VALUE;
             for (int i = 0; i < NUM_SAMPLES; i++) {
-                max = Math.max(max, samples[(index + i) % NUM_SAMPLES]);
+                calculatedMax = Math.max(calculatedMax, samples[(index + i) % NUM_SAMPLES]);
             }
-            return max;
+            return calculatedMax;
         }
         
         public void setMax(int max) {
@@ -1163,7 +1183,7 @@ public class Stage implements Runnable {
         }
         
         public void draw(CoreGraphics g, int x, int y, int height) {
-            int max = getMax();
+            int calculatedMax = getMax();
             
             g.setColor(Colors.BLACK);
             g.fillRect(x, y, NUM_SAMPLES, height);
@@ -1173,7 +1193,7 @@ public class Stage implements Runnable {
             for (int i = 0; i < NUM_SAMPLES; i++) {
                 int j = NUM_SAMPLES - i - 1;
                 int sample = samples[(index + j) % NUM_SAMPLES];
-                int sampleHeight = height * sample / max;
+                int sampleHeight = height * sample / calculatedMax;
                 g.fillRect(x + j, y + height - sampleHeight, 1, sampleHeight); 
             }
         }

@@ -42,9 +42,7 @@ import java.awt.image.Raster;
 import java.awt.image.SampleModel;
 import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
-import java.awt.ImageCapabilities;
 import java.awt.Point;
-import java.lang.reflect.Constructor;
 import java.util.Hashtable;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -62,7 +60,7 @@ public class BufferStrategySurface extends Surface {
         new DirectColorModel(24, 0xff0000, 0x00ff00, 0x0000ff);
         
     private BufferStrategy bufferStrategy;
-    private BufferedImage image;
+    private BufferedImage bufferedImage;
     private Container container;
     private Canvas canvas;
     private boolean osRepaint;
@@ -84,9 +82,6 @@ public class BufferStrategySurface extends Surface {
         canvas.setSize(1, 1);
         container.add(canvas);
         canvas.setLocation(0, 0);
-        if (CoreSystem.isMacOSXLeopardOrNewer() && !CoreSystem.isJava16orNewer()) {
-            setHighestRefreshRate(55);
-        }
         // Try to create the surface for the sake of toString(), below
         isReady();
     }
@@ -112,7 +107,7 @@ public class BufferStrategySurface extends Surface {
         if (w <= 0 || h <= 0) {
             return false;
         }
-        else if (image == null || getWidth() != w || getHeight() != h) {
+        else if (bufferedImage == null || getWidth() != w || getHeight() != h) {
             setSize(w, h);
         }
         
@@ -155,16 +150,16 @@ public class BufferStrategySurface extends Surface {
         DataBuffer dataBuffer = new DataBufferInt(getData(), w * h);
         WritableRaster raster = Raster.createWritableRaster(
             sampleModel, dataBuffer, new Point(0,0));
-        image = new BufferedImage(COLOR_MODEL, raster, true, new Hashtable());
+        bufferedImage = new BufferedImage(COLOR_MODEL, raster, true, new Hashtable());
     }
     
     public long show(Rect[] dirtyRectangles, int numDirtyRectangles) {
-        if (bufferStrategy == null || image == null) {
+        if (bufferStrategy == null || bufferedImage == null) {
             return 0;
         }
         
         if (numDirtyRectangles == 0 && !contentsLost) {
-            return refreshRateSync();
+            return 0;
         }
         
         long sleepTime = 0;
@@ -176,13 +171,13 @@ public class BufferStrategySurface extends Surface {
             
                     if (g != null) {
                         if (contentsLost || !useDirtyRects || numDirtyRectangles < 0) {
-                            g.drawImage(image, 0, 0, null);
+                            g.drawImage(bufferedImage, 0, 0, null);
                         }
                         else {
                             for (int i = 0; i < numDirtyRectangles; i++) {
                                 Rect r = dirtyRectangles[i];
                                 g.setClip(r.x, r.y, r.width, r.height);
-                                g.drawImage(image, 0, 0, null);
+                                g.drawImage(bufferedImage, 0, 0, null);
                             }
                         }
                         g.dispose();
@@ -197,7 +192,6 @@ public class BufferStrategySurface extends Surface {
                     }
                 }
 
-                sleepTime += refreshRateSync();
                 bufferStrategy.show();
                 
                 if (bufferStrategy.contentsLost()) {

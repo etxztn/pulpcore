@@ -41,17 +41,10 @@ import pulpcore.math.Rect;
 */
 public abstract class Surface {
     
-    private static final int NO_LIMIT = 0; 
-
     private CoreGraphics g;
     protected CoreImage image;
     private int[] imageData;
     protected boolean contentsLost;
-    
-    private int refreshRate = NO_LIMIT;
-    private int highestRefreshRate = NO_LIMIT;
-    private long refreshRateSyncTime = 0;
-    private boolean canChangeRefreshRate = true;
     
     protected int[] getData() {
         return imageData;
@@ -126,76 +119,6 @@ public abstract class Surface {
     }
     
     /**
-        Returns the refresh rate of the surface or 0 if the surface
-        has no refresh rate.
-    */
-    public final int getRefreshRate() {
-        return refreshRate;
-    }
-    
-    /**
-        Returns true if the refresh rate can be changed.
-    */
-    public final boolean canChangeRefreshRate() {
-        return canChangeRefreshRate;
-    }
-    
-    /**
-        Sets the refresh rate (if {@link #canChangeRefreshRate() } returns true.
-    */
-    public final void setRefreshRate(int refreshRate) {
-        if (highestRefreshRate != NO_LIMIT) {
-            refreshRate = Math.min(refreshRate, highestRefreshRate);
-        }
-        if (canChangeRefreshRate() && this.refreshRate != refreshRate) {
-            this.refreshRate = refreshRate;
-            if (refreshRate != NO_LIMIT) {
-                this.refreshRateSyncTime = CoreSystem.getTimeMicros() + 1000000 / refreshRate;
-            }
-        }
-    }
-    
-    protected final void setCanChangeRefreshRate(boolean b) {
-        canChangeRefreshRate = b;
-    }
-    
-    protected final void setHighestRefreshRate(int highestRefreshRate) {
-        this.highestRefreshRate = highestRefreshRate;
-        if (highestRefreshRate != NO_LIMIT && this.refreshRate > highestRefreshRate) {
-            this.refreshRate = highestRefreshRate;
-            this.refreshRateSyncTime = CoreSystem.getTimeMicros() + 1000000 / refreshRate;
-        }
-    }
-    
-    /**
-        @return the number of microseconds slept before the frame was shown.
-    */
-    protected long refreshRateSync() {
-        if (refreshRate == NO_LIMIT) {
-            return 0;
-        }
-        else {
-            int delay = 1000000 / refreshRate;
-            long startTimeMicros = CoreSystem.getTimeMicros();
-            long endTimeMicros;
-            if (startTimeMicros < refreshRateSyncTime) {
-                endTimeMicros = CoreSystem.getPlatform().sleepUntilTimeMicros(refreshRateSyncTime);
-            }
-            else {
-                endTimeMicros = startTimeMicros;
-            }
-            refreshRateSyncTime += delay;
-            
-            if (endTimeMicros > refreshRateSyncTime + delay) {
-                // Missed too many sync's
-                long x = (long)Math.ceil((double)(endTimeMicros - refreshRateSyncTime) / delay);
-                refreshRateSyncTime += x * delay;
-            }
-            return endTimeMicros - startTimeMicros;
-        }
-    }
-    
-    /**
         @param dirtyRectangles list of dirty rectangles
         @param numDirtyRectangles If -1, the entire surface needs to be drawn. If 0, none of the
         surface needs to be drawn.
@@ -207,8 +130,8 @@ public abstract class Surface {
     
     public void getScreenshot(CoreImage image, int x, int y) {
         if (image != null) {
-            CoreGraphics g = image.createGraphics();
-            g.drawImage(this.image, -x, -y);
+            CoreGraphics g2 = image.createGraphics();
+            g2.drawImage(this.image, -x, -y);
         }
     }
 }

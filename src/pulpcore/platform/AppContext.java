@@ -111,7 +111,12 @@ public abstract class AppContext {
                 // At this point we have a non-destroyed ThreadGroup that can't be destroyed
                 // until the exit of this synchronized block. Therefore,
                 // this constructor can't throw an IllegalThreadStateException
-                return new Thread(currentGroup, runnable, threadName);
+                Thread t = new Thread(currentGroup, runnable, threadName);
+                try {
+                    t.setPriority(Thread.NORM_PRIORITY);
+                }
+                catch (SecurityException ex) { }
+                return t;
             }
         }
     }

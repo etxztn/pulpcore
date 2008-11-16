@@ -41,7 +41,6 @@ import java.awt.image.SinglePixelPackedSampleModel;
 import java.awt.image.WritableRaster;
 import java.awt.Point;
 import java.util.Hashtable;
-import pulpcore.CoreSystem;
 import pulpcore.math.Rect;
 import pulpcore.platform.Surface;
 
@@ -68,9 +67,6 @@ public class BufferedImageSurface extends Surface {
     
     public BufferedImageSurface(Component component) {
         this.component = component;
-        if (CoreSystem.isMacOSXLeopardOrNewer() && !CoreSystem.isJava16orNewer()) {
-            setHighestRefreshRate(55);
-        }
     }
 
     protected void notifyResized() {
@@ -167,13 +163,7 @@ public class BufferedImageSurface extends Surface {
                 }
             }
         }
-        if (osRepaint) {
-            // OS asked for repaint while waiting - return immediately
-            return 0;
-        }
-        else {
-            return refreshRateSync();
-        }
+        return 0;
     }
     
     // Called from the AWT thread
