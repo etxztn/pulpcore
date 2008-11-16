@@ -32,6 +32,7 @@ package pulpcore.platform.applet;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
@@ -44,7 +45,6 @@ import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferedImage;
 import java.awt.Point;
 import java.awt.Toolkit;
-import pulpcore.CoreSystem;
 import pulpcore.Input;
 import pulpcore.platform.PolledInput;
 
@@ -52,7 +52,7 @@ import pulpcore.platform.PolledInput;
     An input manager for Applets.
 */
 public class AppletInput implements KeyListener, MouseListener,
-    MouseMotionListener, MouseWheelListener, FocusListener
+    MouseMotionListener, MouseWheelListener, FocusListener, Runnable
 {
     private final Component comp;
     private final Cursor invisibleCursor;
@@ -121,8 +121,12 @@ public class AppletInput implements KeyListener, MouseListener,
     /* package-private */ PolledInput getPolledInput() {
         return polledInput;
     }
+
+    public void run() {
+        // Do nothing - clears event queue
+    }
     
-    /* package-private */ synchronized void pollInput() {
+    /* package-private */ void pollInput() {
         if (focusCountdown > 0) {
             if (appletHasKeyboardFocus) {
                 focusCountdown = 0;
@@ -136,61 +140,70 @@ public class AppletInput implements KeyListener, MouseListener,
                 }
             }
         }
-        
-        for (int i = 0; i < Input.NUM_KEY_CODES; i++) {
-            
-            int oldState = polledInput.keyStates[i];
-            
-            if (keyPressed[i]) {
-                keyPressed[i] = false;
-                if (oldState == Input.RELEASED || oldState == Input.UP) {
-                    polledInput.keyStates[i] = Input.PRESSED;
+
+        // Clear event queue
+        try {
+            EventQueue.invokeAndWait(this);
+        }
+        catch (Exception ex) { }
+
+        synchronized (this) {
+
+            for (int i = 0; i < Input.NUM_KEY_CODES; i++) {
+
+                int oldState = polledInput.keyStates[i];
+
+                if (keyPressed[i]) {
+                    keyPressed[i] = false;
+                    if (oldState == Input.RELEASED || oldState == Input.UP) {
+                        polledInput.keyStates[i] = Input.PRESSED;
+                    }
+                    else {
+                        polledInput.keyStates[i] = Input.REPEATED;
+                    }
+                }
+                else if (keyDown[i]) {
+                    if (oldState == Input.PRESSED || oldState == Input.REPEATED) {
+                        polledInput.keyStates[i] = Input.DOWN;
+                    }
+                }
+                else if (oldState == Input.PRESSED || oldState == Input.DOWN ||
+                    oldState == Input.REPEATED)
+                {
+                    polledInput.keyStates[i] = Input.RELEASED;
                 }
                 else {
-                    polledInput.keyStates[i] = Input.REPEATED;
+                    polledInput.keyStates[i] = Input.UP;
                 }
             }
-            else if (keyDown[i]) {
-                if (oldState == Input.PRESSED || oldState == Input.REPEATED) {
-                    polledInput.keyStates[i] = Input.DOWN;
-                }
-            }
-            else if (oldState == Input.PRESSED || oldState == Input.DOWN || 
-                oldState == Input.REPEATED) 
-            {
-                polledInput.keyStates[i] = Input.RELEASED;
+
+            polledInput.isMouseMoving = (appletMouseX != lastAppletMouseX ||
+                appletMouseY != lastAppletMouseY);
+            polledInput.mouse.x = appletMouseX;
+            polledInput.mouse.y = appletMouseY;
+            polledInput.mousePress.x = appletMousePressX;
+            polledInput.mousePress.y = appletMousePressY;
+            polledInput.mouseRelease.x = appletMouseReleaseX;
+            polledInput.mouseRelease.y = appletMouseReleaseY;
+            polledInput.mouseWheel.x = appletMouseWheelX;
+            polledInput.mouseWheel.y = appletMouseWheelY;
+            polledInput.mouseWheelRotation = appletMouseWheel;
+            polledInput.hasKeyboardFocus = appletHasKeyboardFocus;
+            polledInput.isMouseInside = appletIsMouseInside &&
+                appletMouseX >= 0 && appletMouseY >= 0 &&
+                appletMouseX < comp.getWidth() && appletMouseY < comp.getHeight();
+
+            appletMouseWheel = 0;
+            lastAppletMouseX = appletMouseX;
+            lastAppletMouseY = appletMouseY;
+
+            if (typedCharsSinceLastPoll.length() > 0) {
+                polledInput.typedChars = typedCharsSinceLastPoll.toString();
+                typedCharsSinceLastPoll = new StringBuffer();
             }
             else {
-                polledInput.keyStates[i] = Input.UP;
+                polledInput.typedChars = "";
             }
-        }
-        
-        polledInput.isMouseMoving = (appletMouseX != lastAppletMouseX || 
-            appletMouseY != lastAppletMouseY);
-        polledInput.mouse.x = appletMouseX;
-        polledInput.mouse.y = appletMouseY;
-        polledInput.mousePress.x = appletMousePressX;
-        polledInput.mousePress.y = appletMousePressY;
-        polledInput.mouseRelease.x = appletMouseReleaseX;
-        polledInput.mouseRelease.y = appletMouseReleaseY;
-        polledInput.mouseWheel.x = appletMouseWheelX;
-        polledInput.mouseWheel.y = appletMouseWheelY;
-        polledInput.mouseWheelRotation = appletMouseWheel;
-        polledInput.hasKeyboardFocus = appletHasKeyboardFocus;
-        polledInput.isMouseInside = appletIsMouseInside && 
-            appletMouseX >= 0 && appletMouseY >= 0 && 
-            appletMouseX < comp.getWidth() && appletMouseY < comp.getHeight();
-        
-        appletMouseWheel = 0;
-        lastAppletMouseX = appletMouseX;
-        lastAppletMouseY = appletMouseY;
-        
-        if (typedCharsSinceLastPoll.length() > 0) {
-            polledInput.typedChars = typedCharsSinceLastPoll.toString();
-            typedCharsSinceLastPoll = new StringBuffer();
-        }
-        else {
-            polledInput.typedChars = "";
         }
     }
     
@@ -209,23 +222,23 @@ public class AppletInput implements KeyListener, MouseListener,
     
     /* package-private */ void setCursor(int cursorCode) {
         
-        int awtCursorCode = getAWTCursorCode(cursorCode);
-        if (awtCursorCode == Cursor.CUSTOM_CURSOR && invisibleCursor == null) {
-            awtCursorCode = Cursor.DEFAULT_CURSOR;
+        int newAwtCursorCode = getAWTCursorCode(cursorCode);
+        if (newAwtCursorCode == Cursor.CUSTOM_CURSOR && invisibleCursor == null) {
+            newAwtCursorCode = Cursor.DEFAULT_CURSOR;
         }
         
-        if (awtCursorCode == Cursor.DEFAULT_CURSOR) {
+        if (newAwtCursorCode == Cursor.DEFAULT_CURSOR) {
             cursorCode = Input.CURSOR_DEFAULT;
         }
         
-        if (this.cursorCode != cursorCode || this.awtCursorCode != awtCursorCode) {
-            if (awtCursorCode == Cursor.CUSTOM_CURSOR) {
+        if (this.cursorCode != cursorCode || this.awtCursorCode != newAwtCursorCode) {
+            if (newAwtCursorCode == Cursor.CUSTOM_CURSOR) {
                 comp.setCursor(invisibleCursor);
             }
             else {
-                comp.setCursor(Cursor.getPredefinedCursor(awtCursorCode));
+                comp.setCursor(Cursor.getPredefinedCursor(newAwtCursorCode));
             }
-            this.awtCursorCode = awtCursorCode;
+            this.awtCursorCode = newAwtCursorCode;
             this.cursorCode = cursorCode;
         }
     }
