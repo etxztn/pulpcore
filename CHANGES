@@ -10,6 +10,7 @@
   * API: Added CoreImage.getARGB(x, y)
   * API: Removed CoreGraphics.setFractionalMetrics(). PulpCore always keeps it enabled, and
     the extra testing was cumbersome.
+  * API: Added Button.isPressedDown()
   * Templates: Scala script updated. Now requires Scala 2.7.2.
   * Tools: Font creator can now render fonts with anti-aliasing disabled.
   * Tools: Console output from the Player will now display in NetBeans' Ant output.

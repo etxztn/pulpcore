@@ -32,8 +32,6 @@ package pulpcore.sprite;
 import pulpcore.animation.BindFunction;
 import pulpcore.animation.Bool;
 import pulpcore.animation.Fixed;
-import pulpcore.animation.Property;
-import pulpcore.animation.PropertyListener;
 import pulpcore.image.AnimatedImage;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
@@ -270,8 +268,8 @@ public class ScrollPane extends Group {
             this.up = up;
             this.down = down;
             
-            double x = 0;
-            double y = 0;
+            double layoutX = 0;
+            double layoutY = 0;
             
             // Create slider
             if (orientation == Slider.VERTICAL) {
@@ -303,28 +301,28 @@ public class ScrollPane extends Group {
             
             // Up arrow
             if (up != null) {
-                up.setLocation(x, y);
+                up.setLocation(layoutX, layoutY);
                 super.add(up);
                 if (orientation == Slider.VERTICAL) {
-                    y += up.height.get();
+                    layoutY += up.height.get();
                 }
                 else {
-                    x += up.width.get();
+                    layoutX += up.width.get();
                 }
             }
             
             // Position slider
-            slider.setLocation(x, y);
+            slider.setLocation(layoutX, layoutY);
             if (orientation == Slider.VERTICAL) {
-                y += slider.height.get();
+                layoutY += slider.height.get();
             }
             else {
-                x += slider.width.get();
+                layoutX += slider.width.get();
             }
             
             // Down arrow
             if (down != null) {
-                down.setLocation(x, y);
+                down.setLocation(layoutX, layoutY);
                 super.add(down);
             }
             
@@ -358,12 +356,12 @@ public class ScrollPane extends Group {
             
             boolean adjusting = false;
             
-            if (up != null && up.isMouseDown() && scrollDelay <= 0) {
+            if (up != null && up.isPressedDown() && scrollDelay <= 0) {
                 slider.scroll(-scrollUnitSize);
                 adjusting = true;
                 scrollDelay = up.isMousePressed() ? SCROLL_FIRST_DELAY : SCROLL_DELAY;
             }
-            else if (down != null && down.isMouseDown() && scrollDelay <= 0) {
+            else if (down != null && down.isPressedDown() && scrollDelay <= 0) {
                 slider.scroll(scrollUnitSize);
                 adjusting = true;
                 scrollDelay = down.isMousePressed() ? SCROLL_FIRST_DELAY : SCROLL_DELAY;

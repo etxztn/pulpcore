@@ -29,16 +29,13 @@
 
 package pulpcore.sprite;
 
-import pulpcore.animation.Bool;
 import pulpcore.animation.Color;
 import pulpcore.CoreSystem;
-import pulpcore.image.AnimatedImage;
 import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
 import pulpcore.math.Rect;
-import pulpcore.sprite.Group;
 
 /**
     The Button is a Sprite that behaves like a common UI push button. A
@@ -70,7 +67,7 @@ public class Button extends ImageSprite {
     private int state;
     private boolean isSelected;
     private boolean isClicked;
-    private Group rootWhenClicked;
+    private Group rootWhenPressed;
     
     /**
         @param images an array of three images: normal, hover, and pressed. 
@@ -207,10 +204,6 @@ public class Button extends ImageSprite {
         }
     }
     
-    private int getState() {
-        return state;
-    }
-    
     public void update(int elapsedTime) {
         super.update(elapsedTime);
         
@@ -223,7 +216,9 @@ public class Button extends ImageSprite {
         }
         
         isClicked = isClickedImpl();
-        rootWhenClicked = isClicked ? getRoot() : null;
+        if (state == PRESSED) {
+            rootWhenPressed = getRoot();
+        }
     }
     
     /**
@@ -231,7 +226,17 @@ public class Button extends ImageSprite {
         @return true if this button was clicked since the last frame.
     */
     public boolean isClicked() {
-        return isClicked && getRoot() == rootWhenClicked;
+        return isClicked && getRoot() == rootWhenPressed;
+    }
+
+    /**
+        Determines if this button was pressed and the mouse is still held down over the button.
+        This method continues to returns true as long as the mouse is pressed and still
+        over the button.
+        <p>To detect a click, use {@link #isClicked()}.</p>
+     */
+    public boolean isPressedDown() {
+        return state == PRESSED && getRoot() == rootWhenPressed;
     }
     
     private boolean isClickedImpl() {
