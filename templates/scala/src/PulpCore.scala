@@ -90,7 +90,7 @@ class FixedView(val prop: Fixed) extends Ordered[Double] {
     prop
   }
   def -=(v:Double) = {
-    prop.set(prop.get + v)
+    prop.set(prop.get - v)
     prop
   }
   def *=(v:Double) = {
@@ -126,7 +126,7 @@ class IntView(val prop: pulpcore.animation.Int) extends Ordered[Double] {
     prop
   }
   def -=(v:Int) = {
-    prop.set(prop.get + v)
+    prop.set(prop.get - v)
     prop
   }
   def *=(v:Int) = {
