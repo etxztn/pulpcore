@@ -373,6 +373,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         }
         if (archive == null) {
             archiveURL = new URL[] { codeBaseURL };
+            setTitle("PulpCore");
         }
         else {
             String[] archives = archive.split("[;:]");
@@ -381,6 +382,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                 archiveURL[i] = new URL(codeBaseURL, archives[i]);
             }
             archiveURL[archives.length] = codeBaseURL;
+            setTitle(getProjectTitle(archives[0]));
         }
         
         // For Mac OS X
@@ -393,7 +395,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         getContentPane().setBackground(Color.BLACK);
         setForeground(new Color(170, 170, 170));
         getContentPane().setForeground(new Color(170, 170, 170));
-        setTitle(getProjectTitle(archive));
+        
         setLocationByPlatform(true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         getContentPane().setLayout(new BorderLayout(0,0));
