@@ -306,7 +306,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
     
     private final URL documentBaseURL;
     private final URL codeBaseURL;
-    private final URL archiveURL;
+    private final URL[] archiveURL;
     private final String key;
     private final int width;
     private final int height;
@@ -372,10 +372,15 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             }
         }
         if (archive == null) {
-            archiveURL = null;
+            archiveURL = new URL[] { codeBaseURL };
         }
         else {
-            archiveURL = new URL(codeBaseURL, archive);
+            String[] archives = archive.split("[;:]");
+            archiveURL = new URL[archives.length + 1];
+            for (int i = 0; i < archives.length; i++) {
+                archiveURL[i] = new URL(codeBaseURL, archives[i]);
+            }
+            archiveURL[archives.length] = codeBaseURL;
         }
         
         // For Mac OS X
@@ -494,7 +499,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
             urls = new URL[] { codeBaseURL };
         }
         else {
-            urls = new URL[] { archiveURL, codeBaseURL };
+            urls = archiveURL;
         }
         
         // Create the Applet

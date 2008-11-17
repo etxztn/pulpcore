@@ -179,6 +179,10 @@
         </condition>
         -->
         
+        <condition property="do.combinedjar">
+            <equals arg1="${pulpcore.build}" arg2="release" />
+        </condition>
+
         <condition property="do.fsc">
             <istrue value="${scala.use.fsc}" />
         </condition>
@@ -199,7 +203,6 @@
         <mkdir dir="${build.res}" />
     </target>
     
-
     <!-- Compiles the code -->
     <target name="compile-fsc" depends="init" if="do.fsc">
         <fsc srcdir="${src}"
@@ -225,7 +228,14 @@
     
 
     <!-- Creates a jar of the compiled code -->
-    <target name="jar" depends="compile-scalac, compile-fsc">
+    <target name="jar-partial" depends="compile-scalac, compile-fsc" unless="do.combinedjar">
+        <jar destfile="${build}/${project.jar}" keepcompression="true">
+            <fileset dir="${build.classes}" includes="**/*.class" />
+            <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
+        </jar>
+    </target>
+
+    <target name="jar-full" depends="compile-scalac, compile-fsc" if="do.combinedjar">
         <jar destfile="${build}/${project.jar}" keepcompression="true">
             <fileset dir="${build.classes}" includes="**/*.class" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
@@ -233,9 +243,8 @@
         </jar>
     </target>
    
-    
     <!-- Prepares the jar for Java 1.4 -->
-    <target name="retroweave" if="do.retroweaver" depends="jar">
+    <target name="retroweave" if="do.retroweaver" depends="jar-partial,jar-full">
         <taskdef name="retroweaver" classname="net.sourceforge.retroweaver.ant.RetroWeaverTask"
             classpath="${retroweaver.jar.file}" />
             
@@ -332,7 +341,8 @@
     
     
     <target name="run" description="Runs in PulpCore Player">
-        <pulpcore-player path="${basedir}/${build}" archive="${project.jar}" 
+        <pulpcore-player path="${basedir}/${build}"
+            archive="${project.jar};${scala-library.jar}"
             width="${project.width}" height="${project.height}"
             scene="${project.scene}" assets="${autoload.assets.zip}"
             params="${project.params}"
