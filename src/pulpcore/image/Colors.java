@@ -457,50 +457,57 @@ public class Colors {
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
     
-    /* package-private */ static void premultiply(int[] colors) {
-        for (int i = 0; i < colors.length; i++) {
-            colors[i] = premultiply(colors[i]);
-        }
-    }
-    
-    /* package-private */ static int premultiply(int argbColor) {
+    /**
+        Converts an ARGB color to a premultiplied ARGB color.
+    */
+    public static int premultiply(int argbColor) {
         int a = argbColor >>> 24;
         int r = (argbColor >> 16) & 0xff;
         int g = (argbColor >> 8) & 0xff;
         int b = argbColor & 0xff;
-    
-        r = (a * r + 127) / 255;
-        g = (a * g + 127) / 255;
-        b = (a * b + 127) / 255;
+
+        if (a < 255) {
+            r = (a * r + 127) / 255;
+            g = (a * g + 127) / 255;
+            b = (a * b + 127) / 255;
+        }
         
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
     
-    /* package-private */ static int premultiply(int rgbColor, int alpha) {
+    /**
+        Premultiples an RGB color with the specified alpha.
+    */
+    public static int premultiply(int rgbColor, int alpha) {
         int r = (rgbColor >> 16) & 0xff;
         int g = (rgbColor >> 8) & 0xff;
         int b = rgbColor & 0xff;
-    
-        r = (alpha * r + 127) / 255;
-        g = (alpha * g + 127) / 255;
-        b = (alpha * b + 127) / 255;
+
+        if (alpha < 255) {
+            r = (alpha * r + 127) / 255;
+            g = (alpha * g + 127) / 255;
+            b = (alpha * b + 127) / 255;
+        }
         
         return (alpha << 24) | (r << 16) | (g << 8) | b;
     }
-    
-    /* package-private */ static int unpremultiply(int pmColor) {
-        int a = pmColor >>> 24;
+
+    /**
+        Converts a premultiplied ARGB color to an ARGB color.
+    */
+    public static int unpremultiply(int preARGBColor) {
+        int a = preARGBColor >>> 24;
         
         if (a == 0) {
             return 0;
         }
         else if (a == 255) {
-            return pmColor;
+            return preARGBColor;
         }
         else {
-            int r = (pmColor >> 16) & 0xff;
-            int g = (pmColor >> 8) & 0xff;
-            int b = pmColor & 0xff;
+            int r = (preARGBColor >> 16) & 0xff;
+            int g = (preARGBColor >> 8) & 0xff;
+            int b = preARGBColor & 0xff;
         
             r = 255 * r / a;
             g = 255 * g / a;
@@ -508,5 +515,4 @@ public class Colors {
             return (a << 24) | (r << 16) | (g << 8) | b;
         }
     }
-
 }

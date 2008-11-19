@@ -378,7 +378,9 @@ class PNGReader {
         if (colorType == COLOR_TYPE_GRAYSCALE_WITH_ALPHA || 
             colorType == COLOR_TYPE_RGB_WITH_ALPHA)
         {
-            Colors.premultiply(dataARGB);
+            for (int i = 0; i < dataARGB.length; i++) {
+                dataARGB[i] = Colors.premultiply(dataARGB[i]);
+            }
         }
         
         inflater.end();

@@ -47,6 +47,7 @@ import pulpcore.platform.PolledInput;
 import pulpcore.platform.Surface;
 import pulpcore.scene.Scene;
 import pulpcore.Stage;
+import pulpcore.image.Colors;
 import pulpcore.util.Base64;
 import pulpcore.util.ByteArray;
 
@@ -477,20 +478,9 @@ public final class AppletAppContext extends AppContext {
 
             // Premultiply alpha
             for (int i = 0; i < data.length; i++) {
-                int argbColor = data[i];
-                int a = argbColor >>> 24;
-
-                if (a < 255) {
+                data[i] = Colors.premultiply(data[i]);
+                if (isOpaque && (data[i] >>> 24) < 255) {
                     isOpaque = false;
-                    int r = (argbColor >> 16) & 0xff;
-                    int g = (argbColor >> 8) & 0xff;
-                    int b = argbColor & 0xff;
-
-                    r = (a * r + 127) / 255;
-                    g = (a * g + 127) / 255;
-                    b = (a * b + 127) / 255;
-
-                    data[i] = (a << 24) | (r << 16) | (g << 8) | b;
                 }
             }
             return new CoreImage(width, height, isOpaque, data);

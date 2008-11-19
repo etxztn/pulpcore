@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import org.junit.Test;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreImage;
 import pulpcore.image.PNGWriter;
 import pulpcore.util.ByteArray;
@@ -26,21 +27,8 @@ public class PNGTest {
         image = new CoreImage(100, 100, false, data);
         for (int i = 0; i < data.length; i++) {
             int color = rand.nextInt();
-            data[i] = premultiply(color);
+            data[i] = Colors.premultiply(color);
         }
-    }
-    
-    static int premultiply(int argbColor) {
-        int a = argbColor >>> 24;
-        int r = (argbColor >> 16) & 0xff;
-        int g = (argbColor >> 8) & 0xff;
-        int b = argbColor & 0xff;
-    
-        r = (a * r + 127) / 255;
-        g = (a * g + 127) / 255;
-        b = (a * b + 127) / 255;
-        
-        return (a << 24) | (r << 16) | (g << 8) | b;
     }
     
     static int[] getComponents(int argbColor) {
