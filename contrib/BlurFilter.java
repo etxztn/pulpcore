@@ -52,32 +52,32 @@ import pulpcore.image.CoreImage;
  */
 public class BlurFilter {
 
-	
+
 	public static CoreImage filter(CoreImage img, int radius) {
-	    
+
 		int width = img.getWidth();
 		int height = img.getHeight();
 		//fin param
-		
+
 		 CoreImage blurredImage = new CoreImage(width, height, img.isOpaque());
-		 
+
 		// colors data
 		    int[] srcPixels = img.getData();
 		    int[] dstPixels = blurredImage.getData();
-		    
-		 
+
+
 		 // horizontal pass
 		    blur(srcPixels, dstPixels, width, height, radius);
-		    
+
 		    // copy the dstPixels in a temporary buffer
 		    int size = height * width;
 		    int[] tmpPixels = new int[size];
 		    for(int i = 0; i < size; i++)
-		    	tmpPixels[i] = dstPixels[i]; 
-		    
+		    	tmpPixels[i] = dstPixels[i];
+
 		    // vertical pass
 		    blur(tmpPixels, dstPixels, height, width, radius);
-			
+
 		 return blurredImage;
 	}
 
@@ -94,7 +94,7 @@ public class BlurFilter {
      * @param radius the radius of the blur effect
      */
 	private static void blur(int[] srcPixels, int[] dstPixels, int width, int height, int radius) {
-		
+
 	    final int windowSize = radius * 2 + 1;
 	    final int radiusPlusOne = radius + 1;
 
@@ -130,14 +130,14 @@ public class BlurFilter {
 	        sumAlpha = sumRed = sumGreen = sumBlue = 0;
 	        dstIndex = y;
 
-	        pixel = unpremultiply(srcPixels[srcIndex]);
+	        pixel = srcPixels[srcIndex];
 	        sumAlpha += radiusPlusOne * ((pixel >> 24) & 0xFF);
 	        sumRed   += radiusPlusOne * ((pixel >> 16) & 0xFF);
 	        sumGreen += radiusPlusOne * ((pixel >>  8) & 0xFF);
 	        sumBlue  += radiusPlusOne * ( pixel        & 0xFF);
 
 	        for (int i = 1; i <= radius; i++) {
-	            pixel = unpremultiply(srcPixels[srcIndex + indexLookupTable[i]]);
+	        	 pixel = srcPixels[srcIndex + indexLookupTable[i]];
 	            sumAlpha += (pixel >> 24) & 0xFF;
 	            sumRed   += (pixel >> 16) & 0xFF;
 	            sumGreen += (pixel >>  8) & 0xFF;
@@ -145,10 +145,10 @@ public class BlurFilter {
 	        }
 
 	        for  (int x = 0; x < width; x++) {
-	            dstPixels[dstIndex] = premultiply(sumLookupTable[sumAlpha] << 24 |
-	                                  sumLookupTable[sumRed]   << 16 |
-	                                  sumLookupTable[sumGreen] <<  8 |
-	                                  sumLookupTable[sumBlue]);
+	            dstPixels[dstIndex] = sumLookupTable[sumAlpha] << 24 |
+                					  sumLookupTable[sumRed]   << 16 |
+                					  sumLookupTable[sumGreen] <<  8 |
+                					  sumLookupTable[sumBlue];
 	            dstIndex += height;
 
 	            int nextPixelIndex = x + radiusPlusOne;
@@ -161,8 +161,8 @@ public class BlurFilter {
 	                previousPixelIndex = 0;
 	            }
 
-	            int nextPixel = unpremultiply(srcPixels[srcIndex + nextPixelIndex]);
-	            int previousPixel = unpremultiply(srcPixels[srcIndex + previousPixelIndex]);
+	            int nextPixel = srcPixels[srcIndex + nextPixelIndex];
+	            int previousPixel = srcPixels[srcIndex + previousPixelIndex];
 
 	            sumAlpha += (nextPixel     >> 24) & 0xFF;
 	            sumAlpha -= (previousPixel >> 24) & 0xFF;
@@ -179,55 +179,5 @@ public class BlurFilter {
 
 	        srcIndex += width;
 	    }
-	     
 	}
-
-	/* package-private */ static int unpremultiply(int pmColor) {
-	    int a = pmColor >>> 24;
-	    
-	    if (a == 0) {
-	        return 0;
-	    }
-	    else if (a == 255) {
-	        return pmColor;
-	    }
-	    else {
-	        int r = (pmColor >> 16) & 0xff;
-	        int g = (pmColor >> 8) & 0xff;
-	        int b = pmColor & 0xff;
-	    
-	        r = 255 * r / a;
-	        g = 255 * g / a;
-	        b = 255 * b / a;
-	        return (a << 24) | (r << 16) | (g << 8) | b;
-	    }
-	}
-
-
-	/* package-private */ static int premultiply(int argbColor) {
-	    int a = argbColor >>> 24;
-	    int r = (argbColor >> 16) & 0xff;
-	    int g = (argbColor >> 8) & 0xff;
-	    int b = argbColor & 0xff;
-
-	    r = (a * r + 127) / 255;
-	    g = (a * g + 127) / 255;
-	    b = (a * b + 127) / 255;
-	    
-	    return (a << 24) | (r << 16) | (g << 8) | b;
-	}
-
-	/* package-private */ static int premultiply(int rgbColor, int alpha) {
-	    int r = (rgbColor >> 16) & 0xff;
-	    int g = (rgbColor >> 8) & 0xff;
-	    int b = rgbColor & 0xff;
-
-	    r = (alpha * r + 127) / 255;
-	    g = (alpha * g + 127) / 255;
-	    b = (alpha * b + 127) / 255;
-	    
-	    return (alpha << 24) | (r << 16) | (g << 8) | b;
-	}
-
-
 }
