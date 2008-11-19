@@ -459,41 +459,59 @@ public class Colors {
     
     /**
         Converts an ARGB color to a premultiplied ARGB color.
+        @param argbColor the ARGB color to premultiply
+        @return the premultiplied ARGB color
     */
     public static int premultiply(int argbColor) {
         int a = argbColor >>> 24;
-        int r = (argbColor >> 16) & 0xff;
-        int g = (argbColor >> 8) & 0xff;
-        int b = argbColor & 0xff;
 
-        if (a < 255) {
+        if (a == 0) {
+            return 0;
+        }
+        else if (a == 255) {
+            return argbColor;
+        }
+        else {
+            int r = (argbColor >> 16) & 0xff;
+            int g = (argbColor >> 8) & 0xff;
+            int b = argbColor & 0xff;
             r = (a * r + 127) / 255;
             g = (a * g + 127) / 255;
             b = (a * b + 127) / 255;
+            return (a << 24) | (r << 16) | (g << 8) | b;
         }
-        
-        return (a << 24) | (r << 16) | (g << 8) | b;
     }
     
     /**
         Premultiples an RGB color with the specified alpha.
+        @param rgbColor the RGB color to premultiply
+        @param alpha the alpha value, from 0 to 255
+        @return the premultiplied ARGB color
     */
     public static int premultiply(int rgbColor, int alpha) {
-        int r = (rgbColor >> 16) & 0xff;
-        int g = (rgbColor >> 8) & 0xff;
-        int b = rgbColor & 0xff;
 
-        if (alpha < 255) {
+        if (alpha <= 0) {
+            return 0;
+        }
+        else if (alpha >= 255) {
+            return 0xff | rgbColor;
+        }
+        else {
+            int r = (rgbColor >> 16) & 0xff;
+            int g = (rgbColor >> 8) & 0xff;
+            int b = rgbColor & 0xff;
+
             r = (alpha * r + 127) / 255;
             g = (alpha * g + 127) / 255;
             b = (alpha * b + 127) / 255;
+            return (alpha << 24) | (r << 16) | (g << 8) | b;
         }
-        
-        return (alpha << 24) | (r << 16) | (g << 8) | b;
     }
 
     /**
         Converts a premultiplied ARGB color to an ARGB color.
+        @param preARGBColor the premultiplied ARGB color to premultiply
+        @return the converted ARGB color
     */
     public static int unpremultiply(int preARGBColor) {
         int a = preARGBColor >>> 24;
