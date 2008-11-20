@@ -32,7 +32,6 @@ package pulpcore.platform.applet;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
@@ -52,7 +51,7 @@ import pulpcore.platform.PolledInput;
     An input manager for Applets.
 */
 public class AppletInput implements KeyListener, MouseListener,
-    MouseMotionListener, MouseWheelListener, FocusListener, Runnable
+    MouseMotionListener, MouseWheelListener, FocusListener
 {
     private final Component comp;
     private final Cursor invisibleCursor;
@@ -122,10 +121,6 @@ public class AppletInput implements KeyListener, MouseListener,
         return polledInput;
     }
 
-    public void run() {
-        // Do nothing - clears event queue
-    }
-    
     /* package-private */ void pollInput() {
         if (focusCountdown > 0) {
             if (appletHasKeyboardFocus) {
@@ -142,10 +137,12 @@ public class AppletInput implements KeyListener, MouseListener,
         }
 
         // Clear event queue
-        try {
-            EventQueue.invokeAndWait(this);
-        }
-        catch (Exception ex) { }
+        // Backed-out for now since it caused deadlock with the PulpCore Player.
+        // Chances are it could cause deadlock with Stencyl or another tool.
+//        try {
+//            EventQueue.invokeAndWait(this);
+//        }
+//        catch (Exception ex) { }
 
         synchronized (this) {
 
