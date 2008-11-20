@@ -164,6 +164,14 @@ public class CoreGraphics {
         }
         reset();
     }
+
+    /**
+        Gets the underlying data array of the surface image.
+        @deprecated This will be moved in 0.12.
+    */
+    public int[] getSurfaceData() {
+        return surfaceData;
+    }
     
     public int getSurfaceWidth() {
         return surfaceWidth;
