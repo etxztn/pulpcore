@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007, Interactive Pulp, LLC
+    Copyright (c) 2008, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -44,7 +44,6 @@ import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.util.ByteArray;
 
-
 /**
     The Upload class represents name/value pairs for sending to an HTTP server 
     via the POST method (multipart form). Values can be either plain text or files.
@@ -59,8 +58,8 @@ public class Upload implements Runnable {
     private String formBoundary;
     private String response;
     private boolean completed;
-    
-    
+    private IOException uncaughtException;
+       
     /**
         Creates a new Upload object.
         @param url the URL to send the POST to.
@@ -70,7 +69,6 @@ public class Upload implements Runnable {
         fields = new ArrayList();
         formBoundary = "PulpCore-Upload:" + System.currentTimeMillis();
     }
-
     
     /**
         Adds plain text form fields to this form. 
@@ -81,8 +79,7 @@ public class Upload implements Runnable {
             String name = keys.next().toString();
             addField(name, fields.get(name).toString());
         }
-    }
-    
+    }    
     
     /**
         Add a plain text form field to this form. 
@@ -96,7 +93,6 @@ public class Upload implements Runnable {
 
         fields.add(getBytes(field));
     }
-
     
     /**
         Add a data file to this form. 
@@ -119,7 +115,6 @@ public class Upload implements Runnable {
         fields.add(out.getData());
     }
     
-    
     private byte[] getBytes(String field) {
         try {
             return field.getBytes("ISO-8859-1");
@@ -129,36 +124,62 @@ public class Upload implements Runnable {
         }
     }
     
-    
     public void run() {
         try {
-            sendNow();
+            send();
         }
         catch (IOException ex) {
             if (Build.DEBUG) CoreSystem.print("Upload.sendNow()", ex);
             response = null;
             completed = true;
+            uncaughtException = ex;
         }
     }
     
-    
     /**
-        Write the form to an URL via the POST method in a new thread.
+        Write the form to an URL via the POST method.
         The form is sent using the multipart/form-data encoding. 
         The response, if any, can be retrieved using getResponse().
+        This method makes the request asynchronously (returns immediately).
     */
     public void start() {
         completed = false;
         new Thread(this, "PulpCore-Upload").start();
     }
-
     
     /**
-        Write the form to an URL via the POST method in the current thread.
+        Write the form to an URL via the POST method. 
         The form is sent using the multipart/form-data encoding. 
         The response, if any, can be retrieved using getResponse().
+        @param asynchronous true for asynchronous operation
+        (the call returns immediately) or false for synchronous operation (the call
+        blocks until the method is complete or an error occurs).
+    */
+    public void start(boolean asynchronous) {
+        if (asynchronous) {
+            start();
+        }
+        else {
+            run();
+        }
+    }
+
+    /**
+        Write the form to an URL via the POST method.
+        The form is sent using the multipart/form-data encoding.
+        The response, if any, can be retrieved using getResponse().
+        This method blocks until the call is complete or an error occurs.
+        @deprecated Use send(false);
+        @throws IOException if an error occurs.
     */
     public void sendNow() throws IOException {
+        run();
+        if (uncaughtException != null) {
+            throw uncaughtException;
+        }
+    }
+    
+    private void send() throws IOException {
         completed = false;
         URLConnection connection = url.openConnection();
         connection.setDoInput(true);
@@ -179,7 +200,7 @@ public class Upload implements Runnable {
 
         // Get response data.
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        StringBuffer response = new StringBuffer();
+        StringBuffer responseBuffer = new StringBuffer();
         
         char[] buffer = new char[BUFFER_SIZE];
         while (true) { 
@@ -187,26 +208,30 @@ public class Upload implements Runnable {
             if (charsRead == -1) { 
                 break;
             }
-            response.append(buffer, 0, charsRead);
+            responseBuffer.append(buffer, 0, charsRead);
         }
 
         in.close();
 
-        this.response = response.toString();
+        this.response = responseBuffer.toString();
         this.completed = true;
     }
-    
     
     public String getResponse() {
         return response;
     }
     
-    
     /**
-        @return true if a call to send() or sendNow() has completed.
+        @return true if a call to start() has completed.
     */
     public boolean isCompleted() {
         return completed;
     }
 
+    /**
+        @return the uncaught exception during upload, if any.
+    */
+    public IOException getUncaughtException() {
+        return uncaughtException;
+    }
 }
