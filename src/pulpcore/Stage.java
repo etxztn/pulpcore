@@ -406,30 +406,11 @@ public class Stage implements Runnable {
         run (for example, logging off from a server) can use this method for convenience.
         <P>
         The {@code runnable} is executed in the animation thread after all scenes are
-        unloaded. 
+        unloaded.
     */
     public static void invokeOnShutdown(final Runnable runnable) {
         final Stage instance = getThisStage();
-        if (runnable == null) {
-            instance.shutdownCode = null;
-        }
-        else {
-            instance.shutdownCode = new Runnable() {
-                public void run() {
-                    Thread t = Thread.currentThread();
-                    instance.appContext.setAnimationThread(t);
-                    instance.animationThread = t;
-                    try {
-                        runnable.run();
-                    }
-                    catch (Throwable ex) {
-                        if (Build.DEBUG) ex.printStackTrace();
-                    }
-                    instance.appContext.setAnimationThread(null);
-                    instance.animationThread = null;
-                }
-            };
-        }
+        instance.shutdownCode = runnable;
     }
     
     /**
@@ -796,20 +777,17 @@ public class Stage implements Runnable {
             currentScene.unload();
         }
         clearSceneStack();
+
+        if (shutdownCode != null) {
+            try {
+                shutdownCode.run();
+            }
+            catch (Throwable ex) {
+                if (Build.DEBUG) ex.printStackTrace();
+            }
+        }
         appContext.setAnimationThread(null);
         animationThread = null;
-        
-        Runnable r = shutdownCode;
-        if (r != null) {
-            Thread t = appContext.createThread("PulpCore-Shutdown", r);
-            try {
-                t.setDaemon(false);
-            }
-            catch (Exception ex) { 
-                // Ignore
-            }
-            t.start();
-        }
     }
     
     /**
