@@ -148,8 +148,8 @@ public class SystemTimer {
                 Thread.yield();
             }
             else {
-                if (!getHighSleepGranularity()) {
-                    // We need to sleep, so make sure the sleep granularity is high
+                // We need to sleep, so make sure the sleep granularity is high
+                if (CoreSystem.isWindowsXPorNewer()) {
                     setHighSleepGranularity(true);
                 }
                 try {
