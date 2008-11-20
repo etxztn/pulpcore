@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
+import org.apache.tools.ant.input.*;
 
 public class PlayerTask extends Task {
     
@@ -98,13 +99,25 @@ public class PlayerTask extends Task {
         if (height <= 0) {
             throw new BuildException("The height is not specified.");
         }
+
+        // This input handler on Mac OS X causes deadlock - warn about it (killing it doesn't work?)
+        if ("Mac OS X".equals(System.getProperty("os.name"))) {
+            String badInputHandler =
+                    "org.eclipse.ant.internal.ui.antsupport.inputhandler.ProxyInputHandler";
+            InputHandler inputHandler = getProject().getInputHandler();
+            if (inputHandler != null && inputHandler.getClass().getName().equals(badInputHandler)) {
+                log("Running PulpCore in this Eclipse configuration may cause a deadlock. Solutions:");
+                log("Select Run->External Tools->External Tools Configurations->JRE->Run in same JRE as the workspace.");
+                log("Or...");
+                log("Deselect Run->External Tools->External Tools Configurations->Main->Set an Input handler");
+            }
+        }
         
         Map<String, String> appProperties = parseParams();
         appProperties.put("scene", scene);
         appProperties.put("assets", assets);
         
         if (!waitUntilClosed) {
-            
             // Find an existing player within a running IDE
             // Note, Ant creates a new ClassLoader each time a taskdef'd task is executed.
             // So we can't access the same class since it was started from a different ClassLoader.
