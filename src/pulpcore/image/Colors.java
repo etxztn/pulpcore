@@ -494,7 +494,7 @@ public class Colors {
             return 0;
         }
         else if (alpha >= 255) {
-            return 0xff | rgbColor;
+            return 0xff000000 | rgbColor;
         }
         else {
             int r = (rgbColor >> 16) & 0xff;
