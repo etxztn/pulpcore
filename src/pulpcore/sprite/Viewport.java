@@ -44,12 +44,14 @@ import pulpcore.math.Tuple2i;
 public class Viewport extends Group {
     
     /**
-        The scroll x location. Identical to {@code getContentPane().x}.
+        The scroll x location, relative to the origin of this Viewport.
+        Identical to {@code getContentPane().x}.
     */
     public final Fixed scrollX;
     
     /**
-        The scroll y location. Identical to {@code getContentPane().y}.
+        The scroll y location, relative to the origin of this Viewport.
+        Identical to {@code getContentPane().y}.
     */
     public final Fixed scrollY;
     
