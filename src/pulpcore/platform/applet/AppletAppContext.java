@@ -66,7 +66,10 @@ public final class AppletAppContext extends AppContext {
         this.applet = app;
         this.timer = timer;
         this.enableLiveConnect = true;
-        
+    }
+
+    /* package protected */ void init() {
+
         /* 
             Workaround for this bug:
             http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6669818
@@ -89,18 +92,18 @@ public final class AppletAppContext extends AppContext {
                 Class c = Class.forName("netscape.javascript.JSObject");
                 Method getWindow = c.getMethod("getWindow", 
                     new Class[] { Class.forName("java.applet.Applet") } );
-                jsObject = getWindow.invoke(null, new Object[] { app });
+                jsObject = getWindow.invoke(null, new Object[] { applet });
             }
             catch (Throwable t) {
                 // Ignore
             }
         }
-        
+    
         setTalkBackField("pulpcore.platform", "Applet");
         setTalkBackField("pulpcore.platform.timer", timer.getName());
         setTalkBackField("pulpcore.platform.javascript", "" + (jsObject != null));  
         setTalkBackField("pulpcore.url", getBaseURL().toString());
-        createSurface(app);
+        createSurface(applet);
         stage = new Stage(surface, this);
     }
     
@@ -256,7 +259,7 @@ public final class AppletAppContext extends AppContext {
         if (useBufferStrategyParam != null) {
             useBufferStrategyParam = useBufferStrategyParam.toLowerCase();
         }
-        
+
         /*
             If "pulpcore_use_bufferstrategy" is neither "true" or "false", then:
             
@@ -305,7 +308,7 @@ public final class AppletAppContext extends AppContext {
         else {
             useBufferStrategy = false;
         }
-        
+
         if (surface == null && useBufferStrategy) {
             try {
                 Class.forName("java.awt.image.BufferStrategy");

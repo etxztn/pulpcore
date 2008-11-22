@@ -65,6 +65,8 @@ public final class AppletPlatform implements Platform {
     
     private AppletAppContext mainContext = null;
     private List allContexts = null;
+    private AppletAppContext initContext = null;
+    private Thread initContextThread = null;
     
     private SoundEngine soundEngine;
     
@@ -130,6 +132,11 @@ public final class AppletPlatform implements Platform {
                     return context;
                 }
             }
+
+            if (initContext != null && Thread.currentThread() == initContextThread) {
+                // We're initializing the context from the system thread
+                return initContext;
+            }
             
             throw new Error("No context found for thread");
         }
@@ -194,6 +201,12 @@ public final class AppletPlatform implements Platform {
             }
             allContexts.add(newContext);
         }
+        // Setup a temporary context for init
+        initContext = newContext;
+        initContextThread = Thread.currentThread();
+        newContext.init();
+        initContext = null;
+        initContextThread = null;
                
         if (wasEmpty) {
             timer.start();
