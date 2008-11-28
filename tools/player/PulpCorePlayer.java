@@ -42,6 +42,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.EventQueue;
+import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
@@ -88,7 +89,10 @@ import pulpcore.Build;
 */
 public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext {
     
-    private static final int MAC_GROWBOX_SIZE = 15;
+    private static final int MAC_OS_X_GROWBOX_SIZE = 15;
+
+    private static final boolean MAC_OS_X =
+            (System.getProperty("os.name").toLowerCase().startsWith("mac os x"));
     
     private static HashMap<String, PulpCorePlayer> players = new HashMap<String, PulpCorePlayer>();
     
@@ -399,8 +403,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         setLocationByPlatform(true);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         getContentPane().setLayout(new BorderLayout(0,0));
-        if ("Mac OS X".equals(System.getProperty("os.name"))) {
-            getContentPane().setPreferredSize(new Dimension(width, height + MAC_GROWBOX_SIZE));
+        if (MAC_OS_X) {
+            getContentPane().setPreferredSize(new Dimension(width, height + MAC_OS_X_GROWBOX_SIZE));
         }
         else {
             getContentPane().setPreferredSize(new Dimension(width, height));
@@ -408,23 +412,55 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
-                GraphicsEnvironment.getLocalGraphicsEnvironment().
-                    getDefaultScreenDevice().setFullScreenWindow(null);
-
-                running = false;
-
-                synchronized (players) {
-                    players.remove(PulpCorePlayer.this.key);
-                    unloadApplet();
-                }
-                
-                synchronized (PulpCorePlayer.this.key) {
-                    PulpCorePlayer.this.key.notify();
-                }
+                quit();
             }
         });
         
         setJMenuBar(createJMenuBar());
+
+        Frame[] frames = Frame.getFrames();
+        boolean runningInsideAnotherApp = false;
+        for (Frame frame : frames) {
+            if (!(frame instanceof PulpCorePlayer)) {
+                runningInsideAnotherApp = true;
+                break;
+            }
+        }
+
+        if (MAC_OS_X && !runningInsideAnotherApp) {
+            try {
+                OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("appleQuit", (Class[])null));
+            }
+            catch (Exception e) {
+                System.err.println("Error while loading the OSXAdapter:");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // Must be public for Apple's OSXAdapter
+    public boolean appleQuit() {
+        quit();
+        dispose();
+        // False = "not handled". When the Player is run in it's own VM, the VM will quit after
+        // the dispose. Otherwise, there could be other "handlers" installed.
+        return false;
+    }
+
+    private void quit() {
+        GraphicsEnvironment.getLocalGraphicsEnvironment().
+            getDefaultScreenDevice().setFullScreenWindow(null);
+
+        running = false;
+
+        synchronized (players) {
+            players.remove(PulpCorePlayer.this.key);
+            unloadApplet();
+        }
+
+        synchronized (PulpCorePlayer.this.key) {
+            PulpCorePlayer.this.key.notify();
+        }
     }
     
     private JMenuBar createJMenuBar() {
@@ -533,8 +569,8 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         applet.setLocale(Locale.getDefault());
         getContentPane().add(applet, BorderLayout.CENTER);
         // Add 15 pixels for the growbox
-        if ("Mac OS X".equals(System.getProperty("os.name"))) {
-            Filler c = Filler.createVerticalStrut(MAC_GROWBOX_SIZE);
+        if (MAC_OS_X) {
+            Filler c = Filler.createVerticalStrut(MAC_OS_X_GROWBOX_SIZE);
             c.setOpaque(true);
             c.setBackground(osBackground);
             getContentPane().add(c, BorderLayout.SOUTH);
