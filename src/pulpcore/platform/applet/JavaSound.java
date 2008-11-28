@@ -165,15 +165,17 @@ public class JavaSound implements SoundEngine {
             players = new DataLinePlayer[0];
         }
         
-        // Play a buffer's worth of silence to warm up HotSpot (helps remove popping)
         if (sampleRates.length == 0) {
             state = STATE_FAILURE;
         }
         else {
             state = STATE_READY;
-            
-            Sound noSound = new SilentSound(sampleRates[0], 0);
-            play(null, noSound, new Fixed(1), new Fixed(0), false);
+
+            // Play a buffer's worth of silence to warm up HotSpot (helps remove popping)
+            for (int i = 0; i < sampleRates.length; i++) {
+                Sound noSound = new SilentSound(sampleRates[0], 0);
+                play(null, noSound, new Fixed(1), new Fixed(0), false);
+            }
             
             // Bizarre: The DirectX implementation of JavaSound (Windows, Java 5 or newer)
             // works better if at least two threads write to a SourceDataLine. It doesn't matter
@@ -271,13 +273,13 @@ public class JavaSound implements SoundEngine {
         // This method is called from the AWT event thread.
         // At this point update() won't be called again. 
         // Call update() to mute, then close the lines.
-        
+
         state = STATE_DESTROYED;
         
         DataLinePlayer[] p = players;
         
         for (int i = 0; i < p.length; i++) {
-            p[i].update(SoundStream.MUTE_TIME*2);
+            p[i].update(SoundStream.MUTE_TIME*2, true);
         }
         
         for (int i = 0; i < p.length; i++) {
@@ -510,21 +512,49 @@ public class JavaSound implements SoundEngine {
                 }
             }
         }
+
+        private void reopen() {
+            stream = null;
+            boolean success = false;
+            if (line != null && CoreSystem.isJava15orNewer()) {
+                try {
+                    // Re-opening lines reduces latency.
+                    // However, it fails silently (no exception thrown) on some versions of Java 1.4
+                    line.close();
+                    line.open();
+                    success = true;
+                }
+                catch (Exception ex) {
+                    success = false;
+                }
+            }
+
+            if (!success) {
+                close(false);
+                open();
+            }
+        }
         
         public synchronized boolean reopen(int sampleRate) {
-            int oldSampleRate = this.sampleRate;
-            close(false);
-            this.sampleRate = sampleRate;
-            open();
-            
-            if (isOpen()) {
+            if (this.sampleRate == sampleRate) {
+                reopen();
                 return true;
             }
             else {
-                // Try to open the old format
-                this.sampleRate = oldSampleRate;
+                int oldSampleRate = this.sampleRate;
+                close(false);
+                this.sampleRate = sampleRate;
                 open();
-                return false;
+
+                if (isOpen()) {
+                    return true;
+                }
+                else {
+                    // Try to open the old format
+                    this.sampleRate = oldSampleRate;
+                    open();
+                    return false;
+                }
             }
         }
         
@@ -536,7 +566,9 @@ public class JavaSound implements SoundEngine {
             
             if (drain) {
                 try {
-                    line.drain();
+                    if (line.isRunning()) {
+                        line.drain();
+                    }
                 }
                 catch (Exception ex) { 
                     if (Build.DEBUG) CoreSystem.print("DataLinePlayer.drain()", ex);
@@ -594,6 +626,10 @@ public class JavaSound implements SoundEngine {
         }
         
         public synchronized void update(int timeUntilNextUpdate) {
+            update(timeUntilNextUpdate, false);
+        }
+
+        public synchronized void update(int timeUntilNextUpdate, boolean force) {
             if (line == null || stream == null) {
                 return;
             }
@@ -601,34 +637,39 @@ public class JavaSound implements SoundEngine {
             try {
                 if (stream.isFinished()) {
                     if (line.available() == line.getBufferSize()) {
-                        // Close the line - ready for another Clip
-                        close(false);
-                        open();
+                        // Close the line - get ready for another stream
+                        reopen();
                     }
                 }
                 else {
-                    int bufferSizeThreshold = minBufferSize / 2;
-                    int bufferSize = minBufferSize;
-                    if (timeUntilNextUpdate > bufferSizeThreshold) {
-                        bufferSize = Math.min(MAX_BUFFER_SIZE, 
-                            bufferSize + timeUntilNextUpdate - bufferSizeThreshold);
-                        if (CoreSystem.isMacOSX()) {
-                            // On Mac OS X, once the bufferSize is increased, don't decrease it
-                            minBufferSize = Math.max(bufferSize, minBufferSize);
-                        }
-                    }
-                    int desiredSize = sampleRate * FRAME_SIZE * bufferSize / 1000;
-                    int actualSize;
-                    int available = line.available();
-                    
-                    if (CoreSystem.isMacOSX() && !CoreSystem.isMacOSXLeopardOrNewer()) {
-                        actualSize = (framesWritten - line.getFramePosition()) * FRAME_SIZE;
+                    int available;
+                    if (force) {
+                        available = sampleRate * FRAME_SIZE * timeUntilNextUpdate / 1000;
                     }
                     else {
-                        // Windows, Linux, Mac OS X Leopard
-                        actualSize = line.getBufferSize() - available;
+                        int bufferSizeThreshold = minBufferSize / 2;
+                        int bufferSize = minBufferSize;
+                        if (timeUntilNextUpdate > bufferSizeThreshold) {
+                            bufferSize = Math.min(MAX_BUFFER_SIZE,
+                                bufferSize + timeUntilNextUpdate - bufferSizeThreshold);
+                            if (CoreSystem.isMacOSX()) {
+                                // On Mac OS X, once the bufferSize is increased, don't decrease it
+                                minBufferSize = Math.max(bufferSize, minBufferSize);
+                            }
+                        }
+                        int desiredSize = sampleRate * FRAME_SIZE * bufferSize / 1000;
+                        int actualSize;
+                        available = line.available();
+
+                        if (CoreSystem.isMacOSX() && !CoreSystem.isMacOSXLeopardOrNewer()) {
+                            actualSize = (framesWritten - line.getFramePosition()) * FRAME_SIZE;
+                        }
+                        else {
+                            // Windows, Linux, Mac OS X Leopard
+                            actualSize = line.getBufferSize() - available;
+                        }
+                        available = Math.min(available, desiredSize - actualSize);
                     }
-                    available = Math.min(available, desiredSize - actualSize);
                     if (available > 0) {
                         // Make sure length is not bigger than the work buffer
                         // and is divisible by FRAME_SIZE
@@ -641,14 +682,14 @@ public class JavaSound implements SoundEngine {
                             /*
                                 The JavaSound "glitch". Happens on Java 1.4 and all known
                                 Mac OS X versions (tested up to Java 1.5 on Leopard).
-                                
-                                This is a workaround for a bug where 4 frames are repeated in the  
-                                audio output. Since the 4 frames are repeated at a predictable 
+
+                                This is a workaround for a bug where 4 frames are repeated in the
+                                audio output. Since the 4 frames are repeated at a predictable
                                 position, fade out to minimize any audible click or pop.
-                                
-                                This bug was found on several different machines each with different 
+
+                                This bug was found on several different machines each with different
                                 audio hardware, on Mac OS X and Windows machines with Java 1.4.
-                                This led me to believe it's a software problem with the 
+                                This led me to believe it's a software problem with the
                                 implementation of Java Sound, and not a hardware problem.
                             */
                             if (numWrites == 0) {
