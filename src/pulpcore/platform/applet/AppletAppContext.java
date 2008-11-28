@@ -53,7 +53,7 @@ import pulpcore.util.ByteArray;
 
 public final class AppletAppContext extends AppContext {
     
-    private CoreApplet applet;
+    private final CoreApplet applet;
     private SystemTimer timer;
     private Surface surface;
     private AppletInput inputSystem;
@@ -263,12 +263,13 @@ public final class AppletAppContext extends AppContext {
         /*
             If "pulpcore_use_bufferstrategy" is neither "true" or "false", then:
             
-            On Java 6, use BufferStrategy on all platforms.
-            
-            On Java 5, use BufferedImageSurface on Windows and Linux
+            On Java 6, use BufferStrategy on Mac. Otherwise, use BufferedImageSurface
             
             BufferStrategy has a problem on:
             * Mac OS X 10.5 (Leopard) - uses lots of CPU. Cannot reach 60fps (55fps max).
+            * Java 6u10 - softare rendering is slower
+            * All Windows? We found one machine where BufferStrategy was a CPU hog. See
+              "Efficient movement." thread in Google Groups. Assuming the same for Linux.
             
             Repainting (BufferedImageSurface) has a problem on:
             * Mac OS X + Firefox (using the "apple.awt.MyCPanel" peer) - repaint events are lost 
@@ -277,7 +278,7 @@ public final class AppletAppContext extends AppContext {
             
             TODO: Test again when 32-bit Java 6 on Mac is available. BufferStrategy still seems to
             use more processor in some cases, but it's hard to judge because of the different
-            arch.
+            64-bit arch.
         */
         if ("true".equals(useBufferStrategyParam)) {
             useBufferStrategy = true;
@@ -285,18 +286,23 @@ public final class AppletAppContext extends AppContext {
         else if ("false".equals(useBufferStrategyParam)) {
             useBufferStrategy = false;
         }
-        else if (CoreSystem.isJava16orNewer()) {
+        else if (CoreSystem.isMacOSX() && CoreSystem.isJava16orNewer()) {
             useBufferStrategy = true;
         }
         else if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
             if (CoreSystem.isMacOSXLeopardOrNewer()) {
                 // For Mac OS X 10.5:
                 // Only use BufferStrategy on Firefox (the "apple.awt.MyCPanel" peer)
-                Object peer = applet.getPeer();
-                if (peer != null && "apple.awt.MyCPanel".equals(peer.getClass().getName())) {
-                    useBufferStrategy = true;
+                try {
+                    Object peer = applet.getPeer();
+                    if (peer != null && "apple.awt.MyCPanel".equals(peer.getClass().getName())) {
+                        useBufferStrategy = true;
+                    }
+                    else {
+                        useBufferStrategy = false;
+                    }
                 }
-                else {
+                catch (Exception ex) {
                     useBufferStrategy = false;
                 }
             }
@@ -340,7 +346,7 @@ public final class AppletAppContext extends AppContext {
         }
         
         inputSystem = new AppletInput(inputComponent);
-    }
+        }
     
     Component getInputComponent() {
         AppletInput i = inputSystem;
