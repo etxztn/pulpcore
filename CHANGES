@@ -5,6 +5,7 @@
   * API: Added Label.setFont()
   * API: Added Group.isAncestorOf(sprite)
   * API: Added Group.add(index, sprite)
+  * API: Added Sprite.removeFromParent()
   * API: Added CoreGraphics.setEdgeClamp() to choose between hard and soft edges when scaling
     with bilinear interpolation.
   * API: Added CoreImage.getARGB(x, y)

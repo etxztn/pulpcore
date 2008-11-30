@@ -237,6 +237,17 @@ public abstract class Sprite implements PropertyListener {
     }
     
     /**
+        Removes this Sprite from its parent Group. If this Sprite does not have a parent,
+        this method does nothing.
+    */
+    public void removeFromParent() {
+        Group p = parent;
+        if (p != null) {
+            p.remove(this);
+        }
+    }
+
+    /**
         Gets this Sprite's oldest ancestor Group, or null if this Sprite does not have a parent.
     */
     public final Group getRoot() {
@@ -280,7 +291,7 @@ public abstract class Sprite implements PropertyListener {
             setDirty(true);
         }
     }
-    
+
     /**
         Returns true if this Sprite's enabled property is set to true and its parent, if any, 
         is enabled.
