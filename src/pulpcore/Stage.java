@@ -521,7 +521,12 @@ public class Stage implements Runnable {
                     animationThreadStop();
                 }
                 else {
-                    CoreSystem.setTalkBackField("pulpcore.uncaught-exception", t);
+                    try {
+                        CoreSystem.setTalkBackField("pulpcore.uncaught-exception", t);
+                    }
+                    catch (Exception ex) {
+                        t.printStackTrace();
+                    }
                     if (uncaughtExceptionScene == null) {
                         // Delay and reboot
                         try {
