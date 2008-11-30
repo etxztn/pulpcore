@@ -47,6 +47,9 @@ import pulpcore.math.CoreMath;
 */
 final class CompositeMult extends Composite {
     
+    // If true, the blend() functions send transparent pixels to blendPixel()
+    private static final boolean BLEND_TRANSPARENT_PIXELS = false;
+
     private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
         int destRGB = destData[destOffset];
         int destR = (destRGB & 0xff0000) >> 16;
@@ -136,23 +139,23 @@ final class CompositeMult extends Composite {
     
     /*
         DO NOT EDIT BELOW HERE
-        The blend() methods need to be identical in all subclasses of Composite. Ideally, the 
-        blend() methods belong in the parent class Composite. However, if that were the case, 
-        calls to blendPixel() would result in an virtual method call - dramatically slowing 
+        The blend() methods need to be identical in all subclasses of Composite. Ideally, the
+        blend() methods belong in the parent class Composite. However, if that were the case,
+        calls to blendPixel() would result in an virtual method call - dramatically slowing
         down the rendering.
-        
-        The blend() code is cut-and-pasted in each subclass of Composite to get HotSpot to inline 
+
+        The blend() code is cut-and-pasted in each subclass of Composite to get HotSpot to inline
         calls to blendPixel()
     */
-    
+
     void blend(int[] destData, int destOffset, int srcARGB) {
         blendPixel(destData, destOffset, srcARGB);
     }
-    
+
     void blend(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
         blendPixel(destData, destOffset, srcARGB, extraAlpha);
     }
-    
+
     void blendRow(int[] destData, int destOffset, int srcARGB, int numPixels) {
         if ((srcARGB >>> 24) == 0xff) {
             for (int i = 0; i < numPixels; i++) {
@@ -165,10 +168,10 @@ final class CompositeMult extends Composite {
             }
         }
     }
-    
+
     void blend(int[] srcData, int srcScanSize, boolean srcOpaque, int edgeClamp,
-        int srcX, int srcY, int srcWidth, int srcHeight, 
-        int u, int v, int du, int dv, 
+        int srcX, int srcY, int srcWidth, int srcHeight,
+        int u, int v, int du, int dv,
         boolean rotation,
         boolean renderBilinear, int renderAlpha,
         int[] destData, int destScanSize, int destOffset, int numPixels, int numRows)
@@ -176,11 +179,11 @@ final class CompositeMult extends Composite {
         if (renderAlpha <= 0) {
             return;
         }
-        
+
         //
         // Pre-calc for bilinear scaling
         //
-        
+
         int srcOffset = 0;
         int offsetTop = 0;
         int offsetBottom = 0;
@@ -246,7 +249,7 @@ final class CompositeMult extends Composite {
                 else if (u > 0) {
                     srcOffset += (u >> 16);
                 }
-                
+
                 if ((v >> 16) >= srcHeight - 1) {
                     srcOffset += (srcY + srcHeight - 1) * srcScanSize;
                 }
@@ -255,23 +258,23 @@ final class CompositeMult extends Composite {
                 }
             }
         }
-        
+
         //
-        // Opaque blending 
-        //        
-        
+        // Opaque blending
+        //
+
         if (renderAlpha == 255) {
             if (rotation) {
                 // TODO: handle opaque images seperately?
                 if (renderBilinear) {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearTranslucent(srcData, 
+                        int srcARGB = getPixelBilinearTranslucent(srcData,
                                 srcScanSize, srcX, srcY, srcWidth, srcHeight, edgeClamp, u, v);
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
                             blendOpaquePixel(destData, destOffset, srcARGB);
                         }
-                        else if (srcAlpha != 0) {
+                        else if (BLEND_TRANSPARENT_PIXELS || srcAlpha != 0) {
                             blendPixel(destData, destOffset, srcARGB);
                         }
                         destOffset++;
@@ -289,7 +292,7 @@ final class CompositeMult extends Composite {
                         if (srcAlpha == 0xff) {
                             blendOpaquePixel(destData, destOffset, srcARGB);
                         }
-                        else if (srcAlpha != 0) {
+                        else if (BLEND_TRANSPARENT_PIXELS || srcAlpha != 0) {
                             blendPixel(destData, destOffset, srcARGB);
                         }
                         destOffset++;
@@ -301,7 +304,7 @@ final class CompositeMult extends Composite {
             else if (renderBilinear) {
                 if (srcOpaque) {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearOpaque(srcData, 
+                        int srcARGB = getPixelBilinearOpaque(srcData,
                             offsetTop, offsetBottom, u, v, srcWidth);
                         blendOpaquePixel(destData, destOffset, srcARGB);
                         destOffset++;
@@ -310,13 +313,13 @@ final class CompositeMult extends Composite {
                 }
                 else {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearTranslucent(srcData, edgeClamp, 
+                        int srcARGB = getPixelBilinearTranslucent(srcData, edgeClamp,
                             offsetTop, offsetBottom, u, v, srcWidth);
                         int srcAlpha = srcARGB >>> 24;
                         if (srcAlpha == 0xff) {
                             blendOpaquePixel(destData, destOffset, srcARGB);
                         }
-                        else if (srcAlpha != 0) {
+                        else if (BLEND_TRANSPARENT_PIXELS || srcAlpha != 0) {
                             blendPixel(destData, destOffset, srcARGB);
                         }
                         destOffset++;
@@ -342,7 +345,7 @@ final class CompositeMult extends Composite {
                                 if (srcAlpha == 0xff) {
                                     blendOpaquePixel(destData, destOffset + i, srcARGB);
                                 }
-                                else if (srcAlpha != 0) {
+                                else if (BLEND_TRANSPARENT_PIXELS || srcAlpha != 0) {
                                     blendPixel(destData, destOffset + i, srcARGB);
                                 }
                                 offset += du;
@@ -363,7 +366,7 @@ final class CompositeMult extends Composite {
                                 if (srcAlpha == 0xff) {
                                     blendOpaquePixel(destData, destOffset + i, srcARGB);
                                 }
-                                else if (srcAlpha != 0) {
+                                else if (BLEND_TRANSPARENT_PIXELS || srcAlpha != 0) {
                                     blendPixel(destData, destOffset + i, srcARGB);
                                 }
                             }
@@ -374,19 +377,19 @@ final class CompositeMult extends Composite {
                 }
             }
         }
-        
+
         //
-        // Translucent blending 
+        // Translucent blending
         //
-            
+
         else {
             if (rotation) {
                 // TODO: handle opaque images seperately?
                 if (renderBilinear) {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearTranslucent(srcData, 
+                        int srcARGB = getPixelBilinearTranslucent(srcData,
                                 srcScanSize, srcX, srcY, srcWidth, srcHeight, edgeClamp, u, v);
-                        if ((srcARGB >>> 24) > 0) {
+                        if (BLEND_TRANSPARENT_PIXELS || srcARGB != 0) {
                             blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
                         destOffset++;
@@ -400,7 +403,7 @@ final class CompositeMult extends Composite {
                         int x = CoreMath.clamp(u >> 16, 0, srcWidth - 1);
                         int y = CoreMath.clamp(v >> 16, 0, srcHeight - 1);
                         int srcARGB = srcData[srcOffset + x + y * srcScanSize];
-                        if ((srcARGB >>> 24) > 0) {
+                        if (BLEND_TRANSPARENT_PIXELS || srcARGB != 0) {
                             blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
                         destOffset++;
@@ -412,7 +415,7 @@ final class CompositeMult extends Composite {
             else if (renderBilinear) {
                 if (srcOpaque) {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearOpaque(srcData, 
+                        int srcARGB = getPixelBilinearOpaque(srcData,
                             offsetTop, offsetBottom, u, v, srcWidth);
                         blendOpaquePixel(destData, destOffset, srcARGB, renderAlpha);
                         destOffset++;
@@ -421,9 +424,9 @@ final class CompositeMult extends Composite {
                 }
                 else {
                     for (int i = 0; i < numPixels; i++) {
-                        int srcARGB = getPixelBilinearTranslucent(srcData, edgeClamp, 
+                        int srcARGB = getPixelBilinearTranslucent(srcData, edgeClamp,
                             offsetTop, offsetBottom, u, v, srcWidth);
-                        if ((srcARGB >>> 24) > 0) {
+                        if (BLEND_TRANSPARENT_PIXELS || srcARGB != 0) {
                             blendPixel(destData, destOffset, srcARGB, renderAlpha);
                         }
                         destOffset++;
@@ -445,7 +448,7 @@ final class CompositeMult extends Composite {
                         else {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + (offset >> 16)];
-                                if ((srcARGB >>> 24) > 0) {
+                                if (BLEND_TRANSPARENT_PIXELS || srcARGB != 0) {
                                     blendPixel(destData, destOffset + i, srcARGB, renderAlpha);
                                 }
                                 offset += du;
@@ -462,7 +465,7 @@ final class CompositeMult extends Composite {
                         else {
                             for (int i = 0; i < numPixels; i++) {
                                 int srcARGB = srcData[srcOffset + i];
-                                if ((srcARGB >>> 24) > 0) {
+                                if (BLEND_TRANSPARENT_PIXELS || srcARGB != 0) {
                                     blendPixel(destData, destOffset + i, srcARGB, renderAlpha);
                                 }
                             }
@@ -473,6 +476,5 @@ final class CompositeMult extends Composite {
                 }
             }
         }
-    }        
+    }
 }
-
