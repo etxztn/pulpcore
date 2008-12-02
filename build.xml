@@ -32,10 +32,6 @@
     </target>
     
     <target name="check-dependencies">
-        <condition property="do.ctags">
-            <available file="${ctags.command}" />
-        </condition>
-        
         <condition property="do.jslint">
             <available file="${rhino.path}" />
         </condition>
@@ -149,14 +145,7 @@
     </target>
     
     
-    <target name="ctags" if="do.ctags">
-        <exec dir="${src}" executable="${ctags.command}">
-            <arg line="${ctags.args}"/>
-        </exec>
-    </target>
-
-    
-    <target name="jar-core" depends="compile-core, ctags">
+    <target name="jar-core" depends="compile-core">
         <taskdef resource="tasks.properties" classpath="${build}/${assettools.jar.file}" /> 
         <pulpcore-assets srcDir="${res}/jar" destDir="${build.temp}/assets" /> 
         
@@ -285,7 +274,7 @@
             author="true"
             version="true"
             use="true"
-            linksource="true"
+            linksource="false"
             windowtitle="PulpCore ${version.full} API"
             access="protected"
             extdirs="lib/lwjgl">
@@ -297,7 +286,7 @@
             
             <doctitle><![CDATA[<h1>PulpCore ${version.full}</h1>]]></doctitle>
             <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore</a>]]></header>
-            <bottom>Copyright &amp;copy; 2007-2008 Interactive Pulp, LLC.</bottom>
+            <bottom>Copyright &amp;copy; 2007-2009 Interactive Pulp, LLC.</bottom>
             <!-- 
             <group title="PulpCore" packages="pulpcore*"/>
             <group title="PulpCore platform implementations" packages="pulpcore.platform*"/>
@@ -436,11 +425,23 @@
             <target name="build"/>
             <target name="clean-temp"/>
         </subant>
+
+        <!-- Zip up the source for IDEs -->
+        <zip destfile="${dist.temp}/src.zip">
+            <zipfileset dir="${src}" prefix="src" includes="**/*.java"/>
+        </zip>
         
         <zip destfile="${build}/pulpcore-${version.full}.zip">
             <zipfileset dir="${dist.temp}" prefix="pulpcore-${version.full}" />
         </zip>
+
+        <antcall target="build-examples-for-www" />
         
+        <delete dir="${dist.temp}" failonerror="false" />
+    </target>
+    
+    <target name="build-examples-for-www" if="build-examples-for-www" >
+
         <!-- Compile examples for www -->
         <subant>
 	    <property name="pulpcore.path" location="${build}" />
@@ -509,7 +510,6 @@
             <fileset dir="${dist.temp}/examples/Widgets/build"/>
         </copy>
             
-        <delete dir="${dist.temp}" failonerror="false" />
     </target>
     
     <!-- Use this task to keep the example build files up to date -->
