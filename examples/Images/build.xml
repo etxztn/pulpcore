@@ -149,7 +149,7 @@
         </fail>
         
         <condition property="do.pack200">
-            <equals arg1="${pulpcore.build}" arg2="release" />
+            <equals arg1="${pulpcore.build}" arg2="debug" />
         </condition>
 
         <condition property="do.applet.html">

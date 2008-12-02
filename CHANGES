@@ -10,6 +10,7 @@
     with bilinear interpolation.
   * API: Added CoreImage.getARGB(x, y)
   * API: Added Button.isPressedDown()
+  * API: Added all Porter-Duff modes to BlendMode (Florent Dupont).
   * API: Made public: Colors.premultiply() and unpremultiply()
   * API: Removed CoreGraphics.setFractionalMetrics(). PulpCore always keeps it enabled, and
     the extra testing was cumbersome.
