@@ -43,7 +43,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Copy;
 
@@ -65,6 +64,7 @@ public class AppletHTMLTask extends Task {
     private File template = null;
     private File displaySource = null;
     private String splash = null;
+    private String playSplash = null;
     
     private String className = DEFAULT_CLASS_NAME;
     private String archive = DEFAULT_ARCHIVE;
@@ -91,6 +91,10 @@ public class AppletHTMLTask extends Task {
     
     public void setSplash(String splash) {
         this.splash = splash;
+    }
+
+    public void setPlaySplash(String playSplash) {
+        this.playSplash = playSplash;
     }
     
     public void setClassName(String className) {
@@ -173,6 +177,9 @@ public class AppletHTMLTask extends Task {
         }
         if (splash != null && splash.length() > 0) {
             appletParams += "pulpcore_splash = \"" + splash + "\";\n";
+        }
+        if (playSplash != null && playSplash.length() > 0) {
+            appletParams += "pulpcore_play_splash = \"" + playSplash + "\";\n";
         }
         if (!equals(DEFAULT_ARCHIVE, archive)) {
             appletParams += "pulpcore_archive = \"" + archive + "\";\n";
@@ -285,6 +292,15 @@ public class AppletHTMLTask extends Task {
             File splashFile = new File(getProject().getBaseDir(), splash);
             writeBinaryFile(new File(destDir, splash),
                 readBinaryFile(new FileInputStream(splashFile)));
+        }
+        if (playSplash == null || playSplash.length() == 0) {
+            writeBinaryFile(new File(destDir, "play.gif"),
+                readBinaryFile(getClass().getResourceAsStream("/play.gif")));
+        }
+        else if (!playSplash.startsWith("http://")) {
+            File playSplashFile = new File(getProject().getBaseDir(), playSplash);
+            writeBinaryFile(new File(destDir, playSplash),
+                readBinaryFile(new FileInputStream(playSplashFile)));
         }
     }
     

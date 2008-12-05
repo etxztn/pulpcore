@@ -234,14 +234,15 @@ public final class AppletAppContext extends AppContext {
     public void notifyFrameComplete() {
         if (!firstFrameDrawn) {
             firstFrameDrawn = true;
+            String appletID = getAppProperty("pulpcore_id");
             if (enableLiveConnect) {
-                callJavaScript("pulpcore_appletLoaded");
+                callJavaScript("pulpcore_appletLoaded", appletID);
             }
             else {
                 // This works fine in Firefox
                 try {
                     applet.getAppletContext().showDocument(
-                        new URL("javascript:pulpcore_appletLoaded();"), "_self");
+                        new URL("javascript:pulpcore_appletLoaded(" + appletID + ");"), "_self");
                 }
                 catch (Exception ex) {
                     if (Build.DEBUG) CoreSystem.print("pulpcore_appletLoaded", ex);

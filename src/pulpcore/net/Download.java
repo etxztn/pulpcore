@@ -206,8 +206,8 @@ public class Download implements Runnable {
                 lastException = ex;
                 unsuccessfulAttempts++;
             }
-            catch (Error e) {
-                lastException = e;
+            catch (Throwable t) {
+                lastException = t;
                 setState(ERROR);
                 return;
             }
@@ -352,6 +352,11 @@ public class Download implements Runnable {
                     }
                 }
             }
+            else {
+                // Assume OK
+                setState(SUCCESS);
+                return;
+            }
             
             // Permanent Error - don't automatically retry
             // (Automatically retrying can result in an infinite GET/HEAD loop for really 
@@ -439,10 +444,9 @@ public class Download implements Runnable {
             }
             
             while (state == DOWNLOADING) {
-                int currentPosition = getCurrentPosition();
+                int pos = getCurrentPosition();
                 
-                int bytesRead = in.read(data, currentPosition, 
-                    Math.min(BUFFER_SIZE, size - currentPosition));
+                int bytesRead = in.read(data, pos, Math.min(BUFFER_SIZE, size - pos));
                 
                 if (bytesRead > 0) {
                     increasePosition(bytesRead);
