@@ -78,12 +78,10 @@ function pulpcore_deleteCookie(name, path, domain) {
 		"; expires=Thu, 01-Jan-70 00:00:01 GMT";
 }
 
-function pulpcore_appletLoaded() {
-    // Legacy API
-    pulpcore_appletLoaded(0);
-}
-
 function pulpcore_appletLoaded(id) {
+    if (id === undefined) {
+        id = 0;
+    }
 	var self = PulpCore.applets[id];
 	if (self !== undefined) {
         self.show();
@@ -194,24 +192,24 @@ var PulpCore = window.PulpCore || {
             try {
                 xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
             }
-            catch (e) { }
+            catch (e1) { }
             if (!xmlhttp) {
                 try {
                     xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
                 }
-                catch (e) { }
+                catch (e2) { }
             }
             if (!xmlhttp && typeof XMLHttpRequest!='undefined') {
                 try {
                     xmlhttp = new XMLHttpRequest();
                 }
-                catch (e) { }
+                catch (e3) { }
             }
             if (!xmlhttp && window.createRequest) {
                 try {
                     xmlhttp = window.createRequest();
                 }
-                catch (e) { }
+                catch (e4) { }
             }
 
             if (xmlhttp) {
@@ -352,7 +350,7 @@ PulpCore.applet.prototype = {
 
 		// For Java 6u10 plugin2
 		if (PulpCore.JRE.isPlugin2()) {
-			var args = PulpCore.JRE.javaArguments;
+			var args = PulpCore.javaArguments;
 
 			// NOTE: fastest performance of the software renderer on Windows is by
 			// disabling both D3D and BufferStrategy
@@ -403,7 +401,7 @@ PulpCore.applet.prototype = {
 			this.appletHTML =
 				'<object id="pulpcore_object' + this.id + '"\n' +
 				'  classid="clsid:8AD9C840-044E-11D1-B3E9-00805F499D93"\n' +
-				'  codebase="' + cabURL + '#Version=' + this.ieRequiredJRE + '"\n' +
+				'  codebase="' + cabURL + '#Version=' + PulpCore.ieRequiredJRE + '"\n' +
 				extraAttributes +
 				'  width="' + width + '" height="' + height + '">\n' +
 				objectParams +
@@ -532,7 +530,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
 	deploymentToolkitMimeType: 'application/npruntime-scriptable-plugin;DeploymentToolkit',
 
 	init: function() {
-        if (PulpCore.browserName == "Explorer") {
+        if (PulpCore.System.browserName == "Explorer") {
             document.write('<' +
                 'object classid="clsid:CAFEEFAC-DEC7-0000-0000-ABCDEFFEDCBA" ' +
                 'id="deploymentToolkit" width="0" height="0">' +
@@ -556,7 +554,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
 
     isPlugin2: function() {
 		// Chrome can only run plugin2
-		if (PulpCore.browserName == "Chrome") {
+		if (PulpCore.System.browserName == "Chrome") {
 			return true;
 		}
 		var deploymentToolkit = document.getElementById('deploymentToolkit');
@@ -612,7 +610,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
 			version = PulpCore.JRE.getHighestInstalledViaMimeTypes();
 			return PulpCore.JRE.isAcceptableVersion(version);
 		}
-		else if (PulpCore.JRE.browserName == "Chrome") {
+		else if (PulpCore.System.browserName == "Chrome") {
 			// Chrome requires 1.6.0_10 as the minimum.
 			// So, if the mime type is available, return true.
 			if (navigator.mimeTypes && navigator.mimeTypes.length) {
@@ -803,7 +801,7 @@ PulpCore.System = window.PulpCore.System || {
 
 };
 
-if (PulpCore.firstLoad == true) {
+if (PulpCore.firstLoad === true) {
     PulpCore.firstLoad = false;
 	PulpCore.System.init();
 	PulpCore.JRE.init();
