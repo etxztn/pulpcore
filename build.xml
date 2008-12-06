@@ -476,6 +476,9 @@
         <copy todir="${build}/www/compositing">
             <fileset dir="${dist.temp}/examples/Compositing/build"/>
         </copy>
+        <copy todir="${build}/www/dragme">
+            <fileset dir="${dist.temp}/examples/DragMe/build"/>
+        </copy>
         <copy todir="${build}/www/easing">
             <fileset dir="${dist.temp}/examples/Easings/build"/>
         </copy>
