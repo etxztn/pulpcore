@@ -128,26 +128,10 @@ public class StretchableSprite extends ImageSprite {
      Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
      not stretched.
      */
-    public StretchableSprite(String imageName, int capWidth, int capHeight, double x, double y) {
-        this(CoreImage.load(imageName), capWidth, capHeight, x, y);
-    }
-
-    /**
-     Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
-     not stretched.
-     */
     public StretchableSprite(String imageName, int capWidth, int capHeight,
             double x, double y, double w, double h)
     {
         this(CoreImage.load(imageName), capWidth, capHeight, x, y, w, h);
-    }
-
-    /**
-     Creates a StretchableSprite with the specified cap size. The caps (in the four corners) are
-     not stretched.
-     */
-    public StretchableSprite(CoreImage image, int capWidth, int capHeight, double x, double y) {
-        this(image, capWidth, capHeight, x, y, image.getWidth(), image.getHeight());
     }
 
     /**
