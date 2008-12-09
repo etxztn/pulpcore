@@ -287,9 +287,6 @@ public final class AppletAppContext extends AppContext {
         else if ("false".equals(useBufferStrategyParam)) {
             useBufferStrategy = false;
         }
-        else if (CoreSystem.isMacOSX() && CoreSystem.isJava16orNewer()) {
-            useBufferStrategy = true;
-        }
         else if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
             if (CoreSystem.isMacOSXLeopardOrNewer()) {
                 // For Mac OS X 10.5:
