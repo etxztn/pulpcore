@@ -42,8 +42,7 @@ public class DragMe extends Scene2D {
                 dragging = false;
             }
             if (dragging && Input.isMouseMoving()) {
-                // Animate the move over 75ms
-                moveTo(Input.getMouseX(), Input.getMouseY(), 75);
+                setLocation(Input.getMouseX(), Input.getMouseY());
             }
         }
     }
