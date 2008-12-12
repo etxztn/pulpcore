@@ -1,4 +1,4 @@
-0.11.4 (In SVN)
+0.11.4 (Dec 12, 2008)
   * API: Added StretchableSprite (based off of code from Christoffer Lerno).
   * API: Added ScrollPane.
   * API: Added Viewport (useful for scrolly worlds).
