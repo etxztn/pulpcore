@@ -55,7 +55,7 @@ function pulpcore_getCookie(name) {
 function pulpcore_setCookie(name, value, expireDate, path, domain, secure) {
 	var expires = new Date();
 
-	if (expireDate === null) {
+	if (expireDate == null) {
 		// Expires in 90 days
 		expires.setTime(expires.getTime() + (24 * 60 * 60 * 1000) * 90);
 	}
@@ -79,11 +79,11 @@ function pulpcore_deleteCookie(name, path, domain) {
 }
 
 function pulpcore_appletLoaded(id) {
-    if (id === undefined) {
+    if (id == null) {
         id = 0;
     }
 	var self = PulpCore.applets[id];
-	if (self !== undefined) {
+	if (self != null) {
         self.show();
         PulpCore.notifyServer("loaded");
 	}
@@ -261,7 +261,7 @@ PulpCore.applet.prototype = {
 	splashLoaded: function(splash) {
 		// Prevent this call from occurring again
 		// (IE will continue to call onLoad() if the splash loops.)
-		if (splash !== null) {
+		if (splash != null) {
 			splash.onload = "";
 		}
         var self = this;
@@ -274,7 +274,7 @@ PulpCore.applet.prototype = {
 		}
 		var gameContainer = document.getElementById('pulpcore_game' + this.id);
 		var self = this;
-		if (gameContainer === null) {
+		if (gameContainer == null) {
 			setTimeout(function() { self.insertApplet(); }, 500);
 		}
 		else {
@@ -537,7 +537,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
                 '<' + '/' + 'object' + '>');
         }
 		else if (PulpCore.System.browserIsMozillaFamily) {
-            if (navigator.mimeTypes !== null) {
+            if (navigator.mimeTypes != null) {
 				var mimeType = this.deploymentToolkitMimeType;
 				for (var i = 0; i < navigator.mimeTypes.length; i++) {
 					if (navigator.mimeTypes[i].type == mimeType) {
@@ -558,7 +558,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
 			return true;
 		}
 		var deploymentToolkit = document.getElementById('deploymentToolkit');
-        if (deploymentToolkit !== null) {
+        if (deploymentToolkit != null) {
             try {
                 return deploymentToolkit.isPlugin2();
             }
@@ -595,7 +595,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
 				}
 
 				var m = s.match(/^Java (1\.4\.2|1\.5|1\.6|1\.7).* Plug-in/);
-				if (m !== null) {
+				if (m != null) {
 					version = m[1];
 					if (PulpCore.JRE.isAcceptableVersion(version)) {
 						return true;

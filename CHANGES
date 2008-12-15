@@ -1,3 +1,6 @@
+0.11.5 (In SVN)
+  * Fixed bug: Saving a cookie was broken.
+
 0.11.4 (Dec 12, 2008)
   * API: Added StretchableSprite (based off of code from Christoffer Lerno).
   * API: Added ScrollPane.
