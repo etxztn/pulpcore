@@ -45,18 +45,21 @@ public class SystemTimer {
     private long virtualTime;
     private int framesInARowNoSleep = 0;
     private boolean sleptThisFrame = false;
+    private boolean running = false;
     
     public void start() {
         lastTime = System.currentTimeMillis();
         virtualTime = 0;
+        running = true;
     }
     
     public void stop() {
-        // Do nothing
+        running = false;
+        setHighSleepGranularity(false);
     }
     
     private final boolean getHighSleepGranularity() {
-        return (granularityThread != null);
+        return (granularityThread != null && granularityThread.isAlive());
     }
     
     private void setHighSleepGranularity(boolean high) {
@@ -71,33 +74,43 @@ public class SystemTimer {
     }
     
     private final void startGranularityThread() {
-        if (granularityThread == null) {
-            // Improves the granularity of the sleep() function on Windows XP
-            // Note: on some machines, time-of-day drift may occur if another thread hogs the
-            // CPU
-            // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
-            granularityThread = new Thread("PulpCore-Win32Granularity") {
-                public void run() {
-                    while (granularityThread == this) {
-                        try {
-                            Thread.sleep(Integer.MAX_VALUE);
-                        }
-                        catch (InterruptedException ex) {
-                            // Ignore
-                        }
+        // Improves the granularity of the sleep() function on Windows XP
+        // Note: on some machines, time-of-day drift may occur if another thread hogs the
+        // CPU
+        // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
+        granularityThread = new Thread("PulpCore-Win32Granularity") {
+            public void run() {
+                while (granularityThread == this && running) {
+                    try {
+                        Thread.sleep(Integer.MAX_VALUE);
+                    }
+                    catch (InterruptedException ex) {
+                        // Ignore
                     }
                 }
-            };
-            granularityThread.setDaemon(true);
-            granularityThread.start();
-        }
+            }
+        };
+        granularityThread.setDaemon(true);
+        granularityThread.start();
     }
     
     private final void stopGranularityThread() {
         if (granularityThread != null) {
             Thread t = granularityThread;
             granularityThread = null;
-            t.interrupt();
+            if (t.isAlive()) {
+                try {
+                    t.interrupt();
+                }
+                catch (Exception ex) {
+                    // This happened a couple times at pulpgames.net
+                    // java.security.AccessControlException: access denied (java.lang.RuntimePermission modifyThread)
+                    // Java 1.5.0_03 and 1.5.0_06
+                    // The isAlive() check wasn't there, so maybe the thread already died.
+                    // Just assume the thread can't be stopped.
+                    granularityThread = t;
+                }
+            }
         }
     }
     
@@ -128,7 +141,7 @@ public class SystemTimer {
                 framesInARowNoSleep++;
                 // If we're maxing CPU, so disable high sleep granularity - it can cause
                 // noticable time-of-day drift with max cpu.
-                if (framesInARowNoSleep >= FRAMES_BEFORE_SWITCH && getHighSleepGranularity()) {
+                if (framesInARowNoSleep >= FRAMES_BEFORE_SWITCH) {
                     setHighSleepGranularity(false);
                 }
             }
