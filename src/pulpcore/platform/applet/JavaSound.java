@@ -129,8 +129,29 @@ public class JavaSound implements SoundEngine {
     }
     
     private void init() {
-        
-        mixer = AudioSystem.getMixer(null);
+
+        try {
+            mixer = AudioSystem.getMixer(null);
+        }
+        catch (IllegalArgumentException ex) {
+            // Try alternative strategy
+            Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
+            for (int i = 0; i < mixerInfo.length; i++) {
+                try {
+                    mixer = AudioSystem.getMixer(mixerInfo[i]);
+                    if (mixer != null) {
+                        break;
+                    }
+                }
+                catch (IllegalArgumentException ex2) {
+                    // Ignore
+                }
+            }
+        }
+        if (mixer == null) {
+            state = STATE_FAILURE;
+            return;
+        }
         
         // Calculate the max number of simultaneous sounds for each sample rate
         int numSampleRates = 0;
