@@ -1,4 +1,6 @@
 0.11.5 (In SVN)
+  * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
+    the device's refresh rate if it is near 60hz.
   * Fixed bug: Saving a cookie was broken in pulpcore.js.
   * Fixed bug: Catch AccessControlException that happens on some Java 5 + XP machines.
   * Fixed bug: Drawing vertical and horizontal lines when the transform is set.
