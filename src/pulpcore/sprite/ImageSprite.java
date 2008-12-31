@@ -30,6 +30,7 @@
 package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
+import pulpcore.animation.Property;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
@@ -163,6 +164,13 @@ public class ImageSprite extends Sprite {
             if (changed) {
                 setDirty(true);
             }
+        }
+    }
+
+    public void propertyChange(Property p) {
+        super.propertyChange(p);
+        if (p == antiAlias) {
+            setDirty(true);
         }
     }
     

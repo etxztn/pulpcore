@@ -29,6 +29,7 @@
 
 package pulpcore.sprite;
 
+import pulpcore.Build;
 import pulpcore.animation.Bool;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
@@ -314,17 +315,6 @@ public abstract class Sprite implements PropertyListener {
     }
     
     /**
-        On a property change this Sprite is marked as dirty.
-    */
-    public void propertyChange(Property property) {
-        setDirty(true);
-        if (property == angle) {
-            cosAngle = CoreMath.cos(angle.getAsFixed());
-            sinAngle = CoreMath.sin(angle.getAsFixed());
-        }
-    }
-    
-    /**
         For dirty rectangles - most apps will not need ot call this method directly.
     */
     public final Rect getDirtyRect() {
@@ -384,9 +374,19 @@ public abstract class Sprite implements PropertyListener {
         Marks this Sprite as dirty, which will force it to redraw on the next frame.
     */
     public final void setDirty(boolean dirty) {
+        setDirty(dirty, dirty);
+    }
+
+    private final void setDirty(boolean dirty, boolean contentsChanged) {
         this.dirty = dirty;
         if (dirty) {
             transformDirty = true;
+        }
+        if (contentsChanged) {
+            Filter f = getWorkingFilter();
+            if (f != null) {
+                f.setDirty(true);
+            }
         }
     }
     
@@ -650,7 +650,12 @@ public abstract class Sprite implements PropertyListener {
         if (filter != null) {
             Filter source = getFilterSource(filter);
             if (source.getInput() instanceof SpriteFilterInput) {
-                throw new IllegalStateException();
+                String message = "";
+                if (Build.DEBUG) {
+                    message = "The same Filter instance cannot be attached to multiple sprites. " +
+                            "Create a new Filter for each Sprite.";
+                }
+                throw new IllegalStateException(message);
             }
         }
         if (this.filter != null) {
@@ -695,19 +700,17 @@ public abstract class Sprite implements PropertyListener {
         public CoreImage getOutput() {
             // Check the exact class because StretchableSprite is not a valid input image.
             if (Sprite.this.getClass() == ImageSprite.class) {
+                setDirty(false);
                 return ((ImageSprite)Sprite.this).getImage();
             }
             else if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
+                setDirty(false);
                 Sprite.this.drawSprite(null);
                 return ((Group)Sprite.this).getBackBuffer();
             }
             else {
                 return super.getOutput();
             }
-        }
-
-        public boolean isDirty() {
-            return Sprite.this.isDirty();
         }
 
         public int getWidth() {
@@ -750,6 +753,19 @@ public abstract class Sprite implements PropertyListener {
             if (f.isDirty()) {
                 setDirty(true);
             }
+        }
+    }
+
+    /**
+        On a property change this Sprite is marked as dirty.
+    */
+    public void propertyChange(Property property) {
+        // The following properties don't change the contents, by default:
+        // x, y, width, height, alpha, angle, visible, enabled, pixelSnapping
+        setDirty(true, false);
+        if (property == angle) {
+            cosAngle = CoreMath.cos(angle.getAsFixed());
+            sinAngle = CoreMath.sin(angle.getAsFixed());
         }
     }
     

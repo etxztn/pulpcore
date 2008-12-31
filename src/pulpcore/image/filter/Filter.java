@@ -118,7 +118,7 @@ public abstract class Filter {
                 this.output.isOpaque() != isOpaque())
             {
                 this.output = new CoreImage(getWidth(), getHeight(), isOpaque());
-                //pulpcore.CoreSystem.print("New image");
+                //pulpcore.CoreSystem.print("New image: " + this.output.getWidth() + "x" + this.output.getHeight());
             }
             filter((input == null) ? null : input.getOutput(), this.output);
             //pulpcore.CoreSystem.print("Filtered: " + getClass().getName());
@@ -156,6 +156,7 @@ public abstract class Filter {
         }
 
         public CoreImage getOutput() {
+            setDirty(false);
             return image;
         }
 

@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import pulpcore.Build;
 import pulpcore.image.BlendMode;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -42,6 +41,7 @@ import pulpcore.math.Rect;
 import pulpcore.math.Tuple2i;
 import pulpcore.math.Transform;
 import pulpcore.Stage;
+import pulpcore.animation.Property;
 
 /**
     A container of Sprites.
@@ -636,6 +636,13 @@ public class Group extends Sprite {
     
     protected int getAnchorY() {
         return super.getAnchorY() - fInnerY;
+    }
+
+    public void propertyChange(Property p) {
+        super.propertyChange(p);
+        if ((p == width || p == height) && hasBackBuffer()) {
+            setDirty(true);
+        }
     }
     
     public void update(int elapsedTime) {
