@@ -328,7 +328,7 @@ public abstract class Animation {
             // Trigger events
             for (int i = oldLoop; i < newLoop; i++) {
                 if (!setTime(getLoopStartTime(i+1))) {
-                    updateState(0);
+                    updateState(duration);
                 }
             }
             if (this.elapsedTime != newTime) {
@@ -338,7 +338,7 @@ public abstract class Animation {
         }
         else if (parentLooped) {
             if (!setTime(newTime)) {
-                updateState(0);
+                updateState(duration);
             }
             return true;
         }

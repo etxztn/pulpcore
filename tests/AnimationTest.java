@@ -59,6 +59,44 @@ public class AnimationTest {
         timeline.update(125);
         assertEquals("Event does not trigger in every loop iteration.", 17, executions[0]);
     }
+
+    @Test public void subTimeline() {
+        Int property = new Int(0);
+        Timeline timeline = new Timeline();
+        final int moves = 5;
+        final int startTime = 50;
+        final int moveDur = 100;
+        final int d = 10;
+        int t = startTime;
+        for (int j = 0; j < moves; j++) {
+            int x1 = (j+1) * d;
+            int x2 = (j+2) * d;
+            
+            timeline.at(t).animate(property, x1, x2, moveDur);
+            t += moveDur;
+        }
+        timeline.loopForever();
+        timeline.update(25);
+        assertEquals("Incorrect value.", 0, property.get());
+        timeline.update(startTime-25);
+        assertEquals("Incorrect value.", d, property.get());
+        timeline.update(moveDur);
+        assertEquals("Incorrect value.", d*2, property.get());
+        timeline.update(moveDur*2);
+        assertEquals("Incorrect value.", d*4, property.get());
+        timeline.update(moveDur/2);
+        assertEquals("Incorrect value.", d*4 + d/2, property.get());
+        timeline.update(moveDur/2);
+        assertEquals("Incorrect value.", d*5, property.get());
+        timeline.update(moveDur-10);
+        assertEquals("Incorrect value.", d*5 + d/2, property.get(), d/2);
+        timeline.update(10);
+        assertEquals("Incorrect value.", d*6, property.get());
+        timeline.update(startTime);
+        assertEquals("Incorrect value.", d, property.get());
+        timeline.update(moveDur*5);
+        assertEquals("Incorrect value.", d*6, property.get());
+    }
     
     @Test public void propertyUpdatesOnGracefullStop() {
         Int property = new Int(0);
