@@ -8,15 +8,56 @@ import static org.junit.Assert.*;
 public class AnimationTest {
     
     @Test public void eventTriggersOnFastForward() {
-        final boolean[] outcome = { false };
+        final int[] executions = { 0 };
         Timeline timeline = new Timeline();
         timeline.add(new TimelineEvent(1000) {
             public void run() {
-                outcome[0] = true;
+                executions[0]++;
             }
         });
         timeline.fastForward();
-        assertTrue("Event does not trigger on fast-forward", outcome[0]);
+        assertEquals("Event does not trigger once on fast-forward", 1, executions[0]);
+    }
+
+    @Test public void eventTriggersAtEndOfLoopingTimeline() {
+        final int[] executions = { 0 };
+        Timeline timeline = new Timeline();
+        timeline.add(new TimelineEvent(1000) {
+            public void run() {
+                executions[0]++;
+            }
+        });
+        timeline.loopForever();
+        timeline.update(950);
+        timeline.update(100);
+        assertEquals("Event does not trigger once at end of Timeline", 1, executions[0]);
+        timeline.update(950);
+        assertEquals("Event does not trigger once at end of Timeline", 2, executions[0]);
+        timeline.update(2000);
+        assertEquals("Event does not trigger once at end of Timeline", 4, executions[0]);
+    }
+
+    @Test public void eventTriggersInEveryLoopIteration() {
+        final int[] executions = { 0 };
+        Timeline timeline = new Timeline();
+        timeline.add(new TimelineEvent(100) {
+            public void run() {
+                executions[0]++;
+            }
+        });
+        timeline.loopForever();
+        timeline.update(1000);
+        assertEquals("Event does not trigger in every loop iteration.", 10, executions[0]);
+        timeline.update(210);
+        assertEquals("Event does not trigger in every loop iteration.", 12, executions[0]);
+        timeline.update(125);
+        assertEquals("Event does not trigger in every loop iteration.", 13, executions[0]);
+        timeline.update(125);
+        assertEquals("Event does not trigger in every loop iteration.", 14, executions[0]);
+        timeline.update(125);
+        assertEquals("Event does not trigger in every loop iteration.", 15, executions[0]);
+        timeline.update(125);
+        assertEquals("Event does not trigger in every loop iteration.", 17, executions[0]);
     }
     
     @Test public void propertyUpdatesOnGracefullStop() {

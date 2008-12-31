@@ -57,6 +57,7 @@ public final class Timeline extends Animation {
     private int remainderMicros;
     
     private int lastAnimTime = 0;
+    private int lastTime;
     
     public Timeline() {
         this(null, 0);
@@ -138,7 +139,7 @@ public final class Timeline extends Animation {
     }
     
     //@Override
-    public boolean update(int elapsedTime) {
+    boolean update(int elapsedTime, boolean parentLooped) {
         if (!playing || playSpeed == 0) {
             elapsedTime = 0;
         }
@@ -150,15 +151,18 @@ public final class Timeline extends Animation {
             elapsedTime = (int)(timeMicros / 1000);
             remainderMicros = (int)(timeMicros % 1000);
         }
-        return super.update(elapsedTime);
+        return super.update(elapsedTime, parentLooped);
     }
         
     protected void updateState(int animTime) {
+        int oldLoop = getAnimLoop(lastTime);
+        int newLoop = getAnimLoop(getTime());
+        boolean looped = (newLoop != oldLoop);
         // First, update those animations that were previously in SECTION_ANIMATION
         for (int i = 0; i < animationList.size(); i++) {
             Animation anim = (Animation)animationList.get(i);
             if (anim.getSection(lastAnimTime) == SECTION_ANIMATION) {
-                boolean active = anim.update(animTime - anim.getTime());
+                boolean active = anim.update(animTime - anim.getTime(), looped);
                 if (active && anim instanceof Behavior) {
                     ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
                 }
@@ -169,14 +173,15 @@ public final class Timeline extends Animation {
         for (int i = 0; i < animationList.size(); i++) {
             Animation anim = (Animation)animationList.get(i);
             if (anim.getSection(lastAnimTime) != SECTION_ANIMATION) {
-                boolean active = anim.update(animTime - anim.getTime());
+                boolean active = anim.update(animTime - anim.getTime(), looped);
                 if (active && anim instanceof Behavior) {
                     ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
                 }
             }
         }
         
-        lastAnimTime = animTime;        
+        lastAnimTime = animTime;
+        lastTime = getTime();
     }
     
     //
