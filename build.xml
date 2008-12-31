@@ -53,7 +53,7 @@
             <not><equals arg1="${platform}" arg2="applet"/></not>
         </condition>
         
-        <condition property="src.includes" value="pulpcore/*/*.java, pulpcore/animation/event/*.java">
+        <condition property="src.includes" value="pulpcore/*/*.java, pulpcore/animation/event/*.java, pulpcore/util/crypt/*.java, pulpcore/image/filter/*.java">
             <not><equals arg1="${platform}" arg2="applet"/></not>
         </condition>
         
@@ -61,7 +61,7 @@
             <equals arg1="${platform}" arg2="applet"/>
         </condition>
         
-        <condition property="src.includes" value="pulpcore/*/*.java, pulpcore/animation/event/*.java, pulpcore/util/crypt/*.java, pulpcore/platform/applet/*.java">
+        <condition property="src.includes" value="pulpcore/*/*.java, pulpcore/animation/event/*.java, pulpcore/util/crypt/*.java, pulpcore/image/filter/*.java, pulpcore/platform/applet/*.java">
             <equals arg1="${platform}" arg2="applet"/>
         </condition>
     

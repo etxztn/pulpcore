@@ -571,6 +571,10 @@ public class Group extends Sprite {
     public boolean hasBackBuffer() {
         return (backBuffer != null);
     }
+
+    public CoreImage getBackBuffer() {
+        return backBuffer;
+    }
     
     /**
         Removes this Group's back buffer.
@@ -699,14 +703,17 @@ public class Group extends Sprite {
             for (int i = 0; i < snapshot.length; i++) {
                 snapshot[i].draw(g2);
             }
-            
-            if (backBufferCoversStage) {
-                // Note: setting the transform is ok;
-                // the transform is popped upon returning from drawSprite()
-                g.setTransform(Stage.getDefaultTransform());
+
+            // g will be null if called from a filtered sprite
+            if (g != null) {
+                if (backBufferCoversStage) {
+                    // Note: setting the transform is ok;
+                    // the transform is popped upon returning from drawSprite()
+                    g.setTransform(Stage.getDefaultTransform());
+                }
+
+                g.drawImage(backBuffer);
             }
-            
-            g.drawImage(backBuffer);
         }
     }
     
