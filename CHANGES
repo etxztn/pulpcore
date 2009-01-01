@@ -1,5 +1,9 @@
 0.11.5 (In SVN)
   * API: Added Sprite.setFilter(), pulpcore.image.filter package (Florent Dupont).
+    Note - When setDirty(true) is called, the filter is updated. If you are creating
+    custom Sprites, call setDirty(true) when the contents of the Sprite change.
+    Also, if you change the pixels of an ImageSprite's CoreImage, call
+    setDirty(true) on the ImageSprite.
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
     the device's refresh rate if it is near 60hz.
   * Fixed bug: TimelineEvents only executed the first time in a looping timeline.

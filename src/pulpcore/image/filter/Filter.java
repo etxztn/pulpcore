@@ -41,6 +41,33 @@ public abstract class Filter {
     private CoreImage output = null;
     private boolean isDirty = true;
 
+    /**
+        Returns true if this filter's output is a different dimension than its input.
+     */
+    public boolean isDifferentSize() {
+        return false;
+    }
+
+    /**
+        Gets the x offset the output image should display at if the output width is
+        different from the input width.
+     */
+    public int getOffsetX() {
+        return 0;
+    }
+
+    /**
+        Gets the y offset the output image should display at if the output height is
+        different from the input height.
+     */
+    public int getOffsetY() {
+        return 0;
+    }
+
+    /**
+        Gets the width of the output of this filter. By default, the width
+        is the same as the input's width.
+     */
     public int getWidth() {
         if (input != null) {
             return input.getWidth();
@@ -50,6 +77,10 @@ public abstract class Filter {
         }
     }
 
+    /**
+        Gets the height of the output of this filter. By default, the height
+        is the same as the input's height.
+     */
     public int getHeight() {
         if (input != null) {
             return input.getHeight();

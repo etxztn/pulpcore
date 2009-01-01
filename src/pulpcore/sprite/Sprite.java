@@ -355,7 +355,19 @@ public abstract class Sprite implements PropertyListener {
                 t.concatenate(viewTransform);
             }
             
-            changed |= t.getBounds(getNaturalWidth(), getNaturalHeight(), dirtyRect);
+            int w = getNaturalWidth();
+            int h = getNaturalHeight();
+
+            Filter f = getWorkingFilter();
+            if (f != null && f.isDifferentSize()) {
+                t = new Transform(t);
+                t.translate(CoreMath.toFixed(f.getOffsetX()),
+                        CoreMath.toFixed(f.getOffsetY()));
+                w = CoreMath.toFixed(f.getWidth());
+                h = CoreMath.toFixed(f.getHeight());
+            }
+            
+            changed |= t.getBounds(w, h, dirtyRect);
         }
         
         return changed;
@@ -797,11 +809,19 @@ public abstract class Sprite implements PropertyListener {
         }
         
         // Set transform
+        Transform t = drawTransform;
+        Filter f = getWorkingFilter();
+        if (f != null && (f.getOffsetX() != 0 || f.getOffsetY() != 0)) {
+            t = new Transform(t);
+            t.translate(CoreMath.toFixed(f.getOffsetX()),
+                    CoreMath.toFixed(f.getOffsetY()));
+        }
+
+        // Set transform
         g.pushTransform();
-        g.setTransform(drawTransform);
+        g.setTransform(t);
 
         // Draw
-        Filter f = getWorkingFilter();
         if (f != null) {
             g.drawImage(f.getOutput());
         }
