@@ -32,7 +32,14 @@ import pulpcore.image.CoreImage;
 
 public final class Thermal extends Filter {
 
-	protected void filter(CoreImage src, CoreImage dst) {
+    public Filter copy() {
+        Filter in = getInput();
+        Filter copy = new Thermal();
+        copy.setInput(in == null ? null : in.copy());
+        return copy;
+    }
+
+    protected void filter(CoreImage src, CoreImage dst) {
 	
         int[] srcPixels = src.getData();
         int[] dstPixels = dst.getData();

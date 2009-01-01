@@ -42,9 +42,33 @@ public abstract class Filter {
     private boolean isDirty = true;
 
     /**
-        Returns true if this filter's output is a different dimension than its input.
+        Returns true if this filter's output is a different dimension from the original input.
      */
-    public boolean isDifferentSize() {
+    public final boolean isDifferentBoundsFromOriginal() {
+        return isDifferentBounds() || (input != null && input.isDifferentBoundsFromOriginal());
+    }
+
+    /**
+        Gets the x offset of the output image from the original input. This method
+        returns the sum of the x offset of this filter and all input filters.
+    */
+    public final int getOffsetXFromOriginal() {
+        return getOffsetX() + (input == null ? 0 : input.getOffsetXFromOriginal());
+    }
+
+    /**
+        Gets the y offset of the output image from the original input. This method
+        returns the sum of the y offset of this filter and all input filters.
+    */
+    public final int getOffsetYFromOriginal() {
+        return getOffsetY() + (input == null ? 0 : input.getOffsetYFromOriginal());
+    }
+
+    /**
+        Returns true if this filter's output is a different dimension, or at a different offset,
+        than its input.
+     */
+    public boolean isDifferentBounds() {
         return false;
     }
 
@@ -178,6 +202,29 @@ public abstract class Filter {
         this.isDirty = dirty;
     }
 
+    // Unfortunately clone() can't be used because the reference to properties would be
+    // created (instead of clones of the properties). This would normally be desired,
+    // except this means property.update() would be called multiple times per frame.
+    // Plus, output, dirty, etc. would be cloned.
+
+    /**
+        Creates a copy of the Filter for another Sprite to use. The input filter is also copied.
+        The properties of the copy, if any, will be bound to the original filter's properties.
+        <p>
+        Subclasses should bind all properties of the cloned
+        object. For example, for the Blur filter:
+        <pre>
+        public Filter copy() {
+            Filter in = getInput();
+            Blur copy = new Blur();
+            copy.setInput(in == null ? null : in.copy());
+            copy.radius.bindTo(radius);
+            return copy;
+        }
+        </pre>
+    */
+    public abstract Filter copy();
+
     private static class CoreImageInput extends Filter {
 
         private final CoreImage image;
@@ -205,6 +252,13 @@ public abstract class Filter {
 
         protected void filter(CoreImage input, CoreImage output) {
             // Do nothing
+        }
+
+        public Filter copy() {
+            Filter in = getInput();
+            Filter copy = new CoreImageInput(image);
+            copy.setInput(in == null ? null : in.copy());
+            return copy;
         }
     }
 }

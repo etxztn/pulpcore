@@ -29,7 +29,6 @@
 
 package pulpcore.sprite;
 
-import pulpcore.Build;
 import pulpcore.animation.Bool;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
@@ -232,6 +231,16 @@ public abstract class Sprite implements PropertyListener {
         this.width.set(width);
         this.height.set(height);
     }
+
+    /**
+        Returns true if this Sprite is opaque. In other words, before applying transforms and alpha,
+        all the pixels within it's bounds are drawn and are themselves opaque.
+        <p>
+        Returns false by default.
+    */
+    public boolean isOpaque() {
+        return false;
+    }
     
     /**
         Gets this Sprite's parent Group, or null if this Sprite does not have a parent.
@@ -359,10 +368,10 @@ public abstract class Sprite implements PropertyListener {
             int h = getNaturalHeight();
 
             Filter f = getWorkingFilter();
-            if (f != null && f.isDifferentSize()) {
+            if (f != null && f.isDifferentBoundsFromOriginal()) {
                 t = new Transform(t);
-                t.translate(CoreMath.toFixed(f.getOffsetX()),
-                        CoreMath.toFixed(f.getOffsetY()));
+                t.translate(CoreMath.toFixed(f.getOffsetXFromOriginal()),
+                        CoreMath.toFixed(f.getOffsetYFromOriginal()));
                 w = CoreMath.toFixed(f.getWidth());
                 h = CoreMath.toFixed(f.getHeight());
             }
@@ -652,22 +661,17 @@ public abstract class Sprite implements PropertyListener {
     }
 
     /**
-        Sets the image filter for this Sprite. Each Filter instance may be attached to only one
-        Sprite. If this Sprite is a Group with no backbuffer, the filter is ignored.
-
+        Sets the image filter for this Sprite.
+        If this Sprite is a Group with no backbuffer, the filter is ignored.
         The default filter is {@code null}.
-        @throws IllegalStateException if the specified filter is already attached to another Sprite.
+        <p>
+        If the specified filter is already attached to a Sprite, a clone of it is created.
     */
     public final void setFilter(Filter filter) throws IllegalStateException {
         if (filter != null) {
             Filter source = getFilterSource(filter);
             if (source.getInput() instanceof SpriteFilterInput) {
-                String message = "";
-                if (Build.DEBUG) {
-                    message = "The same Filter instance cannot be attached to multiple sprites. " +
-                            "Create a new Filter for each Sprite.";
-                }
-                throw new IllegalStateException(message);
+                filter = filter.copy();
             }
         }
         if (this.filter != null) {
@@ -710,13 +714,13 @@ public abstract class Sprite implements PropertyListener {
     private class SpriteFilterInput extends Filter {
 
         public CoreImage getOutput() {
-            // Check the exact class because StretchableSprite is not a valid input image.
-            if (Sprite.this.getClass() == ImageSprite.class) {
+            if (Sprite.this instanceof ImageSprite) {
                 setDirty(false);
                 return ((ImageSprite)Sprite.this).getImage();
             }
             else if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
                 setDirty(false);
+                // Update the back buffer
                 Sprite.this.drawSprite(null);
                 return ((Group)Sprite.this).getBackBuffer();
             }
@@ -734,13 +738,18 @@ public abstract class Sprite implements PropertyListener {
         }
 
         public boolean isOpaque() {
-            return false;
+            return Sprite.this.isOpaque();
         }
 
         protected void filter(CoreImage input, CoreImage output) {
             // Input is null, output is cached version of this Sprite
             CoreGraphics g = output.createGraphics();
             drawSprite(g);
+        }
+
+        public Filter copy() {
+            // Return null since this is a unique parent node that will be replaced.
+            return null;
         }
     }
     
@@ -811,10 +820,13 @@ public abstract class Sprite implements PropertyListener {
         // Set transform
         Transform t = drawTransform;
         Filter f = getWorkingFilter();
-        if (f != null && (f.getOffsetX() != 0 || f.getOffsetY() != 0)) {
-            t = new Transform(t);
-            t.translate(CoreMath.toFixed(f.getOffsetX()),
-                    CoreMath.toFixed(f.getOffsetY()));
+        if (f != null) {
+            int fx = f.getOffsetXFromOriginal();
+            int fy = f.getOffsetYFromOriginal();
+            if (fx != 0 || fy != 0) {
+                t = new Transform(t);
+                t.translate(CoreMath.toFixed(fx), CoreMath.toFixed(fy));
+            }
         }
 
         // Set transform
@@ -822,7 +834,14 @@ public abstract class Sprite implements PropertyListener {
         g.setTransform(t);
 
         // Draw
+        int oldEdgeClamp = g.getEdgeClamp();
         if (f != null) {
+            if (this instanceof ImageSprite) {
+                // Respect the antiAlias setting
+                boolean antiAlias = ((ImageSprite)this).antiAlias.get();
+                g.setEdgeClamp(antiAlias ? CoreGraphics.EDGE_CLAMP_NONE :
+                    CoreGraphics.EDGE_CLAMP_ALL);
+            }
             g.drawImage(f.getOutput());
         }
         else {
@@ -833,13 +852,24 @@ public abstract class Sprite implements PropertyListener {
         g.popTransform();
         g.setAlpha(oldAlpha);
         g.setBlendMode(oldBlendMode);
+        g.setEdgeClamp(oldEdgeClamp);
     }
     
     /**
-        Draws the sprite. The graphic context's alpha is set to this sprite,
+        Draws the sprite. The graphic context's alpha is set to this sprite's alpha,
         and it's translation is offset by this sprite's location.
         This method is not called if the sprite is not visible or it's alpha
         is less than or equal to zero.
+        <p>
+        This method may be called multiple times for each dirty rectangle. The clip of the
+        graphics context will be set to the current dirty rectangle.
+        <p>
+        When the contents of this sprite change (in another words, the graphic output of this method
+        will be different from the last time it is called), subclasses should call
+        {@code setDirty(true)}.
+        <p>
+        Implementors should not save a reference to the graphics context as it can change
+        between calls to this method.
     */
     protected abstract void drawSprite(CoreGraphics g);
     

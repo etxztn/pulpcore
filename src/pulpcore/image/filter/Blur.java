@@ -30,6 +30,7 @@ package pulpcore.image.filter;
 
 
 import pulpcore.animation.Fixed;
+import pulpcore.animation.Int;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
@@ -37,8 +38,14 @@ import pulpcore.math.CoreMath;
 /*
  Inspired by Florent Dupont who was inspired by Romain Guy. Changes:
  * Fractional box size (1/8th pixel resolution)
- * No temporary buffers
+ * No temporary buffers if quality == 1
  */
+/**
+    A box-blur filter.
+    <p>
+    For an opaque input image (for example, a photo), the output image has the same dimensions as
+    the input. For a non-opaque input image, the output image is expanded to show the complete blur.
+*/
 public class Blur extends Filter {
 
     private static final int MAX_RADIUS = 255;
@@ -46,10 +53,6 @@ public class Blur extends Filter {
     private static final boolean INTEGER_ONLY = false;
 
     private static final boolean CPU_TEST = false;
-
-    // If true, the outside of the image is the same pixels as the border.
-    // If false, the outside of the image is considered BORDER_COLOR.
-    private static final boolean CLAMP = false;
 
     private static final int BORDER_COLOR = Colors.TRANSPARENT;
 
@@ -70,23 +73,50 @@ public class Blur extends Filter {
     */
     public final Fixed radius = new Fixed(4);
 
+    /**
+        The number of times to perform the blur. The default value is 1. A value of 3
+        approximates a Gaussian blur. Higher numbers render more slowly.
+     */
+    public final Int quality = new Int(1);
+
     private int actualRadius = 0;
-    private boolean autoExpand = true;
+    private int actualQuality = 0;
     private int time;
     private int lastUpdateTime;
+    // For quality > 1
+    private CoreImage workBuffer;
 
     /**
-        Creates a blur filter with a radius of 4.
+        Creates a blur filter with a radius of 4 and a quality of 1.
      */
     public Blur() {
-        this.radius.set(4);
+        this(4, 1);
     }
 
     /**
-        Creates a blur filter with the specified radius.
+        Creates a blur filter with the specified radius, from 0 (no blur) to 255, and a quality of 1.
+        Integer values are optimized to render slightly faster.
      */
     public Blur(float radius) {
+        this(radius, 1);
+    }
+
+    /**
+        Creates a blur filter with the specified radius, from 0 (no blur) to 255, and
+        the specified quality, typically from 1 (default) to 3 (Guassian approximation).
+     */
+    public Blur(float radius, int quality) {
         this.radius.set(radius);
+        this.quality.set(quality);
+    }
+
+    public Filter copy() {
+        Filter in = getInput();
+        Blur copy = new Blur();
+        copy.setInput(in == null ? null : in.copy());
+        copy.radius.bindTo(radius);
+        copy.quality.bindTo(quality);
+        return copy;
     }
 
     public void update(int elapsedTime) {
@@ -94,6 +124,7 @@ public class Blur extends Filter {
 
         time += elapsedTime;
         radius.update(elapsedTime);
+        quality.update(elapsedTime);
 
         int r = CoreMath.clamp(radius.getAsFixed(), 0, CoreMath.toFixed(MAX_RADIUS));
         if (INTEGER_ONLY) {
@@ -104,7 +135,13 @@ public class Blur extends Filter {
             r &= 0xffffe000;
         }
 
-        if (CPU_TEST) {
+        int q = CoreMath.clamp(quality.get(), 0, 15);
+        if (actualQuality != q) {
+            actualQuality = q;
+            actualRadius = r;
+            setDirty(true);
+        }
+        else if (CPU_TEST) {
             actualRadius = r;
             setDirty(true);
         }
@@ -149,46 +186,91 @@ public class Blur extends Filter {
         }
     }
 
-    public boolean isDifferentSize() {
-        return autoExpand && actualRadius > 0;
+    private boolean isInputOpaque() {
+        return getInput() == null ? false : getInput().isOpaque();
+    }
+
+    private boolean autoExpand() {
+        return !isInputOpaque();
+    }
+
+    private int autoExpandSize() {
+        if (actualQuality <= 0) {
+            return 0;
+        }
+        else {
+            // Ceil to nearest 8px so that new buffers don't have to be created as often.
+            // This formula works since 0 <= actualRadius <= 255 and the granularity is 1/8th px.
+            return CoreMath.toIntCeil((actualRadius * actualQuality) >> 3) << 3;
+        }
+    }
+
+    public boolean isDifferentBounds() {
+        return autoExpand() && autoExpandSize() > 0;
     }
 
     public int getOffsetX() {
-        return autoExpand ? -CoreMath.toIntCeil(actualRadius) : 0;
+        return autoExpand() ? -autoExpandSize() : 0;
     }
 
     public int getOffsetY() {
-        return autoExpand ? -CoreMath.toIntCeil(actualRadius) : 0;
+        return autoExpand() ? -autoExpandSize() : 0;
     }
 
     public int getWidth() {
-        return super.getWidth() + (autoExpand ? CoreMath.toIntCeil(actualRadius)*2 : 0);
+        return super.getWidth() + (autoExpand() ? autoExpandSize()*2 : 0);
     }
 
     public int getHeight() {
-        return super.getHeight() + (autoExpand ? CoreMath.toIntCeil(actualRadius)*2 : 0);
+        return super.getHeight() + (autoExpand() ? autoExpandSize()*2 : 0);
     }
     
-    protected void filter(CoreImage src, CoreImage dst) {
+    protected void filter(CoreImage input, CoreImage output) {
         lastUpdateTime = time;
-        if (actualRadius <= 0 && !CPU_TEST) {
-            // Assume src and dst are same dimensions
-            System.arraycopy(src.getData(), 0, dst.getData(), 0,
-                    src.getWidth() * src.getHeight());
+        if ((actualRadius <= 0 || actualQuality <= 0) && !CPU_TEST) {
+            // Assume input and output are same dimensions
+            System.arraycopy(input.getData(), 0, output.getData(), 0,
+                    input.getWidth() * output.getHeight());
         }
         else {
+            if (actualQuality > 1) {
+                if (workBuffer == null ||
+                        workBuffer.getWidth() != output.getWidth() ||
+                        workBuffer.getHeight() != output.getHeight() ||
+                        workBuffer.isOpaque() != output.isOpaque())
+                {
+                    workBuffer = new CoreImage(output.getWidth(), output.getHeight(),
+                            output.isOpaque());
+                }
+            }
+            else {
+                workBuffer = null;
+            }
+
             // Synchronized because it uses shared static buffers.
             // A thread-safe implementation might store the buffers as a thread-local variable instead.
             synchronized (lock) {
-                int w = dst.getWidth() + (MAX_RADIUS+1)*2+1;
+                int w = output.getWidth() + (MAX_RADIUS+1)*2+1;
                 if (w > columnSumA.length) {
                     columnSumA = new int[w];
                     columnSumR = new int[w];
                     columnSumG = new int[w];
                     columnSumB = new int[w];
                 }
-                filter(src, dst, actualRadius, -getOffsetX(), -getOffsetY());
-                postProcess(src, dst, actualRadius);
+                CoreImage src = input;
+                CoreImage dst = ((actualQuality & 1) == 1) ? output : workBuffer;
+                CoreImage wrk = ((actualQuality & 1) == 1) ? workBuffer : output;
+                int ox = -getOffsetX();
+                int oy = -getOffsetY();
+                for (int i = 0; i < actualQuality; i++) {
+                    filter(src, dst, actualRadius, ox, oy);
+                    postProcess(src, dst, actualRadius);
+                    src = dst;
+                    dst = wrk;
+                    wrk = src;
+                    ox = 0;
+                    oy = 0;
+                }
             }
         }
     }
@@ -221,6 +303,10 @@ public class Blur extends Filter {
         final long windowLength = r * 2 + CoreMath.ONE;
         final long windowArea = CoreMath.mul(windowLength, windowLength);
         final int columnOffset = rInt + 1;
+        
+        // If true, the outside of the image is the same pixels as the border.
+        // If false, the outside of the image is considered BORDER_COLOR.
+        final boolean clamp = isInputOpaque();
 
         for (int i = 0; i < 256; i++) {
             int c = CoreMath.clamp(preProcessChannel(r, i), 0, 255);
@@ -237,7 +323,7 @@ public class Blur extends Filter {
         for (int x = -columnOffset; x < dstWidth + columnOffset; x++) {
             int index = x + columnOffset;
             int srcX = x - offsetX;
-            if (CLAMP) {
+            if (clamp) {
                 srcX = CoreMath.clamp(srcX, 0, srcWidth-1);
             }
 
@@ -248,14 +334,14 @@ public class Blur extends Filter {
 
             for (int i = -limit; i <= limit; i++) {
                 int srcY = i - offsetY;
-                if (CLAMP) {
+                if (clamp) {
                     srcY = CoreMath.clamp(srcY, 0, srcHeight-1);
                 }
 
                 int pixel;
                 boolean isValidSrcX = (srcX >= 0 && srcX < srcWidth);
                 boolean isValidSrcY = (srcY >= 0 && srcY < srcHeight);
-                if (!CLAMP && (!isValidSrcX || !isValidSrcY)) {
+                if (!clamp && (!isValidSrcX || !isValidSrcY)) {
                     pixel = BORDER_COLOR;
                 }
                 else {
@@ -347,7 +433,7 @@ public class Blur extends Filter {
                 boolean isValidNextIndex = true;
                 int prevIndex = y - offsetY - rInt - i;
                 int nextIndex = y - offsetY + rInt + i + 1;
-                if (CLAMP) {
+                if (clamp) {
                     prevIndex = CoreMath.clamp(prevIndex, 0, srcHeight-1);
                     nextIndex = CoreMath.clamp(nextIndex, 0, srcHeight-1);
                 }
@@ -358,36 +444,121 @@ public class Blur extends Filter {
                 prevIndex *= srcWidth;
                 nextIndex *= srcWidth;
 
-                for (int x = -columnOffset; x < dstWidth + columnOffset; x++) {
-                    int columnIndex = x + columnOffset;
-                    int srcX = x - offsetX;
-                    int prevPixel;
-                    int nextPixel;
-                    if (CLAMP) {
-                        srcX = CoreMath.clamp(srcX, 0, srcWidth-1);
-                        prevPixel = srcData[prevIndex + srcX];
-                        nextPixel = srcData[nextIndex + srcX];
-                    }
-                    else {
-                        boolean isValidSrcX = (srcX >= 0 && srcX < srcWidth);
-                        prevPixel = (isValidPrevIndex && isValidSrcX) ? srcData[prevIndex + srcX] : BORDER_COLOR;
-                        nextPixel = (isValidNextIndex && isValidSrcX) ? srcData[nextIndex + srcX] : BORDER_COLOR;
-                    }
+                int x1 = -columnOffset;
+                int x2 = offsetX;
+                int x3 = srcWidth - 1 + offsetX;
+                int x4 = dstWidth + columnOffset;
+                int prevPixel;
+                int nextPixel;
 
-                    int pa = prevPixel >>> 24;
-                    int pr = (prevPixel >> 16) & 0xff;
-                    int pg = (prevPixel >> 8) & 0xff;
-                    int pb = prevPixel & 0xff;
-                    int na = nextPixel >>> 24;
-                    int nr = (nextPixel >> 16) & 0xff;
-                    int ng = (nextPixel >> 8) & 0xff;
-                    int nb = nextPixel & 0xff;
+                // Left side
+                if (clamp) {
+                    prevPixel = srcData[prevIndex];
+                    nextPixel = srcData[nextIndex];
+                }
+                else {
+                    prevPixel = BORDER_COLOR;
+                    nextPixel = BORDER_COLOR;
+                }
+                int pa = prevPixel >>> 24;
+                int pr = (prevPixel >> 16) & 0xff;
+                int pg = (prevPixel >> 8) & 0xff;
+                int pb = prevPixel & 0xff;
+                int na = nextPixel >>> 24;
+                int nr = (nextPixel >> 16) & 0xff;
+                int ng = (nextPixel >> 8) & 0xff;
+                int nb = nextPixel & 0xff;
+                int da = table[na] - table[pa];
+                int dr = table[nr] - table[pr];
+                int dg = table[ng] - table[pg];
+                int db = table[nb] - table[pb];
+                for (int x = x1; x < x2; x++) {
+                    int columnIndex = x + columnOffset;
 
                     // Subtract last row, add next row
-                    columnSumA[columnIndex] += table[na] - table[pa];
-                    columnSumR[columnIndex] += table[nr] - table[pr];
-                    columnSumG[columnIndex] += table[ng] - table[pg];
-                    columnSumB[columnIndex] += table[nb] - table[pb];
+                    columnSumA[columnIndex] += da;
+                    columnSumR[columnIndex] += dr;
+                    columnSumG[columnIndex] += dg;
+                    columnSumB[columnIndex] += db;
+                }
+
+                // Middle
+                if (isValidPrevIndex && isValidNextIndex) {
+                    for (int x = x2; x < x3; x++) {
+                        int columnIndex = x + columnOffset;
+                        int srcX = x - offsetX;
+                        prevPixel = srcData[prevIndex + srcX];
+                        nextPixel = srcData[nextIndex + srcX];
+
+                        pa = prevPixel >>> 24;
+                        pr = (prevPixel >> 16) & 0xff;
+                        pg = (prevPixel >> 8) & 0xff;
+                        pb = prevPixel & 0xff;
+                        na = nextPixel >>> 24;
+                        nr = (nextPixel >> 16) & 0xff;
+                        ng = (nextPixel >> 8) & 0xff;
+                        nb = nextPixel & 0xff;
+
+                        // Subtract last row, add next row
+                        columnSumA[columnIndex] += table[na] - table[pa];
+                        columnSumR[columnIndex] += table[nr] - table[pr];
+                        columnSumG[columnIndex] += table[ng] - table[pg];
+                        columnSumB[columnIndex] += table[nb] - table[pb];
+                    }
+                }
+                else {
+                    for (int x = x2; x < x3; x++) {
+                        int columnIndex = x + columnOffset;
+                        int srcX = x - offsetX;
+                        prevPixel = isValidPrevIndex ? srcData[prevIndex + srcX] : BORDER_COLOR;
+                        nextPixel = isValidNextIndex ? srcData[nextIndex + srcX] : BORDER_COLOR;
+
+                        pa = prevPixel >>> 24;
+                        pr = (prevPixel >> 16) & 0xff;
+                        pg = (prevPixel >> 8) & 0xff;
+                        pb = prevPixel & 0xff;
+                        na = nextPixel >>> 24;
+                        nr = (nextPixel >> 16) & 0xff;
+                        ng = (nextPixel >> 8) & 0xff;
+                        nb = nextPixel & 0xff;
+
+                        // Subtract last row, add next row
+                        columnSumA[columnIndex] += table[na] - table[pa];
+                        columnSumR[columnIndex] += table[nr] - table[pr];
+                        columnSumG[columnIndex] += table[ng] - table[pg];
+                        columnSumB[columnIndex] += table[nb] - table[pb];
+                    }
+                }
+
+                // Right side
+                if (clamp) {
+                    prevPixel = srcData[prevIndex + srcWidth - 1];
+                    nextPixel = srcData[nextIndex + srcWidth - 1];
+                }
+                else {
+                    prevPixel = BORDER_COLOR;
+                    nextPixel = BORDER_COLOR;
+                }
+                pa = prevPixel >>> 24;
+                pr = (prevPixel >> 16) & 0xff;
+                pg = (prevPixel >> 8) & 0xff;
+                pb = prevPixel & 0xff;
+                na = nextPixel >>> 24;
+                nr = (nextPixel >> 16) & 0xff;
+                ng = (nextPixel >> 8) & 0xff;
+                nb = nextPixel & 0xff;
+                da = table[na] - table[pa];
+                dr = table[nr] - table[pr];
+                dg = table[ng] - table[pg];
+                db = table[nb] - table[pb];
+                for (int x = x3; x < x4; x++) {
+                    int columnIndex = x + columnOffset;
+
+                    // Subtract last row, add next row
+                    columnSumA[columnIndex] += da;
+                    columnSumR[columnIndex] += dr;
+                    columnSumG[columnIndex] += dg;
+                    columnSumB[columnIndex] += db;
                 }
             }
             dstRowIndex += dstWidth;

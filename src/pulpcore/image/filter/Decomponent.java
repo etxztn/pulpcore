@@ -42,6 +42,13 @@ public final class Decomponent extends Filter {
 	public Decomponent(int component) {
 		this.component = component;
 	}
+
+    public Filter copy() {
+        Filter in = getInput();
+        Filter copy = new Decomponent(component);
+        copy.setInput(in == null ? null : in.copy());
+        return copy;
+    }
 	
 	protected void filter(CoreImage src, CoreImage dst) {
         int[] srcPixels = src.getData();

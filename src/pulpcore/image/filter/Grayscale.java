@@ -31,6 +31,13 @@ package pulpcore.image.filter;
 import pulpcore.image.CoreImage;
 
 public final class Grayscale extends Filter {
+
+    public Filter copy() {
+        Filter in = getInput();
+        Filter copy = new Grayscale();
+        copy.setInput(in == null ? null : in.copy());
+        return copy;
+    }
 	
 	protected void filter(CoreImage src, CoreImage dst) {
 			
