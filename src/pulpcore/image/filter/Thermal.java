@@ -30,8 +30,23 @@ package pulpcore.image.filter;
 
 import pulpcore.image.CoreImage;
 
+/**
+A false-color filter that mock a Thermal view filter.
+<p>
+This filter is done by grayscaling the image and applying false colors.
+colors originally from white->black are changed into a full RGB spectrum color.
+
+@author Florent Dupont
+
+*/
 public final class Thermal extends Filter {
 
+	public final static int[] palette = new int[256];
+	{
+		createPalette(palette);
+	}
+	
+	
     public Filter copy() {
         Filter in = getInput();
         Filter copy = new Thermal();
@@ -56,29 +71,57 @@ public final class Thermal extends Filter {
 
             // rearrange the grayscale colors to obtain different values from white to red to green to blue to black
             // real thermal filter have 10 values. See examples here : http://en.wikipedia.org/wiki/Thermal_imaging
-            // but this "fake thermal filter" have only 4 ranges to facilitate calculation.
-            if (dstGray >= 0 && dstGray <= 63) {
-                // from white to red  0xffffffff -> 0xffff0000
-                int val = 0xff - (dstGray << 2);
-                dstPixels[i] = 0xffff0000 | (val << 8) | val;
-            }
-            else if (dstGray >= 64 && dstGray <= 127) {
-                // from red to green 0xffff0000 -> 0xff00ff00
-                int val1 = 0xff - ((dstGray-64) << 2);
-                int val2 = (dstGray-64) << 2;
-                dstPixels[i] = 0xff000000 | (val1 << 16) | (val2 << 8 );
-            }
-            else if (dstGray >= 128 && dstGray <= 191) {
-                // from green to blue 0xff00ff00 -> 0xff0000ff
-                int val1 = 0xff - ((dstGray-128) << 2);
-                int val2 = (dstGray-128) << 2;
-                dstPixels[i] = 0xff000000 | (val1 << 8) | val2;
-            }
-            else {
-                // from blue to black 0xff0000ff -> 0xff000000
-                int val = 0xff - ((dstGray-192) << 2);
-                dstPixels[i] = 0xff000000 | val;
-            }
+            // but this "fake thermal filter" have only 8 ranges to facilitate calculation.
+        	dstPixels[i] = palette[dstGray];
         }
+	}
+    
+    
+	// RGB spectrum palette
+	private void createPalette(int [] palette) {
+		
+		for(int i =0; i < 255; i++) {
+			
+			if(i >= 0 && i <= 31) {
+				// form black to dark blue
+				// from 0xff000000 -> 0xff000080
+				int val = (i << 2);
+				palette[i] = 0xff000000 | val;
+			} else if( i >= 32 && i <= 63) {
+				// from dark blue to blue 0xff000080 -> 0xff0000ff
+				int val = 0x80 + ((i-32) << 2);
+				palette[i] = 0xff000000 | val;
+			} 
+			else if( i >= 64 && i <= 95) {
+				// from blue to cyan 0xff0000ff -> 0xff00ffff
+				int val = ((i-64) << 3);
+				palette[i] = 0xff0000ff | (val << 8 );
+			} 
+			else if(i >= 96 && i <= 127) {
+				// from cyan to green 0xff00ffff -> 0xff00ff00
+				int val1 = 0xff - ((i-96) << 3);
+				palette[i] = 0xff00ff00 | val1;
+			} 
+			else if(i >= 128 && i <= 159) {
+				// from green to yellow 0xff00ff00 -> 0xffffff00
+				int val1 = ((i-128) << 3);
+				palette[i] = 0xff00ff00 | (val1<<16);
+			}
+			else if(i >= 160 && i <= 191) {
+				// from yellow to red 0xffffff00 -> 0xffff0000
+				int val1 = 0xff - ((i-160) << 3);
+				palette[i] = 0xffff0000 | (val1 << 8);
+			}
+			else if(i >= 192 && i <= 223) {
+					// from red to purple 0xffff0000 -> 0xff0000ff
+					int val1 = ((i-192) << 3);
+					palette[i] = 0xffff0000 | (val1);
+			}
+			else if (i >= 224 && i <= 255) {
+				// 0xffff00ff to 0xffffffff
+				int val1 = ((i-224) << 3);
+				palette[i] = 0xffff00ff | (val1<<8);
+			}
+		}
 	}
 }
