@@ -72,7 +72,7 @@ import pulpcore.image.CoreImage;
  */
 public final class Glow extends Blur {
 
-	public Fixed amount = new Fixed(0.5f);
+	public final Fixed amount = new Fixed(0.5f);
 	
 	private double actualAmount = 0;
 
@@ -97,8 +97,11 @@ public final class Glow extends Blur {
 
 	public Filter copy() {
 		Filter in = getInput();
-		Filter copy = new Glow();
+		Glow copy = new Glow();
 		copy.setInput(in == null ? null : in.copy());
+		copy.amount.bindTo(amount);
+        copy.radius.bindTo(radius);
+        copy.quality.bindTo(quality);
 		return copy;
 	}
 	

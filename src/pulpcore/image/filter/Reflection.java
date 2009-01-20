@@ -28,12 +28,21 @@
 */
 package pulpcore.image.filter;
 
-import pulpcore.animation.Fixed;
+import pulpcore.animation.Int;
 import pulpcore.image.CoreImage;
 
 /**
-	A Reflection filter.
-
+ *	A Reflection filter.
+ *	Fake a mirrored image on brilliant surface.
+ *	
+ *	This filter uses 3 parameters : 
+ * - reflectionHeight : the height of the reflection area. If left blank, half of the sprite height is used;
+ * - gap : the space between the sprite and its reflection. Default value is 0.
+ * - fadingDivider : the amount of fading for the reflection area. take one of NO_FADING, FADE_BY_2, FADE_BY_4.
+ *                   default value is FADE_BY_2.
+ * 
+ *	@author Florent Dupont
+ *
 */
 public final class Reflection extends Filter {
 
@@ -44,20 +53,27 @@ public final class Reflection extends Filter {
 	/**
     	The reflection height. 
     */
-	public final Fixed reflectionHeight = new Fixed(130);
+	public final Int reflectionHeight = new Int(130);
 
 	/**
 	The gap between the image and its reflection. 
 	*/
-	public final Fixed gap = new Fixed(1);
+	public final Int gap = new Int(1);
 	
 	/**
 	The fading divider value of the reflection. 
 	*/
-	public final Fixed fadingDivider = new Fixed(FADE_BY_4);
+	public final Int fadingDivider = new Int(FADE_BY_2);
+	
+	
+	private int actualReflectionHeight;
+	private int actualGap;
+	private int actualFading;
+	
+	
 	
 	public Reflection() {
-		this(130);
+		this(1);
 	}
 	
 	public Reflection(int height) {
@@ -90,12 +106,18 @@ public final class Reflection extends Filter {
     }
     
     
+    @Override
+    public int getOffsetY() {
+    	return -actualGap/2;
+    }
+    
+    
     public int getWidth() {
         return super.getWidth();
     }
 
     public int getHeight() {
-        return super.getHeight() + reflectionHeight.getAsInt() + gap.getAsInt();
+        return super.getHeight() + actualReflectionHeight + actualGap;
     }
     
     @Override
@@ -103,9 +125,41 @@ public final class Reflection extends Filter {
     	return false;
     }
     
+    
+    @Override
+    public void update(int elapsedTime) {
+    
+    	super.update(elapsedTime);
+    	
+    	reflectionHeight.update(elapsedTime);
+    	gap.update(elapsedTime);
+    	fadingDivider.update(elapsedTime);
+    	
+    	if(reflectionHeight.get() != actualReflectionHeight) {
+    		actualReflectionHeight = reflectionHeight.get();
+    		setDirty(true);
+    	}
+    	
+    	if(gap.get() != actualGap) {
+    		actualGap = gap.get();
+    		setDirty(true);
+    	}
+    	
+    	if(fadingDivider.get() != actualFading) {
+    		actualFading = fadingDivider.get();
+    		setDirty(true);
+    	}
+    }
 
     protected void filter(CoreImage src, CoreImage dst) {
-	
+    	
+    	if(reflectionHeight.get() > src.getHeight()) {
+    		System.out.println("reflection height cannot be higher than the sprite height.");
+    		// reflection is then set to be half the value of the src height
+    		reflectionHeight.set(src.getHeight() / 2);
+    		actualReflectionHeight = reflectionHeight.get();
+    	}
+    	
         int[] srcPixels = src.getData();
         int[] dstPixels = dst.getData();
         
@@ -120,24 +174,24 @@ public final class Reflection extends Filter {
         }
         
         // copies/creates the reflection
-        for (int i = 0; i < reflectionHeight.getAsInt(); i++) {
+        for (int i = 0; i < actualReflectionHeight; i++) {
         	for(int j = 0; j < width; j++) {
         		
-        		int srcARGB = srcPixels[((height - i - 1)*width)+j];
+        		int srcARGB = srcPixels[((height - i-1)*width)+j];
         		int srcR = (srcARGB >> 16) & 0xff;
         		int srcG = (srcARGB >> 8) & 0xff;
         		int srcB = srcARGB & 0xff;
         		int srcA = srcARGB >>> 24;
 
         		// calculate the alpha gradient and divide the result by the specified divider.
-        		int maskA = (0xff - (i*0xff)/reflectionHeight.getAsInt()) >> fadingDivider.getAsInt();
+        		int maskA = (0xff - (i*0xff)/actualReflectionHeight) >> actualFading;
         		// DST_IN blend mode
         		srcR = (srcR * maskA) >> 8; 
         		srcG = (srcG * maskA) >> 8;
         		srcB = (srcB * maskA) >> 8;
         		srcA = (srcA * maskA) >> 8;
         		
-        		int offset = ((i+gap.getAsInt()+height-1)*width)+j; 
+        		int offset = ((i+actualGap+height-1)*width)+j; 
         		dstPixels[offset] = (srcA << 24) | (srcR << 16) | (srcG << 8) | srcB; 
         	}
         }
