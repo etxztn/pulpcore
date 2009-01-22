@@ -667,7 +667,7 @@ public abstract class Sprite implements PropertyListener {
         <p>
         If the specified filter is already attached to a Sprite, a clone of it is created.
     */
-    public final void setFilter(Filter filter) throws IllegalStateException {
+    public final void setFilter(Filter filter) {
         if (filter != null) {
             Filter source = getFilterSource(filter);
             if (source.getInput() instanceof SpriteFilterInput) {
