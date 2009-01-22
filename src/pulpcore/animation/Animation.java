@@ -202,7 +202,7 @@ public abstract class Animation {
     public final int getNumLoops() {
         return numLoops;
     }
-    
+
     public final int getLoopDelay() {
         return loopDelay;
     }
@@ -230,10 +230,17 @@ public abstract class Animation {
     private final int getAnimTime(int elapsedTime) {
         int animTime = elapsedTime - startDelay;
         if (animTime > 0 && numLoops != 1) {
-            animTime %= (duration + loopDelay);
-            if (animTime == 0) {
-                // So events will trigger
-                return duration + loopDelay;
+            if (numLoops == LOOP_FOREVER) {
+                animTime %= (duration + loopDelay);
+            }
+            else {
+                int total = getTotalDuration() - startDelay;
+                if (animTime >= total) {
+                    animTime -= total + duration + loopDelay;
+                }
+                else {
+                    animTime %= (duration + loopDelay);
+                }
             }
         }
         return animTime;
@@ -345,7 +352,6 @@ public abstract class Animation {
         else {
             return setTime(newTime);
         }
-        
     }
     
     private final boolean setTime(int newTime) {   

@@ -97,6 +97,30 @@ public class AnimationTest {
         timeline.update(moveDur*5);
         assertEquals("Incorrect value.", d*6, property.get());
     }
+
+    @Test public void backForthTimeline() {
+        Int property = new Int(0);
+        int dur = 100;
+        int startValue = 0;
+        int endValue = 50;
+        Timeline timeline = new Timeline();
+        timeline.animate(property, startValue, endValue, dur/2, null, 0);
+        timeline.animate(property, endValue, startValue, dur/2, null, dur/2);
+        timeline.loopForever();
+        timeline.update(dur-1);
+        timeline.update(1);
+        assertEquals("Incorrect value.", startValue, property.get());
+
+        // Same thing, only reversed order of adding animations to timeline
+        property = new Int(0);
+        timeline = new Timeline();
+        timeline.animate(property, endValue, startValue, dur/2, null, dur/2);
+        timeline.animate(property, startValue, endValue, dur/2, null, 0);
+        timeline.loopForever();
+        timeline.update(dur-1);
+        timeline.update(1);
+        assertEquals("Incorrect value.", startValue, property.get());
+    }
     
     @Test public void propertyUpdatesOnGracefullStop() {
         Int property = new Int(0);

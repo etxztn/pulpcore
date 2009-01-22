@@ -58,6 +58,7 @@ public final class Timeline extends Animation {
     
     private int lastAnimTime = 0;
     private int lastTime;
+    private boolean lastParentLooped;
     
     public Timeline() {
         this(null, 0);
@@ -151,31 +152,43 @@ public final class Timeline extends Animation {
             elapsedTime = (int)(timeMicros / 1000);
             remainderMicros = (int)(timeMicros % 1000);
         }
+        lastParentLooped = parentLooped;
         return super.update(elapsedTime, parentLooped);
     }
         
     protected void updateState(int animTime) {
         int oldLoop = getAnimLoop(lastTime);
         int newLoop = getAnimLoop(getTime());
-        boolean looped = (newLoop != oldLoop);
-        // First, update those animations that were previously in SECTION_ANIMATION
-        for (int i = 0; i < animationList.size(); i++) {
-            Animation anim = (Animation)animationList.get(i);
-            if (anim.getSection(lastAnimTime) == SECTION_ANIMATION) {
-                boolean active = anim.update(animTime - anim.getTime(), looped);
+        boolean looped = lastParentLooped || (newLoop != oldLoop);
+        if (looped) {
+            for (int i = 0; i < animationList.size(); i++) {
+                Animation anim = (Animation)animationList.get(i);
+                boolean active = anim.update(animTime - anim.getTime(), true);
                 if (active && anim instanceof Behavior) {
                     ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
                 }
             }
         }
-        
-        // Next, update all other animations
-        for (int i = 0; i < animationList.size(); i++) {
-            Animation anim = (Animation)animationList.get(i);
-            if (anim.getSection(lastAnimTime) != SECTION_ANIMATION) {
-                boolean active = anim.update(animTime - anim.getTime(), looped);
-                if (active && anim instanceof Behavior) {
-                    ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
+        else {
+            // First, update those animations that were previously in SECTION_ANIMATION
+            for (int i = 0; i < animationList.size(); i++) {
+                Animation anim = (Animation)animationList.get(i);
+                if (anim.getSection(lastAnimTime) == SECTION_ANIMATION) {
+                    boolean active = anim.update(animTime - anim.getTime(), false);
+                    if (active && anim instanceof Behavior) {
+                        ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
+                    }
+                }
+            }
+
+            // Next, update all other animations
+            for (int i = 0; i < animationList.size(); i++) {
+                Animation anim = (Animation)animationList.get(i);
+                if (anim.getSection(lastAnimTime) != SECTION_ANIMATION) {
+                    boolean active = anim.update(animTime - anim.getTime(), false);
+                    if (active && anim instanceof Behavior) {
+                        ((Property)propertyList.get(i)).setValue(((Behavior)anim).getValue());
+                    }
                 }
             }
         }
