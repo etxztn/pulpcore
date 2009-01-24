@@ -6,6 +6,7 @@
     setDirty(true) on the ImageSprite.
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
     the device's refresh rate if it is near 60hz.
+  * Fixed bug: Viewport dimensions were incorrect when it contained sub-groups.
   * Fixed bug: TimelineEvents only executed the first time in a looping timeline.
   * Fixed bug: Events at the end of a looping timeline sometimes didn't fire.
   * Fixed bug: Saving a cookie was broken in pulpcore.js.
