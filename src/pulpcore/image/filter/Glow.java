@@ -47,7 +47,7 @@ import pulpcore.image.CoreImage;
  * 
  * Example of use below that mimic the PS3 menu selection :
  * <code>
- * @Override
+ * 
  *	public void load() {
  *	
  *		add(new FilledSprite(Colors.BLACK));
@@ -105,7 +105,6 @@ public final class Glow extends Blur {
 		return copy;
 	}
 	
-	@Override
 	public void update(int elapsedTime) {
 		super.update(elapsedTime);
 		amount.update(elapsedTime);
@@ -116,7 +115,6 @@ public final class Glow extends Blur {
 		} 
 	}
 
-	@Override
 	protected void filter(CoreImage src, CoreImage dst) {
 
 		// call the parent blur filter.

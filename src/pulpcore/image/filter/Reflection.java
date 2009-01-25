@@ -100,13 +100,11 @@ public final class Reflection extends Filter {
         return copy;
     }
     
-    @Override
     public boolean isDifferentBounds() {
     	return true;
     }
     
     
-    @Override
     public int getOffsetY() {
     	return -actualGap/2;
     }
@@ -120,13 +118,11 @@ public final class Reflection extends Filter {
         return super.getHeight() + actualReflectionHeight + actualGap;
     }
     
-    @Override
     public boolean isOpaque() {
     	return false;
     }
     
     
-    @Override
     public void update(int elapsedTime) {
     
     	super.update(elapsedTime);
