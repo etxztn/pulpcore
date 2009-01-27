@@ -47,8 +47,7 @@ import pulpcore.image.CoreImage;
  * 
  * Example of use below that mimic the PS3 menu selection :
  * <code>
- * 
- *	public void load() {
+ *  public void load() {
  *	
  *		add(new FilledSprite(Colors.BLACK));
  *		
@@ -72,24 +71,37 @@ import pulpcore.image.CoreImage;
  */
 public final class Glow extends Blur {
 
+	/**
+    	the amount of glow to be used. The default value is 0.5.
+    */
 	public final Fixed amount = new Fixed(0.5f);
 	
 	private double actualAmount = 0;
-
-	// radius and quality are also available
-
+	
+	/**
+    	Creates a Glow filter with a radius of 3, a quality of 3 and amount of 0,5.
+	*/
 	public Glow() {
 		this(0.5f);
 	}
 
+	/**
+    	Creates a Glow filter with the specified amount, a radius of 3 and a quality of 3.
+    */
 	public Glow(double amount) {
 		this(amount, 3);
 	}
 
+	/**
+		Creates a Glow filter with the specified amount and radius. Default quality of 3.
+	*/
 	public Glow(double amount, int radius) {
 		this(amount, radius, 3);
 	}
 
+	/**
+		Creates a Glow filter with the specified amount, radius and quality.
+    */
 	public Glow(double amount, int radius, int quality) {
 		super(radius, quality);
 		this.amount.set(amount);
@@ -105,6 +117,7 @@ public final class Glow extends Blur {
 		return copy;
 	}
 	
+	@Override
 	public void update(int elapsedTime) {
 		super.update(elapsedTime);
 		amount.update(elapsedTime);
@@ -115,6 +128,7 @@ public final class Glow extends Blur {
 		} 
 	}
 
+	@Override
 	protected void filter(CoreImage src, CoreImage dst) {
 
 		// call the parent blur filter.

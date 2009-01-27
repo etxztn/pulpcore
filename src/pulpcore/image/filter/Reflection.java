@@ -56,12 +56,12 @@ public final class Reflection extends Filter {
 	public final Int reflectionHeight = new Int(130);
 
 	/**
-	The gap between the image and its reflection. 
+		The gap between the image and its reflection. 
 	*/
 	public final Int gap = new Int(1);
 	
 	/**
-	The fading divider value of the reflection. 
+		The fading divider value of the reflection. 
 	*/
 	public final Int fadingDivider = new Int(FADE_BY_2);
 	
@@ -69,21 +69,36 @@ public final class Reflection extends Filter {
 	private int actualReflectionHeight;
 	private int actualGap;
 	private int actualFading;
-	
-	
-	
+		
+	/**
+		Creates a Reflection filter with a gap of 1.
+		At the first filter() call reflectionHeight will be set to half the height of the image.
+	 */
 	public Reflection() {
 		this(1);
 	}
 	
+	/**
+		Creates a Reflection filter with the specified reflection height. Gap has a default value of 1.
+	*/
 	public Reflection(int height) {
 		this(height, 1);
 	}
 	
+	/**
+		Creates a Reflection filter with the specified reflection height and gap value.
+	 */
 	public Reflection(int height, int gap) {
 		this(height, gap, FADE_BY_2);
 	}
 	
+	/**
+		Creates a Reflection filter with the specified reflection height and gap value.
+		fading divider is also specified and can take 3 one of these 3 values : 
+			- NO_FADING
+			- FADE_BY_2
+			- FADE_BY_4.
+ 	*/
 	public Reflection(int height, int gap, int fadingDivider) {
 		this.reflectionHeight.set(height);
 		this.fadingDivider.set(fadingDivider);
@@ -109,7 +124,6 @@ public final class Reflection extends Filter {
     	return -actualGap/2;
     }
     
-    
     public int getWidth() {
         return super.getWidth();
     }
@@ -117,11 +131,10 @@ public final class Reflection extends Filter {
     public int getHeight() {
         return super.getHeight() + actualReflectionHeight + actualGap;
     }
-    
+
     public boolean isOpaque() {
     	return false;
     }
-    
     
     public void update(int elapsedTime) {
     
@@ -161,18 +174,18 @@ public final class Reflection extends Filter {
         
         int height = src.getHeight();
         int width = src.getWidth();
-
+        
         // copies the source into the destination
         int srcOffset = 0;
         for (int i = 0; i < height; i++) {
-            System.arraycopy(srcPixels, srcOffset, dstPixels, srcOffset, width);
-            srcOffset += width;
+        	System.arraycopy(srcPixels, srcOffset, dstPixels, srcOffset, width);
+        	srcOffset += width;
         }
-        
+
         // copies/creates the reflection
         for (int i = 0; i < actualReflectionHeight; i++) {
         	for(int j = 0; j < width; j++) {
-        		
+
         		int srcARGB = srcPixels[((height - i-1)*width)+j];
         		int srcR = (srcARGB >> 16) & 0xff;
         		int srcG = (srcARGB >> 8) & 0xff;
@@ -186,10 +199,11 @@ public final class Reflection extends Filter {
         		srcG = (srcG * maskA) >> 8;
         		srcB = (srcB * maskA) >> 8;
         		srcA = (srcA * maskA) >> 8;
-        		
+
         		int offset = ((i+actualGap+height-1)*width)+j; 
         		dstPixels[offset] = (srcA << 24) | (srcR << 16) | (srcG << 8) | srcB; 
         	}
         }
+
 	}
 }
