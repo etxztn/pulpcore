@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -197,6 +197,7 @@ public abstract class Sprite implements PropertyListener {
     private Filter filter;
     private int cosAngle = CoreMath.ONE;
     private int sinAngle = 0;
+    private Object tag;
     
     private Group parent;
     private int parentTransformModCount;
@@ -230,6 +231,25 @@ public abstract class Sprite implements PropertyListener {
         this.y.set(y);
         this.width.set(width);
         this.height.set(height);
+    }
+
+    /**
+        Gets this Sprite's tag.
+        @see #setTag(Object)
+        @see Group#findWithTag(Object)
+    */
+    public Object getTag() {
+        return tag;
+    }
+
+    /**
+        Sets this Sprite's tag. The tag can be used for marking the sprite or storing information
+        with it. Different Sprites can share identical tags. By default, the tag is {@code null}.
+        @see #getTag()
+        @see Group#findWithTag(Object)
+    */
+    public void setTag(Object tag) {
+        this.tag = tag;
     }
 
     /**

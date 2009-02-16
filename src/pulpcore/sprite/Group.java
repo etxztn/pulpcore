@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -104,6 +104,20 @@ public class Group extends Sprite {
         }
         return lock;
     }
+
+
+    /**
+        Returns {@code true} if sprites inside this Group are not visible outside the
+        natural bounds of this Group.
+
+        The default implementation returns {@code true} if the Group has a back
+        buffer and the back buffer doesn't cover the entire stage.
+        @see #getNaturalWidth()
+        @see #getNaturalHeight()
+    */
+    public boolean isOverflowClipped() {
+        return (hasBackBuffer() && !backBufferCoversStage);
+    }
     
     //
     // Sprite list queries
@@ -162,18 +176,33 @@ public class Group extends Sprite {
         }
         return false;
     }
-    
+
     /**
-        Returns {@code true} if sprites inside this Group are not visible outside the 
-        natural bounds of this Group. 
-        
-        The default implementation returns {@code true} if the Group has a back 
-        buffer and the back buffer doesn't cover the entire stage.
-        @see #getNaturalWidth()
-        @see #getNaturalHeight()
+        Finds the Sprite whose tag is equal to the specified tag (using
+        {@code tag.equals(sprite.getTag())}. Returns null if the specified tag is null, or
+        if no Sprite with the specified tag is found.
     */
-    public boolean isOverflowClipped() {
-        return (hasBackBuffer() && !backBufferCoversStage);
+    public Sprite findWithTag(Object tag) {
+        if (tag == null) {
+            return null;
+        }
+        if (tag.equals(this.getTag())) {
+            return this;
+        }
+        Sprite[] snapshot = sprites;
+        for (int i = snapshot.length - 1; i >= 0; i--) {
+            Sprite child = snapshot[i];
+            if (child instanceof Group) {
+                child = ((Group)child).findWithTag(tag);
+                if (child != null) {
+                    return child;
+                }
+            }
+            else if (tag.equals(child.getTag())) {
+                return child;
+            }
+        }
+        return null;
     }
     
     /**
