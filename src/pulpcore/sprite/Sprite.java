@@ -159,15 +159,14 @@ public abstract class Sprite implements PropertyListener {
     public final Fixed height = new Fixed(this);
     
     /** 
-        The angle of this Sprite, typically in range from 0 to 
-        {@link pulpcore.math.CoreMath#TWO_PI}, although the angle can
-        have any value. The Sprite is rotated around its anchor.
+        The angle of this Sprite, typically in range from 0 to 2*PI,
+        although the angle can have any value. The Sprite is rotated around its anchor.
     */
     public final Fixed angle = new Fixed(this);
 
     /** 
         The alpha of this Sprite, in range from 0 to 255. A value of 0 is fully 
-        tranaparent and a value of 255 is fully opaque. The default is 255.
+        transparent and a value of 255 is fully opaque. The default is 255.
     */
     public final Int alpha = new Int(this, 0xff);
     
@@ -548,10 +547,22 @@ public abstract class Sprite implements PropertyListener {
         }
     }
 
+    /**
+        Gets the fixed-point value of the Sprite's natural width. Subclasses will override this
+        method to specify the natural width. The natural width is the width of the Sprite if no
+        scaling is applied - for an {@link ImageSprite}, the natural width is the
+        width of the image.
+    */
     protected int getNaturalWidth() {
         return width.getAsFixed();
     }
     
+    /**
+        Gets the fixed-point value of the Sprite's natural height. Subclasses will override this
+        method to specify the natural height. The natural height is the height of the Sprite if no
+        scaling is applied - for an {@link ImageSprite}, the natural height is the
+        height of the image.
+    */
     protected int getNaturalHeight() {
         return height.getAsFixed();
     }
@@ -642,7 +653,6 @@ public abstract class Sprite implements PropertyListener {
         this.cursor = -1;
     }
     
-    
     /**
         Gets the cursor for this Sprite. If a cursor is not defined for this Sprite, the parent's
         cursor is used.
@@ -686,6 +696,7 @@ public abstract class Sprite implements PropertyListener {
         The default filter is {@code null}.
         <p>
         If the specified filter is already attached to a Sprite, a clone of it is created.
+        @see #getFilter()
     */
     public final void setFilter(Filter filter) {
         if (filter != null) {
@@ -705,6 +716,10 @@ public abstract class Sprite implements PropertyListener {
         }
     }
 
+    /**
+        Gets the image filter for this Sprite, or null if there is no filter.
+        @see #setFilter(pulpcore.image.filter.Filter) 
+    */
     public final Filter getFilter() {
         return filter;
     }
@@ -809,7 +824,10 @@ public abstract class Sprite implements PropertyListener {
             sinAngle = CoreMath.sin(angle.getAsFixed());
         }
     }
-    
+
+    /**
+        Draws the Sprite. Subclasses override {@link #drawSprite(pulpcore.image.CoreGraphics) }.
+     */
     public final void draw(CoreGraphics g) {
         if (isDirty()) {
             updateTransform();
