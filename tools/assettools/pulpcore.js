@@ -520,7 +520,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
 	// First is for Windows9x, second is For XP/2000/Vista/etc.
 	getJavaCAB: [
 		"http://java.sun.com/update/1.5.0/jinstall-1_5_0_16-windows-i586.cab",
-		"http://java.sun.com/update/1.6.0/jinstall-6u11-windows-i586.cab"
+		"http://java.sun.com/update/1.6.0/jinstall-6u12-windows-i586.cab"
 	],
 
 	// The URL to the page to visit to install Java
