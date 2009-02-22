@@ -402,7 +402,12 @@ public final class AppletAppContext extends AppContext {
     }
     
     public void pollInput() {
-        inputSystem.pollInput();
+        if (inputSystem != null) {
+            // This happened a few times at pulpgames.net:
+            // java.lang.NullPointerException
+            //     at pulpcore.platform.applet.AppletAppContext.pollInput(Unknown Source)
+            inputSystem.pollInput();
+        }
     }
            
     public PolledInput getPolledInput() {

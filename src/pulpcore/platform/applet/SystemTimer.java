@@ -73,12 +73,12 @@ public class SystemTimer {
         }
     }
     
-    private final void startGranularityThread() {
+    private final synchronized void startGranularityThread() {
         // Improves the granularity of the sleep() function on Windows XP
         // Note: on some machines, time-of-day drift may occur if another thread hogs the
         // CPU
         // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
-        granularityThread = new Thread("PulpCore-Win32Granularity") {
+        Thread t = new Thread("PulpCore-Win32Granularity") {
             public void run() {
                 while (granularityThread == this && running) {
                     try {
@@ -90,11 +90,20 @@ public class SystemTimer {
                 }
             }
         };
-        granularityThread.setDaemon(true);
-        granularityThread.start();
+        t.setDaemon(true);
+        try {
+            t.start();
+        }
+        catch (IllegalThreadStateException ex) {
+            // This happened a few times at pulpgames.net.
+            // Daemon thread was stopped because VM is shutting down?
+            // These two methods are now synchronized, but they weren't before.
+            t = null;
+        }
+        granularityThread = t;
     }
     
-    private final void stopGranularityThread() {
+    private final synchronized void stopGranularityThread() {
         if (granularityThread != null) {
             Thread t = granularityThread;
             granularityThread = null;
