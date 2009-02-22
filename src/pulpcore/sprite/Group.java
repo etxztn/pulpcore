@@ -64,6 +64,7 @@ public class Group extends Sprite {
     private CoreImage backBuffer;
     private boolean backBufferCoversStage;
     private BlendMode backBufferBlendMode = BlendMode.SrcOver();
+    private Transform backBufferTransform;
     
     public Group() {
         this(0, 0, 0, 0);
@@ -215,11 +216,11 @@ public class Group extends Sprite {
     */
     public Sprite pick(int viewX, int viewY) {
         if (isOverflowClipped()) {
-            double x = getLocalX(viewX, viewY);
-            double y = getLocalY(viewX, viewY);
-            double w = CoreMath.toFloat(getNaturalWidth());
-            double h = CoreMath.toFloat(getNaturalHeight());
-            if (x < 0 || y < 0 || x >= w || y >= h) {
+            double lx = getLocalX(viewX, viewY);
+            double ly = getLocalY(viewX, viewY);
+            double lw = CoreMath.toFloat(getNaturalWidth());
+            double lh = CoreMath.toFloat(getNaturalHeight());
+            if (lx < 0 || ly < 0 || lx >= lw || ly >= lh) {
                 return null;
             }
         }
@@ -256,11 +257,11 @@ public class Group extends Sprite {
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
         if (isOverflowClipped()) {
-            double x = getLocalX(viewX, viewY);
-            double y = getLocalY(viewX, viewY);
-            double w = CoreMath.toFloat(getNaturalWidth());
-            double h = CoreMath.toFloat(getNaturalHeight());
-            if (x < 0 || y < 0 || x >= w || y >= h) {
+            double lx = getLocalX(viewX, viewY);
+            double ly = getLocalY(viewX, viewY);
+            double lw = CoreMath.toFloat(getNaturalWidth());
+            double lh = CoreMath.toFloat(getNaturalHeight());
+            if (lx < 0 || ly < 0 || lx >= lw || ly >= lh) {
                 return null;
             }
         }
@@ -535,6 +536,8 @@ public class Group extends Sprite {
         }
         if (hasBackBuffer()) {
             createBackBuffer(backBufferBlendMode);
+            backBufferTransform = new Transform();
+            backBufferTransform.translate(fInnerX, fInnerY);
         }
         setDirty(true);
     }
@@ -574,6 +577,8 @@ public class Group extends Sprite {
             backBufferWidth = Stage.getWidth();
             backBufferHeight = Stage.getHeight();
             backBufferCoversStage = true;
+            fInnerX = 0;
+            fInnerY = 0;
         }
         else {
             backBufferWidth = CoreMath.toIntCeil(w);
@@ -585,7 +590,17 @@ public class Group extends Sprite {
             backBuffer.getHeight() != backBufferHeight)
         {
             backBuffer = new CoreImage(backBufferWidth, backBufferHeight, false);
+            backBufferTransform = new Transform();
+            backBufferTransform.translate(fInnerX, fInnerY);
             backBufferChanged();
+        }
+        else {
+            Transform t = new Transform();
+            t.translate(fInnerX, fInnerY);
+            if (backBufferTransform == null || !t.equals(backBufferTransform)) {
+                backBufferTransform = t;
+                backBufferChanged();
+            }
         }
     }
     
@@ -611,6 +626,7 @@ public class Group extends Sprite {
     public void removeBackBuffer() {
         if (backBuffer != null) {
             backBuffer = null;
+            backBufferTransform = null;
             backBufferChanged();
         }
     }
@@ -636,6 +652,10 @@ public class Group extends Sprite {
     public BlendMode getBackBufferBlendMode() {
         return backBufferBlendMode;
     }
+
+    /* package-private */ Transform getBackBufferTransform() {
+        return backBufferTransform;
+    }
     
     //
     // Sprite class implementation
@@ -660,11 +680,21 @@ public class Group extends Sprite {
     }
     
     protected int getAnchorX() {
-        return super.getAnchorX() - fInnerX;
+        if (hasBackBuffer()) {
+            return super.getAnchorX() + fInnerX;
+        }
+        else {
+            return super.getAnchorX();
+        }
     }
     
     protected int getAnchorY() {
-        return super.getAnchorY() - fInnerY;
+        if (hasBackBuffer()) {
+            return super.getAnchorY() + fInnerY;
+        }
+        else {
+            return super.getAnchorY();
+        }
     }
 
     public void propertyChange(Property p) {
@@ -683,30 +713,62 @@ public class Group extends Sprite {
         }
     }
     
-    protected void drawSprite(CoreGraphics g) {
+    protected final void drawSprite(CoreGraphics g) {
         Sprite[] snapshot = sprites;
         
         if (backBuffer == null) {
+            Rect oldClip = null;
+            boolean setClip = isOverflowClipped();
+
+            if (setClip) {
+                Transform t = g.getTransform();
+                oldClip = g.getClip();
+                Rect newClip = new Rect();
+                t.getBounds(width.getAsFixed(), height.getAsFixed(), newClip);
+                g.clipRect(newClip);
+            }
+
             for (int i = 0; i < snapshot.length; i++) {
                 snapshot[i].draw(g);
             }
+
+            if (setClip) {
+                g.setClip(oldClip);
+            }
         }
         else {
-            int clipX = g.getClipX();
-            int clipY = g.getClipY(); 
-            int clipW = g.getClipWidth();
-            int clipH = g.getClipHeight();
+            int clipX;
+            int clipY; 
+            int clipW;
+            int clipH;
             Transform clipTransform;
             CoreGraphics g2 = backBuffer.createGraphics();
             g2.setBlendMode(backBufferBlendMode);
-            if (backBufferCoversStage) {
-                g2.setTransform(g.getTransform());
-                clipTransform = g.getTransform();
+            
+            if (g == null) {
+                clipX = 0;
+                clipY = 0; 
+                clipW = backBuffer.getWidth();
+                clipH = backBuffer.getHeight();
+                clipTransform = new Transform();
             }
             else {
-                clipTransform = getDrawTransform();
+                clipX = g.getClipX();
+                clipY = g.getClipY(); 
+                clipW = g.getClipWidth();
+                clipH = g.getClipHeight();
+                if (backBufferCoversStage) {
+                    //g2.setTransform(g.getTransform());
+                    clipTransform = g.getTransform();
+                }
+                else {
+                    clipTransform = getDrawTransform();
+//                    Transform t = new Transform();
+//                    t.translate(fInnerX, fInnerY);
+//                    g2.setTransform(t);
+                }
             }
-            
+
             if (clipTransform.getType() != Transform.TYPE_IDENTITY) {
                 Tuple2i p1 = new Tuple2i(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY));
                 Tuple2i p2 = new Tuple2i(

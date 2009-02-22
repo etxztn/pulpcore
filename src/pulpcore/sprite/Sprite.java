@@ -474,7 +474,7 @@ public abstract class Sprite implements PropertyListener {
             return Stage.getDefaultTransform();
         }
         else if (parent.hasBackBuffer()) {
-            return IDENTITY;
+            return parent.getBackBufferTransform();
         }
         else {
             return parent.getDrawTransform();
@@ -692,7 +692,7 @@ public abstract class Sprite implements PropertyListener {
 
     /**
         Sets the image filter for this Sprite.
-        If this Sprite is a Group with no backbuffer, the filter is ignored.
+        If this Sprite is a Group with no backbuffer, a backbuffer is created.
         The default filter is {@code null}.
         <p>
         If the specified filter is already attached to a Sprite, a clone of it is created.
@@ -713,6 +713,9 @@ public abstract class Sprite implements PropertyListener {
         if (this.filter != null) {
             Filter source = getFilterSource(this.filter);
             source.setInput(new SpriteFilterInput());
+            if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
+                ((Group)this).createBackBuffer();
+            }
         }
     }
 
@@ -725,10 +728,8 @@ public abstract class Sprite implements PropertyListener {
     }
 
     private Filter getWorkingFilter() {
-        if (filter != null && (this instanceof Group) && !((Group)this).hasBackBuffer() &&
-                (width.getAsIntCeil() <= 0 || height.getAsIntCeil() <= 0))
-        {
-            // Ignore filters on groups with no dimensions and no back buffer
+        if (filter != null && (this instanceof Group) && !((Group)this).hasBackBuffer()) {
+            // Ignore filters on groups with no back buffer
             return null;
         }
         return filter;

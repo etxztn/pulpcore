@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -222,20 +222,5 @@ public class Viewport extends Group {
     */
     public void moveDown(Sprite sprite) {
         getContentPane().moveDown(sprite);
-    }
-    
-    protected void drawSprite(CoreGraphics g) {
-        if (!hasBackBuffer()) {
-            Transform t = g.getTransform();
-            Rect oldClip = g.getClip();
-            Rect newClip = new Rect();
-            t.getBounds(width.getAsFixed(), height.getAsFixed(), newClip);
-            g.clipRect(newClip);
-            super.drawSprite(g);
-            g.setClip(oldClip);
-        }
-        else {
-            super.drawSprite(g);
-        }
     }
 }
