@@ -360,8 +360,19 @@ public abstract class Sprite implements PropertyListener {
     public final boolean updateDirtyRect() {
         
         boolean changed = false;
-        boolean isUnconstrainedGroup = 
-            (this instanceof Group) && !((Group)this).isOverflowClipped();
+        boolean isUnconstrainedGroup = false;
+        if (this instanceof Group) {
+            Group group = (Group)this;
+            if (!group.isOverflowClipped()) {
+                isUnconstrainedGroup = true;
+            }
+            else if ((group.getNaturalWidth() == 0 || group.getNaturalHeight() == 0) &&
+                    getWorkingFilter() == null)
+            {
+                // Group has backbuffer that covers the stage, but no filter
+                isUnconstrainedGroup = true;
+            }
+        }
         
         if (visible.get() == false || alpha.get() <= 0 || isUnconstrainedGroup) {
             changed = (getDirtyRect() != null);
@@ -387,7 +398,13 @@ public abstract class Sprite implements PropertyListener {
             int h = getNaturalHeight();
 
             Filter f = getWorkingFilter();
-            if (f != null && f.isDifferentBoundsFromOriginal()) {
+            if (f != null && (w == 0 || h == 0)) {
+                // Back buffer covers stage
+                t = d;
+                w = CoreMath.toFixed(Stage.getWidth());
+                h = CoreMath.toFixed(Stage.getHeight());
+            }
+            else if (f != null && f.isDifferentBoundsFromOriginal()) {
                 t = new Transform(t);
                 t.translate(CoreMath.toFixed(f.getOffsetXFromOriginal()),
                         CoreMath.toFixed(f.getOffsetYFromOriginal()));
@@ -766,11 +783,21 @@ public abstract class Sprite implements PropertyListener {
         }
 
         public int getWidth() {
-            return CoreMath.toIntCeil(getNaturalWidth());
+            if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
+                return ((Group)Sprite.this).getBackBuffer().getWidth();
+            }
+            else {
+                return CoreMath.toIntCeil(getNaturalWidth());
+            }
         }
 
         public int getHeight() {
-            return CoreMath.toIntCeil(getNaturalHeight());
+            if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
+                return ((Group)Sprite.this).getBackBuffer().getHeight();
+            }
+            else {
+                return CoreMath.toIntCeil(getNaturalHeight());
+            }
         }
 
         public boolean isOpaque() {

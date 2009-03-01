@@ -110,13 +110,12 @@ public class Group extends Sprite {
         Returns {@code true} if sprites inside this Group are not visible outside the
         natural bounds of this Group.
 
-        The default implementation returns {@code true} if the Group has a back
-        buffer and the back buffer doesn't cover the entire stage.
+        The default implementation returns {@code true} if the Group has a back buffer.
         @see #getNaturalWidth()
         @see #getNaturalHeight()
     */
     public boolean isOverflowClipped() {
-        return (hasBackBuffer() && !backBufferCoversStage);
+        return hasBackBuffer();
     }
     
     //
