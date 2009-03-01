@@ -839,13 +839,23 @@ public class Scene2D extends Scene {
                 parentClip = new Rect(parentClip);
                 parentClip.intersection(newClip);
             }
+            // Special case: Group has a dirty filter
+            if (group.hasBackBuffer() && group.getFilter() != null && group.isDirty()) {
+                addDirtyRectangle(null, parentClip);
+            }
         }
         
         // Add dirty rects for removed sprites
         ArrayList removedSprites = group.getRemovedSprites();
         if (removedSprites != null) {
             for (int i = 0; i < removedSprites.size(); i++) {
-                notifyRemovedSprite(oldParentClip, (Sprite)removedSprites.get(i));
+                if (removedSprites.get(i) == group) {
+                    // Special case: Group had a filter that was removed
+                    addDirtyRectangle(null, oldParentClip);
+                }
+                else {
+                    notifyRemovedSprite(oldParentClip, (Sprite)removedSprites.get(i));
+                }
             }
         }
         

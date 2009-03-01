@@ -42,6 +42,7 @@ import pulpcore.math.Tuple2i;
 import pulpcore.math.Transform;
 import pulpcore.Stage;
 import pulpcore.animation.Property;
+import pulpcore.image.filter.Filter;
 
 /**
     A container of Sprites.
@@ -52,19 +53,17 @@ public class Group extends Sprite {
     private Sprite[] sprites = new Sprite[0];
     /** The list of sprites at the last call to getRemovedSprites() */
     private Sprite[] previousSprites = null;
+    private boolean hadFilterLastUpdate = false;
     
     /** Used for children to check if this Group's transform has changed since the last update */
     private int transformModCount = 0;
     
     private int fNaturalWidth;
     private int fNaturalHeight;
-    private int fInnerX;
-    private int fInnerY;
     
     private CoreImage backBuffer;
     private boolean backBufferCoversStage;
     private BlendMode backBufferBlendMode = BlendMode.SrcOver();
-    private Transform backBufferTransform;
     
     public Group() {
         this(0, 0, 0, 0);
@@ -471,6 +470,12 @@ public class Group extends Sprite {
     */
     public ArrayList getRemovedSprites() {
         ArrayList removedSprites = null;
+        Filter f = getWorkingFilter();
+        if (hadFilterLastUpdate && f == null) {
+            // Special case: filter removed
+            removedSprites = new ArrayList();
+            removedSprites.add(this);
+        }
         if (previousSprites == null) {
             // First call from Scene2D - no remove notifications needed
             previousSprites = sprites;
@@ -490,20 +495,23 @@ public class Group extends Sprite {
             }
             previousSprites = sprites;
         }
+        hadFilterLastUpdate = (f != null);
         return removedSprites;
     }
     
     /**
         Packs this group so that its dimensions match the area covered by its children. 
         If this Group has a back buffer, the back buffer is resized if necessary.
+        <p>
+        The Group is not re-located. If child Sprites are have a negative x or y dimension,
+        (are positions to the top or left of the Group bounds) a portion of the Sprite may be
+        cropped.
     */
     public void pack() {
         Sprite[] snapshot = sprites;
         
         if (snapshot.length > 0) {
             // Integers
-            int minX = Integer.MAX_VALUE;
-            int minY = Integer.MAX_VALUE;
             int maxX = Integer.MIN_VALUE;
             int maxY = Integer.MIN_VALUE;
             Rect bounds = new Rect();
@@ -514,30 +522,20 @@ public class Group extends Sprite {
                     ((Group)sprite).pack();
                 }
                 sprite.getRelativeBounds(bounds);
-                minX = Math.min(minX, bounds.x);
                 maxX = Math.max(maxX, bounds.x + bounds.width);
-                minY = Math.min(minY, bounds.y);
                 maxY = Math.max(maxY, bounds.y + bounds.height);
             }
-            fInnerX = CoreMath.toFixed(-minX);
-            fInnerY = CoreMath.toFixed(-minY);
-            fNaturalWidth = CoreMath.toFixed(maxX - minX);
-            fNaturalHeight = CoreMath.toFixed(maxY - minY);
-            width.setAsFixed(fNaturalWidth);
-            height.setAsFixed(fNaturalHeight);
+            fNaturalWidth = CoreMath.toFixed(maxX);
+            fNaturalHeight = CoreMath.toFixed(maxY);
         }
         else {
-            fInnerX = 0;
-            fInnerY = 0;
             fNaturalWidth = 0;
             fNaturalHeight = 0;
-            width.set(0);
-            height.set(0);
         }
+        width.setAsFixed(fNaturalWidth);
+        height.setAsFixed(fNaturalHeight);
         if (hasBackBuffer()) {
             createBackBuffer(backBufferBlendMode);
-            backBufferTransform = new Transform();
-            backBufferTransform.translate(fInnerX, fInnerY);
         }
         setDirty(true);
     }
@@ -577,8 +575,6 @@ public class Group extends Sprite {
             backBufferWidth = Stage.getWidth();
             backBufferHeight = Stage.getHeight();
             backBufferCoversStage = true;
-            fInnerX = 0;
-            fInnerY = 0;
         }
         else {
             backBufferWidth = CoreMath.toIntCeil(w);
@@ -590,17 +586,7 @@ public class Group extends Sprite {
             backBuffer.getHeight() != backBufferHeight)
         {
             backBuffer = new CoreImage(backBufferWidth, backBufferHeight, false);
-            backBufferTransform = new Transform();
-            backBufferTransform.translate(fInnerX, fInnerY);
             backBufferChanged();
-        }
-        else {
-            Transform t = new Transform();
-            t.translate(fInnerX, fInnerY);
-            if (backBufferTransform == null || !t.equals(backBufferTransform)) {
-                backBufferTransform = t;
-                backBufferChanged();
-            }
         }
     }
     
@@ -626,7 +612,6 @@ public class Group extends Sprite {
     public void removeBackBuffer() {
         if (backBuffer != null) {
             backBuffer = null;
-            backBufferTransform = null;
             backBufferChanged();
         }
     }
@@ -652,10 +637,6 @@ public class Group extends Sprite {
     public BlendMode getBackBufferBlendMode() {
         return backBufferBlendMode;
     }
-
-    /* package-private */ Transform getBackBufferTransform() {
-        return backBufferTransform;
-    }
     
     //
     // Sprite class implementation
@@ -679,24 +660,6 @@ public class Group extends Sprite {
         }
     }
     
-    protected int getAnchorX() {
-        if (hasBackBuffer()) {
-            return super.getAnchorX() + fInnerX;
-        }
-        else {
-            return super.getAnchorX();
-        }
-    }
-    
-    protected int getAnchorY() {
-        if (hasBackBuffer()) {
-            return super.getAnchorY() + fInnerY;
-        }
-        else {
-            return super.getAnchorY();
-        }
-    }
-
     public void propertyChange(Property p) {
         super.propertyChange(p);
         if ((p == width || p == height) && hasBackBuffer()) {
@@ -706,10 +669,15 @@ public class Group extends Sprite {
     
     public void update(int elapsedTime) {
         super.update(elapsedTime);
+
+        Filter f = getWorkingFilter();
         
         Sprite[] snapshot = sprites;
         for (int i = 0; i < snapshot.length; i++) {
             snapshot[i].update(elapsedTime);
+            if (f != null && snapshot[i].isDirty()) {
+                setDirty(true);
+            }
         }
     }
     
@@ -758,14 +726,10 @@ public class Group extends Sprite {
                 clipW = g.getClipWidth();
                 clipH = g.getClipHeight();
                 if (backBufferCoversStage) {
-                    //g2.setTransform(g.getTransform());
                     clipTransform = g.getTransform();
                 }
                 else {
                     clipTransform = getDrawTransform();
-//                    Transform t = new Transform();
-//                    t.translate(fInnerX, fInnerY);
-//                    g2.setTransform(t);
                 }
             }
 

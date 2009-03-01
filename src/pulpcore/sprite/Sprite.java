@@ -474,7 +474,7 @@ public abstract class Sprite implements PropertyListener {
             return Stage.getDefaultTransform();
         }
         else if (parent.hasBackBuffer()) {
-            return parent.getBackBufferTransform();
+            return IDENTITY;
         }
         else {
             return parent.getDrawTransform();
@@ -727,7 +727,7 @@ public abstract class Sprite implements PropertyListener {
         return filter;
     }
 
-    private Filter getWorkingFilter() {
+    /* package-private */ Filter getWorkingFilter() {
         if (filter != null && (this instanceof Group) && !((Group)this).hasBackBuffer()) {
             // Ignore filters on groups with no back buffer
             return null;
