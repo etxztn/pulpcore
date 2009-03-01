@@ -64,6 +64,7 @@ public class Group extends Sprite {
     private CoreImage backBuffer;
     private boolean backBufferCoversStage;
     private BlendMode backBufferBlendMode = BlendMode.SrcOver();
+    private Transform backBufferTransform = new Transform();
     
     public Group() {
         this(0, 0, 0, 0);
@@ -542,6 +543,10 @@ public class Group extends Sprite {
     //
     // Back buffers
     //
+
+    /* package-private */ Transform getBackBufferTransform() {
+        return (getFilter() != null) ? Sprite.IDENTITY : backBufferTransform;
+    }
     
     /**
         Creates a back buffer for this Group.
@@ -566,6 +571,7 @@ public class Group extends Sprite {
     */
     public void createBackBuffer(BlendMode blendMode) {
         setBackBufferBlendMode(blendMode);
+        Transform t = new Transform();
         int w = getNaturalWidth();
         int h = getNaturalHeight();
         int backBufferWidth;
@@ -574,6 +580,7 @@ public class Group extends Sprite {
             backBufferWidth = Stage.getWidth();
             backBufferHeight = Stage.getHeight();
             backBufferCoversStage = true;
+            t.translate(x.getAsFixed(), y.getAsFixed());
         }
         else {
             backBufferWidth = CoreMath.toIntCeil(w);
@@ -585,6 +592,10 @@ public class Group extends Sprite {
             backBuffer.getHeight() != backBufferHeight)
         {
             backBuffer = new CoreImage(backBufferWidth, backBufferHeight, false);
+            backBufferChanged();
+        }
+        if (!backBufferTransform.equals(t)) {
+            backBufferTransform = t;
             backBufferChanged();
         }
     }
@@ -717,7 +728,7 @@ public class Group extends Sprite {
                 clipY = 0; 
                 clipW = backBuffer.getWidth();
                 clipH = backBuffer.getHeight();
-                clipTransform = new Transform();
+                clipTransform = Sprite.IDENTITY;
             }
             else {
                 clipX = g.getClipX();

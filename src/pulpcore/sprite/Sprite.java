@@ -56,7 +56,7 @@ import pulpcore.image.filter.Filter;
 */
 public abstract class Sprite implements PropertyListener {
     
-    private static final Transform IDENTITY = new Transform();
+    static final Transform IDENTITY = new Transform();
 
     //
     // Text anchors
@@ -491,7 +491,7 @@ public abstract class Sprite implements PropertyListener {
             return Stage.getDefaultTransform();
         }
         else if (parent.hasBackBuffer()) {
-            return IDENTITY;
+            return parent.getBackBufferTransform();
         }
         else {
             return parent.getDrawTransform();
@@ -716,6 +716,9 @@ public abstract class Sprite implements PropertyListener {
         @see #getFilter()
     */
     public final void setFilter(Filter filter) {
+        if (this.filter != filter) {
+            setDirty(true);
+        }
         if (filter != null) {
             Filter source = getFilterSource(filter);
             if (source.getInput() instanceof SpriteFilterInput) {
