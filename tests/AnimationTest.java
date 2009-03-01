@@ -1,11 +1,27 @@
 import org.junit.Test;
 import pulpcore.animation.Easing;
+import pulpcore.animation.Fixed;
 import pulpcore.animation.event.TimelineEvent;
 import pulpcore.animation.Int;
 import pulpcore.animation.Timeline;
 import static org.junit.Assert.*;
 
 public class AnimationTest {
+
+    @Test public void bidirectionalBind() {
+        Int x = new Int(5);
+        Fixed y = new Fixed();
+        y.bindWithInverse(x);
+        assertEquals("Binding not initially set", x.get(), y.getAsInt());
+        y.set(10);
+        assertEquals("Bi-directional binding broken on inverse", y.getAsInt(), x.get());
+        y.animateTo(20, 100);
+        y.update(100);
+        assertEquals("Bi-directional binding broken on animation", y.getAsInt(), x.get());
+        x.animateTo(30, 100);
+        x.update(100);
+        assertEquals("Bi-directional binding broken on inverse animation", x.get(), y.getAsInt());
+    }
     
     @Test public void eventTriggersOnFastForward() {
         final int[] executions = { 0 };

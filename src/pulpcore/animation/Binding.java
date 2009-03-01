@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -42,28 +42,56 @@ import pulpcore.math.CoreMath;
     
     private final Property target;
     private final Property source;
+    private final boolean bidirectional;
     private final BindFunction customFunction;
     private final int function;
     
     /* package-private */ Binding(Property target, BindFunction function) {
         this.target = target;
         this.source = null;
+        this.bidirectional = false;
         this.customFunction = function;
         this.function = FUNCTION_CUSTOM;
     }
     
-    /* package-private */ Binding(Property target, Property source) {
-        this(target, source, FUNCTION_NONE);
+    /* package-private */ Binding(Property target, Property source, boolean bidirectional) {
+        this(target, source, bidirectional, FUNCTION_NONE);
     }
     
-    /* package-private */ Binding(Property target, Property source, int function) {
+    /* package-private */ Binding(Property target, Property source, boolean bidirectional,
+            int function)
+    {
         this.target = target;
         this.source = source;
+        this.bidirectional = bidirectional;
         this.customFunction = null;
         this.function = function;
         if (source != target) {
             source.addListener(this);
         }
+    }
+
+    public boolean isBidirectional() {
+        return bidirectional;
+    }
+
+    private int getInverseFunction() {
+        switch (function) {
+            default: case FUNCTION_NONE: return FUNCTION_NONE;
+            case FUNCTION_TO_INT: return FUNCTION_TO_FIXED;
+            case FUNCTION_TO_FIXED: return FUNCTION_TO_INT;
+            case FUNCTION_CUSTOM:
+                // Shouldn't happen
+                return FUNCTION_CUSTOM;
+        }
+    }
+
+    /**
+        Inverses the binding so the source is the target, and the target now has the specified
+        behavior.
+     */
+    public void inverse() {
+        source.setBehavior(new Binding(source, target, true, getInverseFunction()));
     }
     
     public void propertyChange(Property property) {

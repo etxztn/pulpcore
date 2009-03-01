@@ -5,10 +5,12 @@
     Also, if you change the pixels of an ImageSprite's CoreImage, call
     setDirty(true) on the ImageSprite.
   * API: Added Sprite.getTag(), Sprite.setTag(Object) and Group.findWithTag().
+  * API: Group.drawSprite() is now final. To do custom drawing, subclass Sprite.
+  * API: Bindings can now be bi-directional. See Int.bindWithInverse(Int) and
+    Fixed.bindWithInverse(Fixed).
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
     the device's refresh rate if it is near 60hz.
   * Core: pulpcore.js updated to install 6u12 for IE users without Java.
-  * Core: Group.drawSprite() is now final. To do custom drawing, subclass Sprite.
   * Fixed bug: Groups with a back buffer were drawn incorrectly in some cases.
   * Fixed bug: Viewport dimensions were incorrect when it contained sub-groups.
   * Fixed bug: TimelineEvents only executed the first time in a looping timeline.
