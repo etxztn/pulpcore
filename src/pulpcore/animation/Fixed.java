@@ -213,7 +213,7 @@ public final class Fixed extends Property {
         the binding is broken.
     */
     public void bindTo(Int property) {
-        setBehavior(new Binding(this, property, false, Binding.FUNCTION_TO_FIXED));
+        setBehavior(new Binding(this, property, false));
     }
 
     /**
@@ -223,7 +223,7 @@ public final class Fixed extends Property {
         is specified.
     */
     public void bindWithInverse(Int property) {
-        setBehavior(new Binding(this, property, true, Binding.FUNCTION_TO_FIXED));
+        setBehavior(new Binding(this, property, true));
     }
 
     /**

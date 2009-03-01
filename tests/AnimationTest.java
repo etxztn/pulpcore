@@ -22,6 +22,66 @@ public class AnimationTest {
         x.update(100);
         assertEquals("Bi-directional binding broken on inverse animation", x.get(), y.getAsInt());
     }
+
+    @Test public void bidirectionalBindMultipleClones() {
+        Int x = new Int(5);
+        Fixed y = new Fixed();
+        Int z = new Int();
+        y.bindWithInverse(x);
+        z.bindWithInverse(x);
+        assertEquals("Binding Y not initially set", x.get(), y.getAsInt());
+        assertEquals("Binding Z not initially set", x.get(), z.get());
+        y.set(10);
+        assertEquals("Binding X not set", y.getAsInt(), x.get());
+        assertEquals("Binding Z not set", y.getAsInt(), z.get());
+        z.set(20);
+        assertEquals("Binding X broken", z.get(), x.get());
+        assertEquals("Binding Y broken", z.get(), y.getAsInt());
+        for (int i = 0; i < 10000; i++) {
+            double r = Math.random();
+            if (r < 0.3333333) {
+                x.set((int)(Math.random()* 100));
+            }
+            else if (r < 0.6666667) {
+                y.set((int)(Math.random()* 100));
+            }
+            else {
+                z.set((int)(Math.random()* 100));
+            }
+        }
+        assertEquals("Random order - Binding X broken", z.get(), x.get());
+        assertEquals("Random order - Binding Y broken", z.get(), y.getAsInt());
+    }
+
+    @Test public void bidirectionalBindWhatIf() {
+        Int x = new Int(5);
+        Fixed y = new Fixed();
+        x.bindWithInverse(y);
+        y.bindWithInverse(x);
+        x.set(60);
+        assertEquals("Binding not initially set", x.get(), y.getAsInt());
+
+        Int x2 = new Int(5);
+        Fixed y2 = new Fixed();
+        x2.bindWithInverse(y2);
+        x2.bindWithInverse(y2); // do it twice
+        x2.set(40);
+        assertEquals("Binding y2 not initially set", x2.get(), y2.getAsInt());
+        y2.set(50);
+        assertEquals("Binding x2 not initially set", x2.get(), y2.getAsInt());
+    }
+
+    @Test public void bidirectionalCircular() {
+        Int x = new Int(5);
+        Fixed y = new Fixed();
+        Int z = new Int();
+        y.bindWithInverse(x);
+        z.bindWithInverse(y);
+        x.bindWithInverse(z);
+        x.set(40);
+        assertEquals("Random order - Binding X broken", z.get(), x.get());
+        assertEquals("Random order - Binding Y broken", z.get(), y.getAsInt());
+    }
     
     @Test public void eventTriggersOnFastForward() {
         final int[] executions = { 0 };

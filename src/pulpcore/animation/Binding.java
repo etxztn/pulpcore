@@ -35,10 +35,10 @@ import pulpcore.math.CoreMath;
 */
 /* package-private */ final class Binding implements Behavior, PropertyListener {
 
-    /* package-private */ static final int FUNCTION_NONE = 0;
-    /* package-private */ static final int FUNCTION_TO_INT = 1;
-    /* package-private */ static final int FUNCTION_TO_FIXED = 2;
-    /* package-private */ static final int FUNCTION_CUSTOM = 3;
+    private static final int FUNCTION_NONE = 0;
+    private static final int FUNCTION_TO_INT = 1;
+    private static final int FUNCTION_TO_FIXED = 2;
+    private static final int FUNCTION_CUSTOM = 3;
     
     private final Property target;
     private final Property source;
@@ -55,17 +55,19 @@ import pulpcore.math.CoreMath;
     }
     
     /* package-private */ Binding(Property target, Property source, boolean bidirectional) {
-        this(target, source, bidirectional, FUNCTION_NONE);
-    }
-    
-    /* package-private */ Binding(Property target, Property source, boolean bidirectional,
-            int function)
-    {
         this.target = target;
         this.source = source;
         this.bidirectional = bidirectional;
         this.customFunction = null;
-        this.function = function;
+        if (target instanceof Int && source instanceof Fixed) {
+            this.function = FUNCTION_TO_INT;
+        }
+        else if (target instanceof Fixed && source instanceof Int) {
+            this.function = FUNCTION_TO_FIXED;
+        }
+        else {
+            this.function = FUNCTION_NONE;
+        }
         if (source != target) {
             source.addListener(this);
         }
@@ -75,28 +77,17 @@ import pulpcore.math.CoreMath;
         return bidirectional;
     }
 
-    private int getInverseFunction() {
-        switch (function) {
-            default: case FUNCTION_NONE: return FUNCTION_NONE;
-            case FUNCTION_TO_INT: return FUNCTION_TO_FIXED;
-            case FUNCTION_TO_FIXED: return FUNCTION_TO_INT;
-            case FUNCTION_CUSTOM:
-                // Shouldn't happen
-                return FUNCTION_CUSTOM;
-        }
+    public Property getSource() {
+        return source;
     }
 
-    /**
-        Inverses the binding so the source is the target, and the target now has the specified
-        behavior.
-     */
-    public void inverse() {
-        source.setBehavior(new Binding(source, target, true, getInverseFunction()));
+    public Property getTarget() {
+        return target;
     }
     
     public void propertyChange(Property property) {
         if (target.getBehavior() != this) {
-            target.removeListener(this);
+            source.removeListener(this);
         }
         else {
             target.setValue(getValue());
@@ -125,5 +116,4 @@ import pulpcore.math.CoreMath;
                 return target.getValue();
         }
     }
-    
 }

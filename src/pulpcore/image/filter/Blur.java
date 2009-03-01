@@ -41,7 +41,7 @@ import pulpcore.math.CoreMath;
  * No temporary buffers if quality == 1
  */
 /**
-    A box-blur filter.
+    A blur filter.
     <p>
     For an opaque input image (for example, a photo), the output image has the same dimensions as
     the input. For a non-opaque input image, the output image is expanded to show the complete blur.
@@ -114,8 +114,8 @@ public class Blur extends Filter {
         Filter in = getInput();
         Blur copy = new Blur();
         copy.setInput(in == null ? null : in.copy());
-        copy.radius.bindTo(radius);
-        copy.quality.bindTo(quality);
+        copy.radius.bindWithInverse(radius);
+        copy.quality.bindWithInverse(quality);
         return copy;
     }
 
@@ -195,14 +195,9 @@ public class Blur extends Filter {
     }
 
     private int autoExpandSize() {
-        if (actualQuality <= 0) {
-            return 0;
-        }
-        else {
-            // Ceil to nearest 8px so that new buffers don't have to be created as often.
-            // This formula works since 0 <= actualRadius <= 255 and the granularity is 1/8th px.
-            return CoreMath.toIntCeil((actualRadius * actualQuality) >> 3) << 3;
-        }
+        // Ceil to nearest 4px so that new buffers don't have to be created as often.
+        // This formula works since 0 <= actualRadius <= 255 and the granularity is 1/8th px.
+        return CoreMath.toIntCeil((actualRadius * actualQuality) >> 2) << 2;
     }
 
     public boolean isDifferentBounds() {

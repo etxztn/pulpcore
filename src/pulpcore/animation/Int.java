@@ -165,7 +165,7 @@ public class Int extends Property {
         the binding is broken.
     */
     public void bindTo(Fixed property) {
-        setBehavior(new Binding(this, property, false, Binding.FUNCTION_TO_INT));
+        setBehavior(new Binding(this, property, false));
     }
 
     /**
@@ -174,7 +174,7 @@ public class Int extends Property {
         bound to this property.
     */
     public void bindWithInverse(Fixed property) {
-        setBehavior(new Binding(this, property, true, Binding.FUNCTION_TO_INT));
+        setBehavior(new Binding(this, property, true));
     }
     
     /**

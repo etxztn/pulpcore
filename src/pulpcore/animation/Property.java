@@ -99,10 +99,17 @@ public abstract class Property {
         this.behavior = behavior;
         update(0);
 
-        // Inverse the bi-directional binding, if any. (But only if new behavior is not
-        // another bi-directional bind)
-        if (bidirectionalBinding != null && !isBehaviorBidirectionalBinding()) {
-            bidirectionalBinding.inverse();
+        // Inverse the bi-directional binding, if any. 
+        if (bidirectionalBinding != null) {
+            Property source = bidirectionalBinding.getSource();
+            Property target;
+            if (isBehaviorBidirectionalBinding()) {
+                target = ((Binding)this.behavior).getTarget();
+            }
+            else {
+                target = bidirectionalBinding.getTarget();
+            }
+            source.setBehavior(new Binding(source, target, true));
         }
     }
 

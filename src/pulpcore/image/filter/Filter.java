@@ -211,14 +211,16 @@ public abstract class Filter {
         Creates a copy of the Filter for another Sprite to use. The input filter is also copied.
         The properties of the copy, if any, will be bound to the original filter's properties.
         <p>
+        This method is used by the Sprite class. Most apps will not need to call this method.
+        <p>
         Subclasses should bind all properties of the cloned
-        object. For example, for the Blur filter:
+        object using bindWithInverse(). For example, for the Blur filter:
         <pre>
         public Filter copy() {
             Filter in = getInput();
             Blur copy = new Blur();
             copy.setInput(in == null ? null : in.copy());
-            copy.radius.bindTo(radius);
+            copy.radius.bindWithInverse(radius);
             return copy;
         }
         </pre>
