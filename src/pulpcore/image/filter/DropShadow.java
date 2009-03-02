@@ -119,11 +119,11 @@ public class DropShadow extends Blur {
 		Filter in = getInput();
 		DropShadow copy = new DropShadow();
 		copy.setInput(in == null ? null : in.copy());
-		copy.radius.bindTo(radius);
-        copy.quality.bindTo(quality);
-        copy.shadowOffsetX.bindTo(shadowOffsetX);
-        copy.shadowOffsetY.bindTo(shadowOffsetY);
-        copy.color.bindTo(color);
+		copy.radius.bindWithInverse(radius);
+        copy.quality.bindWithInverse(quality);
+        copy.shadowOffsetX.bindWithInverse(shadowOffsetX);
+        copy.shadowOffsetY.bindWithInverse(shadowOffsetY);
+        copy.color.bindWithInverse(color);
 		return copy;
 	}
     

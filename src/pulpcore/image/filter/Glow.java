@@ -111,9 +111,9 @@ public final class Glow extends Blur {
 		Filter in = getInput();
 		Glow copy = new Glow();
 		copy.setInput(in == null ? null : in.copy());
-		copy.amount.bindTo(amount);
-        copy.radius.bindTo(radius);
-        copy.quality.bindTo(quality);
+		copy.amount.bindWithInverse(amount);
+        copy.radius.bindWithInverse(radius);
+        copy.quality.bindWithInverse(quality);
 		return copy;
 	}
 	

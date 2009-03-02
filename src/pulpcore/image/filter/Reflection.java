@@ -109,9 +109,9 @@ public final class Reflection extends Filter {
         Filter in = getInput();
         Reflection copy = new Reflection();
         copy.setInput(in == null ? null : in.copy());
-        copy.reflectionHeight.bindTo(reflectionHeight);
-        copy.gap.bindTo(gap);
-        copy.fadingDivider.bindTo(fadingDivider);
+        copy.reflectionHeight.bindWithInverse(reflectionHeight);
+        copy.gap.bindWithInverse(gap);
+        copy.fadingDivider.bindWithInverse(fadingDivider);
         return copy;
     }
     
