@@ -147,15 +147,24 @@ public abstract class Filter {
      */
     protected abstract void filter(CoreImage input, CoreImage output);
 
-    public void setInput(CoreImage input) {
-        setInput(new CoreImageInput(input));
+    /**
+        Sets the filter input to an image.
+        @return this filter.
+     */
+    public Filter setInput(CoreImage input) {
+        return setInput(new CoreImageInput(input));
     }
     
-    public void setInput(Filter input) {
+    /**
+        Sets the filter input to another filter.
+        @return this filter.
+     */
+    public Filter setInput(Filter input) {
         if (this.input != input) {
             this.input = input;
             setDirty(true);
         }
+        return this;
     }
 
     public Filter getInput() {
