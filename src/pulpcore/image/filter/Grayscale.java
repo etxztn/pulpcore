@@ -30,6 +30,10 @@ package pulpcore.image.filter;
 
 import pulpcore.image.CoreImage;
 
+/**
+    A grayscale filter.
+    @author Florent Dupont
+ */
 public final class Grayscale extends Filter {
 
     public Filter copy() {
@@ -47,14 +51,16 @@ public final class Grayscale extends Filter {
         for(int i = 0; i < srcPixels.length; i++) {
             int srcRGB = srcPixels[i];
 
+            int alphaMask = srcRGB & 0xff000000;
             int srcR = (srcRGB >> 16) & 0xff;
             int srcG = (srcRGB >> 8) & 0xff;
             int srcB = srcRGB & 0xff;
 
-            // add together 30% of red value, 59% of green, 11% of blue
-            int dstGray = ((srcR * 77) >> 8) + ((srcG * 150) >>8) + ((srcB  * 28) >> 8);
+            // Add together 30% of red value, 59% of green, 11% of blue
+            int dstGray = (srcR * 77 + srcG * 151 + srcB * 28) >> 8;
 
-            dstPixels[i] = 0xff000000 | (dstGray << 16) | (dstGray << 8) | dstGray;
+            // Values are already pre-multiplied
+            dstPixels[i] = alphaMask | (dstGray << 16) | (dstGray << 8) | dstGray;
         }
 	}
 }

@@ -30,6 +30,10 @@ package pulpcore.image.filter;
 
 import pulpcore.image.CoreImage;
 
+/**
+    A sepia tone filter.
+    @author Florent Dupont
+ */
 public final class Sepia extends Filter {
 		
     public Filter copy() {
@@ -47,22 +51,23 @@ public final class Sepia extends Filter {
         for(int i = 0; i < srcPixels.length; i++) {
             int srcRGB = srcPixels[i];
 
+            int srcA = srcRGB >>> 24;
             int srcR = (srcRGB >> 16) & 0xff;
             int srcG = (srcRGB >> 8) & 0xff;
             int srcB = srcRGB & 0xff;
 
             // R*39.3% + G*76.9% + 18.9%B
-            int dstR = ((srcR * 100)>>8) + ((srcG * 196)>>8) + ((srcB * 48)>>8);
-            dstR = dstR > 255 ? 255 : dstR;
+            int dstR = (srcR * 100 + srcG * 196 + srcB * 48) >> 8;
+            dstR = dstR > srcA ? srcA : dstR;
             // R*34.9% + G*68.6% + 16.8%B
-            int dstG = ((srcR * 89)>>8) + ((srcG * 175)>>8) + ((srcB * 43)>>8);
-            dstG = dstG > 255 ? 255 : dstG;
+            int dstG = (srcR * 89 + srcG * 175 + srcB * 43) >> 8;
+            dstG = dstG > srcA ? srcA : dstG;
             // R*27.2% + G*53.4% + 13.1%B
-            int dstB = ((srcR * 69)>>8) + ((srcG * 136)>>8) + ((srcB * 33)>>8);
-            dstB = dstB > 255 ? 255 : dstB;
+            int dstB = (srcR * 69 + srcG * 136 + srcB * 33) >> 8;
+            dstB = dstB > srcA ? srcA : dstB;
 
-
-            dstPixels[i] = 0xff000000 | (dstR << 16) | (dstG << 8) | dstB;
+            // Values are already pre-multiplied
+            dstPixels[i] = (srcA << 24) | (dstR << 16) | (dstG << 8) | dstB;
         }
     }
 }

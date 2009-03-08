@@ -30,6 +30,10 @@ package pulpcore.image.filter;
 
 import pulpcore.image.CoreImage;
 
+/**
+    A negative-image filter.
+    @author Florent Dupont
+ */
 public final class Negative extends Filter {
 	
     public Filter copy() {
@@ -47,15 +51,17 @@ public final class Negative extends Filter {
         for(int i = 0; i < srcPixels.length; i++) {
             int srcRGB = srcPixels[i];
 
+            int srcA = srcRGB >>> 24;
             int srcR = (srcRGB >> 16) & 0xff;
             int srcG = (srcRGB >> 8) & 0xff;
             int srcB = srcRGB & 0xff;
 
-            srcR = 0xff - srcR;
-            srcG = 0xff - srcG;
-            srcB = 0xff - srcB;
+            srcR = srcA - srcR;
+            srcG = srcA - srcG;
+            srcB = srcA - srcB;
 
-            dstPixels[i] = 0xff000000 | (srcR << 16) | (srcG << 8) | srcB;
+            // Values are already pre-multiplied
+            dstPixels[i] = (srcA << 24) | (srcR << 16) | (srcG << 8) | srcB;
         }
 	}
 }
