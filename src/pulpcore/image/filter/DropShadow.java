@@ -28,119 +28,115 @@
 */
 package pulpcore.image.filter;
 
-
 import pulpcore.animation.Color;
 import pulpcore.animation.Int;
+import pulpcore.animation.Property;
+import pulpcore.animation.PropertyListener;
 import pulpcore.image.Colors;
+import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
 
-
 /**
-    A simple drop shadow. The source image should not be opaque, and should be large enough
-    to contain the drop shadow in its bounds.
-    For opaque images, try CoreImage.expandCanvas() first.
+    A simple drop shadow.
 
     @author David Brackeen
     @author Florent Dupont
  */
 public class DropShadow extends Blur {
 
+    private final static int DEFAULT_COLOR = Colors.rgba(0, 0, 0, 128);
+
+    private final PropertyListener updater = new PropertyListener() {
+        public void propertyChange(Property property) {
+            if (property == color) {
+                colorDirty = true;
+            }
+            setDirty(true);
+        }
+    };
+
     /**
         The shadow x offset. The default value is 3.
     */
-    public final Int shadowOffsetX = new Int(3);
+    public final Int shadowOffsetX = new Int(updater, 3);
 
     /**
         The shadow y offset. The default value is 3.
     */
-    public final Int shadowOffsetY = new Int(3);
+    public final Int shadowOffsetY = new Int(updater, 3);
     
     /**
         The shadow color. The default value is black with 50% alpha.
     */
-    public final Color color = new Color(DEFAULT_COLOR);
+    public final Color color = new Color(updater, DEFAULT_COLOR);
 
     private int[] shadowColorTable = new int[256];
-    public final static int DEFAULT_COLOR = Colors.rgba(0, 0, 0, 128);
-    
-    private int actualShadowOffsetX = 0; 
-    private int actualShadowOffsetY = 0; 
+    private boolean colorDirty = true;
     
     /**
-		Creates a Shadow filter with the default values.
-		- X offset of 3
-		- Y offset of 3
-		- shadow radius of 3, and quality of 3
+        Creates a Shadow filter with an offset of (3,3), the default shadow color
+        (black with 50% alpha) and the default {@link Blur } values.
     */
     public DropShadow() {
-    	this(3, 3);
+        this(3, 3, DEFAULT_COLOR, 4, 3);
     }
     
     /**
-		Creates a Shadow filter with the specified X and Y offset.
-		- shadow radius of 3, and quality of 3
+        Creates a Shadow filter with the specified X and Y offset, the default shadow color 
+        (black with 50% alpha) and the default {@link Blur } values.
      */
     public DropShadow(int offsetX, int offsetY) {
-    	this(offsetX, offsetY, DEFAULT_COLOR);
+        this(offsetX, offsetY, DEFAULT_COLOR, 4, 3);
     }
     
     /**
-		Creates a Shadow filter with the specified X and Y offset, and shadow color.
-		- shadow radius of 3, and quality of 3
+        Creates a Shadow filter with the specified X and Y offset and shadow color,
+        and the default {@link Blur } values.
      */
     public DropShadow(int offsetX, int offsetY, int shadowColor) {
-     	this(offsetX, offsetY, shadowColor, 3);
+        this(offsetX, offsetY, shadowColor, 4, 3);
     }
     
     /**
-		Creates a Shadow filter with the specified X and Y offset, shadow color, and shadow radius.
-		Default quality of 3
+        Creates a Shadow filter with the specified X and Y offset, shadow color, and shadow radius.
      */
-    public DropShadow(int offsetX, int offsetY, int shadowColor, int radius) {
-     	this(offsetX, offsetY, shadowColor, radius, 3);
+    public DropShadow(int offsetX, int offsetY, int shadowColor, float radius) {
+        this(offsetX, offsetY, shadowColor, radius, 3);
     }
     
     /**
-		Creates a Shadow filter with the specified X and Y offset, shadow color, and shadow radius and quality.
+        Creates a Shadow filter with the specified X and Y offset, shadow color, shadow radius 
+        and shadow quality, from 1 (fastes) to 3 (Guassian approximation).
     */
     public DropShadow(int offsetX, int offsetY, int shadowColor, float radius, int quality) {
-    	super(radius, quality);
-    	this.shadowOffsetX.set(offsetX);
-     	this.shadowOffsetY.set(offsetY);
-     	this.color.set(shadowColor);
-     	
-     	createShadowColorTable();
-    	 	
+        super(radius, quality);
+        this.shadowOffsetX.set(offsetX);
+        this.shadowOffsetY.set(offsetY);
+        this.color.set(shadowColor);
+    }
+
+    /**
+        Copy constructor. Subclasses can use this to help implement {@link #copy() }.
+    */
+    public DropShadow(DropShadow filter) {
+        super(filter);
+        shadowOffsetX.bindWithInverse(filter.shadowOffsetX);
+        shadowOffsetY.bindWithInverse(filter.shadowOffsetY);
+        color.bindWithInverse(filter.color);
     }
     
-    
     public Filter copy() {
-		Filter in = getInput();
-		DropShadow copy = new DropShadow();
-		copy.setInput(in == null ? null : in.copy());
-		copy.radius.bindWithInverse(radius);
-        copy.quality.bindWithInverse(quality);
-        copy.shadowOffsetX.bindWithInverse(shadowOffsetX);
-        copy.shadowOffsetY.bindWithInverse(shadowOffsetY);
-        copy.color.bindWithInverse(color);
-		return copy;
-	}
-    
+        return new DropShadow(this);
+    }
+
     public void update(int elapsedTime) {
-		super.update(elapsedTime);
-		
-		if(actualShadowOffsetX != shadowOffsetX.get()) {
-			actualShadowOffsetX = shadowOffsetX.get();
-			setDirty(true);
-		} 
-		
-		if(actualShadowOffsetY != shadowOffsetY.get()) {
-			actualShadowOffsetY = shadowOffsetY.get();
-			setDirty(true);
-		} 
-		 
-	}
+        super.update(elapsedTime);
+
+        shadowOffsetX.update(elapsedTime);
+        shadowOffsetY.update(elapsedTime);
+        color.update(elapsedTime);
+    }
     
     private void createShadowColorTable() {
         int rgb = Colors.rgb(color.get());
@@ -151,134 +147,61 @@ public class DropShadow extends Blur {
     }
     
     public boolean isDifferentBounds() {
-    	return true;
+        return true;
     }
-    
+
+    public boolean isOpaque() {
+        return false;
+    }
+
+    // TODO: The bounds could use some optimizations for large shadow offsets
     
     public int getOffsetX() {
-    	if(actualShadowOffsetX > 0) 
-    		return super.getOffsetX();
-    	else
-    		return super.getOffsetX() + actualShadowOffsetX;
+        if (shadowOffsetX.get() > 0) {
+            return super.getOffsetX();
+        }
+        else {
+            return super.getOffsetX() + shadowOffsetX.get();
+        }
     }
 
     public int getOffsetY() {
-    	if(actualShadowOffsetY > 0) 
-    		return super.getOffsetY();
-    	else
-    		return super.getOffsetY() + actualShadowOffsetY;
+        if (shadowOffsetY.get() > 0) {
+            return super.getOffsetY();
+        }
+        else {
+            return super.getOffsetY() + shadowOffsetY.get();
+        }
     }
 
     public int getWidth() {
-        return super.getWidth() + CoreMath.abs(actualShadowOffsetX);
+        return super.getWidth() + CoreMath.abs(shadowOffsetX.get());
     }
 
     public int getHeight() {
-    	
-        return super.getHeight() + CoreMath.abs(actualShadowOffsetY);
+        return super.getHeight() + CoreMath.abs(shadowOffsetY.get());
     }
-    
     
     protected void filter(CoreImage src, CoreImage dst) {
-    	
-    	int[] dstData = dst.getData();
-    	int[] srcData = src.getData();
-		int srcWidth = src.getWidth();
-		int srcHeight = src.getHeight();
-		int dstWidth = dst.getWidth();
-		int dstHeight = dst.getHeight();
-		
-		if(radius.get() == 0 || quality.get() == 0) {
-    		
-			for (int i = 0; i < srcHeight; i++) {
-				for (int j = 0; j < srcWidth; j++) {
-					
-					int dstIndex = (i * dstWidth) + j;
-					int srcIndex = (i * srcWidth) + j;
-					dstData[dstIndex] = srcData[srcIndex];
-					
-				}
-			}
-    	} else {
-    	 	// call the parent blur filter.
-        	super.filter(src, dst);
-        }
-		
-		// copies the dest pixels
-		int []tmpDst = new int[dstData.length];
-		//System.arraycopy(dst, 0, tmpDst, 0, dstData.length);
-		for(int i = 0; i < dstData.length; i++) {
-			tmpDst[i] = dstData[i];
-		}
-		for(int i = 0; i < dstData.length; i++) {
-			dstData[i] = 0x00;
-		}
-		
-		int xOffset = getOffsetXFromOriginal();
-		int yOffset = getOffsetYFromOriginal();
-		
-		// translates the shadow
-		for (int i = 0; i < dstHeight; i++) {
-			for (int j = 0; j < dstWidth; j++) {
-			
-				int tmpIndex = (i * dstWidth) + j;
-				int dstPixel = tmpDst[tmpIndex];
-				
-				if(((i + actualShadowOffsetY) > dstHeight-1 || i + actualShadowOffsetY < 0)) {
-					continue;
-				}
-				if(((j + actualShadowOffsetX) > dstWidth-1) || (j + actualShadowOffsetX < 0)) {
-					continue;
-				}
-				int dstIndex = ((i+actualShadowOffsetY)*dstWidth) + actualShadowOffsetX + j;
-				dstData[dstIndex] = dstPixel;
-			}
-		}
-		
-		// copies the image over the shadow
-		for (int i = 0; i < dstHeight; i++) {
-			for (int j = 0; j < dstWidth; j++) {
-				
-				int dstIndex = (i * dstWidth) + j;
-				int dstPixel = shadowColorTable[dstData[dstIndex] >>> 24];
-								
-				int srcPixel = 0;
-				// if we're in the SRC part, copy the src over the dst.
-				if(((i + yOffset) >= 0) && ((i+yOffset) < srcHeight) &&
-						((j + xOffset) >= 0) && ((j + xOffset) < srcWidth)) {
-					
-					int srcIndex = ((i + yOffset) * srcWidth) + j + xOffset;
-					srcPixel = srcData[srcIndex];
-				
-					int da = dstPixel >>> 24;
-					int dr = (dstPixel >> 16) & 0xff;
-					int dg = (dstPixel >> 8) & 0xff;
-					int db = dstPixel & 0xff;
-					
-					int sa = srcPixel >>> 24;
-					int sr = (srcPixel >> 16) & 0xff;
-					int sg = (srcPixel >> 8) & 0xff;
-					int sb = srcPixel & 0xff;
-					
-					 int oneMinusSA = 0xff - sa;
-					
-					// SrcOver: original image on top of shadow
-			          da = sa + ((da * oneMinusSA) >> 8);
-			          dr = sr + ((dr * oneMinusSA) >> 8);
-			          dg = sg + ((dg * oneMinusSA) >> 8);
-			          db = sb + ((db * oneMinusSA) >> 8);
-			        
-			          dstData[dstIndex] = (da << 24) | (dr << 16) | (dg << 8) | db;
-				} else {
-					// else just copy DST
-			        dstData[dstIndex] = dstPixel;
-					
-				}
-				
-			}
-		}
-				
-    }
-    
 
+        // NOTE: This isn't optimal because each pixel is drawn three times.
+        // Also, (x,y) offset is an integer, but fractional might be better.
+
+        // Create the blur
+        super.filter(src, dst, shadowOffsetX.get(), shadowOffsetY.get(), false);
+
+        // Convert the blur to the shadow color
+        if (colorDirty) {
+            createShadowColorTable();
+            colorDirty = false;
+        }
+        int[] dstData = dst.getData();
+        for (int i = 0; i < dstData.length; i++) {
+            dstData[i] = shadowColorTable[dstData[i] >>> 24];
+        }
+
+        // Draw the input image on top of the shadow
+        CoreGraphics g = dst.createGraphics();
+        g.drawImage(src, -getOffsetX(), -getOffsetY());
+    }
 }

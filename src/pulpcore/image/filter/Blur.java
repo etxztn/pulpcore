@@ -32,6 +32,7 @@ package pulpcore.image.filter;
 import pulpcore.animation.Fixed;
 import pulpcore.animation.Int;
 import pulpcore.image.Colors;
+import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
 
@@ -74,10 +75,12 @@ public class Blur extends Filter {
     public final Fixed radius = new Fixed(4);
 
     /**
-        The number of times to perform the blur. The default value is 1. A value of 3
-        approximates a Gaussian blur. Higher numbers render more slowly.
+        The number of times to perform the blur. The default value is 3 
+        (Gaussian approximation). A value of 1 renders faster.
      */
     public final Int quality = new Int(1);
+
+    private boolean autoExpand = true;
 
     private int actualRadius = 0;
     private int actualQuality = 0;
@@ -90,7 +93,7 @@ public class Blur extends Filter {
         Creates a blur filter with a radius of 4 and a quality of 1.
      */
     public Blur() {
-        this(4, 1);
+        this(4, 3);
     }
 
     /**
@@ -98,7 +101,7 @@ public class Blur extends Filter {
         Integer values are optimized to render slightly faster.
      */
     public Blur(float radius) {
-        this(radius, 1);
+        this(radius, 3);
     }
 
     /**
@@ -110,13 +113,37 @@ public class Blur extends Filter {
         this.quality.set(quality);
     }
 
+    /**
+        Copy constructor. Subclasses can use this to help implement {@link #copy() }.
+    */
+    public Blur(Blur filter) {
+        Filter in = filter.getInput();
+        autoExpand = filter.autoExpand;
+        setInput(in == null ? null : in.copy());
+        radius.bindWithInverse(filter.radius);
+        quality.bindWithInverse(filter.quality);
+    }
+
+    /**
+        Sets whether the blur output should automatically expand its dimensions to accomodate the
+        size of the blur radius. By default, the output is expanded.
+        @see #getExpandOutput()
+    */
+    public void setExpandOutput(boolean expand) {
+        autoExpand = expand;
+    }
+
+    /**
+        Gets whether the blur output should automatically expand its dimensions to accomodate the
+        size of the blur radius. By default, the output is expanded.
+        @see #setExpandOutput(boolean)
+     */
+    public boolean getExpandOutput() {
+        return autoExpand;
+    }
+
     public Filter copy() {
-        Filter in = getInput();
-        Blur copy = new Blur();
-        copy.setInput(in == null ? null : in.copy());
-        copy.radius.bindWithInverse(radius);
-        copy.quality.bindWithInverse(quality);
-        return copy;
+        return new Blur(this);
     }
 
     public void update(int elapsedTime) {
@@ -136,16 +163,12 @@ public class Blur extends Filter {
         }
 
         int q = CoreMath.clamp(quality.get(), 0, 15);
-        if (actualQuality != q) {
+        if (isDirty() || actualQuality != q || CPU_TEST) {
             actualQuality = q;
             actualRadius = r;
             setDirty(true);
         }
-        else if (CPU_TEST) {
-            actualRadius = r;
-            setDirty(true);
-        }
-        else if (r != actualRadius) {
+        else if (actualRadius != r) {
             // Update at a limited frame rate, depending on the radius
             int timeLimit = 0;
             if (r < CoreMath.toFixed(4)) {
@@ -190,10 +213,6 @@ public class Blur extends Filter {
         return getInput() == null ? false : getInput().isOpaque();
     }
 
-    private boolean autoExpand() {
-        return !isInputOpaque();
-    }
-
     private int autoExpandSize() {
         // Ceil to nearest 4px so that new buffers don't have to be created as often.
         // This formula works since 0 <= actualRadius <= 255 and the granularity is 1/8th px.
@@ -201,31 +220,46 @@ public class Blur extends Filter {
     }
 
     public boolean isDifferentBounds() {
-        return autoExpand() && autoExpandSize() > 0;
+        return getExpandOutput() && autoExpandSize() > 0;
     }
 
     public int getOffsetX() {
-        return autoExpand() ? -autoExpandSize() : 0;
+        return getExpandOutput() ? -autoExpandSize() : 0;
     }
 
     public int getOffsetY() {
-        return autoExpand() ? -autoExpandSize() : 0;
+        return getExpandOutput() ? -autoExpandSize() : 0;
     }
 
     public int getWidth() {
-        return super.getWidth() + (autoExpand() ? autoExpandSize()*2 : 0);
+        return super.getWidth() + (getExpandOutput() ? autoExpandSize()*2 : 0);
     }
 
     public int getHeight() {
-        return super.getHeight() + (autoExpand() ? autoExpandSize()*2 : 0);
+        return super.getHeight() + (getExpandOutput() ? autoExpandSize()*2 : 0);
     }
     
     protected void filter(CoreImage input, CoreImage output) {
+        // If true, the outside of the image is the same pixels as the border.
+        // If false, the outside of the image is considered BORDER_COLOR.
+        boolean clamp = isInputOpaque();
+        filter(input, output, 0, 0, clamp);
+    }
+
+    protected void filter(CoreImage input, CoreImage output, int shiftX, int shiftY, boolean clamp) {
         lastUpdateTime = time;
         if ((actualRadius <= 0 || actualQuality <= 0) && !CPU_TEST) {
-            // Assume input and output are same dimensions
-            System.arraycopy(input.getData(), 0, output.getData(), 0,
-                    input.getWidth() * output.getHeight());
+            if (input.getWidth() == output.getWidth() &&
+                    input.getHeight() == output.getHeight())
+            {
+                System.arraycopy(input.getData(), 0, output.getData(), 0,
+                    input.getWidth() * input.getHeight());
+            }
+            else {
+                CoreGraphics g = output.createGraphics();
+                g.clear();
+                g.drawImage(input, shiftX - getOffsetX(), shiftY - getOffsetY());
+            }
         }
         else {
             if (actualQuality > 1) {
@@ -255,10 +289,10 @@ public class Blur extends Filter {
                 CoreImage src = input;
                 CoreImage dst = ((actualQuality & 1) == 1) ? output : workBuffer;
                 CoreImage wrk = ((actualQuality & 1) == 1) ? workBuffer : output;
-                int ox = -getOffsetX();
-                int oy = -getOffsetY();
+                int ox = shiftX - getOffsetX();
+                int oy = shiftY - getOffsetY();
                 for (int i = 0; i < actualQuality; i++) {
-                    filter(src, dst, actualRadius, ox, oy);
+                    filter(src, dst, actualRadius, ox, oy, clamp);
                     postProcess(src, dst, actualRadius);
                     src = dst;
                     dst = wrk;
@@ -284,7 +318,7 @@ public class Blur extends Filter {
     }
 
     private void filter(CoreImage src, CoreImage dst, final int r, 
-            final int offsetX, final int offsetY)
+            final int offsetX, final int offsetY, final boolean clamp)
     {
         final int srcWidth = src.getWidth();
         final int srcHeight = src.getHeight();
@@ -298,10 +332,6 @@ public class Blur extends Filter {
         final long windowLength = r * 2 + CoreMath.ONE;
         final long windowArea = CoreMath.mul(windowLength, windowLength);
         final int columnOffset = rInt + 1;
-        
-        // If true, the outside of the image is the same pixels as the border.
-        // If false, the outside of the image is considered BORDER_COLOR.
-        final boolean clamp = isInputOpaque();
 
         for (int i = 0; i < 256; i++) {
             int c = CoreMath.clamp(preProcessChannel(r, i), 0, 255);
@@ -441,7 +471,7 @@ public class Blur extends Filter {
 
                 int x1 = -columnOffset;
                 int x2 = offsetX;
-                int x3 = srcWidth - 1 + offsetX;
+                int x3 = srcWidth + offsetX;
                 int x4 = dstWidth + columnOffset;
                 int prevPixel;
                 int nextPixel;
