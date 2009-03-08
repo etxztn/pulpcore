@@ -188,13 +188,13 @@ public abstract class Filter {
     public void update(int elapsedTime) {
         if (input != null) {
             input.update(elapsedTime);
-            if (input.isDirty()) {
-                setDirty(true);
-            }
         }
     }
 
     public boolean isDirty() {
+        if (!isDirty && input != null && input.isDirty()) {
+            setDirty(true);
+        }
         return isDirty;
     }
 

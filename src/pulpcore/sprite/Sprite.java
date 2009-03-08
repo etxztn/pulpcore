@@ -29,6 +29,8 @@
 
 package pulpcore.sprite;
 
+import pulpcore.Build;
+import pulpcore.CoreSystem;
 import pulpcore.animation.Bool;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
@@ -451,6 +453,12 @@ public abstract class Sprite implements PropertyListener {
         Returns true if the Sprite's properties have changed since the last call to draw()
     */
     public final boolean isDirty() {
+        if (!dirty) {
+            Filter f = getWorkingFilter();
+            if (f != null && f.isDirty()) {
+                setDirty(true);
+            }
+        }
         return dirty;
     }
     
@@ -837,9 +845,6 @@ public abstract class Sprite implements PropertyListener {
         Filter f = getWorkingFilter();
         if (f != null) {
             f.update(elapsedTime);
-            if (f.isDirty()) {
-                setDirty(true);
-            }
         }
     }
 
@@ -860,7 +865,10 @@ public abstract class Sprite implements PropertyListener {
         Draws the Sprite. Subclasses override {@link #drawSprite(pulpcore.image.CoreGraphics) }.
      */
     public final void draw(CoreGraphics g) {
-        if (isDirty()) {
+        if (dirty) {
+            if (Build.DEBUG && getScene2D() != null) {
+                CoreSystem.print("Sprite " + getClass().getName() + " has a bad dirty rect");
+            }
             updateTransform();
             setDirty(false);
         }
