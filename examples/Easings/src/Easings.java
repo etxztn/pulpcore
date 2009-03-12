@@ -69,7 +69,7 @@ public class Easings extends Scene2D {
         int delay = 500;
         timeline = new Timeline();
         timeline.move(icon, 140,240, 500,240, dur, easing);
-        timeline.at(dur+delay).move(icon, 500,240, 140,240, dur, easing);
+        timeline.after(delay).move(icon, 500,240, 140,240, dur, easing);
         timeline.loopForever(delay);
     }
     

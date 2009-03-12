@@ -208,7 +208,6 @@ public final class Timeline extends Animation {
         This method provides an alternative syntax for delayed animations:
         <pre>
         timeline.at(500).animate(sprite.alpha, 0, 255, 500);
-        timeline.at(1000).set(sprite.enabled, true);
         </pre>
         @param time Time in milliseconds.
         @return the child timeline.
@@ -217,6 +216,43 @@ public final class Timeline extends Animation {
         Timeline child = new Timeline(Easing.NONE, time);
         add(child);
         return child;
+    }
+
+    /**
+        Creates a child timeline that starts at end of this timeline.
+        <p>
+        This method provides an alternative syntax for delayed animations:
+        <pre>
+        timeline.animate(sprite.alpha, 0, 255, 500);
+        timeline.after().set(sprite.enabled, true);
+        </pre>
+        @return the child timeline.
+    */
+    public Timeline after() {
+        return after(0);
+    }
+
+    /**
+        Creates a child timeline that starts at the specified time relative to the end of this
+        timeline.
+        <p>
+        This method provides an alternative syntax for delayed animations. This code animates
+        a sprite from x1 to x2, waits one second, then animates back from x2 to x1.
+        <pre>
+        timeline.animate(sprite.x, x1, x2, 500);
+        timeline.after(1000).animate(sprite.x, x2, x1, 500);
+        </pre>
+        @param time Time in milliseconds (after the current end of this Timeline).
+        @return the child timeline.
+    */
+    public Timeline after(int time) {
+        int t = getDuration();
+        if (t == LOOP_FOREVER) {
+            return at(time);
+        }
+        else {
+            return at(time + t);
+        }
     }
     
     /**
