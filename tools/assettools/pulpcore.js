@@ -527,7 +527,11 @@ PulpCore.JRE = window.PulpCore.JRE || {
 	getJavaURL: "http://java.sun.com/webapps/getjava/BrowserRedirect?host=java.com" +
 		'&type=kernel&returnPage=' + document.location,
 
-	deploymentToolkitMimeType: 'application/npruntime-scriptable-plugin;DeploymentToolkit',
+    // Deployment Toolkit mime types (old and new)
+    mimeTypes: [
+        'application/npruntime-scriptable-plugin;DeploymentToolkit',
+        'application/java-deployment-toolkit'
+    ],
 
 	init: function() {
         if (PulpCore.System.browserName == "Explorer") {
@@ -536,16 +540,20 @@ PulpCore.JRE = window.PulpCore.JRE || {
                 'id="deploymentToolkit" width="0" height="0">' +
                 '<' + '/' + 'object' + '>');
         }
-		else if (PulpCore.System.browserIsMozillaFamily) {
-            if (navigator.mimeTypes != null) {
-				var mimeType = this.deploymentToolkitMimeType;
-				for (var i = 0; i < navigator.mimeTypes.length; i++) {
-					if (navigator.mimeTypes[i].type == mimeType) {
-						if (navigator.mimeTypes[i].enabledPlugin) {
-							document.write('<' +
-								'embed id="deploymentToolkit" type="' +
-								mimeType + '" hidden="true" />');
-						}
+		else if (PulpCore.System.browserIsMozillaFamily && 
+            navigator.mimeTypes != null)
+        {
+            var written = false;
+            for (var m = 0; !written && m < this.mimeTypes.length; m++) {
+                var mimeType = this.mimeTypes[m];
+                for (var i = 0; i < navigator.mimeTypes.length; i++) {
+                    if (navigator.mimeTypes[i].type == mimeType) {
+                        if (navigator.mimeTypes[i].enabledPlugin) {
+                            document.write('<' +
+                                'embed id="deploymentToolkit" type="' +
+                                mimeType + '" hidden="true" />');
+                            written = true;
+                        }
                     }
                 }
             }
