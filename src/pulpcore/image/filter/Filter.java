@@ -37,54 +37,21 @@ import pulpcore.image.CoreImage;
 */
 public abstract class Filter {
 
-    private Filter input = null;
+    private CoreImage input = null;
     private CoreImage output = null;
     private boolean isDirty = true;
 
     /**
-        Returns true if this filter's output is a different dimension from the original input.
+        Gets the x offset the output image should display relative to the input.
      */
-    public final boolean isDifferentBoundsFromOriginal() {
-        return isDifferentBounds() || (input != null && input.isDifferentBoundsFromOriginal());
-    }
-
-    /**
-        Gets the x offset of the output image from the original input. This method
-        returns the sum of the x offset of this filter and all input filters.
-    */
-    public final int getOffsetXFromOriginal() {
-        return getOffsetX() + (input == null ? 0 : input.getOffsetXFromOriginal());
-    }
-
-    /**
-        Gets the y offset of the output image from the original input. This method
-        returns the sum of the y offset of this filter and all input filters.
-    */
-    public final int getOffsetYFromOriginal() {
-        return getOffsetY() + (input == null ? 0 : input.getOffsetYFromOriginal());
-    }
-
-    /**
-        Returns true if this filter's output is a different dimension, or at a different offset,
-        than its input.
-     */
-    public boolean isDifferentBounds() {
-        return false;
-    }
-
-    /**
-        Gets the x offset the output image should display at if the output width is
-        different from the input width.
-     */
-    public int getOffsetX() {
+    public int getX() {
         return 0;
     }
 
     /**
-        Gets the y offset the output image should display at if the output height is
-        different from the input height.
+        Gets the y offset the output image should display relative to the input.
      */
-    public int getOffsetY() {
+    public int getY() {
         return 0;
     }
 
@@ -114,6 +81,10 @@ public abstract class Filter {
         }
     }
 
+    /**
+        Returns true if the output of this filter is opaque. By default, the output is
+        opaque if the input is opaque.
+     */
     public boolean isOpaque() {
         if (input != null) {
             return input.isOpaque();
@@ -124,17 +95,10 @@ public abstract class Filter {
     }
 
     /**
-        Performs this filter on the input image onto a newly created output image. The current
-        input image, if any, is ignored.
-     */
-    public final CoreImage filter(CoreImage input) {
-        Filter oldInput = this.input;
-        // Set input so that getWidth(), etc. is correct.
-        setInput(input);
-        CoreImage newOutput = new CoreImage(getWidth(), getHeight(), isOpaque());
-        filter(input, newOutput);
-        setInput(oldInput);
-        return newOutput;
+        Updates the filter. The default method does nothing.
+    */
+    public void update(int elapsedTime) {
+
     }
 
     /**
@@ -146,70 +110,6 @@ public abstract class Filter {
         that every pixel in {@code output} is drawn.
      */
     protected abstract void filter(CoreImage input, CoreImage output);
-
-    /**
-        Sets the filter input to an image.
-        @return this filter.
-     */
-    public Filter setInput(CoreImage input) {
-        return setInput(new CoreImageInput(input));
-    }
-    
-    /**
-        Sets the filter input to another filter.
-        @return this filter.
-     */
-    public Filter setInput(Filter input) {
-        if (this.input != input) {
-            this.input = input;
-            setDirty(true);
-        }
-        return this;
-    }
-
-    public Filter getInput() {
-        return input;
-    }
-
-    /**
-        Gets the filtered output image.
-    */
-    public CoreImage getOutput() {
-        if (isDirty() || this.output == null) {
-            if (this.output == null ||
-                this.output.getWidth() != getWidth() ||
-                this.output.getHeight() != getHeight() ||
-                this.output.isOpaque() != isOpaque())
-            {
-                this.output = new CoreImage(getWidth(), getHeight(), isOpaque());
-                //pulpcore.CoreSystem.print("New image: " + this.output.getWidth() + "x" + this.output.getHeight());
-            }
-            filter((input == null) ? null : input.getOutput(), this.output);
-            //pulpcore.CoreSystem.print("Filtered: " + getClass().getName());
-            setDirty(false);
-        }
-        return output;
-    }
-
-    /**
-        Updates the filter. Subclasses should call super.update(elapsedTime).
-    */
-    public void update(int elapsedTime) {
-        if (input != null) {
-            input.update(elapsedTime);
-        }
-    }
-
-    public boolean isDirty() {
-        if (!isDirty && input != null && input.isDirty()) {
-            setDirty(true);
-        }
-        return isDirty;
-    }
-
-    public void setDirty(boolean dirty) {
-        this.isDirty = dirty;
-    }
 
     // Unfortunately clone() can't be used because the reference to properties would be
     // created (instead of clones of the properties). This would normally be desired,
@@ -223,53 +123,97 @@ public abstract class Filter {
         This method is used by the Sprite class. Most apps will not need to call this method.
         <p>
         Subclasses should bind all properties of the cloned
-        object using bindWithInverse(). For example, for the Blur filter:
+        object using bindWithInverse(). For example, for the HSBAdjust filter:
         <pre>
         public Filter copy() {
-            Filter in = getInput();
-            Blur copy = new Blur();
-            copy.setInput(in == null ? null : in.copy());
-            copy.radius.bindWithInverse(radius);
+            HSBAdjust copy = new HSBAdjust();
+            copy.hue.bindWithInverse(hue);
+            copy.brightness.bindWithInverse(brightness);
+            copy.saturation.bindWithInverse(saturation);
             return copy;
         }
         </pre>
     */
     public abstract Filter copy();
 
-    private static class CoreImageInput extends Filter {
+    //
+    // Final methods
+    //
 
-        private final CoreImage image;
+    /* package private */ void notifyInputChanged() {
+    }
 
-        CoreImageInput(CoreImage image) {
-            this.image = image;
+    /**
+        Performs this filter on the input image onto a newly created output image. The current
+        input image, if any, is ignored.
+     */
+    public final CoreImage filter(CoreImage input) {
+        CoreImage oldInput = getInput();
+        // Set input so that getWidth(), etc. is correct.
+        setInput(input);
+        CoreImage newOutput = new CoreImage(getWidth(), getHeight(), isOpaque());
+        filter(input, newOutput);
+        setInput(oldInput);
+        return newOutput;
+    }
+
+    /**
+        Sets the filter input.
+     */
+    public final void setInput(CoreImage input) {
+        if (this.input != input) {
+            this.input = input;
+            setDirty();
+            notifyInputChanged();
+            update(0);
         }
+    }
 
-        public CoreImage getOutput() {
+    public final CoreImage getInput() {
+        return input;
+    }
+
+    /* package private */ CoreImage getUnfilteredOutput() {
+        int w = getWidth();
+        int h = getHeight();
+        if (output == null ||
+            output.getWidth() != w ||
+            output.getHeight() != h ||
+            output.isOpaque() != isOpaque())
+        {
+            output = new CoreImage(w, h, isOpaque());
+            //pulpcore.CoreSystem.print("New output for " + getClass().getName() + ": " + this.output.getWidth() + "x" + this.output.getHeight());
+            setDirty();
+        }
+        return output;
+    }
+
+    /* package private */ boolean isChildDirty() {
+        return false;
+    }
+
+    /**
+        Gets the filtered output image.
+    */
+    public final CoreImage getOutput() {
+        CoreImage out = getUnfilteredOutput();
+        if (isDirty()) {
+            filter((input == null) ? null : input, out);
+            //pulpcore.CoreSystem.print("Filtered: " + getClass().getName());
             setDirty(false);
-            return image;
         }
+        return out;
+    }
 
-        public int getWidth() {
-            return image.getWidth();
-        }
+    public final boolean isDirty() {
+        return isDirty || isChildDirty();
+    }
 
-        public int getHeight() {
-            return image.getHeight();
-        }
+    public final void setDirty() {
+        setDirty(true);
+    }
 
-        public boolean isOpaque() {
-            return image.isOpaque();
-        }
-
-        protected void filter(CoreImage input, CoreImage output) {
-            // Do nothing
-        }
-
-        public Filter copy() {
-            Filter in = getInput();
-            Filter copy = new CoreImageInput(image);
-            copy.setInput(in == null ? null : in.copy());
-            return copy;
-        }
+    private void setDirty(boolean dirty) {
+        this.isDirty = dirty;
     }
 }

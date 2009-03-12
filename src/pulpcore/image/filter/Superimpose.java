@@ -126,14 +126,12 @@ public final class Superimpose extends Filter {
 	 */
 	public void setImage(CoreImage image) {
 		this.image = image;
-		setDirty(true);
+		setDirty();
 	}
 	
 	
     public Filter copy() {
-        Filter in = getInput();
         Superimpose copy = new Superimpose();
-        copy.setInput(in == null ? null : in.copy());
         copy.image = image;
         copy.alpha.bindWithInverse(alpha);
         copy.x.bindWithInverse(x);
@@ -142,24 +140,22 @@ public final class Superimpose extends Filter {
     }
     
     
-    public void update(int elapsedTime) {
-    	super.update(elapsedTime);
-    	
+    public void update(int elapsedTime) {    	
     	alpha.update(elapsedTime);
     	
     	if(alpha.get() != actualAlpha) {
     		actualAlpha = alpha.get();
-    		setDirty(true);
+    		setDirty();
     	}
     	
     	if(x.get() != actualImgXOffset) {
     		actualImgXOffset = y.get();
-    		setDirty(true);
+    		setDirty();
     	}
     	
     	if(x.get() != actualImgYOffset) {
     		actualImgYOffset = y.get();
-    		setDirty(true);
+    		setDirty();
     	}
     }
     
@@ -185,20 +181,20 @@ public final class Superimpose extends Filter {
     	}
     }
     
-    public int getOffsetX() {
+    public int getX() {
     	if(actualImgXOffset < 0)
-    		return super.getOffsetX() + actualImgXOffset;
+    		return super.getX() + actualImgXOffset;
     	else {
-    		return super.getOffsetX();
+    		return super.getX();
     	}
     }
     
-    public int getOffsetY() {
+    public int getY() {
     	if(actualImgYOffset < 0) {
-    		return super.getOffsetY() + actualImgYOffset;
+    		return super.getY() + actualImgYOffset;
     	}
     	else {
-    		return super.getOffsetY();
+    		return super.getY();
     	}
     }
     
@@ -254,8 +250,8 @@ public final class Superimpose extends Filter {
     	int imgWidth = image.getWidth();
     	int imgHeight = image.getHeight();
 
-    	int xOffset = getOffsetX();
-    	int yOffset = getOffsetY();
+    	int xOffset = getX();
+    	int yOffset = getY();
 
     	// first copies the src into the dst
     	for(int i = 0; i < srcHeight; i++) {

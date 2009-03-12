@@ -48,10 +48,7 @@ public final class Thermal extends Filter {
     }
 
     public Filter copy() {
-        Filter in = getInput();
-        Filter copy = new Thermal();
-        copy.setInput(in == null ? null : in.copy());
-        return copy;
+        return new Thermal();
     }
 
     protected void filter(CoreImage src, CoreImage dst) {

@@ -93,9 +93,7 @@ public final class HSBAdjust extends Filter {
 	
 	 
     public Filter copy() {
-        Filter in = getInput();
         HSBAdjust copy = new HSBAdjust();
-        copy.setInput(in == null ? null : in.copy());
         copy.hue.bindWithInverse(hue);
         copy.brightness.bindWithInverse(brightness);
         copy.saturation.bindWithInverse(saturation);
@@ -104,26 +102,23 @@ public final class HSBAdjust extends Filter {
     
     
     public void update(int elapsedTime) {
-        
-    	super.update(elapsedTime);
-    	
     	hue.update(elapsedTime);
     	brightness.update(elapsedTime);
     	saturation.update(elapsedTime);
     	
     	if(hue.get() != actualHue) {
     		actualHue = hue.get();
-    		setDirty(true);
+    		setDirty();
     	}
     	
     	if(brightness.get() != actualBrightness) {
     		actualBrightness = brightness.get();
-    		setDirty(true);
+    		setDirty();
     	}
     	
     	if(saturation.get() != actualSaturation) {
     		actualSaturation = saturation.get();
-    		setDirty(true);
+    		setDirty();
     	}
     }
 

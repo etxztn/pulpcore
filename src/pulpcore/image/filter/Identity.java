@@ -31,33 +31,17 @@ package pulpcore.image.filter;
 import pulpcore.image.CoreImage;
 
 /**
-    A grayscale filter.
-    @author Florent Dupont
- */
-public final class Grayscale extends Filter {
+    A no-op filter: The output pixels are copied from the input.
+*/
+public class Identity extends Filter {
+
+    protected void filter(CoreImage input, CoreImage output) {
+        System.arraycopy(input.getData(), 0, output.getData(), 0,
+                    input.getWidth() * input.getHeight());
+    }
 
     public Filter copy() {
-        return new Grayscale();
+        return new Identity();
     }
-	
-	protected void filter(CoreImage src, CoreImage dst) {
-			
-        int[] srcPixels = src.getData();
-        int[] dstPixels = dst.getData();
 
-        for(int i = 0; i < srcPixels.length; i++) {
-            int srcRGB = srcPixels[i];
-
-            int alphaMask = srcRGB & 0xff000000;
-            int srcR = (srcRGB >> 16) & 0xff;
-            int srcG = (srcRGB >> 8) & 0xff;
-            int srcB = srcRGB & 0xff;
-
-            // Add together 30% of red value, 59% of green, 11% of blue
-            int dstGray = (srcR * 77 + srcG * 151 + srcB * 28) >> 8;
-
-            // Values are already pre-multiplied
-            dstPixels[i] = alphaMask | (dstGray << 16) | (dstGray << 8) | dstGray;
-        }
-	}
 }

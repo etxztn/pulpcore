@@ -37,10 +37,7 @@ import pulpcore.image.CoreImage;
 public final class Sepia extends Filter {
 		
     public Filter copy() {
-        Filter in = getInput();
-        Filter copy = new Sepia();
-        copy.setInput(in == null ? null : in.copy());
-        return copy;
+        return new Sepia();
     }
 
     protected void filter(CoreImage src, CoreImage dst) {

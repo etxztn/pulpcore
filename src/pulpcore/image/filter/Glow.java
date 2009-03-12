@@ -107,14 +107,16 @@ public final class Glow extends Blur {
 		this.amount.set(amount);
 	}
 
+    /**
+        Copy constructor. Subclasses can use this to help implement {@link #copy() }.
+    */
+    private Glow(Glow filter) {
+        super(filter);
+        amount.bindWithInverse(filter.amount);
+    }
+
 	public Filter copy() {
-		Filter in = getInput();
-		Glow copy = new Glow();
-		copy.setInput(in == null ? null : in.copy());
-		copy.amount.bindWithInverse(amount);
-        copy.radius.bindWithInverse(radius);
-        copy.quality.bindWithInverse(quality);
-		return copy;
+        return new Glow(this);
 	}
 	
 	public void update(int elapsedTime) {
@@ -123,7 +125,7 @@ public final class Glow extends Blur {
 		
 		if(actualAmount != amount.get()) {
 			actualAmount = amount.get();
-			setDirty(true);
+			setDirty();
 		} 
 	}
 
@@ -143,8 +145,8 @@ public final class Glow extends Blur {
 		int dstWidth = dst.getWidth();
 		int dstHeight = dst.getHeight();
 		
-		int xOffset = getOffsetXFromOriginal();
-		int yOffset = getOffsetYFromOriginal();
+		int xOffset = getX();
+		int yOffset = getY();
 		
 		for (int i = 0; i < dstHeight; i++) {
 			for (int j = 0; j < dstWidth; j++) {

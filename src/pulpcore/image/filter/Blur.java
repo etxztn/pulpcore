@@ -117,29 +117,31 @@ public class Blur extends Filter {
         Copy constructor. Subclasses can use this to help implement {@link #copy() }.
     */
     public Blur(Blur filter) {
-        Filter in = filter.getInput();
         autoExpand = filter.autoExpand;
-        setInput(in == null ? null : in.copy());
         radius.bindWithInverse(filter.radius);
         quality.bindWithInverse(filter.quality);
     }
 
     /**
-        Sets whether the blur output should automatically expand its dimensions to accomodate the
-        size of the blur radius. By default, the output is expanded.
-        @see #getExpandOutput()
-    */
-    public void setExpandOutput(boolean expand) {
-        autoExpand = expand;
+        Sets whether the edges of the output is clamped (sharp edges). The default is false
+        (blurry edges).
+        @see #getClampEdges()
+     */
+    public void setClampEdges(boolean clamp) {
+        boolean newAutoExpand = !clamp;
+        if (autoExpand != newAutoExpand) {
+            autoExpand = newAutoExpand;
+            setDirty();
+        }
     }
 
     /**
-        Gets whether the blur output should automatically expand its dimensions to accomodate the
-        size of the blur radius. By default, the output is expanded.
-        @see #setExpandOutput(boolean)
+        Gets whether the edges of the output is clamped (sharp edges). The default is false
+        (blurry edges).
+        @see #setClampEdges(boolean)
      */
-    public boolean getExpandOutput() {
-        return autoExpand;
+    public boolean getClampEdges() {
+        return !autoExpand;
     }
 
     public Filter copy() {
@@ -147,7 +149,6 @@ public class Blur extends Filter {
     }
 
     public void update(int elapsedTime) {
-        super.update(elapsedTime);
 
         time += elapsedTime;
         radius.update(elapsedTime);
@@ -166,7 +167,7 @@ public class Blur extends Filter {
         if (isDirty() || actualQuality != q || CPU_TEST) {
             actualQuality = q;
             actualRadius = r;
-            setDirty(true);
+            setDirty();
         }
         else if (actualRadius != r) {
             // Update at a limited frame rate, depending on the radius
@@ -204,7 +205,7 @@ public class Blur extends Filter {
                     }
                 }
                 actualRadius = r;
-                setDirty(true);
+                setDirty();
             }
         }
     }
@@ -219,30 +220,30 @@ public class Blur extends Filter {
         return CoreMath.toIntCeil((actualRadius * actualQuality) >> 2) << 2;
     }
 
-    public boolean isDifferentBounds() {
-        return getExpandOutput() && autoExpandSize() > 0;
+    public int getX() {
+        return autoExpand ? -autoExpandSize() : 0;
     }
 
-    public int getOffsetX() {
-        return getExpandOutput() ? -autoExpandSize() : 0;
-    }
-
-    public int getOffsetY() {
-        return getExpandOutput() ? -autoExpandSize() : 0;
+    public int getY() {
+        return autoExpand ? -autoExpandSize() : 0;
     }
 
     public int getWidth() {
-        return super.getWidth() + (getExpandOutput() ? autoExpandSize()*2 : 0);
+        return super.getWidth() + (autoExpand ? autoExpandSize()*2 : 0);
     }
 
     public int getHeight() {
-        return super.getHeight() + (getExpandOutput() ? autoExpandSize()*2 : 0);
+        return super.getHeight() + (autoExpand ? autoExpandSize()*2 : 0);
     }
     
+    public boolean isOpaque() {
+        return (isInputOpaque() && !autoExpand);
+    }
+
     protected void filter(CoreImage input, CoreImage output) {
         // If true, the outside of the image is the same pixels as the border.
         // If false, the outside of the image is considered BORDER_COLOR.
-        boolean clamp = isInputOpaque();
+        boolean clamp = isOpaque();
         filter(input, output, 0, 0, clamp);
     }
 
@@ -258,7 +259,7 @@ public class Blur extends Filter {
             else {
                 CoreGraphics g = output.createGraphics();
                 g.clear();
-                g.drawImage(input, shiftX - getOffsetX(), shiftY - getOffsetY());
+                g.drawImage(input, shiftX - getX(), shiftY - getY());
             }
         }
         else {
@@ -289,8 +290,8 @@ public class Blur extends Filter {
                 CoreImage src = input;
                 CoreImage dst = ((actualQuality & 1) == 1) ? output : workBuffer;
                 CoreImage wrk = ((actualQuality & 1) == 1) ? workBuffer : output;
-                int ox = shiftX - getOffsetX();
-                int oy = shiftY - getOffsetY();
+                int ox = shiftX - getX();
+                int oy = shiftY - getY();
                 for (int i = 0; i < actualQuality; i++) {
                     filter(src, dst, actualRadius, ox, oy, clamp);
                     postProcess(src, dst, actualRadius);

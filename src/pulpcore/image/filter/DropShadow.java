@@ -52,7 +52,7 @@ public class DropShadow extends Blur {
             if (property == color) {
                 colorDirty = true;
             }
-            setDirty(true);
+            setDirty();
         }
     };
 
@@ -146,31 +146,27 @@ public class DropShadow extends Blur {
         }
     }
     
-    public boolean isDifferentBounds() {
-        return true;
-    }
-
     public boolean isOpaque() {
         return false;
     }
 
     // TODO: The bounds could use some optimizations for large shadow offsets
     
-    public int getOffsetX() {
+    public int getX() {
         if (shadowOffsetX.get() > 0) {
-            return super.getOffsetX();
+            return 0;
         }
         else {
-            return super.getOffsetX() + shadowOffsetX.get();
+            return shadowOffsetX.get();
         }
     }
 
-    public int getOffsetY() {
+    public int getY() {
         if (shadowOffsetY.get() > 0) {
-            return super.getOffsetY();
+            return 0;
         }
         else {
-            return super.getOffsetY() + shadowOffsetY.get();
+            return shadowOffsetY.get();
         }
     }
 
@@ -202,6 +198,6 @@ public class DropShadow extends Blur {
 
         // Draw the input image on top of the shadow
         CoreGraphics g = dst.createGraphics();
-        g.drawImage(src, -getOffsetX(), -getOffsetY());
+        g.drawImage(src, -getX(), -getY());
     }
 }

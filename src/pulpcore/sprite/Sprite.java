@@ -29,6 +29,7 @@
 
 package pulpcore.sprite;
 
+import java.util.WeakHashMap;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.animation.Bool;
@@ -57,6 +58,9 @@ import pulpcore.image.filter.Filter;
     method to draw.
 */
 public abstract class Sprite implements PropertyListener {
+
+    // WeakHashMap<Filter, null>
+    private static final WeakHashMap usedFilters = new WeakHashMap();
     
     static final Transform IDENTITY = new Transform();
 
@@ -188,19 +192,16 @@ public abstract class Sprite implements PropertyListener {
     */
     public final Bool pixelSnapping = new Bool(this, false);
     
-    //
-    // Private fields
-    //
-    
-    private int cursor = -1;
+    private Group parent;
     private int anchor = DEFAULT;
+    private int cursor = -1;
     private BlendMode blendMode = null;
-    private Filter filter;
+    private SpriteFilter filter;
+    private Object tag;
+
+    // State information
     private int cosAngle = CoreMath.ONE;
     private int sinAngle = 0;
-    private Object tag;
-    
-    private Group parent;
     private int parentTransformModCount;
     private boolean dirty = true;
     private boolean transformDirty = true;
@@ -406,10 +407,13 @@ public abstract class Sprite implements PropertyListener {
                 w = CoreMath.toFixed(Stage.getWidth());
                 h = CoreMath.toFixed(Stage.getHeight());
             }
-            else if (f != null && f.isDifferentBoundsFromOriginal()) {
-                t = new Transform(t);
-                t.translate(CoreMath.toFixed(f.getOffsetXFromOriginal()),
-                        CoreMath.toFixed(f.getOffsetYFromOriginal()));
+            else if (f != null) {
+                int fx = f.getX();
+                int fy = f.getY();
+                if (fx != 0 || fy != 0) {
+                    t = new Transform(t);
+                    t.translate(CoreMath.toFixed(fx),CoreMath.toFixed(fy));
+                }
                 w = CoreMath.toFixed(f.getWidth());
                 h = CoreMath.toFixed(f.getHeight());
             }
@@ -428,7 +432,12 @@ public abstract class Sprite implements PropertyListener {
             dirtyRect.width = -1;
         }
     }
-    
+
+    // NOTE:
+    // We need differentiate between "contentsDirty" and "transformDirty".
+    // At the moment, some classes (Group, Scene2D) are assuming setDirty(true) sets one
+    // (or both) fields dirty.
+
     /**
         Marks this Sprite as dirty, which will force it to redraw on the next frame.
     */
@@ -441,14 +450,11 @@ public abstract class Sprite implements PropertyListener {
         if (dirty) {
             transformDirty = true;
         }
-        if (contentsChanged) {
-            Filter f = getWorkingFilter();
-            if (f != null) {
-                f.setDirty(true);
-            }
+        if (contentsChanged && filter != null) {
+            filter.setDirty();
         }
     }
-    
+
     /**
         Returns true if the Sprite's properties have changed since the last call to draw()
     */
@@ -461,17 +467,7 @@ public abstract class Sprite implements PropertyListener {
         }
         return dirty;
     }
-    
-    /* package-private */ final Transform getViewTransform() {
-        updateTransform();
-        return viewTransform;
-    }
-    
-    /* package-private */ final Transform getDrawTransform() {
-        updateTransform();
-        return drawTransform;
-    }
-    
+
     /* package-private */ final boolean isTransformDirty() {
         if (transformDirty) {
             return true;
@@ -483,6 +479,16 @@ public abstract class Sprite implements PropertyListener {
             return (parentTransformModCount != parent.getTransformModCount() ||
                 parent.isTransformDirty());
         }
+    }
+
+    /* package-private */ final Transform getViewTransform() {
+        updateTransform();
+        return viewTransform;
+    }
+
+    /* package-private */ final Transform getDrawTransform() {
+        updateTransform();
+        return drawTransform;
     }
     
     /* package-private */ final Transform getParentViewTransform() {
@@ -724,25 +730,27 @@ public abstract class Sprite implements PropertyListener {
         @see #getFilter()
     */
     public final void setFilter(Filter filter) {
-        if (this.filter != filter) {
+        Filter currFilter = getFilter();
+        Filter newFilter = filter;
+        if (currFilter != newFilter) {
             setDirty(true);
-        }
-        if (filter != null) {
-            Filter source = getFilterSource(filter);
-            if (source.getInput() instanceof SpriteFilterInput) {
-                filter = filter.copy();
-            }
-        }
-        if (this.filter != null) {
-            Filter source = getFilterSource(this.filter);
-            source.setInput((Filter)null);
-        }
-        this.filter = filter;
-        if (this.filter != null) {
-            Filter source = getFilterSource(this.filter);
-            source.setInput(new SpriteFilterInput());
-            if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
-                ((Group)this).createBackBuffer();
+            synchronized (usedFilters) {
+                if (newFilter != null && usedFilters.containsKey(newFilter)) {
+                    newFilter = newFilter.copy();
+                }
+                if (currFilter != null) {
+                    currFilter.setInput(null);
+                    usedFilters.remove(currFilter);
+                    this.filter = null;
+                }
+
+                if (newFilter != null) {
+                    usedFilters.put(newFilter, null);
+                    this.filter = new SpriteFilter(this, newFilter);
+                    if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
+                        ((Group)this).createBackBuffer();
+                    }
+                }
             }
         }
     }
@@ -752,81 +760,111 @@ public abstract class Sprite implements PropertyListener {
         @see #setFilter(pulpcore.image.filter.Filter) 
     */
     public final Filter getFilter() {
-        return filter;
+        if (filter != null) {
+            return filter.getFilter();
+        }
+        else {
+            return null;
+        }
     }
 
     /* package-private */ Filter getWorkingFilter() {
-        if (filter != null && (this instanceof Group) && !((Group)this).hasBackBuffer()) {
-            // Ignore filters on groups with no back buffer
-            return null;
-        }
-        return filter;
-    }
-
-    private Filter getFilterSource(Filter filter) {
-        while (true) {
-            Filter input = filter.getInput();
-            if (input == null || input instanceof SpriteFilterInput) {
-                return filter;
+        Filter f = getFilter();
+        if (f != null) {
+            if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
+                // Ignore filters on groups with no back buffer
+                return null;
             }
             else {
-                filter = input;
+                // Make sure input is up to date
+                f.setInput(filter.getCacheImage());
             }
         }
+        return f;
     }
 
-    private class SpriteFilterInput extends Filter {
+    private static class SpriteFilter {
+        private final Sprite sprite;
+        private final Filter filter;
+        private CoreImage cache = null;
+        private boolean cacheDirty = true;
 
-        public CoreImage getOutput() {
-            if (Sprite.this instanceof ImageSprite) {
-                setDirty(false);
-                return ((ImageSprite)Sprite.this).getImage();
+        public SpriteFilter(Sprite sprite, Filter filter) {
+            this.sprite = sprite;
+            this.filter = filter;
+            this.filter.setDirty();
+            this.filter.setInput(getCacheImage());
+        }
+
+        public Filter getFilter() {
+            return filter;
+        }
+
+        private int getCacheWidth() {
+            if (sprite instanceof Group && ((Group)sprite).hasBackBuffer()) {
+                return ((Group)sprite).getBackBuffer().getWidth();
             }
-            else if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
-                setDirty(false);
+            else {
+                return CoreMath.toIntCeil(sprite.getNaturalWidth());
+            }
+        }
+
+        private int getCacheHeight() {
+            if (sprite instanceof Group && ((Group)sprite).hasBackBuffer()) {
+                return ((Group)sprite).getBackBuffer().getHeight();
+            }
+            else {
+                return CoreMath.toIntCeil(sprite.getNaturalHeight());
+            }
+        }
+
+        public void setDirty() {
+            filter.setDirty();
+            cacheDirty = true;
+        }
+
+        public CoreImage getCacheImage() {
+            if (sprite instanceof ImageSprite) {
+                return ((ImageSprite)sprite).getImage();
+            }
+            else if (sprite instanceof Group && ((Group)sprite).hasBackBuffer()) {
                 // Update the back buffer
-                Sprite.this.drawSprite(null);
-                return ((Group)Sprite.this).getBackBuffer();
+                cache = null;
+                if (cacheDirty) {
+                    sprite.drawSprite(null);
+                    cacheDirty = false;
+                }
+                return ((Group)sprite).getBackBuffer();
             }
             else {
-                return super.getOutput();
+                int w = getCacheWidth();
+                int h = getCacheHeight();
+                boolean isOpaque = sprite.isOpaque();
+                boolean needsClear = true;
+                if (cache == null ||
+                    cache.getWidth() != w ||
+                    cache.getHeight() != h ||
+                    cache.isOpaque() != isOpaque)
+                {
+                    cache = new CoreImage(w, h, isOpaque);
+                    //pulpcore.CoreSystem.print("New Sprite cache: " + w + "x" + h);
+                    cacheDirty = true;
+                    needsClear = false;
+                }
+                if (cacheDirty) {
+                    //pulpcore.CoreSystem.print("Sprite re-cached");
+                    CoreGraphics g = cache.createGraphics();
+                    if (needsClear) {
+                        g.clear();
+                    }
+                    sprite.drawSprite(g);
+                    cacheDirty = false;
+                }
+                return cache;
             }
-        }
-
-        public int getWidth() {
-            if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
-                return ((Group)Sprite.this).getBackBuffer().getWidth();
-            }
-            else {
-                return CoreMath.toIntCeil(getNaturalWidth());
-            }
-        }
-
-        public int getHeight() {
-            if (Sprite.this instanceof Group && ((Group)Sprite.this).hasBackBuffer()) {
-                return ((Group)Sprite.this).getBackBuffer().getHeight();
-            }
-            else {
-                return CoreMath.toIntCeil(getNaturalHeight());
-            }
-        }
-
-        public boolean isOpaque() {
-            return Sprite.this.isOpaque();
-        }
-
-        protected void filter(CoreImage input, CoreImage output) {
-            // Input is null, output is cached version of this Sprite
-            CoreGraphics g = output.createGraphics();
-            drawSprite(g);
-        }
-
-        public Filter copy() {
-            // Return null since this is a unique parent node that will be replaced.
-            return null;
         }
     }
-    
+
     /**
         Updates all of this Sprite's properties. Subclasses that override this method should
         call super.update().
@@ -865,14 +903,6 @@ public abstract class Sprite implements PropertyListener {
         Draws the Sprite. Subclasses override {@link #drawSprite(pulpcore.image.CoreGraphics) }.
      */
     public final void draw(CoreGraphics g) {
-        if (dirty) {
-            if (Build.DEBUG && getScene2D() != null) {
-                CoreSystem.print("Sprite " + getClass().getName() + " has a bad dirty rect");
-            }
-            updateTransform();
-            setDirty(false);
-        }
-        
         if (!visible.get()) {
             return;
         }
@@ -886,6 +916,12 @@ public abstract class Sprite implements PropertyListener {
         if (newAlpha <= 0) {
             return;
         }
+
+        if (isDirty()) {
+            updateTransform();
+            setDirty(false);
+        }
+        
         g.setAlpha(newAlpha);
         
         // Set blend mode
@@ -898,8 +934,8 @@ public abstract class Sprite implements PropertyListener {
         Transform t = drawTransform;
         Filter f = getWorkingFilter();
         if (f != null) {
-            int fx = f.getOffsetXFromOriginal();
-            int fy = f.getOffsetYFromOriginal();
+            int fx = f.getX();
+            int fy = f.getY();
             if (fx != 0 || fy != 0) {
                 t = new Transform(t);
                 t.translate(CoreMath.toFixed(fx), CoreMath.toFixed(fy));

@@ -47,7 +47,7 @@ public final class ColorOverlay extends Filter {
     private final PropertyListener updater = new PropertyListener() {
         public void propertyChange(Property property) {
             colorDirty = true;
-            setDirty(true);
+            setDirty();
         }
     };
 
@@ -81,9 +81,7 @@ public final class ColorOverlay extends Filter {
     }
 
     public Filter copy() {
-        Filter in = getInput();
         ColorOverlay copy = new ColorOverlay(0);
-        copy.setInput(in == null ? null : in.copy());
         copy.color.bindWithInverse(color);
         copy.alpha.bindWithInverse(alpha);
         return copy;
@@ -94,7 +92,6 @@ public final class ColorOverlay extends Filter {
     }
 
     public void update(int elapsedTime) {
-        super.update(elapsedTime);
         color.update(elapsedTime);
         alpha.update(elapsedTime);
     }

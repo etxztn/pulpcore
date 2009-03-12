@@ -106,21 +106,14 @@ public final class Reflection extends Filter {
 	}
 	
     public Filter copy() {
-        Filter in = getInput();
         Reflection copy = new Reflection();
-        copy.setInput(in == null ? null : in.copy());
         copy.reflectionHeight.bindWithInverse(reflectionHeight);
         copy.gap.bindWithInverse(gap);
         copy.fadingDivider.bindWithInverse(fadingDivider);
         return copy;
     }
     
-    public boolean isDifferentBounds() {
-    	return true;
-    }
-    
-    
-    public int getOffsetY() {
+    public int getY() {
     	return -actualGap/2;
     }
     
@@ -137,26 +130,24 @@ public final class Reflection extends Filter {
     }
     
     public void update(int elapsedTime) {
-    
-    	super.update(elapsedTime);
-    	
+        	
     	reflectionHeight.update(elapsedTime);
     	gap.update(elapsedTime);
     	fadingDivider.update(elapsedTime);
     	
     	if(reflectionHeight.get() != actualReflectionHeight) {
     		actualReflectionHeight = reflectionHeight.get();
-    		setDirty(true);
+    		setDirty();
     	}
     	
     	if(gap.get() != actualGap) {
     		actualGap = gap.get();
-    		setDirty(true);
+    		setDirty();
     	}
     	
     	if(fadingDivider.get() != actualFading) {
     		actualFading = fadingDivider.get();
-    		setDirty(true);
+    		setDirty();
     	}
     }
 
