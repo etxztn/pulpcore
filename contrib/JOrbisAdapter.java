@@ -1,11 +1,14 @@
 /*
-    Sound loader for JOrbis' OGG Vorbis decoder. Requires PulpCore 0.11.0.
+    Sound loader for JOrbis' OGG Vorbis decoder. Requires PulpCore 0.11.5.
 
     To use:
-    1. Get JOrbis here: http://www.jcraft.com/jorbis/
-    2. Drop jorbis-0.0.15.jar and jogg-0.0.7.jar in your lib/ directory (using the "project"
-       template from the PulpCore templates/ directory)
+    1. Get the JOrbis binary, jorbis-0.0.17.jar
+       - Source is located here: http://www.jcraft.com/jorbis/
+       - Binaries may also be found: http://www.google.com/search?q=jorbis+maven
+    2. Drop jorbis-0.0.17.jar in your lib/ directory 
+       - Use the "project" template from the PulpCore templates/ directory.
     3. Drop this file in your src/ directory.
+       - Your IDE may prefer you put the file in src/pulpcore/sound/
     4. Load sounds like normal:
 
     Sound sound = Sound.load("mysound.ogg");
@@ -129,6 +132,7 @@ public class JOrbisAdapter extends Sound {
                 }
             }
             catch (Exception ex) {
+                CoreSystem.setTalkBackField("pulpcore.sound-exception", ex);
                 // Internal JOrbis problem - happens rarely. (Notably on IBM 1.4 VMs)
                 // Kill JOrbis and start over.
                 clearDest = true;
