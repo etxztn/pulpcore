@@ -154,19 +154,19 @@ public class DropShadow extends Blur {
     
     public int getX() {
         if (shadowOffsetX.get() > 0) {
-            return 0;
+            return super.getX();
         }
         else {
-            return shadowOffsetX.get();
+            return super.getX() + shadowOffsetX.get();
         }
     }
 
     public int getY() {
         if (shadowOffsetY.get() > 0) {
-            return 0;
+            return super.getY();
         }
         else {
-            return shadowOffsetY.get();
+            return super.getY() + shadowOffsetY.get();
         }
     }
 
