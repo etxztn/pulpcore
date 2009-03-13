@@ -844,6 +844,17 @@ public class Scene2D extends Scene {
                 addDirtyRectangle(null, parentClip);
             }
         }
+
+        if (!parentBoundsChanged) {
+            if (oldParentClip != parentClip) {
+                if (oldParentClip == null || parentClip == null) {
+                    parentBoundsChanged = true;
+                }
+                else {
+                    parentBoundsChanged = !oldParentClip.equals(parentClip);
+                }
+            }
+        }
         
         // Add dirty rects for removed sprites
         ArrayList removedSprites = group.getRemovedSprites();
