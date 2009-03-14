@@ -330,7 +330,7 @@
     
     
     <target name="test" description="Runs JUnit tests">
-        <javac srcdir="tests"
+        <javac srcdir="tests/src"
                 destdir="tests"
                 classpath="${build}/${project.debug.jar.file}:${junit.path}"
                 debug="on"
@@ -340,8 +340,9 @@
         
         <java classname="org.junit.runner.JUnitCore" fork="true" dir="${basedir}/tests">
             <arg value="AnimationTest"/>
-            <arg value="CoreMathTest"/>
+            <!--<arg value="CoreMathTest"/>-->
             <arg value="PNGTest"/>
+            <arg value="GraphicsTest"/>
             <classpath>
                 <pathelement path="${basedir}/tests;${build}/${project.debug.jar.file};${build}/${assettools.jar.file};${junit.path}"/>
             </classpath>

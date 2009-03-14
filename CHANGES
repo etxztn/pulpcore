@@ -4,7 +4,7 @@
     custom Sprites, call setDirty(true) when the contents of the Sprite change.
     Also, if you change the pixels of an ImageSprite's CoreImage, call
     setDirty(true) on the ImageSprite.
-  * API: Added Timeline.after() and Timeline.after(time) to appending
+  * API: Added Timeline.after() and Timeline.after(time) for appending
     animations to the end of the timeline.
   * API: Added Sprite.getTag(), Sprite.setTag(Object) and Group.findWithTag().
   * API: Group.drawSprite() is now final. To do custom drawing, subclass Sprite.
