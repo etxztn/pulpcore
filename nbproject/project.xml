@@ -88,6 +88,14 @@
                                 <property name="text-limit-width" value="100"/>
                                 <property name="indent-shift-width" value="4"/>
                                 <property name="tab-size" value="4"/>
+                                <property name="placeFinallyOnNewLine" value="true"/>
+                                <property name="continuationIndentSize" value="4"/>
+                                <property name="spaceBeforeArrayInitLeftBrace" value="true"/>
+                                <property name="addLeadingStarInComment" value="false"/>
+                                <property name="placeCatchOnNewLine" value="true"/>
+                                <property name="spaceAfterTypeCast" value="false"/>
+                                <property name="placeElseOnNewLine" value="true"/>
+                                <property name="spaceWithinBraces" value="true"/>
                             </node>
                         </node>
                     </node>
