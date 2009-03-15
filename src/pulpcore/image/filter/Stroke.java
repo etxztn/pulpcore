@@ -64,8 +64,8 @@ public final class Stroke extends Filter {
     */
     public final Int size = new Int(5);
 
-    private int actualColor;
-    private int actualRadius;
+    private int actualColor = -1;
+    private int actualRadius = -1;
     private int fillIntensity;
     private int[] precalculatedIntensities;
     private int[] colorTable = new int[256];
@@ -95,7 +95,6 @@ public final class Stroke extends Filter {
     public Stroke(int color, int radius) {
         this.color.set(color);
         this.size.set(radius);
-        precalculatedIntensities = precalculateIntensities(radius);
     }
 
     public Filter copy() {
