@@ -134,6 +134,7 @@ public class FilterChain extends Filter {
     }
 
     public int getX() {
+        chain();
         int x = 0;
         for (int i = 0; i < list.size(); i++) {
             x += ((Filter)list.get(i)).getX();
@@ -142,6 +143,7 @@ public class FilterChain extends Filter {
     }
 
     public int getY() {
+        chain();
         int y = 0;
         for (int i = 0; i < list.size(); i++) {
             y += ((Filter)list.get(i)).getY();
@@ -149,19 +151,18 @@ public class FilterChain extends Filter {
         return y;
     }
 
-    /**
-        Gets the width of the output of this filter. By default, the width
-        is the same as the input's width.
-     */
     public int getWidth() {
+        chain();
         return last().getWidth();
     }
 
     public int getHeight() {
+        chain();
         return last().getHeight();
     }
 
     public boolean isOpaque() {
+        chain();
         return last().isOpaque();
     }
 
