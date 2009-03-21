@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -820,7 +820,20 @@ public class Stage implements Runnable {
         boolean nextSceneLoaded = false;
         
         if (currentScene == null) {
-            currentScene = CoreSystem.getThisAppContext().createFirstScene();
+            try {
+                currentScene = CoreSystem.getThisAppContext().createFirstScene();
+            }
+            catch (Throwable ex) {
+                if (Build.DEBUG) {
+                    CoreSystem.print("Couldn't create first scene", ex);
+                    if ((ex instanceof NoClassDefFoundError) &&
+                            ex.getMessage().indexOf("ScalaObject") != -1)
+                    {
+                        CoreSystem.print("To run Scala PulpCore apps in a browser, " +
+                                "compile the app in release mode.");
+                    }
+                }
+            }
             if (currentScene == null) {
                 if (Build.DEBUG) {
                     CoreSystem.print("Couldn't create first scene");
