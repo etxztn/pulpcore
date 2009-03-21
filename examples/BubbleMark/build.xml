@@ -21,6 +21,9 @@
         project.scene         The name of the first scene to display.
         project.width         The width of the applet.
         project.height        The height of the applet.
+        project.params        The applet parameters (as JavaScript prop objects - see
+                              build.properties)
+        project.codebase      The applet codebase (default is same path as the html document)
         pulpcore.build        Build mode: "release" or "debug".
                               For "debug" builds, these hotkeys are available:
                               Ctrl-1  Slow-motion mode.
@@ -48,6 +51,7 @@
     <property name="project.width" value="500" />
     <property name="project.height" value="300" />
     <property name="project.params" value="" />
+    <property name="project.codebase" value="" />
     <property name="pulpcore.build" value="debug" />
     <property name="pulpcore.path" value="../../build" />
     <property name="proguard.path" value="" />
@@ -67,6 +71,8 @@
     
     <!-- Project paths -->
     <property name="src" value="src" />
+    <property name="res" value="res" />
+    <property name="lib" value="lib" />
     <property name="build" value="build/" />
     <property name="build.temp" value="${build}/temp" />
     <property name="build.classes" value="${build.temp}/classes" />
@@ -177,7 +183,7 @@
         <mkdir dir="${build}" />
         <mkdir dir="${build.temp}" />
         <mkdir dir="${build.classes}" />
-        <mkdir dir="${build.res}" />
+        <mkdir dir="${build.res}/zip" />
     </target>
     
 
@@ -189,20 +195,29 @@
                 target="${pulpcore.java.language}"
                 debug="on"
                 deprecation="on"
-                classpath="${core.jar.file}"
                 bootclasspath="${bootclasspath}">
 
             <include name="**/*.java"/>
             <compilerarg line="-Xlint:all" />
+
+            <classpath>
+                <pathelement location="${core.jar.file}"/>
+                <fileset dir="${lib}" erroronmissingdir="false">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
         </javac>
     </target>
     
 
-    <!-- Creates a jar of the compiled code -->
+    <!-- Creates a jar of the compiled code and libraries -->
     <target name="jar" depends="compile">
         <jar destfile="${build}/${project.jar}">
             <fileset dir="${build.classes}" includes="**/*.class" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
+            <zipgroupfileset dir="${lib}" includes="**/*.jar" erroronmissingdir="false">
+                <exclude name="META-INF/**/*"/>
+            </zipgroupfileset>
         </jar>
     </target>
    
@@ -250,6 +265,10 @@
             <injar name="${build}/in.jar" />
             <outjar name="${build}/${project.jar}" />
             
+            <keep name="pulpcore.sound.JOrbisAdapter">
+                <!-- Keep the special method that can be accessed via reflection -->
+                <method name="decode" />
+            </keep>
             <keep name="pulpcore.platform.applet.CoreApplet">
                 <!-- Keep the special method that can be accessed via JavaScript -->
                 <method name="getCurrentScene" />
@@ -278,13 +297,15 @@
             scene="${project.scene}"
             assets="${autoload.assets.zip}"
             params="${project.params}"
+            codebase="${project.codebase}"
             displaySource="${display.src}"/>
     </target>
 
     
     <!-- Creates the assets zip file -->
     <target name="res" depends="init">
-        <pulpcore-assets srcDir="${src}" destDir="${build.res}/zip" 
+        <pulpcore-assets srcDir="${res}" destDir="${build.res}/zip"
+            skipSourceFiles="false"
             optimizationLevel="${optimizationLevel}" />
     
         <delete file="${build}/${project.assets.zip}" failonerror="false" />
@@ -318,6 +339,36 @@
             params="${project.params}"
             waitUntilClosed="${pulpcore.player.wait}" />
     </target>
-    
+
+
+    <target name="debug-nb" depends="build" if="netbeans.home">
+        <nbjpdastart addressproperty="jpda.address" name="PulpCore" transport="dt_socket">
+            <classpath>
+                <fileset dir="${build}"><include name="*.jar" /></fileset>
+            </classpath>
+            <sourcepath>
+                <dirset dir="${src}" />
+            </sourcepath>
+        </nbjpdastart>
+        <java jar="${ant.home}/lib/ant-launcher.jar" fork="true">
+            <arg value="run" />
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,address=${jpda.address}"/>
+        </java>
+    </target>
+
+
+    <target name="profile-nb" depends="build" if="netbeans.home">
+        <nbprofiledirect>
+            <classpath>
+                <pathelement location="${build}/${project.jar}"/>
+                <pathelement path="${java.class.path}"/>
+            </classpath>
+        </nbprofiledirect>
+        <java jar="${ant.home}/lib/ant-launcher.jar" fork="true">
+            <arg value="run" />
+            <jvmarg value="${profiler.info.jvmargs.agent}"/>
+        </java>
+    </target>
     
 </project>

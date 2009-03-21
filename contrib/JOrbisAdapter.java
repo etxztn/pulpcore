@@ -6,7 +6,6 @@
        - Source is located here: http://www.jcraft.com/jorbis/
        - Binaries may also be found: http://www.google.com/search?q=jorbis+maven
     2. Drop jorbis-0.0.17.jar in your lib/ directory 
-       - Use the "project" template from the PulpCore templates/ directory.
     3. Drop this file in your src/ directory.
        - Your IDE may prefer you put the file in src/pulpcore/sound/
     4. Load sounds like normal:

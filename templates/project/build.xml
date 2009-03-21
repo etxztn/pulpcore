@@ -10,9 +10,11 @@
         pulpcore.player.wait  If true, the PulpCore Player Ant task waits until the Player
                               window is closed. Otherwise, the Ant task returns immediately. 
                               Default is true.
+        include.src           If true, the source and resources are included as links in the
+                              applet HTML.
         project.jar           The name of the project jar to create.
         project.assets        The name of the project zip file to create.
-        project.scene         The name of the first scene to display 
+        project.scene         The name of the first scene to display.
         project.width         The width of the applet.
         project.height        The height of the applet.
         project.params        The applet parameters (as JavaScript prop objects - see 
@@ -38,9 +40,10 @@
                               For Max OS X, use "${java.home}/../Classes/classes.jar"
     -->
     <property name="pulpcore.player.wait" value="true" />
+    <property name="include.src" value="false" />
     <property name="project.scene" value="HelloWorld" />
-    <property name="project.jar" value="HelloWorld.jar" />
-    <property name="project.assets.zip" value="HelloWorld.zip" />
+    <property name="project.jar" value="${project.scene}.jar" />
+    <property name="project.assets.zip" value="${project.scene}.zip" />
     <property name="project.width" value="640" />
     <property name="project.height" value="480" />
     <property name="project.params" value="" />
@@ -164,6 +167,10 @@
             <equals arg1="${pulpcore.java.language}" arg2="1.4" />
         </condition>
         
+        <condition property="display.src" value="${src}/${project.scene}.java" else="">
+            <istrue value="${include.src}" />
+        </condition>
+
         <!-- PNG Optimization. Possible values range from 0 to 5 -->
         <condition property="optimizationLevel" value="4" else="1">
             <equals arg1="${pulpcore.build}" arg2="release" />
@@ -291,7 +298,8 @@
             scene="${project.scene}"
             assets="${autoload.assets.zip}"
             params="${project.params}" 
-            codebase="${project.codebase}" />
+            codebase="${project.codebase}"
+            displaySource="${display.src}"/>
     </target>
 
     
@@ -352,6 +360,37 @@
             <arg line="-J-Xprof appletviewer.html" />
         </exec>
         <echo>Profiling saved to ${build.temp}/xprof.txt</echo>
+    </target>
+
+
+    <target name="debug-nb" depends="build" if="netbeans.home">
+        <nbjpdastart addressproperty="jpda.address" name="PulpCore" transport="dt_socket">
+            <classpath>
+                <fileset dir="${build}"><include name="*.jar" /></fileset>
+            </classpath>
+            <sourcepath>
+                <dirset dir="${src}" />
+            </sourcepath>
+        </nbjpdastart>
+        <java jar="${ant.home}/lib/ant-launcher.jar" fork="true">
+            <arg value="run" />
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:transport=dt_socket,address=${jpda.address}"/>
+        </java>
+    </target>
+
+
+    <target name="profile-nb" depends="build" if="netbeans.home">
+        <nbprofiledirect>
+            <classpath>
+                <pathelement location="${build}/${project.jar}"/>
+                <pathelement path="${java.class.path}"/>
+            </classpath>
+        </nbprofiledirect>
+        <java jar="${ant.home}/lib/ant-launcher.jar" fork="true">
+            <arg value="run" />
+            <jvmarg value="${profiler.info.jvmargs.agent}"/>
+        </java>
     </target>
     
 </project>

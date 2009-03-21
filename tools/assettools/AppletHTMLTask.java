@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -217,29 +217,39 @@ public class AppletHTMLTask extends Task {
             };
             
             File dir = new File(destDir, "src");
-            for (File srcFile : displaySource.getParentFile().listFiles(filter)) {
-                
-                String filename = srcFile.getName();
-                dir.mkdir();
-                
-                // Use the Ant copy task
-                Copy copyTask = new Copy();
-                copyTask.setProject(getProject());
-                copyTask.setTaskName(getTaskName());
-                copyTask.setFile(srcFile);
-                copyTask.setTofile(new File(dir, filename));
-                copyTask.execute();
-                
-                // Setup the hyperlink
-                String link = "<a target=\"pulpcore_src\" href=\"src/" + filename + "\">" +
-                    filename + "</a>&nbsp; ";
-                if (AssetTask.isSourceFile(srcFile)) {
-                    // First
-                    links = link + links;
+            File[] srcDirs = {
+                displaySource.getParentFile(),
+                new File(displaySource.getParentFile().getParentFile(), "res")
+            };
+            for (int i = 0; i < srcDirs.length; i++) {
+                File srcDir = srcDirs[i];
+                if (!srcDir.exists() || !srcDir.isDirectory()) {
+                    continue;
                 }
-                else {
-                    // Last
-                    links += link;
+                for (File srcFile : srcDir.listFiles(filter)) {
+
+                    String filename = srcFile.getName();
+                    dir.mkdir();
+
+                    // Use the Ant copy task
+                    Copy copyTask = new Copy();
+                    copyTask.setProject(getProject());
+                    copyTask.setTaskName(getTaskName());
+                    copyTask.setFile(srcFile);
+                    copyTask.setTofile(new File(dir, filename));
+                    copyTask.execute();
+
+                    // Setup the hyperlink
+                    String link = "<a target=\"pulpcore_src\" href=\"src/" + filename + "\">" +
+                        filename + "</a>&nbsp; ";
+                    if (AssetTask.isSourceFile(srcFile)) {
+                        // First
+                        links = link + links;
+                    }
+                    else {
+                        // Last
+                        links += link;
+                    }
                 }
             }
             if (links.length() > 0) {

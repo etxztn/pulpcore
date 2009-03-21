@@ -4,10 +4,7 @@
 import pulpcore.animation.BindFunction;
 import pulpcore.animation.Easing;
 import pulpcore.animation.event.TimelineEvent;
-import pulpcore.animation.Property;
-import pulpcore.animation.PropertyListener;
 import pulpcore.animation.Timeline;
-import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.image.BlendMode;
 import pulpcore.scene.Scene2D;
@@ -16,6 +13,7 @@ import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
+import pulpcore.image.filter.Blur;
 import static pulpcore.image.Colors.*;
 import static pulpcore.math.CoreMath.rand;
 
@@ -113,8 +111,23 @@ public class Compositing extends Scene2D {
     Sprite makeParticle() {
         CoreImage image = CoreImage.load("particle.png");
         int color = hue(rand(0, 255));
-        ImageSprite sprite = new ImageSprite(image.tint(color), 0, 0);
+        final ImageSprite sprite = new ImageSprite(image.tint(color), 0, 0);
         sprite.setAnchor(Sprite.CENTER);
+        sprite.pixelSnapping.set(true);
+        Blur blur = new Blur(8, 3);
+        blur.radius.bindTo(new BindFunction() {
+            public Number f() {
+                int w = Stage.getWidth()/2;
+                double f = 1 - Math.abs(w - sprite.x.get()) / w;
+                if (f < 0.10) {
+                    return 0;
+                }
+                else {
+                    return 16 * (f-0.10);
+                }
+            }
+        });
+        sprite.setFilter(blur);
         return sprite;
     }
     

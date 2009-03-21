@@ -576,6 +576,7 @@
     <target name="build-examples" description="Compile all examples and templates (for testing)">
         <subant>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="include.src" value="true" />
             <fileset dir="examples" includes="*/build.xml"/>
             <fileset dir="templates" includes="*/build.xml"/>
             <target name="build"/>
