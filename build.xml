@@ -492,6 +492,9 @@
         <copy todir="${build}/www/particles">
             <fileset dir="${dist.temp}/examples/Particles/build"/>
         </copy>
+        <copy todir="${build}/www/pathmotion">
+            <fileset dir="${dist.temp}/examples/PathMotion/build"/>
+        </copy>
         <copy todir="${build}/www/physics">
             <fileset dir="${dist.temp}/examples/Physics/build"/>
         </copy>
