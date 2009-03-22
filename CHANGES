@@ -10,10 +10,11 @@
   * API: Group.drawSprite() is now final. To do custom drawing, subclass Sprite.
   * API: Bindings can now be bi-directional. See Int.bindWithInverse(Int) and
     Fixed.bindWithInverse(Fixed).
-  * Core: Ant templates updated:
+  * Templates: Ant templates updated. Requires Ant 1.7.1.
         - Examples now have src/res/lib/build structure
         - Targets "debug" and "profile" included for NetBeans (Doug Holton)
         - Scala template has a "docs" target (Doug Holton)
+  * Examples: Added Physics example using JBox2D.
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
     the device's refresh rate if it is near 60hz.
   * Core: pulpcore.js updated to install 6u12 for IE users without Java.
