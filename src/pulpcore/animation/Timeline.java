@@ -35,6 +35,7 @@ import pulpcore.animation.event.SoundEvent;
 import pulpcore.animation.event.TimelineEvent;
 import pulpcore.Build;
 import pulpcore.math.CoreMath;
+import pulpcore.math.Path;
 import pulpcore.scene.Scene;
 import pulpcore.sound.Sound;
 import pulpcore.sprite.Sprite;
@@ -689,7 +690,43 @@ public final class Timeline extends Animation {
         animateTo(sprite.x, x, duration, easing, startDelay);
         animateTo(sprite.y, y, duration, easing, startDelay);
     }        
-    
+
+    //
+    // Move on path convenience methods
+    //
+
+    public void move(Sprite sprite, Path path, double startP, double endP, int duration) {
+        path.moveOnTimeline(this, sprite, startP, endP, duration, null, 0);
+    }
+
+    public void move(Sprite sprite, Path path, double startP, double endP, int duration,
+        Easing easing)
+    {
+        path.moveOnTimeline(this, sprite, startP, endP, duration, easing, 0);
+    }
+
+    public void move(Sprite sprite, Path path, double startP, double endP, int duration,
+        Easing easing, int startDelay)
+    {
+        path.moveOnTimeline(this, sprite, startP, endP, duration, easing, startDelay);
+    }
+
+    public void moveAndRotate(Sprite sprite, Path path, double startP, double endP, int duration) {
+        path.moveAndRotateOnTimeline(this, sprite, startP, endP, duration, null, 0);
+    }
+
+    public void moveAndRotate(Sprite sprite, Path path, double startP, double endP, int duration,
+        Easing easing)
+    {
+        path.moveAndRotateOnTimeline(this, sprite, startP, endP, duration, easing, 0);
+    }
+
+    public void moveAndRotate(Sprite sprite, Path path, double startP, double endP, int duration,
+        Easing easing, int startDelay)
+    {
+        path.moveAndRotateOnTimeline(this, sprite, startP, endP, duration, easing, startDelay);
+    }
+
     //
     // Scale as int convenience methods
     //

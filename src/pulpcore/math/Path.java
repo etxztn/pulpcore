@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -29,14 +29,12 @@
 
 package pulpcore.math;
 
-import java.text.ParseException;
 import java.util.StringTokenizer;
 import java.util.ArrayList;
 import pulpcore.animation.Tween;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Timeline;
 import pulpcore.image.CoreGraphics;
-import pulpcore.math.CoreMath;
 import pulpcore.sprite.Sprite;
 
 /*
@@ -50,7 +48,7 @@ import pulpcore.sprite.Sprite;
     
     * For now, inputs are integers, but internally fixed point its used.
     
-    * TODO: change conversion process from floating point to fixed-point.
+    * TODO: change conversion process from floating point to fixed-point?
 */
 
 
@@ -76,22 +74,17 @@ import pulpcore.sprite.Sprite;
 */
 public class Path {
     
-    public static final int X_AXIS = 0;
-    public static final int Y_AXIS = 1;
-    
     /** 
         The move command. The move-to command requires one point: the location
         to move to.
     */
     private static final int MOVE_TO = 0;
     
-    
     /** 
         The line segment command. The line-to command requires one point: 
         the location to draw a line segment to.
     */
     private static final int LINE_TO = 1;
-    
     
     /** 
         The cubic bezier command. The curve-to command requires three points.
@@ -101,7 +94,6 @@ public class Path {
         absolute values.
     */
     private static final int CURVE_TO = 2;
-    
     
     /** The number of points in the path. */
     private final int numPoints;
@@ -116,10 +108,11 @@ public class Path {
     private final int[] pPoints;
     
     private int totalLength;
+
+    private boolean isClosed;
     
     private transient int lastCalcP = -1;
     private transient int[] lastCalcPoint = new int[2];
-    
     
     /**
         Parse an SVG path data string. Only absolute move-to, line-to, and curve-to commands are
@@ -164,7 +157,6 @@ public class Path {
         init();
     }
     
-    
     private static void parseSVGNumbers(String s, float[] numbers) throws IllegalArgumentException {
         StringTokenizer tokenizer = new StringTokenizer(s, " ,", false);
         for (int i = 1; i < numbers.length; i++) {
@@ -177,22 +169,7 @@ public class Path {
             }
         }
     }
-    
-    
-    /*
-    public Path(int[][] drawCommands) {
-        int[][] points = toLineSegments(drawCommands);
-        
-        this.xPoints = points[0];
-        this.yPoints = points[1];
-        this.numPoints = xPoints.length;
-        this.pPoints = new int[numPoints];
-        
-        init();
-    }
-    */
-    
-    
+
     public Path(int[] xPoints, int[] yPoints) {
         this.xPoints = toFixed(xPoints);
         this.yPoints = toFixed(yPoints);
@@ -201,12 +178,18 @@ public class Path {
         
         init();
     }
-    
+
+    /**
+        Returns true if the path is closed, that is, the first point and the last point
+        are identical.
+     */
+    public boolean isClosed() {
+        return isClosed;
+    }
     
     public double getLength() {
         return CoreMath.toDouble(totalLength);
     }
-    
     
     // These two methods are commented out because they are untested
     //
@@ -259,7 +242,6 @@ public class Path {
     //    return isInside;
     //}
         
-        
     private int[] toFixed(int[] n) {
         int[] f = new int[n.length];
         for (int i = 0; i < n.length; i++) {
@@ -267,7 +249,6 @@ public class Path {
         }
         return f;
     }
-    
     
     private void init() {
         
@@ -287,8 +268,9 @@ public class Path {
             length += segmentLength[i - 1];
             pPoints[i] = CoreMath.div(length, totalLength);
         }
+
+        isClosed = xPoints[0] == xPoints[numPoints - 1] && yPoints[0] == yPoints[numPoints - 1];
     }
-    
     
     public void translate(double x, double y) {
         if (x == 0 && y == 0) {
@@ -302,21 +284,17 @@ public class Path {
         }
     }
     
-    
     public int getStartX() {
         return CoreMath.toInt(xPoints[0]);
     }
-    
     
     public int getStartY() {
         return CoreMath.toInt(yPoints[0]);
     }
     
-    
     public int getEndX() {
         return CoreMath.toInt(xPoints[numPoints - 1]);
     }
-    
     
     public int getEndY() {
         return CoreMath.toInt(yPoints[numPoints - 1]);
@@ -325,25 +303,38 @@ public class Path {
     //
     //
     //
-    
-    
+
+    /**
+        Gets the x location of point p on the path, where p is typically from 0 (start of the path)
+        to 1 (end of the path).
+        @param p The position along the path to place the sprite, from 0 to 1.
+     */
     public double getX(double p) {
-        return CoreMath.toDouble(get(0, CoreMath.toFixed(p)));
+        int px = clampP(p);
+        return CoreMath.toDouble(get(0, px));
     }
     
-    
+    /**
+        Gets the y location of point p on the path, where p is typically from 0 (start of the path)
+        to 1 (end of the path).
+        @param p The position along the path to place the sprite, from 0 to 1.
+     */
     public double getY(double p) {
-        return CoreMath.toDouble(get(1, CoreMath.toFixed(p)));
+        int px = clampP(p);
+        return CoreMath.toDouble(get(1, px));
     }
 
-    
+    /**
+        Gets the angle of point p on the path, where p is typically from 0 (start of the path)
+        to 1 (end of the path).
+        @param p The position along the path to place the sprite, from 0 to 1.
+     */
     public double getAngle(double p) {
-        int i = getLowerSegment(CoreMath.toFixed(p));
-        
-        //return CoreMath.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
-        return Math.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
+        int px = clampP(p);
+        return CoreMath.toDouble(get(2, px));
+        //int i = getLowerSegment(px);
+        //return Math.atan2(yPoints[i + 1] - yPoints[i], xPoints[i + 1] - xPoints[i]);
     }
-    
     
     /**
         Places a Sprite at a position along the path.
@@ -351,100 +342,348 @@ public class Path {
         @param p The position along the path to place the sprite, from 0 to 1. 
     */
     public void place(Sprite sprite, double p) {
-        int P = CoreMath.toFixed(p);
-        sprite.x.setAsFixed(get(0, P));
-        sprite.y.setAsFixed(get(1, P));
-    }    
-    
-    
+        int px = clampP(p);
+        sprite.x.setAsFixed(get(0, px));
+        sprite.y.setAsFixed(get(1, px));
+    }
+
+    /**
+        Moves a sprite along this path.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @see Timeline#move(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int)
+     */
+    public void move(Sprite sprite, double startP, double endP, int duration) {
+        moveAsFixed(null, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, null, 0);
+    }
+
+    /**
+        Moves a sprite along this path, rotating the sprite so that it is tangent to the path
+        at all times.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @see Timeline#moveAndRotate(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int)
+     */
+    public void moveAndRotate(Sprite sprite, double startP, double endP, int duration) {
+        moveAsFixed(null, sprite, true, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, null, 0);
+    }
+
+    /**
+        Moves a sprite along this path.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @param easing The animation easing.
+        @see Timeline#move(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int, pulpcore.animation.Easing)
+     */
+    public void move(Sprite sprite, double startP, double endP, int duration,
+            Easing easing)
+    {
+        moveAsFixed(null, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, easing, 0);
+    }
+
+    /**
+        Moves a sprite along this path, rotating the sprite so that it is tangent to the path
+        at all times.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @param easing The animation easing.
+        @see Timeline#moveAndRotate(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int, pulpcore.animation.Easing)
+     */
+    public void moveAndRotate(Sprite sprite, double startP, double endP, int duration,
+            Easing easing)
+    {
+        moveAsFixed(null, sprite, true, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, easing, 0);
+    }
+
+    /**
+        Moves a sprite along this path.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @param easing The animation easing.
+        @param startDelay The animation start delay.
+        @see Timeline#move(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int, pulpcore.animation.Easing, int)
+     */
+    public void move(Sprite sprite, double startP, double endP, int duration,
+            Easing easing, int startDelay)
+    {
+        moveAsFixed(null, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, easing, startDelay);
+    }
+
+    /**
+        Moves a sprite along this path, rotating the sprite so that it is tangent to the path
+        at all times.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @param easing The animation easing.
+        @param startDelay The animation start delay.
+        @see Timeline#moveAndRotate(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int, pulpcore.animation.Easing, int)
+     */
+    public void moveAndRotate(Sprite sprite, double startP, double endP, int duration,
+            Easing easing, int startDelay)
+    {
+        moveAsFixed(null, sprite, true, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, easing, startDelay);
+    }
+
+    /**
+        Moves a sprite along this path.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @param easing The animation easing.
+        @param startDelay The animation start delay.
+        @see Timeline#move(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int, pulpcore.animation.Easing, int)
+     */
+    public void moveOnTimeline(Timeline timeline, Sprite sprite, double startP, double endP,
+            int duration, Easing easing, int startDelay)
+    {
+        moveAsFixed(timeline, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, easing, startDelay);
+    }
+
+    /**
+        Moves a sprite along this path, rotating the sprite so that it is tangent to the path
+        at all times.
+        <p>If the path is open ({@link #isClosed()} returns false), the position is clamped from
+        0 to 1. Otherwise, if the path is open, the position wraps. For example, for a closed path,
+        moving from 0 to 1.5 is the same as moving from 0 to 1 and then from 0 to 0.5.
+        @param sprite The sprite
+        @param startP The start position along the path, typically from 0 to 1.
+        @param endP The start position along the path, typically from 0 to 1.
+        @param duration The animation duration.
+        @param easing The animation easing.
+        @param startDelay The animation start delay.
+        @see Timeline#moveAndRotate(pulpcore.sprite.Sprite, pulpcore.math.Path, double, double, int, pulpcore.animation.Easing, int)
+     */
+    public void moveAndRotateOnTimeline(Timeline timeline, Sprite sprite, double startP, double endP,
+            int duration, Easing easing, int startDelay)
+    {
+        moveAsFixed(timeline, sprite, true, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+            duration, easing, startDelay);
+    }
+
+
+    /**
+        @deprecated
+     */
     public void guide(Timeline timeline, Sprite sprite, int duration) {
-        guideAsFixed(timeline, sprite, 0, CoreMath.ONE, duration, null, 0);
+        moveAsFixed(timeline, sprite, false, 0, CoreMath.ONE, duration, null, 0);
     }
     
-    
+    /**
+        @deprecated
+     */
     public void guide(Timeline timeline, Sprite sprite, int duration, Easing easing) {
-        guideAsFixed(timeline, sprite, 0, CoreMath.ONE, duration, easing, 0);
+        moveAsFixed(timeline, sprite, false, 0, CoreMath.ONE, duration, easing, 0);
     }
     
-    
+    /**
+        @deprecated
+     */
     public void guide(Timeline timeline, Sprite sprite, int duration, Easing easing, 
         int startDelay) 
     {
-        guideAsFixed(timeline, sprite, 0, CoreMath.ONE, duration, easing, startDelay);
+        moveAsFixed(timeline, sprite, false, 0, CoreMath.ONE, duration, easing, startDelay);
     }
-    
-    
+
+    /**
+        @deprecated
+     */
     public void guideBackwards(Timeline timeline, Sprite sprite, int duration) {
-        guideAsFixed(timeline, sprite, CoreMath.ONE, 0, duration, null, 0);
+        moveAsFixed(timeline, sprite, false, CoreMath.ONE, 0, duration, null, 0);
     }
     
-    
+    /**
+        @deprecated
+     */
     public void guideBackwards(Timeline timeline, Sprite sprite, int duration, Easing easing) {
-        guideAsFixed(timeline, sprite, CoreMath.ONE, 0, duration, easing, 0);
+        moveAsFixed(timeline, sprite, false, CoreMath.ONE, 0, duration, easing, 0);
     }
     
-    
+    /**
+        @deprecated
+     */
     public void guideBackwards(Timeline timeline, Sprite sprite, int duration, Easing easing, 
         int startDelay) 
     {
-        guideAsFixed(timeline, sprite, CoreMath.ONE, 0, duration, easing, startDelay);
+        moveAsFixed(timeline, sprite, false, CoreMath.ONE, 0, duration, easing, startDelay);
     }    
     
-    
+    /**
+        @deprecated
+     */
     public void guide(Timeline timeline, Sprite sprite, double startP, double endP, int duration) {
-        guideAsFixed(timeline, sprite, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+        moveAsFixed(timeline, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
             duration, null, 0);
     }
     
-    
+    /**
+        @deprecated
+     */
     public void guide(Timeline timeline, Sprite sprite, double startP, double endP, int duration,
         Easing easing) 
     {
-        guideAsFixed(timeline, sprite, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+        moveAsFixed(timeline, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
             duration, easing, 0);
     }
     
-    
+    /**
+        @deprecated
+     */
     public void guide(Timeline timeline, Sprite sprite, double startP, double endP, int duration,
         Easing easing, int startDelay) 
     {
-        guideAsFixed(timeline, sprite, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
+        moveAsFixed(timeline, sprite, false, CoreMath.toFixed(startP), CoreMath.toFixed(endP),
             duration, easing, startDelay);
     }    
 
-
-    private void guideAsFixed(Timeline timeline, Sprite sprite, int startP, int endP, 
-        int duration, Easing easing, int startDelay) 
+    private void moveAsFixed(Timeline timeline, Sprite sprite, boolean includeAngle,
+            int startP, int endP, int duration, Easing easing, int startDelay)
     {
         PathAnimation xAnimation = 
-            new PathAnimation(X_AXIS, startP, endP, duration, easing, startDelay);
+            new PathAnimation(PathAnimation.X_AXIS, startP, endP, duration, easing, startDelay);
         PathAnimation yAnimation = 
-            new PathAnimation(Y_AXIS, startP, endP, duration, easing, startDelay);
+            new PathAnimation(PathAnimation.Y_AXIS, startP, endP, duration, easing, startDelay);
+        PathAnimation angleAnimation =
+            new PathAnimation(PathAnimation.ANGLE, startP, endP, duration, easing, startDelay);
             
         if (timeline == null) {
             sprite.x.setBehavior(xAnimation);
             sprite.y.setBehavior(yAnimation);
+            if (includeAngle) {
+                sprite.angle.setBehavior(angleAnimation);
+            }
         }
         else {
             timeline.add(sprite.x, xAnimation);
             timeline.add(sprite.y, yAnimation);
+            if (includeAngle) {
+                timeline.add(sprite.angle, angleAnimation);
+            }
+        }
+    }
+
+    private class PathAnimation extends Tween {
+
+        public static final int X_AXIS = 0;
+        public static final int Y_AXIS = 1;
+        public static final int ANGLE = 2;
+
+        private final int axis;
+        private final int startP;
+        private final int endP;
+
+        PathAnimation(int axis, int startP, int endP, int duration, Easing easing, int startDelay) {
+            super(
+                get(axis, startP),
+                get(axis, endP),
+                duration, easing, startDelay);
+            this.axis = axis;
+            this.startP = startP;
+            this.endP = endP;
+        }
+
+        protected void updateState(int animTime) {
+            if (getDuration() == 0) {
+                super.updateState(animTime);
+            }
+            else {
+                int p = startP + CoreMath.mulDiv(endP - startP, animTime, getDuration());
+                super.setValue(get(axis, p));
+            }
+        }
+    }
+     
+    //
+    //
+    //
+
+    private int clampP(double p) {
+        return clampP(CoreMath.toFixed(p));
+    }
+
+    private int clampP(int p) {
+        if (isClosed()) {
+            // Only wrap if the path is closed.
+            // Special case: ONE is considered the end.
+            if (p != CoreMath.ONE) {
+                p &= 0xffff;
+            }
+        }
+        else {
+            p = CoreMath.clamp(p, 0, CoreMath.ONE);
+        }
+        return p;
+    }
+    
+    private int get(int axis, int p) {
+        int px = clampP(p);
+        if (axis == 0 || axis == 1) {
+            return getLocation(px)[axis];
+        }
+        else {
+            int i = getLowerSegment(px);
+            int lowerAngle = CoreMath.atan2(yPoints[i + 1] - yPoints[i],
+                    xPoints[i + 1] - xPoints[i]);
+            if (i == numPoints - 2) {
+                return lowerAngle;
+            }
+            else {
+                int higherAngle = CoreMath.atan2(yPoints[i + 2] - yPoints[i + 1],
+                        xPoints[i + 2] - xPoints[i + 1]);
+                int dAngle = higherAngle - lowerAngle;
+                if (Math.abs(dAngle + CoreMath.TWO_PI) < Math.abs(dAngle)) {
+                    dAngle += CoreMath.TWO_PI;
+                }
+                else if (Math.abs(dAngle - CoreMath.TWO_PI) < Math.abs(dAngle)) {
+                    dAngle -= CoreMath.TWO_PI;
+                }
+
+                return lowerAngle + CoreMath.mulDiv(dAngle, px - pPoints[i], pPoints[i + 1] - pPoints[i]);
+            }
         }
     }
     
-    
-    //
-    //
-    //
-    
-    
-    private int get(int axis, int p) {
-        return getLocation(p)[axis];
-    }
-    
-    
     private int getLowerSegment(int p) {
-        p = Math.max(p, 0);
-        p = Math.min(p, CoreMath.ONE);
         
         // Binary search for P
         int high = numPoints - 1;
@@ -463,10 +702,7 @@ public class Path {
         return low;
     }
     
-    
     private int[] getLocation(int p) {
-        p = Math.max(p, 0);
-        p = Math.min(p, CoreMath.ONE);
         
         if (p == lastCalcP) {
             return lastCalcPoint;
@@ -514,36 +750,6 @@ public class Path {
         return lastCalcPoint;
     }
 
-
-    class PathAnimation extends Tween {
-        
-        private final int axis;
-        private final int startP;
-        private final int endP;
-        
-        
-        PathAnimation(int axis, int startP, int endP, int duration, Easing easing, int startDelay) {
-            super(
-                get(axis, startP), 
-                get(axis, endP),
-                duration, easing, startDelay);
-            this.axis = axis;
-            this.startP = startP;
-            this.endP = endP;
-        }
-        
-        protected void updateState(int animTime) {
-            if (getDuration() == 0) {
-                super.updateState(animTime);
-            } 
-            else {
-                super.setValue(
-                    get(axis, startP + CoreMath.mulDiv(endP - startP, animTime, getDuration())));
-            }
-        }
-    }
-    
-    
     /**
         Draws the segments of this path using the current color.
         @param drawJoints if true, draw rectangles at the joints between line segments
@@ -567,14 +773,11 @@ public class Path {
             g.fillRectFixedPoint(x1-CoreMath.ONE, y1-CoreMath.ONE, 
                 CoreMath.toFixed(3), CoreMath.toFixed(3));
         }
-        
     }
-        
     
     //
     // Convert draw commands to line segments
     //
-    
     
     private static int[][] toLineSegments(ArrayList drawCommands) {
         
@@ -631,11 +834,9 @@ public class Path {
         return returnValue;
     }
     
-    
     //
     // Bezier conversion using forward differencing. 
     //
-    
     
     private static int[][] toLineSegments(float x1, float y1, float x2, float y2, 
         float x3, float y3, float x4, float y4) 
@@ -688,7 +889,7 @@ public class Path {
         int numSegments3 = getNumSegments(x1234, y1234, rx12, ry12, rx123, ry123, rx1234, ry1234);
         int numSegments4 = getNumSegments(rx1234, ry1234, rx234, ry234, rx34, ry34, x4, y4);
         
-        int totalPoints = numSegments1 + numSegments2 + numSegments3 + numSegments4 + 1;
+        int totalPoints = numSegments1 + numSegments2 + numSegments3 + numSegments4;
         int[] xPoints = new int[totalPoints];
         int[] yPoints = new int[totalPoints];
         int offset = 0;
@@ -702,13 +903,12 @@ public class Path {
             x1234, y1234, rx12, ry12, rx123, ry123, rx1234, ry1234);
         offset += toLineSegments(xPoints, yPoints, offset, numSegments4, 
             rx1234, ry1234, rx234, ry234, rx34, ry34, x4, y4);
-        
+
         int[][] returnValue = new int[2][];
         returnValue[0] = xPoints;
         returnValue[1] = yPoints;
         return returnValue;
     }
-    
     
     private static int getNumSegments(float x0, float y0, float x1, float y1, float x2, float y2, 
         float x3, float y3) 
@@ -748,7 +948,6 @@ public class Path {
         return numSegments;
     }
     
-    
     private static int toLineSegments(int[] xPoints, int[] yPoints, int offset, int numSegments, 
         float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3) 
     {
@@ -772,10 +971,6 @@ public class Path {
         float yfdd = 2 * yfdd2;
         float yfddd = 2 * yfddd2;
         
-        xPoints[offset] = CoreMath.toFixed(x0);
-        yPoints[offset] = CoreMath.toFixed(y0);
-        offset++;
-        
         for (int i = 1; i < numSegments; i++) {
             xf += xfd + xfdd2 + xfddd6;
             xfd += xfdd + xfddd2;
@@ -795,10 +990,9 @@ public class Path {
         xPoints[offset] = CoreMath.toFixed(x3);
         yPoints[offset] = CoreMath.toFixed(y3);
         offset++;
-        
+
         return numSegments;
     }
-    
     
     private static float getDist(float px, float py, float ax, float ay, float bx, float by) {
     
