@@ -16,7 +16,9 @@
         - Scala template has a "docs" target (Doug Holton)
   * Examples: 
         - Added Physics example using JBox2D.
-        - Added PathMotion example
+        - Added PathMotion example.
+        - Starfield: added MotionBlur to the stars.
+        - Text: added Stroke and DropShadow filters.
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
     the device's refresh rate if it is near 60hz.
   * Core: pulpcore.js updated to install 6u12 for IE users without Java.
