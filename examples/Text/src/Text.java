@@ -9,6 +9,11 @@ import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Label;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
+import pulpcore.image.Colors;
+import pulpcore.image.filter.DropShadow;
+import pulpcore.image.filter.Filter;
+import pulpcore.image.filter.FilterChain;
+import pulpcore.image.filter.Stroke;
 import pulpcore.util.StringUtil;
 
 public class Text extends Scene2D {
@@ -49,7 +54,13 @@ public class Text extends Scene2D {
             label.numDisplayChars.animateTo(numChars, 30*numChars, Easing.NONE, startTime);
             startTime += 30*numChars + 100;
         }
-        
+
+        // Create a white stroke + drop shadow filter for the messages
+        DropShadow dropShadow = new DropShadow(0, 3);
+        dropShadow.radius.set(2);
+        Stroke stroke = new Stroke(Colors.WHITE, 2);
+        Filter filter = new FilterChain(stroke, dropShadow);
+
         // Add messages (play in a loop)
         Timeline timeline = new Timeline();
         x = Stage.getWidth() / 2;
@@ -63,6 +74,7 @@ public class Text extends Scene2D {
             Label label = new Label(messageFont, line, x, y, labelWidth, labelHeight);
             label.setAnchor(Sprite.CENTER);
             label.alpha.set(0);
+            label.setFilter(filter);
             add(label);
             
             // Animate (zoom)
