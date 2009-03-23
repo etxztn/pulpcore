@@ -43,7 +43,7 @@ import pulpcore.math.CoreMath;
  * Example of use (to obtain the same effect as the above PSD example):
  * <pre>
  * ImageSprite sprite = new ImageSprite("star.png", 50, 50);
- * FilterChain chain = new FilterChain(new EdgeStroke(0xff289acd, 7), new EdgeStroke(0xFF00679A, 7));
+ * FilterChain chain = new FilterChain(new Stroke(0xff289acd, 7), new Stroke(0xFF00679A, 7));
  * sprite.setFilter(chain);
  * add(sprite);
  * </pre>
@@ -64,11 +64,11 @@ public final class Stroke extends Filter {
     */
     public final Int size = new Int(5);
 
-    private int actualColor = -1;
+    private int actualColor = 0;
     private int actualRadius = -1;
     private int fillIntensity;
     private int[] precalculatedIntensities;
-    private int[] colorTable = new int[256];
+    private int[] colorTable;
 
     private Stroke(Stroke filter) {
         size.bindWithInverse(filter.size);
@@ -76,21 +76,21 @@ public final class Stroke extends Filter {
     }
 
     /**
-    Creates a EdgeStroke filter with the default color (black) and a size of 5.
+    Creates a Stroke filter with the default color (black) and a size of 5.
      */
     public Stroke() {
         this(DEFAULT_COLOR);
     }
 
     /**
-    Creates a EdgeStroke filter with the specified color and a size of 5.
+    Creates a Stroke filter with the specified color and a size of 5.
      */
     public Stroke(int color) {
         this(color, 5);
     }
 
     /**
-    Creates a EdgeStroke filter with the specified color and size.
+    Creates a Stroke filter with the specified color and size.
      */
     public Stroke(int color, int radius) {
         this.color.set(color);
@@ -108,7 +108,10 @@ public final class Stroke extends Filter {
         color.update(elapsedTime);
         size.update(elapsedTime);
 
-        if (color.get() != actualColor) {
+        if (color.get() != actualColor || colorTable == null) {
+            if (colorTable == null) {
+                colorTable = new int[256];
+            }
             actualColor = color.get();
             setDirty();
             int rgb = Colors.rgb(color.get());
@@ -131,20 +134,20 @@ public final class Stroke extends Filter {
         return false;
     }
 
-    public int getY() {
-        return -actualRadius;
+    public int getX() {
+        return -(actualRadius + 1);
     }
 
-    public int getX() {
-        return -actualRadius;
+    public int getY() {
+        return -(actualRadius + 1);
     }
 
     public int getWidth() {
-        return super.getWidth() + actualRadius * 2;
+        return super.getWidth() + (actualRadius + 1) * 2;
     }
 
     public int getHeight() {
-        return super.getHeight() + actualRadius * 2;
+        return super.getHeight() + (actualRadius + 1) * 2;
     }
 
     protected void filter(CoreImage src, CoreImage dst) {
@@ -156,19 +159,61 @@ public final class Stroke extends Filter {
         int[] dstData = dst.getData();
         int srcWidth = src.getWidth();
         int srcHeight = src.getHeight();
+        int srcSize = srcWidth * srcHeight;
         int dstWidth = dst.getWidth();
         int dstHeight = dst.getHeight();
 
         CoreGraphics g = dst.createGraphics();
         g.clear();
+        
+        if (srcSize == 0) {
+            return;
+        }
+
         int colorAlpha = actualColor >>> 24;
         int colorPremultiplied = Colors.premultiply(actualColor);
-        boolean antiAlias = ANTI_ALIAS && actualRadius <= 16;
+        boolean antiAlias = ANTI_ALIAS && actualRadius <= 16 && srcWidth >= 2 && srcHeight >= 2;
         if (colorAlpha > 0) {
 
             int srcOffset = 0;
             int dstOffset = -xOffset - yOffset * dstWidth;
+            if (antiAlias) {
+                for (int j = 0; j < srcWidth; j++) {
+                    // Top edge anti-alias
+                    int a = srcData[srcOffset + j] >>> 24;
+                    if (a > 0) {
+                        fillIntensity = (a * colorAlpha) >> 8;
+                        wuAntialiasedCircle(dstData, dstWidth, dstHeight,
+                                j - xOffset, -1 - yOffset, actualRadius);
+                    }
+
+                    // Bottom edge anti-alias
+                    a = srcData[srcOffset + j + srcSize - srcWidth] >>> 24;
+                    if (a > 0) {
+                        fillIntensity = (a * colorAlpha) >> 8;
+                        wuAntialiasedCircle(dstData, dstWidth, dstHeight,
+                                j - xOffset, srcHeight - yOffset, actualRadius);
+                    }
+                }
+            }
             for (int i = 0; i < srcHeight; i++) {
+                if (antiAlias) {
+                    // Left edge anti-alias
+                    int a = srcData[srcOffset] >>> 24;
+                    if (a > 0) {
+                        fillIntensity = (a * colorAlpha) >> 8;
+                        wuAntialiasedCircle(dstData, dstWidth, dstHeight,
+                                -1 - xOffset, i - yOffset, actualRadius);
+                    }
+
+                    // Right edge anti-alias
+                    a = srcData[srcOffset + srcWidth - 1] >>> 24;
+                    if (a > 0) {
+                        fillIntensity = (a * colorAlpha) >> 8;
+                        wuAntialiasedCircle(dstData, dstWidth, dstHeight,
+                                srcWidth - xOffset, i - yOffset, actualRadius);
+                    }
+                }
                 for (int j = 0; j < srcWidth; j++) {
                     int p = srcData[srcOffset];
 
