@@ -34,17 +34,20 @@ import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 
+/**
+    The MotionBlur filter simulates the streaking of rapidly moving objects.
+ */
 public final class MotionBlur extends Filter {
 
     private static final int MAX_DISTANCE = 255;
 
-    private static int[] x1Offsets = new int[MAX_DISTANCE + 1];
-    private static int[] y1Offsets = new int[MAX_DISTANCE + 1];
+    private static int[] x1Offsets = new int[MAX_DISTANCE + 2];
+    private static int[] y1Offsets = new int[MAX_DISTANCE + 2];
     private static int[][] accum;
     private static final Object bufferLock = new Object();
 
     /**
-    The motion distance in pixels. The underlying implementation only uses integers.
+    The motion distance in pixels. 
     The maximum value is 255. The default value is 4.
      */
     public final Fixed distance = new Fixed(4);
@@ -67,15 +70,23 @@ public final class MotionBlur extends Filter {
 
     private Rect bounds = new Rect();
 
-
+    /**
+    Create a MotionBlur filter with an angle of 0 and a distance of 4.
+     */
     public MotionBlur() {
         this(0, 4);
     }
 
+    /**
+    Create a MotionBlur filter with the specified angle and a distance of 4.
+     */
     public MotionBlur(float angle) {
         this(angle, 4);
     }
 
+    /**
+    Create a MotionBlur filter with the specified angle and the specified distance.
+     */
     public MotionBlur(float angle, float distance) {
         this.angle.set(angle);
         this.distance.set(distance);
@@ -118,13 +129,14 @@ public final class MotionBlur extends Filter {
         angle.update(elapsedTime);
 
         int d = CoreMath.clamp(distance.getAsFixed(), 0, CoreMath.toFixed(MAX_DISTANCE));
-        d &= 0xffff0000;
+        // Granularity: 1/8th pixel
+        d &= 0xffffe000;
         int a = getAngle();
         if (actualDistance != d) {
             actualDistance = d;
             setDirty();
         }
-        if (a != actualAngle) {
+        if (actualAngle != a) {
             actualAngle = a;
             actualAngleCos = CoreMath.cos(a);
             actualAngleSin = CoreMath.sin(a);
@@ -140,8 +152,9 @@ public final class MotionBlur extends Filter {
         int h = super.getHeight();
         bounds.setBounds(0, 0, w, h);
         if (autoExpand) {
-            int x = CoreMath.mul(actualAngleCos, actualDistance/2);
-            int y = CoreMath.mul(actualAngleSin, actualDistance/2);
+            int iterations = getIterations();
+            int x = actualAngleCos * (iterations - 1) / 2;
+            int y = actualAngleSin * (iterations - 1) / 2;
             if (x < 0) {
                 x = CoreMath.toIntFloor(x);
             }
@@ -158,7 +171,6 @@ public final class MotionBlur extends Filter {
             bounds.union(-x, -y, w, h);
         }
     }
-
     
     private int getAngle() {
         int a = angle.getAsFixed();
@@ -208,6 +220,11 @@ public final class MotionBlur extends Filter {
         return (isInputOpaque() && !autoExpand);
     }
 
+    private int getIterations() {
+        // Iterations must be odd
+        return (CoreMath.toIntCeil(actualDistance) + 1) | 1;
+    }
+
     protected void filter(CoreImage input, CoreImage output) {
         synchronized (bufferLock) {
             int[] srcData = input.getData();
@@ -216,18 +233,20 @@ public final class MotionBlur extends Filter {
             int dstHeight = output.getHeight();
             int srcWidth = input.getWidth();
             int srcHeight = input.getHeight();
-            int iterations = CoreMath.toIntCeil(actualDistance) + 1;
-            int i2 = CoreMath.log2(iterations);
-            int sx = CoreMath.mul(actualAngleCos, actualDistance/2);
-            int sy = CoreMath.mul(actualAngleSin, actualDistance/2);
+            int actualDistancePlusOne = actualDistance + CoreMath.ONE;
+            int iterations = getIterations();
+            int outerAlpha = 255-CoreMath.toIntRound(127 * (CoreMath.toFixed(iterations) - actualDistancePlusOne));
+            int divisor = actualDistancePlusOne;
+            int iDivisor = CoreMath.toIntFloor(divisor);
+            int iDivisor2 = CoreMath.log2(iDivisor);
+            int sx = actualAngleCos * (iterations - 1) / 2;
+            int sy = actualAngleSin * (iterations - 1) / 2;
             for (int i = 0; i < iterations; i++) {
-                x1Offsets[i] = (CoreMath.toIntFloor(sx)+getX());
-                y1Offsets[i] = (CoreMath.toIntFloor(sy)+getY());
+                x1Offsets[i] = (CoreMath.toIntRound(sx)+getX());
+                y1Offsets[i] = (CoreMath.toIntRound(sy)+getY());
                 sx -= actualAngleCos;
                 sy -= actualAngleSin;
             }
-
-            // Optimized version:
 
             if (accum == null || accum[0].length < dstWidth) {
                 accum = new int[4][dstWidth];
@@ -269,12 +288,23 @@ public final class MotionBlur extends Filter {
                             int sourceX = x1+x1Offsets[i];
                             int srcOffset = sourceX + sourceY*srcWidth;
 
-                            for (int x = x1; x <= x2; x++) {
-                                int argb = srcData[srcOffset++];
-                                a[x] += Colors.getAlpha(argb);
-                                r[x] += Colors.getRed(argb);
-                                g[x] += Colors.getGreen(argb);
-                                b[x] += Colors.getBlue(argb);
+                            if (outerAlpha < 255 && (i ==0 || i == iterations - 1)) {
+                                for (int x = x1; x <= x2; x++) {
+                                    int argb = srcData[srcOffset++];
+                                    a[x] += (Colors.getAlpha(argb) * outerAlpha) >> 8;
+                                    r[x] += (Colors.getRed(argb) * outerAlpha) >> 8;
+                                    g[x] += (Colors.getGreen(argb) * outerAlpha) >> 8;
+                                    b[x] += (Colors.getBlue(argb) * outerAlpha) >> 8;
+                                }
+                            }
+                            else {
+                                for (int x = x1; x <= x2; x++) {
+                                    int argb = srcData[srcOffset++];
+                                    a[x] += Colors.getAlpha(argb);
+                                    r[x] += Colors.getRed(argb);
+                                    g[x] += Colors.getGreen(argb);
+                                    b[x] += Colors.getBlue(argb);
+                                }
                             }
                         }
                     }
@@ -283,14 +313,25 @@ public final class MotionBlur extends Filter {
                     for (int x = 0; x < rowX1; x++) {
                         dstData[dstOffset++] = 0;
                     }
-                    if ((1 << i2) == iterations) {
-                        for (int x = rowX1; x <= rowX2; x++) {
-                            dstData[dstOffset++] = Colors.rgba(r[x] >> i2, g[x] >> i2, b[x] >> i2, a[x] >> i2);
+                    if (CoreMath.toFixed(iDivisor) == divisor) {
+                        if ((1 << iDivisor2) == iDivisor) {
+                            for (int x = rowX1; x <= rowX2; x++) {
+                                dstData[dstOffset++] = Colors.rgba(r[x] >> iDivisor2, g[x] >> iDivisor2, b[x] >> iDivisor2, a[x] >> iDivisor2);
+                            }
+                        }
+                        else {
+                            for (int x = rowX1; x <= rowX2; x++) {
+                                dstData[dstOffset++] = Colors.rgba(r[x] / iDivisor, g[x] / iDivisor, b[x] / iDivisor, a[x] / iDivisor);
+                            }
                         }
                     }
                     else {
                         for (int x = rowX1; x <= rowX2; x++) {
-                            dstData[dstOffset++] = Colors.rgba(r[x] / iterations, g[x] / iterations, b[x] / iterations, a[x] / iterations);
+                            dstData[dstOffset++] = Colors.rgba(
+                                    (int)((((long)r[x]) << 16) / divisor),
+                                    (int)((((long)g[x]) << 16) / divisor),
+                                    (int)((((long)b[x]) << 16) / divisor),
+                                    (int)((((long)a[x]) << 16) / divisor));
                         }
                     }
                     for (int x = rowX2+1; x < dstWidth; x++) {
@@ -303,39 +344,6 @@ public final class MotionBlur extends Filter {
                     }
                 }
             }
-
-            // Unoptimized version:
-
-//            int dstOffset = 0;
-//            for (int y = 0; y < dstHeight; y++) {
-//                for (int x = 0; x < dstWidth; x++) {
-//                    int a = 0;
-//                    int r = 0;
-//                    int g = 0;
-//                    int b = 0;
-//                    int n = 0;
-//                    for (int i = 0; i < iterations; i++) {
-//                        int sourceX = x + x1Offsets[i];
-//                        int sourceY = y + y1Offsets[i];
-//
-//                        if (sourceX >= 0 && sourceY >= 0 && sourceX < srcWidth && sourceY < srcHeight) {
-//                            int srcARGB = srcData[sourceX + sourceY * srcWidth];
-//                            a += Colors.getAlpha(srcARGB);
-//                            r += Colors.getRed(srcARGB);
-//                            g += Colors.getGreen(srcARGB);
-//                            b += Colors.getBlue(srcARGB);
-//                            n++;
-//                        }
-//                    }
-//                    if (n == 0) {
-//                        dstData[dstOffset] = 0;
-//                    }
-//                    else {
-//                        dstData[dstOffset] = Colors.rgba(r/n, g/n, b/n, a/n);
-//                    }
-//                    dstOffset++;
-//                }
-//            }
         }
     }
 }
