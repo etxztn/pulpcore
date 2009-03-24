@@ -188,25 +188,29 @@ public abstract class Filter {
         return output;
     }
 
-    /* package private */ boolean isChildDirty() {
-        return false;
-    }
-
     /**
         Gets the filtered output image.
     */
     public final CoreImage getOutput() {
         CoreImage out = getUnfilteredOutput();
         if (isDirty()) {
-            filter((input == null) ? null : input, out);
+            filter(input, out);
             //pulpcore.CoreSystem.print("Filtered: " + getClass().getName());
             setDirty(false);
         }
         return out;
     }
 
+    /* package private */ boolean isChildDirty() {
+        return false;
+    }
+
+    /* package private */ boolean isDirtyFlagSet() {
+        return isDirty;
+    }
+
     public final boolean isDirty() {
-        return isDirty || isChildDirty();
+        return isDirtyFlagSet() || isChildDirty();
     }
 
     public final void setDirty() {

@@ -186,9 +186,16 @@ public class FilterChain extends Filter {
             last().filter(input, output);
         }
         else if (input == getInput() && output == getUnfilteredOutput()) {
+            boolean inputDirty = isDirtyFlagSet();
             for (int i = 0; i < list.size(); i++) {
                 Filter f = (Filter)list.get(i);
+                if (inputDirty) {
+                    f.setDirty();
+                }
                 f.setInput(input);
+                if (!inputDirty && f.isDirty()) {
+                    inputDirty = true;
+                }
                 input = f.getOutput();
             }
         }
