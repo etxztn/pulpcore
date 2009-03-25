@@ -1,5 +1,6 @@
 // Click to add a ball. Press R to reset
-// Physics example using JBox2D, the Java port of Eric Catto's Box2D.
+//
+// Physics example using JBox2D, the Java port of Erin Catto's Box2D.
 // www.jbox2d.org
 // www.box2d.org
 import org.jbox2d.collision.AABB;
@@ -69,7 +70,7 @@ public class Physics extends Scene2D {
 
                 // Bind the view (Sprite) to the data (Body)
                 Sprite ball = new ImageSprite("Ball.png", 0, 0);
-                float radius = ((float)ball.width.get() / 2) / WORLD_TO_STAGE_SCALE;
+                float radius = 31 / WORLD_TO_STAGE_SCALE;
                 Body ballBody = createBallBody(start, radius);
                 bindSpriteToBody(ball, ballBody);
                 ball.setTag(ballBody);
@@ -156,4 +157,3 @@ public class Physics extends Scene2D {
         world.createJoint(jd);
     }
 }
-
