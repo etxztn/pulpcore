@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 
 <!-- 
-    This template is designed for trying out PulpCore quickly without creating 
-    a directory structure for a full project.
+    Requires Ant 1.7.1.
 -->
 <project name="HelloWorld - Scala" default="build-and-run" basedir=".">
 

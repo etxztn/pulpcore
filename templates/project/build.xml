@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 
+<!--
+    Requires Ant 1.7.1.
+-->
 <project name="PulpCore Project" default="build-and-run" basedir=".">
 
     <property file="build.properties" />
