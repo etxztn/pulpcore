@@ -63,18 +63,19 @@ public class Physics extends Scene2D {
                 world.destroyBody((Body)s.getTag());
             }
             else {
-                // Create a new ball
                 float x = mouseX / WORLD_TO_STAGE_SCALE;
                 float y = mouseY / WORLD_TO_STAGE_SCALE;
-                Vec2 start = new Vec2(x, y);
 
-                // Bind the view (Sprite) to the data (Body)
-                Sprite ball = new ImageSprite("Ball.png", 0, 0);
-                float radius = 31 / WORLD_TO_STAGE_SCALE;
-                Body ballBody = createBallBody(start, radius);
-                bindSpriteToBody(ball, ballBody);
-                ball.setTag(ballBody);
-                add(ball);
+                // Check if the position in valid
+                if (world.inRange(new AABB(new Vec2(x-1,y-1), new Vec2(x+1, y+1)))) {
+                    // Create a new ball and bind the view (Sprite) to the data (Body)
+                    Sprite ball = new ImageSprite("Ball.png", 0, 0);
+                    float radius = 31 / WORLD_TO_STAGE_SCALE;
+                    Body ballBody = createBallBody(new Vec2(x, y), radius);
+                    bindSpriteToBody(ball, ballBody);
+                    ball.setTag(ballBody);
+                    add(ball);
+                }
             }
         }
     }
