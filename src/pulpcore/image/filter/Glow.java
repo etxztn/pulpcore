@@ -29,9 +29,8 @@
 package pulpcore.image.filter;
 
 import pulpcore.animation.Fixed;
-
 import pulpcore.image.CoreImage;
-
+import pulpcore.math.CoreMath;
 
 /**
  * A Glow filter.
@@ -51,7 +50,7 @@ import pulpcore.image.CoreImage;
  *	
  *		add(new FilledSprite(Colors.BLACK));
  *		
- *		Glow glow = new Glow( 0.8, 5);
+ *		Glow glow = new Glow(0.8, 5);
  *		
  *		Timeline timeline = new Timeline();
  *		timeline.animate(glow.amount, 0.2, 0.8, 500, null, 0);
@@ -71,12 +70,14 @@ import pulpcore.image.CoreImage;
  */
 public final class Glow extends Blur {
 
+    private static final int MAX_ACTUAL_AMOUNT = Integer.MAX_VALUE / 255;
+
 	/**
-    	the amount of glow to be used. The default value is 0.5.
+    	The amount of glow to be used, typically from 0 to 8. The default value is 0.5.
     */
 	public final Fixed amount = new Fixed(0.5f);
 	
-	private double actualAmount = 0;
+	private int actualAmount = 0;
 	
 	/**
     	Creates a Glow filter with a radius of 3, a quality of 3 and amount of 0,5.
@@ -120,13 +121,26 @@ public final class Glow extends Blur {
 	}
 	
 	public void update(int elapsedTime) {
-		super.update(elapsedTime);
-		amount.update(elapsedTime);
 		
-		if(actualAmount != amount.get()) {
-			actualAmount = amount.get();
+		amount.update(elapsedTime);
+
+
+        float newAmount = 0;
+        if (radius.get() > 0) {
+            // Add a bit of the radius since a high radius diminishes the glow.
+            newAmount += (float)radius.get() / 64;
+        }
+        if (amount.get() > 0) {
+            newAmount += (float)amount.get();
+        }
+        int newActualAmount = CoreMath.clamp((int)(32768 * newAmount), 0, MAX_ACTUAL_AMOUNT);
+		if (actualAmount != newActualAmount) {
+			actualAmount = newActualAmount;
 			setDirty();
-		} 
+		}
+
+        // Call super.update() afterwards because actualRadius isn't set unless the filter is dirty
+        super.update(elapsedTime);
 	}
 
 	protected void filter(CoreImage src, CoreImage dst) {
@@ -134,9 +148,7 @@ public final class Glow extends Blur {
 		// call the parent blur filter.
 		super.filter(src, dst);
 
-		// precalculate the amount to into an integer value.
-		// mulitplication in the loop will be faster than float calculation.
-		int a = (int)(actualAmount * 1024d);
+		int a = actualAmount;
 
 		int[] dstData = dst.getData();
 		int[] srcData = src.getData();
@@ -148,63 +160,76 @@ public final class Glow extends Blur {
 		int xOffset = getX();
 		int yOffset = getY();
 		
-		for (int i = 0; i < dstHeight; i++) {
-			for (int j = 0; j < dstWidth; j++) {
-				
-				int dstIndex = (i * dstWidth) + j;
-				int dstPixel = dstData[dstIndex];
-				
-				int srcPixel = 0;
-				// if we're in the SRC part, copy the src over the dst.
-				if(((i + yOffset) >= 0) && ((i+yOffset) < srcHeight) &&
-						((j + xOffset) >= 0) && ((j + xOffset) < srcWidth)) {
-					
-					int srcIndex = ((i + yOffset) * srcWidth) + j + xOffset;
-					srcPixel = srcData[srcIndex];
-				
+		for (int y = 0; y < dstHeight; y++) {
+            int dstIndex = (y * dstWidth);
+            if (y + yOffset < 0 || y + yOffset >= srcHeight) {
+                filterOnBlankArea(dstData, dstIndex, dstWidth);
+            }
+            else {
+                int srcIndex = ((y + yOffset) * srcWidth);
+                int w = -xOffset;
+                if (w > 0) {
+                    filterOnBlankArea(dstData, dstIndex, w);
+                    dstIndex += w;
+                }
+                for (int x = 0; x < srcWidth; x++) {
+                    int dstPixel = dstData[dstIndex];
+                    int srcPixel = srcData[srcIndex];
+
 					int da = dstPixel >>> 24;
 					int dr = (dstPixel >> 16) & 0xff;
 					int dg = (dstPixel >> 8) & 0xff;
 					int db = dstPixel & 0xff;
-					
+
 					int sa = srcPixel >>> 24;
 					int sr = (srcPixel >> 16) & 0xff;
 					int sg = (srcPixel >> 8) & 0xff;
 					int sb = srcPixel & 0xff;
-					
-					int nr = sr + ((a * dr) >> 8);
-					nr = nr > 255 ? 255 : nr;
-					int ng = sg + ((a * dg) >> 8);
-					ng = ng > 255 ? 255 : ng;
-					int nb = sb + ((a * db) >> 8); 
-					nb = nb > 255 ? 255 : nb;
-					int na = sa + ((a * da) >> 8);
-					na = na > 255 ? 255 : na;
-					
-					dstData[dstIndex] = (na << 24) | (nr << 16) | (ng << 8) | nb;
-					
-				} else {
-					// else just copy DST
-					int da = dstPixel >>> 24;
-					int dr = (dstPixel >> 16) & 0xff;
-					int dg = (dstPixel >> 8) & 0xff;
-					int db = dstPixel & 0xff;
-					
-					int nr = (a * dr) >> 8;
-					nr = nr > 255 ? 255 : nr;
-					int ng = (a * dg) >> 8;
-					ng = ng > 255 ? 255 : ng;
-					int nb = (a * db) >> 8; 
-					nb = nb > 255 ? 255 : nb;
-					int na = (a * da) >> 8;
-					na = na > 255 ? 255 : na;
-					
-					dstData[dstIndex] = (na << 24) | (nr << 16) | (ng << 8) | nb;
-					
-				}
-				
-			}
-		}
 
+					int na = sa + ((a * da) >> 13);
+					na = na > 255 ? 255 : na;
+                    int nr = sr + ((a * dr) >> 13);
+					nr = nr > na ? na : nr;
+					int ng = sg + ((a * dg) >> 13);
+					ng = ng > na ? na : ng;
+					int nb = sb + ((a * db) >> 13);
+					nb = nb > na ? na : nb;
+
+					dstData[dstIndex] = (na << 24) | (nr << 16) | (ng << 8) | nb;
+                    dstIndex++;
+                    srcIndex++;
+                }
+                w = dstWidth - srcWidth + xOffset;
+                if (w > 0) {
+                    filterOnBlankArea(dstData, dstIndex, w);
+                    dstIndex += w;
+                }
+            }
+		}
 	}
+    
+    private void filterOnBlankArea(int[] dstData, int dstIndex, int length) {
+
+        int a = actualAmount;
+        
+        for (int j = 0; j < length; j++) {
+            int dstPixel = dstData[dstIndex];
+            int da = dstPixel >>> 24;
+            int dr = (dstPixel >> 16) & 0xff;
+            int dg = (dstPixel >> 8) & 0xff;
+            int db = dstPixel & 0xff;
+
+            int na = (a * da) >> 13;
+            na = na > 255 ? 255 : na;
+            int nr = (a * dr) >> 13;
+            nr = nr > na ? na : nr;
+            int ng = (a * dg) >> 13;
+            ng = ng > na ? na : ng;
+            int nb = (a * db) >> 13;
+            nb = nb > na ? na : nb;
+
+            dstData[dstIndex] = (na << 24) | (nr << 16) | (ng << 8) | nb;
+            dstIndex++;
+        }
+    }
 }

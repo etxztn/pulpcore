@@ -32,7 +32,6 @@ import pulpcore.animation.Int;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreImage;
 
-
 /**
  *	A HSB adjust filter.
  *	
@@ -47,29 +46,26 @@ import pulpcore.image.CoreImage;
 public final class HSBAdjust extends Filter {
 	
 	/**
-		HUE. indicates the hue offset this filter will apply to the image.
-		Values from -255 to 255
+		Hue. Indicates the hue offset this filter will apply to the image.
+		Values from -255 to 255.
 	 */
-	public Int hue = new Int(0);
+	public final Int hue = new Int(0);
 	
 	/**
-		SATURATION. indicates the saturation offset this filter will apply to the image.
-		Values from -255 to 255
+		Saturation. Indicates the saturation offset this filter will apply to the image.
+		Values from -255 to 255.
 	 */
-	public Int saturation = new Int(0);
+	public final Int saturation = new Int(0);
 	
 	/**
-		BRIGHTNESS. indicates the brightness offset this filter will apply to the image.
-		Values from -255 to 255
+		Brightness. Indicates the brightness offset this filter will apply to the image.
+		Values from -255 to 255.
 	 */
-	public Int brightness = new Int(0);
-
+	public final Int brightness = new Int(0);
 	
-	
-	
-	int actualHue;
-	int actualBrightness;
-	int actualSaturation;
+	private int actualHue;
+	private int actualBrightness;
+	private int actualSaturation;
 	
 	/**
 	 * Creates the HSBAdjust filter with the default values (0).
@@ -77,7 +73,6 @@ public final class HSBAdjust extends Filter {
 	public HSBAdjust() {
 		this(0,0,0);
 	}
-	
 
 	/**
 	 * Creates the filters with specific values.
@@ -90,7 +85,6 @@ public final class HSBAdjust extends Filter {
 		this.saturation.set(saturation);
 		this.brightness.set(brightness);
 	}
-	
 	 
     public Filter copy() {
         HSBAdjust copy = new HSBAdjust();
@@ -100,23 +94,22 @@ public final class HSBAdjust extends Filter {
         return copy;
     }
     
-    
     public void update(int elapsedTime) {
     	hue.update(elapsedTime);
     	brightness.update(elapsedTime);
     	saturation.update(elapsedTime);
     	
-    	if(hue.get() != actualHue) {
+    	if (hue.get() != actualHue) {
     		actualHue = hue.get();
     		setDirty();
     	}
     	
-    	if(brightness.get() != actualBrightness) {
+    	if (brightness.get() != actualBrightness) {
     		actualBrightness = brightness.get();
     		setDirty();
     	}
     	
-    	if(saturation.get() != actualSaturation) {
+    	if (saturation.get() != actualSaturation) {
     		actualSaturation = saturation.get();
     		setDirty();
     	}
@@ -126,34 +119,45 @@ public final class HSBAdjust extends Filter {
 			
         int[] srcPixels = src.getData();
         int[] dstPixels = dst.getData();
+        
+        if (src.isOpaque()) {
+            for (int i = 0; i < srcPixels.length; i++) {
+                int hsb = Colors.RGBtoHSB(srcPixels[i]);
+                int h = (hsb >> 16) & 0xff;
+                int s = (hsb >> 8) & 0xff;
+                int b = hsb & 0xff;
 
-        int height = src.getHeight();
-        int width  = src.getWidth();
-        
-        
-        for (int i = 0; i < height; i++) {
-        	for(int j = 0; j < width; j++) {
-        		int index = i*width + j;
-        		
-        		int srcArgb = srcPixels[index];
-        		int a = srcArgb >>> 24;
-        		
-        		int b = Colors.getBrightness(srcArgb);
-        		int h = Colors.getHue(srcArgb);
-        		int s = Colors.getSaturation(srcArgb);
-        		
-        		b = b + actualBrightness;
-        		b = b > 255 ? 255 : ( b < 0 ? 0 : b);
-        		
         		h = h + actualHue;
         		h = h > 255 ? 255 : ( h < 0 ? 0 : h);
 
         		s = s + actualSaturation;
         		s = s > 255 ? 255 : ( s < 0 ? 0 : s);
-        		
-        		dstPixels[index] = Colors.hsba(h, s, b, a);
-        		
-        	}
+
+                b = b + actualBrightness;
+        		b = b > 255 ? 255 : ( b < 0 ? 0 : b);
+
+                dstPixels[i] = Colors.hsb(h, s, b);
+            }
+        }
+        else {
+            for (int i = 0; i < srcPixels.length; i++) {
+                int hsb = Colors.RGBtoHSB(Colors.unpremultiply(srcPixels[i]));
+                int a = (hsb >>> 24);
+                int h = (hsb >> 16) & 0xff;
+                int s = (hsb >> 8) & 0xff;
+                int b = hsb & 0xff;
+
+        		h = h + actualHue;
+        		h = h > 255 ? 255 : ( h < 0 ? 0 : h);
+
+        		s = s + actualSaturation;
+        		s = s > 255 ? 255 : ( s < 0 ? 0 : s);
+
+                b = b + actualBrightness;
+        		b = b > 255 ? 255 : ( b < 0 ? 0 : b);
+
+                dstPixels[i] = Colors.premultiply(Colors.hsba(h, s, b, a));
+            }
         }
 	}
 }

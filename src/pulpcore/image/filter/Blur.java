@@ -294,7 +294,6 @@ public class Blur extends Filter {
                 int oy = shiftY - getY();
                 for (int i = 0; i < actualQuality; i++) {
                     filter(src, dst, actualRadius, ox, oy, clamp);
-                    postProcess(src, dst, actualRadius);
                     src = dst;
                     dst = wrk;
                     wrk = src;
@@ -303,19 +302,6 @@ public class Blur extends Filter {
                 }
             }
         }
-    }
-
-    /**
-
-     @param c The channel value (integer), from 0 to 255
-     @param r The radius (16:16 fixed-point), from 0 to 255
-    */
-    protected int preProcessChannel(int r, int c) {
-        return c;
-    }
-
-    protected void postProcess(CoreImage src, CoreImage dst, int r) {
-
     }
 
     private void filter(CoreImage src, CoreImage dst, final int r, 
@@ -335,7 +321,7 @@ public class Blur extends Filter {
         final int columnOffset = rInt + 1;
 
         for (int i = 0; i < 256; i++) {
-            int c = CoreMath.clamp(preProcessChannel(r, i), 0, 255);
+            int c = CoreMath.clamp(i, 0, 255);
             int v = ((c << 16) | (c << 8) | c);
 
             colorTable[i] = (int)CoreMath.div(v, windowArea);

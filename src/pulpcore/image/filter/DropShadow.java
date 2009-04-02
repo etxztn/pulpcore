@@ -131,11 +131,12 @@ public class DropShadow extends Blur {
     }
 
     public void update(int elapsedTime) {
-        super.update(elapsedTime);
-
         shadowOffsetX.update(elapsedTime);
         shadowOffsetY.update(elapsedTime);
         color.update(elapsedTime);
+
+        // Call super.update() afterwards because actualRadius isn't set unless the filter is dirty
+        super.update(elapsedTime);
     }
     
     private void createShadowColorTable() {
