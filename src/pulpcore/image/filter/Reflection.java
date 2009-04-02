@@ -28,101 +28,101 @@
 */
 package pulpcore.image.filter;
 
+import pulpcore.animation.Fixed;
 import pulpcore.animation.Int;
 import pulpcore.image.CoreImage;
+import pulpcore.math.CoreMath;
 
 /**
  *	A Reflection filter.
  *	Fake a mirrored image on brilliant surface.
- *	
- *	This filter uses 3 parameters : 
- * - reflectionHeight : the height of the reflection area. If left blank, half of the sprite height is used;
- * - gap : the space between the sprite and its reflection. Default value is 0.
- * - fadingDivider : the amount of fading for the reflection area. take one of NO_FADING, FADE_BY_2, FADE_BY_4.
- *                   default value is FADE_BY_2.
- * 
+ *
  *	@author Florent Dupont
  *
 */
 public final class Reflection extends Filter {
-
-	public final static int NO_FADING = 0; 
-	public final static int FADE_BY_2 = 1; 
-	public final static int FADE_BY_4 = 2; 
 	
 	/**
-    	The reflection height. 
-    */
-	public final Int reflectionHeight = new Int(130);
-
-	/**
-		The gap between the image and its reflection. 
+		The vertical gap, in pixels, between the bottom of the image and the top of the
+        reflection. The default value is 1.
 	*/
 	public final Int gap = new Int(1);
+
+    /**
+    	The reflection height as a fraction of the input image, from 0 to 1.
+        The default value is 0.5.
+    */
+	public final Fixed fraction = new Fixed(0.5f);
+
+    /**
+        The alpha of the top of the reflection (nearest the bottom of the image), from 0 to 255.
+        The default value is 128.
+     */
+    public final Int topAlpha = new Int(128);
 	
-	/**
-		The fading divider value of the reflection. 
-	*/
-	public final Int fadingDivider = new Int(FADE_BY_2);
+    /**
+        The alpha of the bottom of the reflection (farthest from from the bottom of the image),
+        from 0 to 255. The default value is 0.
+     */
+    public final Int bottomAlpha = new Int(0);
+
 	
-	
-	private int actualReflectionHeight;
+	private float actualFraction;
 	private int actualGap;
-	private int actualFading;
+	private int actualTopAlpha;
+	private int actualBottomAlpha;
 		
 	/**
-		Creates a Reflection filter with a gap of 1.
-		At the first filter() call reflectionHeight will be set to half the height of the image.
+		Creates a Reflection filter with the default parameters.
 	 */
 	public Reflection() {
-		this(1);
+		this(1, 0.5f, 128, 0);
 	}
-	
-	/**
-		Creates a Reflection filter with the specified reflection height. Gap has a default value of 1.
-	*/
-	public Reflection(int height) {
-		this(height, 1);
-	}
-	
-	/**
-		Creates a Reflection filter with the specified reflection height and gap value.
+
+    /**
+		Creates a Reflection filter with the specified gap.
 	 */
-	public Reflection(int height, int gap) {
-		this(height, gap, FADE_BY_2);
+	public Reflection(int gap) {
+		this(gap, 0.5f, 128, 0);
 	}
 	
 	/**
-		Creates a Reflection filter with the specified reflection height and gap value.
-		fading divider is also specified and can take 3 one of these 3 values : 
-			- NO_FADING
-			- FADE_BY_2
-			- FADE_BY_4.
- 	*/
-	public Reflection(int height, int gap, int fadingDivider) {
-		this.reflectionHeight.set(height);
-		this.fadingDivider.set(fadingDivider);
-        this.gap.set(gap);
+		Creates a Reflection filter with the specified gap and reflection height (as a fraction of
+        the input image).
+	*/
+	public Reflection(int gap, float fraction) {
+		this(1, fraction, 128, 0);
+	}
+	
+	/**
+		Creates a Reflection filter with the specified gap, (as a fraction of
+        the input image), and alpha values.
+	 */
+	public Reflection(int gap, float fraction, int topAlpha, int bottomAlpha) {
+		this.gap.set(gap);
+        this.fraction.set(fraction);
+        this.topAlpha.set(topAlpha);
+        this.bottomAlpha.set(bottomAlpha);
 	}
 	
     public Filter copy() {
         Reflection copy = new Reflection();
-        copy.reflectionHeight.bindWithInverse(reflectionHeight);
         copy.gap.bindWithInverse(gap);
-        copy.fadingDivider.bindWithInverse(fadingDivider);
+        copy.fraction.bindWithInverse(fraction);
+        copy.topAlpha.bindWithInverse(topAlpha);
+        copy.bottomAlpha.bindWithInverse(bottomAlpha);
         return copy;
     }
     
-    public int getY() {
-    	return -actualGap/2;
-    }
-    
-    public int getWidth() {
-        return super.getWidth();
-    }
-
     public int getHeight() {
-        return super.getHeight() + actualReflectionHeight + actualGap;
+        int h = super.getHeight();
+        int reflectionHeight = Math.round(actualFraction * h);
+        if (reflectionHeight <= 0) {
+            return h;
+        }
+        else {
+            return h + actualGap + reflectionHeight;
+        }
     }
 
     public boolean isOpaque() {
@@ -131,70 +131,90 @@ public final class Reflection extends Filter {
     
     public void update(int elapsedTime) {
         	
-    	reflectionHeight.update(elapsedTime);
     	gap.update(elapsedTime);
-    	fadingDivider.update(elapsedTime);
-    	
-    	if(reflectionHeight.get() != actualReflectionHeight) {
-    		actualReflectionHeight = reflectionHeight.get();
+        fraction.update(elapsedTime);
+    	topAlpha.update(elapsedTime);
+        bottomAlpha.update(elapsedTime);
+
+        float newFraction = CoreMath.clamp((float)fraction.get(), 0, 1);
+    	if (actualFraction != newFraction) {
+    		actualFraction = newFraction;
     		setDirty();
     	}
-    	
-    	if(gap.get() != actualGap) {
-    		actualGap = gap.get();
+
+        int newGap = CoreMath.clamp(gap.get(), 0, 32768);
+    	if (actualGap != newGap) {
+    		actualGap = newGap;
     		setDirty();
     	}
-    	
-    	if(fadingDivider.get() != actualFading) {
-    		actualFading = fadingDivider.get();
+
+        int newTopAlpha = CoreMath.clamp(topAlpha.get(), 0, 255);
+    	if (actualTopAlpha != newTopAlpha) {
+    		actualTopAlpha = newTopAlpha;
+    		setDirty();
+    	}
+
+        int newBottomAlpha = CoreMath.clamp(bottomAlpha.get(), 0, 255);
+    	if (actualBottomAlpha != newBottomAlpha) {
+    		actualBottomAlpha = newBottomAlpha;
     		setDirty();
     	}
     }
 
     protected void filter(CoreImage src, CoreImage dst) {
     	
-    	if(reflectionHeight.get() > src.getHeight()) {
-    		System.out.println("reflection height cannot be higher than the sprite height.");
-    		// reflection is then set to be half the value of the src height
-    		reflectionHeight.set(src.getHeight() / 2);
-    		actualReflectionHeight = reflectionHeight.get();
-    	}
-    	
         int[] srcPixels = src.getData();
         int[] dstPixels = dst.getData();
         
-        int height = src.getHeight();
-        int width = src.getWidth();
+        int srcWidth = src.getWidth();
+        int srcHeight = src.getHeight();
         
-        // copies the source into the destination
+        // Copy the source to the destination
         int srcOffset = 0;
-        for (int i = 0; i < height; i++) {
-        	System.arraycopy(srcPixels, srcOffset, dstPixels, srcOffset, width);
-        	srcOffset += width;
+        for (int i = 0; i < srcHeight; i++) {
+        	System.arraycopy(srcPixels, srcOffset, dstPixels, srcOffset, srcWidth);
+        	srcOffset += srcWidth;
         }
 
-        // copies/creates the reflection
-        for (int i = 0; i < actualReflectionHeight; i++) {
-        	for(int j = 0; j < width; j++) {
+        int reflectionHeight = Math.round(actualFraction * srcHeight);
+        if (reflectionHeight <= 0) {
+            return;
+        }
 
-        		int srcARGB = srcPixels[((height - i-1)*width)+j];
+        // Make sure the gap is clear
+        for (int y = 0; y < actualGap; y++) {
+            int dstIndex = srcWidth * (srcHeight + y);
+            for (int x = 0; x < srcWidth; x++) {
+                dstPixels[dstIndex++] = 0;
+            }
+        }
+
+        // Create the reflection
+        for (int y = 0; y < reflectionHeight; y++) {
+            // Interpolate the alpha for this row
+            int da = actualBottomAlpha - actualTopAlpha;
+        	int maskA = actualTopAlpha + y * da / reflectionHeight;
+
+            int srcIndex = (srcHeight - y - 1) * srcWidth;
+            int dstIndex = (y + actualGap + srcHeight) * srcWidth;
+            
+        	for (int x = 0; x < srcWidth; x++) {
+
+        		int srcARGB = srcPixels[srcIndex];
         		int srcR = (srcARGB >> 16) & 0xff;
         		int srcG = (srcARGB >> 8) & 0xff;
         		int srcB = srcARGB & 0xff;
         		int srcA = srcARGB >>> 24;
 
-        		// calculate the alpha gradient and divide the result by the specified divider.
-        		int maskA = (0xff - (i*0xff)/actualReflectionHeight) >> actualFading;
-        		// DST_IN blend mode
         		srcR = (srcR * maskA) >> 8; 
         		srcG = (srcG * maskA) >> 8;
         		srcB = (srcB * maskA) >> 8;
         		srcA = (srcA * maskA) >> 8;
-
-        		int offset = ((i+actualGap+height-1)*width)+j; 
-        		dstPixels[offset] = (srcA << 24) | (srcR << 16) | (srcG << 8) | srcB; 
+        		 
+        		dstPixels[dstIndex] = (srcA << 24) | (srcR << 16) | (srcG << 8) | srcB;
+                srcIndex++;
+                dstIndex++;
         	}
         }
-
 	}
 }
