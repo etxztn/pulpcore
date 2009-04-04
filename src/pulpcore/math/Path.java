@@ -46,11 +46,8 @@ import pulpcore.sprite.Sprite;
     * For now, MOVE_TO commands that don't occur at the first draw command
     are interpreted at LINE_TO commands.
     
-    * For now, inputs are integers, but internally fixed point its used.
-    
-    * TODO: change conversion process from floating point to fixed-point?
+    * Inputs are floats, but the segments are stored as fixed point.
 */
-
 
 /**
     The Path class is a series of straight lines and curves that a
@@ -58,19 +55,17 @@ import pulpcore.sprite.Sprite;
     <p>
     Paths points are immutable, but the path can be translated to another location.
     <p>
-    Paths are created from a subset of the SVG path commands. Only M (absolute move-to), 
-    L (absolute line-to) and C (absolute curve to) commands are supported.
-    For example, a triangle path: 
+    Paths are created from SVG path commands. For example, a triangle path: 
     <pre>path = new Path("M 100 100 L 300 100 L 200 300 L 100 100");</pre>
     A simple curve: 
     <pre>path = new Path("M100,200 C100,100 400,100 400,200");</pre>
     
-    Spaces are not required. Floating point values are accepted. 
-    See http://www.w3.org/TR/SVG/paths.html#PathData
+    See <a href="http://www.w3.org/TR/SVG/paths.html#PathData">http://www.w3.org/TR/SVG/paths.html#PathData</a>.
+    All SVG commands are supported, however, move-to commands in the middle of a path are
+    treated as line-to commands. That is, subpaths are concatenated together to form one path.
     
     <p>
     Note, the Path class is not used for rendering paths or shapes.
-    Also, the Path class may change substantially in future iterations of PulpCore.
 */
 public class Path {
     
@@ -115,37 +110,12 @@ public class Path {
     private transient int[] lastCalcPoint = new int[2];
     
     /**
-        Parse an SVG path data string. Only absolute move-to, line-to, and curve-to commands are
+        Parse an SVG path data string. 
         supported. See http://www.w3.org/TR/SVG/paths.html#PathData
         @throws IllegalArgumentException If the path data string could not be parsed.
     */
     public Path(String svgPathData) throws IllegalArgumentException {
-        svgPathData = svgPathData.trim();
-        ArrayList commands = new ArrayList();
-        StringTokenizer tokenizer = new StringTokenizer(svgPathData, "MLC", true);
-        
-        while (tokenizer.hasMoreTokens()) {
-            float[] command;
-            String commandType = tokenizer.nextToken();
-            if (commandType.equals("M")) {
-                command = new float[3];
-                command[0] = MOVE_TO;
-            }
-            else if (commandType.equals("L")) {
-                command = new float[3];
-                command[0] = LINE_TO;
-            }
-            else if (commandType.equals("C")) {
-                command = new float[7];
-                command[0] = CURVE_TO;
-            }
-            else {
-                throw new IllegalArgumentException("Not a supported command: " + commandType);
-            }
-            
-            parseSVGNumbers(tokenizer.nextToken(), command);
-            commands.add(command);
-        }
+        ArrayList commands = parseSVGPathData(svgPathData);
         
         int[][] points = toLineSegments(commands);
         
@@ -156,26 +126,16 @@ public class Path {
         
         init();
     }
-    
-    private static void parseSVGNumbers(String s, float[] numbers) throws IllegalArgumentException {
-        StringTokenizer tokenizer = new StringTokenizer(s, " ,", false);
-        for (int i = 1; i < numbers.length; i++) {
-            String n = tokenizer.nextToken();
-            try {
-                numbers[i] = Float.valueOf(n).floatValue();
-            }
-            catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Not a number: " + n);
-            }
-        }
-    }
 
-    public Path(int[] xPoints, int[] yPoints) {
+    /**
+        Creates a new Path with the specified points.
+     */
+    public Path(float[] xPoints, float[] yPoints) {
         this.xPoints = toFixed(xPoints);
         this.yPoints = toFixed(yPoints);
         this.numPoints = xPoints.length;
         this.pPoints = new int[numPoints];
-        
+
         init();
     }
 
@@ -242,7 +202,7 @@ public class Path {
     //    return isInside;
     //}
         
-    private int[] toFixed(int[] n) {
+    private int[] toFixed(float[] n) {
         int[] f = new int[n.length];
         for (int i = 0; i < n.length; i++) {
             f[i] = CoreMath.toFixed(n[i]);
@@ -774,9 +734,451 @@ public class Path {
                 CoreMath.toFixed(3), CoreMath.toFixed(3));
         }
     }
-    
+
     //
-    // Convert draw commands to line segments
+    // SVG path-data parsing
+    //
+
+    /**
+        Parses an SVG Path to simple move-to, line-to, curve-to commands.
+        Returns a List of float[] arrays. The first item in the array is the command,
+        (MOVE_TO, LINE_TO, or CURVE_TO) and the remaining items in the array are the command
+        parameters (2, 2, and 6 respectively).
+     */
+    private static ArrayList parseSVGPathData(String svgPathData) throws IllegalArgumentException {
+        ArrayList commands = new ArrayList();
+        svgPathData = svgPathData.trim();
+        StringTokenizer tokenizer = new StringTokenizer(svgPathData, "MmLlHhVvAaQqTtCcSsZz", true);
+        float currX = 0;
+        float currY = 0;
+        float initialX = 0;
+        float initialY = 0;
+        float lastControlX = 0;
+        float lastControlY = 0;
+        String lastCommand = "";
+        while (tokenizer.hasMoreTokens()) {
+            String commandType = tokenizer.nextToken();
+
+            if (commandType.trim().length() == 0) {
+                // This might happen after a Z command
+                continue;
+            }
+            boolean isRelative = false;
+
+            if (commandType.length() == 1 && Character.isLowerCase(commandType.charAt(0))) {
+                commandType = commandType.toUpperCase();
+                isRelative = true;
+            }
+
+            if ("Z".equals(commandType)) {
+                // Special case: don't parse numbers
+                if (currX != initialX || currY != initialY) {
+                    commands.add(new float[] { LINE_TO, initialX, initialY });
+                    currX = initialX;
+                    currY = initialY;
+                }
+            }
+            else {
+                float[] numbers = parseNumberList(tokenizer.nextToken());
+
+                if ("M".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 2);
+                    for (int i = 0; i < numbers.length; i+=2) {
+                        float endX = numbers[i];
+                        float endY = numbers[i + 1];
+                        if (isRelative) {
+                            endX += currX;
+                            endY += currY;
+                        }
+                        if (i == 0) {
+                            commands.add(new float[] { MOVE_TO, endX, endY });
+                            initialX = endX;
+                            initialY = endY;
+                        }
+                        else {
+                            commands.add(new float[] { LINE_TO, endX, endY });
+                        }
+                        currX = endX;
+                        currY = endY;
+                    }
+                }
+                else if ("L".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 2);
+                    for (int i = 0; i < numbers.length; i+=2) {
+                        float endX = numbers[i];
+                        float endY = numbers[i + 1];
+                        if (isRelative) {
+                            endX += currX;
+                            endY += currY;
+                        }
+                        commands.add(new float[] { LINE_TO, endX, endY });
+                        currX = endX;
+                        currY = endY;
+                    }
+                }
+                else if ("H".equals(commandType)) {
+                    for (int i = 0; i < numbers.length; i++) {
+                        float endX = numbers[i];
+                        if (isRelative) {
+                            endX += currX;
+                        }
+                        commands.add(new float[] { LINE_TO, endX, currY });
+                        currX = endX;
+                    }
+                }
+                else if ("V".equals(commandType)) {
+                    for (int i = 0; i < numbers.length; i++) {
+                        float endY = numbers[i];
+                        if (isRelative) {
+                            endY += currY;
+                        }
+                        commands.add(new float[] { LINE_TO, currX, endY });
+                        currY = endY;
+                    }
+                }
+                else if ("C".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 6);
+                    for (int i = 0; i < numbers.length; i+=6) {
+                        float x1 = numbers[i + 0];
+                        float y1 = numbers[i + 1];
+                        float x2 = numbers[i + 2];
+                        float y2 = numbers[i + 3];
+                        float endX = numbers[i + 4];
+                        float endY = numbers[i + 5];
+                        if (isRelative) {
+                            x1 += currX;
+                            y1 += currY;
+                            x2 += currX;
+                            y2 += currY;
+                            endX += currX;
+                            endY += currY;
+                        }
+                        commands.add(new float[] { CURVE_TO, x1, y1, x2, y2, endX, endY });
+                        currX = endX;
+                        currY = endY;
+                        lastControlX = x2;
+                        lastControlY = y2;
+                    }
+                }
+                else if ("S".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 4);
+                    for (int i = 0; i < numbers.length; i+=4) {
+                        float x1;
+                        float y1;
+                        float x2 = numbers[i + 0];
+                        float y2 = numbers[i + 1];
+                        float endX = numbers[i + 2];
+                        float endY = numbers[i + 3];
+                        if (isRelative) {
+                            x2 += currX;
+                            y2 += currY;
+                            endX += currX;
+                            endY += currY;
+                        }
+                        if (i > 0 || "C".equals(lastCommand) || "S".equals(lastCommand)) {
+                            // "The reflection of the second control point on the previous command
+                            // relative to the current point"
+                            x1 = 2*currX - lastControlX;
+                            y1 = 2*currY - lastControlY;
+                        }
+                        else {
+                            // "Coincident with the current point"
+                            x1 = currX;
+                            y1 = currY;
+                        }
+                        commands.add(new float[] { CURVE_TO, x1, y1, x2, y2, endX, endY });
+                        currX = endX;
+                        currY = endY;
+                        lastControlX = x2;
+                        lastControlY = y2;
+                    }
+                }
+                else if ("Q".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 4);
+                    for (int i = 0; i < numbers.length; i+=4) {
+                        float qx = numbers[i + 0];
+                        float qy = numbers[i + 1];
+                        float endX = numbers[i + 2];
+                        float endY = numbers[i + 3];
+                        if (isRelative) {
+                            qx += currX;
+                            qy += currY;
+                            endX += currX;
+                            endY += currY;
+                        }
+                        // Convert quadratic bezier to cubic
+                        float x1 = (currX + 2 * qx) / 3;
+                        float y1 = (currY + 2 * qy) / 3;
+                        float x2 = (endX + 2 * qx) / 3;
+                        float y2 = (endY + 2 * qy) / 3;
+                        commands.add(new float[] { CURVE_TO, x1, y1, x2, y2, endX, endY });
+                        currX = endX;
+                        currY = endY;
+                        lastControlX = qx;
+                        lastControlY = qy;
+                    }
+                }
+                else if ("T".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 2);
+                    for (int i = 0; i < numbers.length; i+=2) {
+                        float qx;
+                        float qy;
+                        float endX = numbers[i + 0];
+                        float endY = numbers[i + 1];
+                        if (isRelative) {
+                            endX += currX;
+                            endY += currY;
+                        }
+                        if (i > 0 || "Q".equals(lastCommand) || "T".equals(lastCommand)) {
+                            // "The reflection of the control point on the previous command relative
+                            // to the current point"
+                            qx = 2*currX - lastControlX;
+                            qy = 2*currY - lastControlY;
+                        }
+                        else {
+                            // "Coincident with the current point"
+                            qx = currX;
+                            qy = currY;
+                        }
+                        // Convert quadratic bezier to cubic
+                        float x1 = (currX + 2 * qx) / 3;
+                        float y1 = (currY + 2 * qy) / 3;
+                        float x2 = (endX + 2 * qx) / 3;
+                        float y2 = (endY + 2 * qy) / 3;
+                        commands.add(new float[] { CURVE_TO, x1, y1, x2, y2, endX, endY });
+                        currX = endX;
+                        currY = endY;
+                        lastControlX = qx;
+                        lastControlY = qy;
+                    }
+                }
+                else if ("A".equals(commandType)) {
+                    checkIfSizeIsMultipleOf(commandType, numbers, 7);
+                    for (int i = 0; i < numbers.length; i+=7) {
+                        // See http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+                        float rx = numbers[i + 0];
+                        float ry = numbers[i + 1];
+                        float angle = (float)Math.toRadians(numbers[i + 2] % 360);
+                        boolean largeArc = numbers[i + 3] != 0;
+                        boolean sweep = numbers[i + 4] != 0;
+                        float endX = numbers[i + 5];
+                        float endY = numbers[i + 6];
+                        if (isRelative) {
+                            endX += currX;
+                            endY += currY;
+                        }
+                        if (currX == endX && currY == endY) {
+                            // Do nothing
+                        }
+                        else if (rx == 0 || ry == 0) {
+                            commands.add(new float[] { LINE_TO, endX, endY });
+                        }
+                        else {
+                            commands.addAll(parseArc(currX, currY, rx, ry, angle,
+                                    largeArc, sweep, endX, endY));
+                        }
+                        currX = endX;
+                        currY = endY;
+                    }
+                }
+                else {
+                    throw new IllegalArgumentException("Not a supported command: " + commandType);
+                }
+            }
+            lastCommand = commandType;
+        }
+        return commands;
+    }
+
+    /**
+        Convert arc (ellipse) to cubic bezier curve(s).
+     */
+    private static ArrayList parseArc(float currX, float currY, float rx, float ry, float angle,
+            boolean largeArc, boolean sweep,
+            float endX, float endY)
+    {
+
+        final float PI = (float)Math.PI;
+        final float TWO_PI = (float)(Math.PI * 2);
+        final float ONE_HALF_PI = (float)(Math.PI / 2);
+
+        ArrayList commands = new ArrayList();
+
+        float dx2 = (currX - endX) / 2;
+        float dy2 = (currY - endY) / 2;
+        float cosA = (float)Math.cos(angle);
+        float sinA = (float)Math.sin(angle);
+
+        float x1p = cosA * dx2 + sinA * dy2;
+        float y1p = -sinA * dx2 + cosA * dy2;
+        float x1p2 = x1p * x1p;
+        float y1p2 = y1p * y1p;
+
+        // Correct out-of-range radii
+        rx = Math.abs(rx);
+        ry = Math.abs(ry);
+        float rx2 = rx * rx;
+        float ry2 = ry * ry;
+        float V = x1p2 / rx2 + y1p2 / ry2;
+        if (V > 1) {
+            float Vsq = (float)Math.sqrt(V);
+            rx = Vsq * rx;
+            ry = Vsq * ry;
+            rx2 = rx * rx;
+            ry2 = ry * ry;
+        }
+
+        // Find center point (cx, cy)
+        float S = (float)Math.sqrt(Math.max(0,
+                (rx2 * ry2 - rx2 * y1p2 - ry2 * x1p2) /
+                (rx2 * y1p2 + ry2 * x1p2)));
+        if (largeArc == sweep) {
+            S = -S;
+        }
+        float cxp = S * rx * y1p / ry;
+        float cyp = -S * ry * x1p / rx;
+        float cx = cosA * cxp - sinA * cyp + (currX + endX) / 2;
+        float cy = sinA * cxp + cosA * cyp + (currY + endY) / 2;
+
+        // Find startAngle and endAngle
+        float ux = (x1p - cxp) / rx;
+        float uy = (y1p - cyp) / ry;
+        float vx = (-x1p - cxp) / rx;
+        float vy = (-y1p - cyp) / ry;
+        float n = (float)Math.sqrt(ux * ux + uy * uy);
+        float p = ux;
+        float angleStart = (float)Math.acos(p / n);
+        if (uy < 0) {
+            angleStart = -angleStart;
+        }
+        n = (float)Math.sqrt((ux * ux + uy * uy) * (vx * vx + vy * vy));
+        p = ux * vx + uy * vy;
+        float angleExtent = (float)Math.acos(p / n);
+        if (ux * vy - uy * vx < 0) {
+            angleExtent = -angleExtent;
+        }
+        if (!sweep && angleExtent > 0) {
+            angleExtent -= TWO_PI;
+        }
+        else if (sweep && angleExtent < 0) {
+            angleExtent += TWO_PI;
+        }
+        float angleEnd = angleStart + angleExtent;
+
+        // Create one bezier for each quadrant
+        float cosEtaB = (float)Math.cos(angleStart);
+        float sinEtaB = (float)Math.sin(angleStart);
+        float aCosEtaB = rx * cosEtaB;
+        float bSinEtaB = ry * sinEtaB;
+        float aSinEtaB = rx * sinEtaB;
+        float bCosEtaB = ry * cosEtaB;
+        float xB = cx + aCosEtaB * cosA - bSinEtaB * sinA;
+        float yB = cy + aCosEtaB * sinA + bSinEtaB * cosA;
+        float xBDot = -aSinEtaB * cosA - bCosEtaB * sinA;
+        float yBDot = -aSinEtaB * sinA + bCosEtaB * cosA;
+
+        float s = angleStart;
+        float d = sweep ? ONE_HALF_PI : -ONE_HALF_PI;
+        while (true) {
+            if ((sweep && s > angleEnd) || (!sweep && s < angleEnd)) {
+                break;
+            }
+
+            float e = s + d;
+            if ((sweep && e > angleEnd) || (!sweep && e < angleEnd)) {
+                e = angleEnd;
+            }
+
+            float da = e - s;
+            float alpha = 4*(float)Math.tan(da/4)/3;
+
+            // Alternative alpha from: http://www.spaceroots.org/documents/ellipse/
+            // TODO: test for very large arcs to see which one is better
+            //float t = (float)Math.tan(da / 2);
+            //float alpha = (float)Math.sin(da) * (float)(Math.sqrt(4 + 3 * t * t) - 1) / 3;
+
+            float xA = xB;
+            float yA = yB;
+            float xADot = xBDot;
+            float yADot = yBDot;
+
+            cosEtaB = (float)Math.cos(e);
+            sinEtaB = (float)Math.sin(e);
+            aCosEtaB = rx * cosEtaB;
+            bSinEtaB = ry * sinEtaB;
+            aSinEtaB = rx * sinEtaB;
+            bCosEtaB = ry * cosEtaB;
+
+            xBDot = -aSinEtaB * cosA - bCosEtaB * sinA;
+            yBDot = -aSinEtaB * sinA + bCosEtaB * cosA;
+            if (e == angleEnd) {
+                xB = endX;
+                yB = endY;
+            }
+            else {
+                xB = cx + aCosEtaB * cosA - bSinEtaB * sinA;
+                yB = cy + aCosEtaB * sinA + bSinEtaB * cosA;
+            }
+
+            commands.add(new float[] { CURVE_TO,
+                    (xA + alpha * xADot), (yA + alpha * yADot),
+                    (xB - alpha * xBDot), (yB - alpha * yBDot),
+                    xB, yB });
+
+            s += d;
+        }
+
+        return commands;
+    }
+
+    private static void checkIfSizeIsMultipleOf(String commandType, float[] numbers, int m)
+            throws IllegalArgumentException
+    {
+        if (numbers.length == 0 || (numbers.length % m) != 0) {
+            throw new IllegalArgumentException("Command '" + commandType +
+                    "' parameters count (" + numbers.length + ") is not a multiple of " + m + ".");
+        }
+    }
+
+    private static float[] parseNumberList(String svgNumberList) {
+        ArrayList numbers = new ArrayList();
+        StringTokenizer tokenizer = new StringTokenizer(svgNumberList, " \r\n\t,", false);
+        while (tokenizer.hasMoreTokens()) {
+            String t = tokenizer.nextToken();
+            // Some SVG exporters don't put a delimeter before a negative value.
+            // For example, (10.4, -5.6) may be represented as "10.4-5.6".
+            while (true) {
+                int negIndex = t.indexOf("-", 1);
+                if (negIndex > 0) {
+                    String n = t.substring(0, negIndex);
+                    try {
+                        numbers.add(new Float(n));
+                    }
+                    catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Not a number: " + n + " in:\n" + svgNumberList);
+                    }
+                    t = t.substring(negIndex);
+                }
+                else {
+                    try {
+                        numbers.add(new Float(t));
+                    }
+                    catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Not a number: " + t + " in:\n" + svgNumberList);
+                    }
+                    break;
+                }
+            }
+        }
+        float[] returnValue = new float[numbers.size()];
+        for (int i = 0; i < returnValue.length; i++) {
+            returnValue[i] = ((Float)numbers.get(i)).floatValue();
+        }
+        return returnValue;
+    }
+
+    //
+    // Convert draw commands to line segments.
     //
     
     private static int[][] toLineSegments(ArrayList drawCommands) {
@@ -835,7 +1237,7 @@ public class Path {
     }
     
     //
-    // Bezier conversion using forward differencing. 
+    // Bezier conversion to line segments (using forward differencing).
     //
     
     private static int[][] toLineSegments(float x1, float y1, float x2, float y2, 

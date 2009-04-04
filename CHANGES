@@ -10,6 +10,9 @@
   * API: Group.drawSprite() is now final. To do custom drawing, subclass Sprite.
   * API: Bindings can now be bi-directional. See Int.bindWithInverse(Int) and
     Fixed.bindWithInverse(Fixed).
+  * API: pulpcore.math.Path can now parse any SVG path data string, including
+    relative commands, quadratic curves, and arcs. (The Path class is used
+    for moving Sprites along a path, not for rendering).
   * Templates: Ant templates updated. Requires Ant 1.7.1.
         - Examples now have src/res/lib/build structure
         - Targets "debug" and "profile" included for NetBeans (Doug Holton)
