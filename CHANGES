@@ -17,6 +17,7 @@
         - Examples now have src/res/lib/build structure
         - Targets "debug" and "profile" included for NetBeans (Doug Holton)
         - Scala template has a "docs" target (Doug Holton)
+        -
   * Examples: 
         - Added Physics example using JBox2D.
         - Added PathMotion example.

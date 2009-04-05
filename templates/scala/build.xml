@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
-<!-- 
+<!--
+    Scala template for PulpCore. Supports mixed-source Scala+Java projects.
     Requires Ant 1.7.1.
 -->
 <project name="HelloWorld - Scala" default="build-and-run" basedir=".">
@@ -178,10 +179,9 @@
             <equals arg1="${pulpcore.java.language}" arg2="1.5" />
         </condition>
         
-        <!--<condition property="bootclasspath" value="${library.path}" else="">
+        <condition property="bootclasspath" value="${library.path}" else="">
             <equals arg1="${pulpcore.java.language}" arg2="1.4" />
         </condition>
-        -->
         
         <condition property="do.combinedjar">
             <equals arg1="${pulpcore.build}" arg2="release" />
@@ -215,6 +215,7 @@
             deprecation= "on"
             force="changed">
           <include name="**/*.scala"/>
+          <include name="**/*.java"/>
 
             <classpath>
                 <pathelement location="${core.jar.file}"/>
@@ -233,6 +234,7 @@
             deprecation= "on"
             force="changed">
           <include name="**/*.scala"/>
+          <include name="**/*.java"/>
           
             <classpath>
                 <pathelement location="${core.jar.file}"/>
@@ -243,10 +245,32 @@
             </classpath>
         </scalac>
     </target>
+
+    <target name="compile" depends="compile-fsc, compile-scalac" >
+        <javac srcdir="${src}"
+                destdir="${build.classes}"
+                source="${pulpcore.java.language}"
+                target="${pulpcore.java.language}"
+                debug="on"
+                deprecation="on"
+                bootclasspath="${bootclasspath}">
+
+            <include name="**/*.java"/>
+            <compilerarg line="-Xlint:all" />
+
+            <classpath>
+                <pathelement location="${core.jar.file}"/>
+                <pathelement location="${scala-library.jar}"/>
+                <fileset dir="${lib}" erroronmissingdir="false">
+                    <include name="**/*.jar"/>
+                </fileset>
+            </classpath>
+        </javac>
+    </target>
     
 
     <!-- Creates a jar of the compiled code -->
-    <target name="jar-partial" depends="compile-scalac, compile-fsc" unless="do.combinedjar">
+    <target name="jar-partial" depends="compile" unless="do.combinedjar">
         <jar destfile="${build}/${project.jar}" keepcompression="true">
             <fileset dir="${build.classes}" includes="**/*.class" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
@@ -256,7 +280,7 @@
         </jar>
     </target>
 
-    <target name="jar-full" depends="compile-scalac, compile-fsc" if="do.combinedjar">
+    <target name="jar-full" depends="compile" if="do.combinedjar">
         <jar destfile="${build}/${project.jar}" keepcompression="true">
             <fileset dir="${build.classes}" includes="**/*.class" />
             <zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
