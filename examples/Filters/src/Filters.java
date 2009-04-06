@@ -25,11 +25,12 @@ public class Filters extends Scene2D {
 
         CoreFont font = CoreFont.getSystemFont().tint(Colors.WHITE);
         for (int i = 0; i < moons.length; i++) {
-            moons[i] = new Moon(moonNames[i] + ".png");
-            add(moons[i]);
             labels[i] = new Label(font, moonNames[i], 0, 0);
             labels[i].setAnchor(Sprite.NORTH);
             labels[i].setFilter(new Glow(0.25));
+            
+            moons[i] = new Moon(moonNames[i] + ".png", labels[i]);
+            add(moons[i]);
             add(labels[i]);
         }
 
@@ -62,9 +63,12 @@ public class Filters extends Scene2D {
 
         Blur blur = new Blur();
         int filterIndex = 0;
+        Label label;
 
-        public Moon(String image) {
+        public Moon(String image, Label label) {
             super(image, 0, 0);
+            this.label = label;
+            this.label.alpha.set(0);
             setFilter(blur);
             setAnchor(Sprite.CENTER);
             setCursor(Input.CURSOR_HAND);
@@ -77,6 +81,7 @@ public class Filters extends Scene2D {
             if (!blur.radius.isAnimating() && blur.radius.get() != blurGoal) {
                 int dur = 100 + blurGoal*20;
                 blur.radius.animateTo(blurGoal, dur);
+                label.alpha.animateTo(blurGoal == 0 ? 255 : 0, dur);
             }
             if (isMousePressed()) {
                 filterIndex = (filterIndex + 1) % filters.length;
