@@ -21,6 +21,7 @@
   * Examples: 
         - Added Physics example using JBox2D.
         - Added PathMotion example.
+        - Added Filters example.
         - Starfield: added MotionBlur to the stars.
         - Text: added Stroke and DropShadow filters.
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now
