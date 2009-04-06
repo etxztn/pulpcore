@@ -94,6 +94,13 @@ public class FilterChain extends Filter {
         chain();
     }
 
+    public void set(int i, Filter filter) {
+        if (list.get(i) != filter) {
+            list.set(i, filter);
+            chain();
+        }
+    }
+
     public void remove(int i) {
         list.remove(i);
         chain();

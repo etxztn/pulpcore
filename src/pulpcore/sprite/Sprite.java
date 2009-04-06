@@ -49,6 +49,7 @@ import pulpcore.scene.Scene2D;
 import pulpcore.Stage;
 import pulpcore.image.CoreImage;
 import pulpcore.image.filter.Filter;
+import pulpcore.image.filter.FilterChain;
 
 /**
     The superclass of all sprites. Contains location, dimension, alpha, 
@@ -735,17 +736,16 @@ public abstract class Sprite implements PropertyListener {
         if (currFilter != newFilter) {
             setDirty(true);
             synchronized (usedFilters) {
-                if (newFilter != null && usedFilters.containsKey(newFilter)) {
-                    newFilter = newFilter.copy();
-                }
                 if (currFilter != null) {
                     currFilter.setInput(null);
-                    usedFilters.remove(currFilter);
+                    markAsUnused(currFilter);
                     this.filter = null;
                 }
+                
+                newFilter = copyIfUsed(newFilter);
 
                 if (newFilter != null) {
-                    usedFilters.put(newFilter, null);
+                    markAsUsed(newFilter);
                     this.filter = new SpriteFilter(this, newFilter);
                     if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
                         ((Group)this).createBackBuffer();
@@ -753,6 +753,45 @@ public abstract class Sprite implements PropertyListener {
                 }
             }
         }
+    }
+
+    private Filter copyIfUsed(Filter filter) {
+        if (filter != null && usedFilters.containsKey(filter)) {
+            filter = filter.copy();
+        }
+        if (filter instanceof FilterChain) {
+            FilterChain chain = (FilterChain)filter;
+            for (int i = 0; i < chain.size(); i++) {
+                chain.set(i, copyIfUsed(chain.get(i)));
+            }
+        }
+        return filter;
+    }
+
+    private Filter markAsUsed(Filter filter) {
+        if (filter != null) {
+            usedFilters.put(filter, null);
+        }
+        if (filter instanceof FilterChain) {
+            FilterChain chain = (FilterChain)filter;
+            for (int i = 0; i < chain.size(); i++) {
+                markAsUsed(chain.get(i));
+            }
+        }
+        return filter;
+    }
+
+    private Filter markAsUnused(Filter filter) {
+        if (filter != null) {
+            usedFilters.remove(filter);
+        }
+        if (filter instanceof FilterChain) {
+            FilterChain chain = (FilterChain)filter;
+            for (int i = 0; i < chain.size(); i++) {
+                markAsUnused(chain.get(i));
+            }
+        }
+        return filter;
     }
 
     /**
