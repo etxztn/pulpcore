@@ -50,9 +50,9 @@ public final class Reflection extends Filter {
 
     /**
     	The reflection height as a fraction of the input image, from 0 to 1.
-        The default value is 0.5.
+        The default value is 0.75.
     */
-	public final Fixed fraction = new Fixed(0.5f);
+	public final Fixed fraction = new Fixed(0.75f);
 
     /**
         The alpha of the top of the reflection (nearest the bottom of the image), from 0 to 255.
@@ -76,14 +76,14 @@ public final class Reflection extends Filter {
 		Creates a Reflection filter with the default parameters.
 	 */
 	public Reflection() {
-		this(1, 0.5f, 128, 0);
+		this(1, 0.75f, 128, 0);
 	}
 
     /**
 		Creates a Reflection filter with the specified gap.
 	 */
 	public Reflection(int gap) {
-		this(gap, 0.5f, 128, 0);
+		this(gap, 0.75f, 128, 0);
 	}
 	
 	/**
@@ -192,8 +192,11 @@ public final class Reflection extends Filter {
         // Create the reflection
         for (int y = 0; y < reflectionHeight; y++) {
             // Interpolate the alpha for this row
-            int da = actualBottomAlpha - actualTopAlpha;
-        	int maskA = actualTopAlpha + y * da / reflectionHeight;
+            int da = actualTopAlpha - actualBottomAlpha;
+            float f = (float)(reflectionHeight - y) / reflectionHeight;
+            // Ease the curve
+            f = f * f;
+        	int maskA = actualBottomAlpha + Math.round(f * da);
 
             int srcIndex = (srcHeight - y - 1) * srcWidth;
             int dstIndex = (y + actualGap + srcHeight) * srcWidth;
