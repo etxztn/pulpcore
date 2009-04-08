@@ -35,7 +35,7 @@ import pulpcore.image.CoreImage;
 /**
  *  The Superimpose filter allows to superimpose an image over a sprite.
  *	
- *	This filter uses 3 parameters : 
+ *	This filter uses 3 parameters: 
  *  - An image that will be superimposed over the filtered sprite. This image can be a different size of the Sprite.
  *  - the position (through x and y attributes) of the image. Coordinate are relative to the upper-left pixel 
  *    position of the filtered sprite. Default values are 0,0
@@ -54,21 +54,25 @@ public final class Superimpose extends Filter {
 	private CoreImage image;
 	
 	/**
-	 * fading applied to the supeimposed image.
+	 * Fading applied to the superimposed image, from 0 to 255. The default value is 255.
 	 */
-	public Int alpha = new Int(255);
+	public final Int alpha = new Int(255);
 	
 	/**
-	 *  x and y offset of the superimposed image. This coordinates are relative to the upper-left 
+	 *  The x offset of the superimposed image. This coordinates are relative to the left
 	 *  pixel position of the filtered sprite.
 	 */
-	public Int x = new Int(0);
-	public Int y = new Int(0);
+	public final Int x = new Int(0);
+
+    /**
+	 *  The y offset of the superimposed image. This coordinates are relative to the upper
+	 *  pixel position of the filtered sprite.
+	 */
+	public final Int y = new Int(0);
 	
 	private int actualAlpha = 255;
 	private int actualImgXOffset = 0;
 	private int actualImgYOffset = 0;
-	
 	
 	/**
 	 * Creates the Superimpose filter with no image.
@@ -102,7 +106,7 @@ public final class Superimpose extends Filter {
 	 * @param image Image to superimpose to the filtered Sprite.
 	 * @param x X offset (relative to the upper-left point of the filtered sprite).
 	 * @param y Y offset (relative to the upper-left point of the filtered sprite).
-	 * @param alpha amount of fading applied to the superimposed image.
+	 * @param alpha amount of fading applied to the superimposed image, from 0 to 255.
 	 */
 	public Superimpose(CoreImage image, int x, int y, int alpha) {
 		this.image = image;
@@ -110,7 +114,6 @@ public final class Superimpose extends Filter {
 		this.y.set(y);
 		this.alpha.set(alpha);
 	}
-	
 
 	/**
 	 * Image accessors.
@@ -125,13 +128,15 @@ public final class Superimpose extends Filter {
 	 * @param image The superimposed image to apply to this filter.
 	 */
 	public void setImage(CoreImage image) {
-		this.image = image;
-		setDirty();
+        if (this.image != image) {
+            this.image = image;
+            setDirty();
+        }
 	}
-	
 	
     public Filter copy() {
         Superimpose copy = new Superimpose();
+        // TODO: somehow bind image, too
         copy.image = image;
         copy.alpha.bindWithInverse(alpha);
         copy.x.bindWithInverse(x);
@@ -139,21 +144,20 @@ public final class Superimpose extends Filter {
         return copy;
     }
     
-    
     public void update(int elapsedTime) {    	
     	alpha.update(elapsedTime);
     	
-    	if(alpha.get() != actualAlpha) {
+    	if (alpha.get() != actualAlpha) {
     		actualAlpha = alpha.get();
     		setDirty();
     	}
     	
-    	if(x.get() != actualImgXOffset) {
+    	if (x.get() != actualImgXOffset) {
     		actualImgXOffset = y.get();
     		setDirty();
     	}
     	
-    	if(x.get() != actualImgYOffset) {
+    	if (x.get() != actualImgYOffset) {
     		actualImgYOffset = y.get();
     		setDirty();
     	}
@@ -163,9 +167,10 @@ public final class Superimpose extends Filter {
     	int imgHeight = image.getHeight();
     	int srcHeight = super.getHeight();
 
-    	if(actualImgYOffset < 0) {
+    	if (actualImgYOffset < 0) {
     		return (imgHeight > srcHeight) ? -actualImgYOffset + imgHeight : -actualImgYOffset + srcHeight;
-    	} else {
+    	}
+        else {
     		return (actualImgYOffset + imgHeight > srcHeight) ? actualImgYOffset + imgHeight : srcHeight; 
     	}
     }
@@ -174,16 +179,18 @@ public final class Superimpose extends Filter {
     	int imgWidth = image.getWidth();
 		int srcWidth = super.getWidth();
 		
-    	if(actualImgXOffset < 0) {
+    	if (actualImgXOffset < 0) {
     		return (imgWidth > srcWidth) ? -actualImgXOffset + imgWidth : -actualImgXOffset + srcWidth;
-    	} else {
+    	}
+        else {
     		return (actualImgXOffset + imgWidth > srcWidth) ? actualImgXOffset + imgWidth : srcWidth; 
     	}
     }
     
     public int getX() {
-    	if(actualImgXOffset < 0)
+    	if (actualImgXOffset < 0) {
     		return super.getX() + actualImgXOffset;
+        }
     	else {
     		return super.getX();
     	}
@@ -254,40 +261,39 @@ public final class Superimpose extends Filter {
     	int yOffset = getY();
 
     	// first copies the src into the dst
-    	for(int i = 0; i < srcHeight; i++) {
-    		for(int j = 0; j < srcWidth; j++) {
-
-    			int srcIndex = (i * srcWidth) + j;
-    			int dstIndex = ((i - yOffset) * dstWidth) + j - xOffset;
-    			dstPixels[dstIndex] = srcPixels[srcIndex];
+    	for (int i = 0; i < srcHeight; i++) {
+            int srcIndex = (i * srcWidth);
+    		int dstIndex = ((i - yOffset) * dstWidth) - xOffset;
+    		for (int j = 0; j < srcWidth; j++) {
+    			dstPixels[dstIndex++] = srcPixels[srcIndex++];
     		}
     	}
 
     	// then copies the superimposed image over the existing dst value.
-    	for(int i = 0; i < imgHeight; i++) {
-    		for(int j = 0; j < imgWidth; j++) {
+    	for (int i = 0; i < imgHeight; i++) {
+            int imgIndex = (i * imgWidth);
+  			int dstIndex = ((i + actualImgYOffset - yOffset) * dstWidth) + actualImgXOffset - xOffset;
+    		for (int j = 0; j < imgWidth; j++) {
 
-    			int imgIndex = (i * imgWidth) + j;
-    			int dstIndex = ((i + actualImgYOffset - yOffset) * dstWidth) + j + actualImgXOffset - xOffset;
-    			
     			int dstARGB = dstPixels[dstIndex];
     			int imgARGB = imgPixels[imgIndex];
     			
-    			if(imgARGB != 0) {
+    			if (imgARGB != 0) {
     				// if the image pixel is fully transparent, no need to perform a SRC_OVER operation
-    				if(dstARGB == 0) {
+    				if (dstARGB == 0) {
     					dstPixels[dstIndex] = imgARGB;
     				}
     				else {
-    					dstPixels[dstIndex] = srcOver(dstPixels[dstIndex], imgARGB);
+    					dstPixels[dstIndex] = srcOver(dstARGB, imgARGB);
     				}
     			}
     			// else .... 
     			// if the dst pixel is fully transparent, no need to perform a SRC_OVER, just copies the image pixel into DST
-    			
+
+                imgIndex++;
+                dstIndex++;
     		}
     	}
-
     }
 }
 

@@ -29,6 +29,7 @@
 package pulpcore.image.filter;
 
 
+import pulpcore.animation.Bool;
 import pulpcore.animation.Fixed;
 import pulpcore.animation.Int;
 import pulpcore.image.Colors;
@@ -80,7 +81,8 @@ public class Blur extends Filter {
      */
     public final Int quality = new Int(1);
 
-    private boolean autoExpand = true;
+    // This is a property only so it can be bound properly in copy()
+    private final Bool autoExpand = new Bool(true);
 
     private int actualRadius = 0;
     private int actualQuality = 0;
@@ -117,7 +119,7 @@ public class Blur extends Filter {
         Copy constructor. Subclasses can use this to help implement {@link #copy() }.
     */
     public Blur(Blur filter) {
-        autoExpand = filter.autoExpand;
+        autoExpand.bindWithInverse(filter.autoExpand);
         radius.bindWithInverse(filter.radius);
         quality.bindWithInverse(filter.quality);
     }
@@ -129,8 +131,8 @@ public class Blur extends Filter {
      */
     public void setClampEdges(boolean clamp) {
         boolean newAutoExpand = !clamp;
-        if (autoExpand != newAutoExpand) {
-            autoExpand = newAutoExpand;
+        if (autoExpand.get() != newAutoExpand) {
+            autoExpand.set(newAutoExpand);
             setDirty();
         }
     }
@@ -141,7 +143,7 @@ public class Blur extends Filter {
         @see #setClampEdges(boolean)
      */
     public boolean getClampEdges() {
-        return !autoExpand;
+        return !autoExpand.get();
     }
 
     public Filter copy() {
@@ -221,23 +223,23 @@ public class Blur extends Filter {
     }
 
     public int getX() {
-        return autoExpand ? -autoExpandSize() : 0;
+        return autoExpand.get() ? -autoExpandSize() : 0;
     }
 
     public int getY() {
-        return autoExpand ? -autoExpandSize() : 0;
+        return autoExpand.get() ? -autoExpandSize() : 0;
     }
 
     public int getWidth() {
-        return super.getWidth() + (autoExpand ? autoExpandSize()*2 : 0);
+        return super.getWidth() + (autoExpand.get() ? autoExpandSize()*2 : 0);
     }
 
     public int getHeight() {
-        return super.getHeight() + (autoExpand ? autoExpandSize()*2 : 0);
+        return super.getHeight() + (autoExpand.get() ? autoExpandSize()*2 : 0);
     }
     
     public boolean isOpaque() {
-        return (isInputOpaque() && !autoExpand);
+        return (isInputOpaque() && !autoExpand.get());
     }
 
     protected void filter(CoreImage input, CoreImage output) {

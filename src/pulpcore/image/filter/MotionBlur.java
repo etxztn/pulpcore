@@ -28,6 +28,7 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 package pulpcore.image.filter;
 
+import pulpcore.animation.Bool;
 import pulpcore.animation.Fixed;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreImage;
@@ -57,7 +58,8 @@ public final class MotionBlur extends Filter {
      */
     public final Fixed angle = new Fixed(0);
 
-    private boolean autoExpand = true;
+    // This is a property only so it can be bound properly in copy()
+    private final Bool autoExpand = new Bool(true);
 
     private int actualDistance;
 
@@ -93,7 +95,7 @@ public final class MotionBlur extends Filter {
     }
 
     private MotionBlur(MotionBlur filter) {
-        autoExpand = filter.autoExpand;
+        autoExpand.bindWithInverse(filter.autoExpand);
         distance.bindWithInverse(filter.distance);
         angle.bindWithInverse(filter.angle);
     }
@@ -105,8 +107,8 @@ public final class MotionBlur extends Filter {
      */
     public void setClampEdges(boolean clamp) {
         boolean newAutoExpand = !clamp;
-        if (autoExpand != newAutoExpand) {
-            autoExpand = newAutoExpand;
+        if (autoExpand.get() != newAutoExpand) {
+            autoExpand.set(newAutoExpand);
             setDirty();
         }
     }
@@ -117,7 +119,7 @@ public final class MotionBlur extends Filter {
     @see #setClampEdges(boolean)
      */
     public boolean getClampEdges() {
-        return !autoExpand;
+        return !autoExpand.get();
     }
 
     public Filter copy() {
@@ -151,7 +153,7 @@ public final class MotionBlur extends Filter {
         int w = super.getWidth();
         int h = super.getHeight();
         bounds.setBounds(0, 0, w, h);
-        if (autoExpand) {
+        if (autoExpand.get()) {
             int iterations = getIterations();
             int x = actualAngleCos * (iterations - 1) / 2;
             int y = actualAngleSin * (iterations - 1) / 2;
@@ -217,7 +219,7 @@ public final class MotionBlur extends Filter {
     }
 
     public boolean isOpaque() {
-        return (isInputOpaque() && !autoExpand);
+        return (isInputOpaque() && !autoExpand.get());
     }
 
     private int getIterations() {

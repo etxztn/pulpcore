@@ -46,6 +46,7 @@ public final class Reflection extends Filter {
 		The vertical gap, in pixels, between the bottom of the image and the top of the
         reflection. The default value is 1.
 	*/
+    // TODO: allow for negative gap?
 	public final Int gap = new Int(1);
 
     /**
