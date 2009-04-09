@@ -103,7 +103,7 @@ import pulpcore.math.CoreMath;
     }
 
     public boolean isFinished() {
-        return !source.isAnimating();
+        return false;
     }
     
     public int getValue() {
