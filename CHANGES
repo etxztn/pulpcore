@@ -17,11 +17,12 @@
         - Examples now have src/res/lib/build structure
         - Targets "debug" and "profile" included for NetBeans (Doug Holton)
         - Scala template has a "docs" target (Doug Holton)
-        -
+        - Scala template now supports Java+Scala mixing.
   * Examples: 
         - Added Physics example using JBox2D.
         - Added PathMotion example.
         - Added Filters example.
+        - Added ScalaLanguage example.
         - Starfield: added MotionBlur to the stars.
         - Text: added Stroke and DropShadow filters.
   * Core: Adjustment for displays with 59hz or 61hz refresh rates: Default frame rate is now

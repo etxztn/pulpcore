@@ -31,7 +31,7 @@
         <mkdir dir="${build.temp}/assettools" />
     </target>
     
-    <target name="check-dependencies">
+    <target name="-check-dependencies">
         <condition property="do.jslint">
             <available file="${rhino.path}" />
         </condition>
@@ -47,7 +47,7 @@
     </target>
     
     
-    <target name="init" depends="check-dependencies, clean">
+    <target name="-init" depends="-check-dependencies, clean">
     
         <condition property="src.tiger" value="pulpcore/platform/${platform}">
             <not><equals arg1="${platform}" arg2="applet"/></not>
@@ -104,7 +104,7 @@
     </target>
     
     
-    <target name="compile-core" depends="init">
+    <target name="compile-core" depends="-init">
 
         <!-- Compile Tiger platform (J2SE 1.5) code -->
         <javac srcdir="${src}"
@@ -163,7 +163,7 @@
         Use Douglas Crockford's JavaScript checker
         See http://jslint.com/
     -->
-    <target name="jslint" if="do.jslint" depends="check-dependencies" description="Run JSLint">
+    <target name="jslint" if="do.jslint" depends="-check-dependencies" description="Run JSLint">
         <java classname="org.mozilla.javascript.tools.shell.Main">
             <classpath>
                 <pathelement location="${rhino.path}"/>
@@ -176,7 +176,7 @@
    
     <target name="compile-tools" depends="jslint">
     
-        <antcall target="init" >
+        <antcall target="-init" >
             <param name="debug" value="true"/>
         </antcall>
         
@@ -445,7 +445,7 @@
 
         <!-- Compile examples for www -->
         <subant>
-	    <property name="pulpcore.path" location="${build}" />
+            <property name="pulpcore.path" location="${build}" />
             <property name="library.path" location="${library.path}" />
             <property name="proguard.path" location="${proguard.path}" />
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
@@ -501,6 +501,9 @@
         <copy todir="${build}/www/physics">
             <fileset dir="${dist.temp}/examples/Physics/build"/>
         </copy>
+        <copy todir="${build}/www/scalalanguage">
+            <fileset dir="${dist.temp}/examples/ScalaLanguage/build"/>
+        </copy>
         <copy todir="${build}/www/scenegraph">
             <fileset dir="${dist.temp}/examples/SceneGraph/build"/>
         </copy>
@@ -528,9 +531,13 @@
     <!-- Use this task to keep the example build files up to date -->
     <target name="update-example-build-files" 
         description="Updates the example build files from the 'quick' template">
-        <subant target="copy-template" genericantfile="build.xml">
+        <subant target="-copy-quick-template" genericantfile="build.xml">
             <property name="template.dir" location="templates/quick" />
-            <dirset dir="examples" includes="*"/>
+            <dirset dir="examples" includes="*" excludes="*Scala*"/>
+        </subant>
+        <subant target="-copy-scala-template" genericantfile="build.xml">
+            <property name="template.dir" location="templates/scala" />
+            <dirset dir="examples" includes="*Scala*"/>
         </subant>
         
         <!-- Special cases (hacks) for BubbleMark -->
@@ -556,7 +563,7 @@
     </target>
     
     <!-- Called from update-example-build-files -->
-    <target name="copy-template">
+    <target name="-copy-quick-template">
         <path id="example.path" path="${basedir}"/>
         <pathconvert property="example.name" refid="example.path">
             <flattenmapper/>
@@ -566,19 +573,59 @@
         <replace file="build.xml" token="HelloWorld" value="${example.name}" />
 
         <available file="src" property="src.present" />
-        <antcall target="new-template" />
+        <antcall target="-new-quick-template" />
     </target>
     
-    <!-- Called from copy-template -->
-    <target name="new-template" unless="src.present">
+    <!-- Called from -copy-quick-template -->
+    <target name="-new-quick-template" unless="src.present">
         <echo>Creating new example: ${example.name}</echo>
         <mkdir dir="src" />
+        <mkdir dir="res" />
+        <mkdir dir="lib" />
         <copy file="${template.dir}/src/HelloWorld.java" overwrite="true" 
             tofile="src/${example.name}.java" />
         <replace file="src/${example.name}.java" token="HelloWorld" value="${example.name}" />
         
         <copy todir="src">
-            <fileset dir="${template.dir}/src" excludes="*.java" />
+            <fileset dir="${template.dir}/src" excludes="HelloWorld.java" />
+        </copy>
+        <copy todir="res">
+            <fileset dir="${template.dir}/res"/>
+        </copy>
+    </target>
+
+    <!-- Called from update-example-build-files -->
+    <target name="-copy-scala-template">
+        <path id="example.path" path="${basedir}"/>
+        <pathconvert property="example.name" refid="example.path">
+            <flattenmapper/>
+        </pathconvert>
+
+        <copy file="${template.dir}/build.xml" overwrite="true" tofile="build.xml" />
+        <replace file="build.xml" token="HelloWorld" value="${example.name}" />
+
+        <copy file="${template.dir}/src/PulpCore.scala" overwrite="true"
+            tofile="src/PulpCore.scala" />
+
+        <available file="src" property="src.present" />
+        <antcall target="-new-scala-template" />
+    </target>
+
+    <!-- Called from -copy-scala-template -->
+    <target name="-new-scala-template" unless="src.present">
+        <echo>Creating new example: ${example.name}</echo>
+        <mkdir dir="src" />
+        <mkdir dir="res" />
+        <mkdir dir="lib" />
+        <copy file="${template.dir}/src/HelloWorld.scala" overwrite="true"
+            tofile="src/${example.name}.scala" />
+        <replace file="src/${example.name}.scala" token="HelloWorld" value="${example.name}" />
+
+        <copy todir="src">
+            <fileset dir="${template.dir}/src" excludes="HelloWorld.scala" />
+        </copy>
+        <copy todir="res">
+            <fileset dir="${template.dir}/res"/>
         </copy>
     </target>
     
