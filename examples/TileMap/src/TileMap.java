@@ -4,13 +4,11 @@
 // Rendering speed can be further improved by using opaque tiles.
 // Tile images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
 import pulpcore.animation.Easing;
-import pulpcore.animation.Fixed;
+import pulpcore.animation.Int;
 import pulpcore.image.BlendMode;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
-import pulpcore.math.CoreMath;
-import pulpcore.math.Transform;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
 import pulpcore.sprite.Group;
@@ -59,7 +57,6 @@ public class TileMap extends Scene2D {
         
         // Add some trees
         mapSprites = new Group();
-        mapSprites.pixelSnapping.set(true);
         mapSprites.add(new ImageSprite("Tree Tall.png", 300, 280));
         mapSprites.add(new ImageSprite("Tree Tall.png", 1900, 440));
         mapSprites.x.bindTo(tileMap.viewX);
@@ -85,8 +82,8 @@ public class TileMap extends Scene2D {
         if (Input.isMousePressed()) {
             int x = Input.getMousePressX();
             int y = Input.getMousePressY();
-            double goalX = tileMap.viewX.get() - (x - Stage.getWidth() / 2);
-            double goalY = tileMap.viewY.get() - (y - Stage.getHeight() / 2);
+            int goalX = tileMap.viewX.get() - (x - Stage.getWidth() / 2);
+            int goalY = tileMap.viewY.get() - (y - Stage.getHeight() / 2);
             tileMap.viewX.animateTo(goalX, 500, Easing.REGULAR_OUT);
             tileMap.viewY.animateTo(goalY, 500, Easing.REGULAR_OUT);
         }
@@ -102,7 +99,7 @@ public class TileMap extends Scene2D {
         // Create the tile map
         int mapWidth = map[0].length();
         int mapHeight = map.length;
-        CoreImage[][] tileMap = new CoreImage[mapWidth][mapHeight];
+        CoreImage[][] tileMapImages = new CoreImage[mapWidth][mapHeight];
         for (int i = 0; i < mapWidth; i++) {
             for (int j = 0; j < mapHeight; j++) {
                 
@@ -116,10 +113,10 @@ public class TileMap extends Scene2D {
                         break;
                     }
                 }
-                tileMap[i][j] = tileImages[index]; 
+                tileMapImages[i][j] = tileImages[index];
             }
         }
-        return new TileMapSprite(tileMap, tileWidth, tileHeight);
+        return new TileMapSprite(tileMapImages, tileWidth, tileHeight);
     }
     
     /**
@@ -135,8 +132,8 @@ public class TileMap extends Scene2D {
         private int numTilesAcross;
         private int numTilesDown;
         
-        public final Fixed viewX = new Fixed(this);
-        public final Fixed viewY = new Fixed(this);
+        public final Int viewX = new Int(this);
+        public final Int viewY = new Int(this);
         
         public TileMapSprite(CoreImage[][] tileMap, int tileWidth, int tileHeight) {
             super(0, 0, Stage.getWidth(), Stage.getHeight());
@@ -145,9 +142,6 @@ public class TileMap extends Scene2D {
             this.tileHeight = tileHeight;
             numTilesAcross = tileMap.length;
             numTilesDown = tileMap[0].length;
-            
-            // Turn on pixel snapping for speed
-            pixelSnapping.set(true);
         }
         
         public int getMapWidth() {
@@ -171,9 +165,9 @@ public class TileMap extends Scene2D {
         
         @Override
         protected void drawSprite(CoreGraphics g) {
-            int y = viewY.getAsIntFloor();
+            int y = viewY.get();
             for (int j = 0; j < numTilesDown; j++) {
-                int x = viewX.getAsIntFloor();
+                int x = viewX.get();
                 for (int i = 0; i < numTilesAcross; i++) {
                     g.drawImage(tileMap[i][j], x, y);
                     x += tileWidth;
