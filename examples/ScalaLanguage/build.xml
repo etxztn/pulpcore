@@ -72,6 +72,22 @@
     
     <!-- Java language to use. May be 1.4 or 1.5. If the value is 1.5, Retroweaver is used. -->
     <property name="pulpcore.java.language" value="1.4" />
+
+    <!-- The path to an HTML file to use as the applet template.
+    If blank, a default HTML template is used.
+
+    The template should contain something similar to the following code. The
+    pulpcore-applet tool automatically converts  @APPLET_PARAMS@ to the
+    required params.
+
+    <script type="text/javascript">
+    @APPLET_PARAMS@
+    </script>
+    <script type="text/javascript" src="pulpcore.js"></script>
+    <noscript><p>To play, enable JavaScript from the Options or Preferences menu.</p></noscript>
+    -->
+    <property name="applet.template" value="" />
+    
     
     <!-- Project paths -->
     <property name="src" value="src" />
@@ -355,6 +371,7 @@
             assets="${autoload.assets.zip}"
             params="${project.params}"
             codebase="${project.codebase}"
+            template="${applet.template}"
             displaySource="${display.src}"/>
     </target>
 

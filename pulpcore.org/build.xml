@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    Creates the JavaDoc (with tracking code) and builds all examples (obfuscated).
+-->
+<project name="pulpcore.org" default="all" basedir=".">
+
+    <property file="../version.number" />
+    <property file="../build.properties" />
+    <property name="build" value="../build/"/>
+    <property name="destdir" value="../build/www/"/>
+    <property name="tmpdir" value="../build/www/temp"/>
+    <property name="srcdir" value="../examples/"/>
+
+    <target name="all" depends="javadoc, build-examples-for-www" />
+    
+    <target name="clean">
+        <delete dir="${destdir}" failonerror="false" />
+    </target>
+
+    <target name="-init" depends="clean">
+        <mkdir dir="${destdir}" />
+        <mkdir dir="${tmpdir}" />
+    </target>
+
+    <target name="javadoc" depends="-init">
+        <loadfile property="tracking.code" srcFile="tracking_code.txt"/>
+        <ant inheritAll="false" antfile="../build.xml" target="javadoc">
+            <property name="javadoc.destdir" value="build/www/api"/>
+            <property name="javadoc.footer" value="${tracking.code}"/>
+        </ant>
+    </target>
+
+    <target name="-create-applet-templates" depends="-init">
+        <loadfile property="tracking.code" srcFile="tracking_code.txt"/>
+        <loadfile property="bubblemark.controls" srcFile="bubblemark_controls.txt"/>
+        <copy file="template.html" tofile="${tmpdir}/template.html" overwrite="true">
+            <filterset>
+                <filter token="JAVASCRIPT_CONTROLS" value=""/>
+                <filter token="TRACKING_CODE" value="${tracking.code}"/>
+            </filterset>
+        </copy>
+        <copy file="template.html" tofile="${tmpdir}/bubblemark_template.html" overwrite="true">
+            <filterset>
+                <filter token="JAVASCRIPT_CONTROLS" value="${bubblemark.controls}"/>
+                <filter token="TRACKING_CODE" value="${tracking.code}"/>
+            </filterset>
+        </copy>
+    </target>
+
+    <target name="build-examples-for-www" depends="-create-applet-templates">
+
+        <!-- Copy JS support files -->
+        <copy todir="${destdir}/js">
+            <fileset dir="js" />
+        </copy>
+
+        <copy todir="${tmpdir}/examples">
+            <fileset dir="${srcdir}">
+                <exclude name="*/build" />
+                <exclude name="*/build/**/*" />
+            </fileset>
+        </copy>
+
+        <!-- Compile examples for www -->
+        <subant>
+            <property name="pulpcore.path" location="${build}" />
+            <property name="library.path" location="${library.path}" />
+            <property name="proguard.path" location="${proguard.path}" />
+            <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="do.combinedjar" value="true" /> <!-- For Scala -->
+            <property name="do.obfuscate" value="true" />
+            <property name="do.pack200" value="true" />
+            <property name="include.src" value="true" />
+            <property name="applet.template" value="../../template.html" />
+            <fileset dir="${tmpdir}/examples" includes="*/build.xml" excludes="BubbleMark/build.xml" />
+            <target name="build"/>
+        </subant>
+
+        <!-- Special case for BubbleMark -->
+        <subant>
+            <property name="pulpcore.path" location="${build}" />
+            <property name="library.path" location="${library.path}" />
+            <property name="proguard.path" location="${proguard.path}" />
+            <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="do.combinedjar" value="true" /> <!-- For Scala -->
+            <property name="do.obfuscate" value="true" />
+            <property name="do.pack200" value="true" />
+            <property name="include.src" value="true" />
+            <property name="applet.template" value="../../bubblemark_template.html" />
+            <fileset dir="${tmpdir}/examples" includes="BubbleMark/build.xml" />
+            <target name="build"/>
+        </subant>
+
+        <!--
+            Create the www folder used at interactivepulp.com
+
+            Renaming the Easings example.
+
+            NOTE: explore using subant once Mac OS X has Java 6 (So the uppercase dir names can be
+            converted to lowercase using a scriptmapper)
+        -->
+        <copy todir="${destdir}/bubblemark">
+            <fileset dir="${tmpdir}/examples/BubbleMark/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/clock">
+            <fileset dir="${tmpdir}/examples/Clock/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/compositing">
+            <fileset dir="${tmpdir}/examples/Compositing/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/dragme">
+            <fileset dir="${tmpdir}/examples/DragMe/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/easing">
+            <fileset dir="${tmpdir}/examples/Easings/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/filters">
+            <fileset dir="${tmpdir}/examples/Filters/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/flashlight">
+            <fileset dir="${tmpdir}/examples/Flashlight/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/images">
+            <fileset dir="${tmpdir}/examples/Images/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/particles">
+            <fileset dir="${tmpdir}/examples/Particles/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/pathmotion">
+            <fileset dir="${tmpdir}/examples/PathMotion/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/physics">
+            <fileset dir="${tmpdir}/examples/Physics/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/scalalanguage">
+            <fileset dir="${tmpdir}/examples/ScalaLanguage/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/scenegraph">
+            <fileset dir="${tmpdir}/examples/SceneGraph/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/sketch">
+            <fileset dir="${tmpdir}/examples/Sketch/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/sound">
+            <fileset dir="${tmpdir}/examples/Sounds/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/starfield">
+            <fileset dir="${tmpdir}/examples/Starfield/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/text">
+            <fileset dir="${tmpdir}/examples/Text/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/tilemap">
+            <fileset dir="${tmpdir}/examples/TileMap/build" excludes="temp,temp/**/*" />
+        </copy>
+        <copy todir="${destdir}/widgets">
+            <fileset dir="${tmpdir}/examples/Widgets/build" excludes="temp,temp/**/*" />
+        </copy>
+
+        <!-- Clean up -->
+        <delete dir="${tmpdir}" failonerror="false" />
+
+    </target>
+
+</project>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    <style type="text/css">
+    body {
+        background: @BGCOLOR@;
+        color: @FGCOLOR@;
+        font-family: sans-serif;
+        text-align: center;
+        margin-top: 2.5em;
+    }
+    a:link {color: #F88113; text-decoration: none}
+    a:visited {color: #ad5a0d; text-decoration: none}
+    a:active {color: #F88113; text-decoration: none}
+    a:hover {color: #F88113; text-decoration: underline}
+
+    /* Dark color scheme for prettify.js.  */
+    .str{color:#8f9d6a;}
+    .atv{color:#8f9d6a;}
+    .kwd{color:#bbbbbb;}
+    .pun{color:#bbbbbb;}
+    .com{color:#ffffff;}
+    .typ{color:#9b703f;}
+    .lit{color:#cf6a4c;}
+    .pln{color:#7587a6;}
+    .tag{color:#ac885b;}
+    .atn{color:#e0c589;}
+    .dec{color:#494949;}
+    </style>
+    <title>@TITLE@</title>
+    <script type="text/javascript">
+        function isExample(exampleName) {
+            var url = document.location.href;
+            var v1 = exampleName + "/";
+            var v2 = v1 + "index.html";
+            return (url.substring(url.length - v1.length) == v1 ||
+                url.substring(url.length - v2.length) == v2);
+        }
+        function autoSelect() {
+            var examples = document.getElementById("examples");
+            for (var i = 0; i < examples.options.length; i++) {
+                if (isExample(examples.options[i].value)) {
+                    examples.options[i].selected = "1"
+                    break;
+                }
+            }
+        }
+        function go(inputnav) {
+            var exampleName = inputnav.options[inputnav.selectedIndex].value;
+            if (exampleName != "" && !isExample(exampleName)) {
+                document.location.href = "../" + exampleName + "/";
+            }
+        }
+    </script>
+
+</head>
+
+<body>
+
+<select id="examples" class="inputnav" onChange="go(this)" style="margin-bottom: 2.5em">
+    <option value="bubblemark">BubbleMark</option>
+    <option value="clock">Clock</option>
+    <option value="compositing">Compositing</option>
+    <option value="dragme">DragMe</option>
+    <option value="easing">Easing</option>
+    <option value="filters">Filters</option>
+    <option value="flashlight">Flashlight</option>
+    <option value="images">Image</option>
+    <option value="particles">Particles</option>
+    <option value="pathmotion">PathMotion</option>
+    <option value="physics">Physics</option>
+    <option value="scalalanguage">Scala Language</option>
+    <option value="scenegraph">SceneGraph</option>
+    <option value="sketch">Sketch</option>
+    <option value="sound">Sound</option>
+    <option value="starfield">Starfield</option>
+    <option value="text">Text</option>
+    <option value="tilemap">TileMap</option>
+    <option value="widgets">Widgets</option>
+</select>
+<script type="text/javascript">
+ autoSelect();
+</script>
+
+
+<div id="game">
+<script type="text/javascript"><!--
+@APPLET_PARAMS@
+//-->
+</script>
+<script type="text/javascript" src="pulpcore.js"></script>
+<noscript><p>To play, enable JavaScript from the Options or Preferences menu.</p></noscript>
+</div>
+
+@JAVASCRIPT_CONTROLS@
+
+<div id="source" style="margin: 5em auto 0 auto;">
+    <a href="http://www.interactivepulp.com/pulpcore/">Powered by PulpCore</a>
+    <blockquote style="margin-top: 5em; text-align: left">
+        <div>@SRC@</div>
+    </blockquote>
+</div>
+
+<script src="../js/prettify.js"></script>
+<script type="text/javascript">
+ prettyPrint();
+</script>
+
+@TRACKING_CODE@
+</body>
+</html>

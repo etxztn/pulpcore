@@ -19,16 +19,15 @@
     <property name="build" value="build" />
     <property name="build.temp" value="${build}/temp" />
     <property name="tools.src" value="tools" />
+
+    <!-- Footer for the JavaDoc HTML files. Google Analytics code can go here. -->
+    <property name="javadoc.footer" value="" />
+    <property name="javadoc.destdir" value="doc/api" />
     
     <property name="compilerargs" value="-Xlint:all,-serial" />
     
     <target name="clean">
         <delete dir="${build.temp}" failonerror="false" />
-        <mkdir dir="${build}" />
-        <mkdir dir="${build.temp}" />
-        <mkdir dir="${build.temp}/assets" />
-        <mkdir dir="${build.temp}/player" />
-        <mkdir dir="${build.temp}/assettools" />
     </target>
     
     <target name="-check-dependencies">
@@ -48,6 +47,12 @@
     
     
     <target name="-init" depends="-check-dependencies, clean">
+
+        <mkdir dir="${build}" />
+        <mkdir dir="${build.temp}" />
+        <mkdir dir="${build.temp}/assets" />
+        <mkdir dir="${build.temp}/player" />
+        <mkdir dir="${build.temp}/assettools" />
     
         <condition property="src.tiger" value="pulpcore/platform/${platform}">
             <not><equals arg1="${platform}" arg2="applet"/></not>
@@ -266,11 +271,11 @@
     
     <target name="javadoc" description="Generate API documentation">
     
-        <delete dir="doc/api" failonerror="false"/>
-        <mkdir dir="doc/api" />
+        <delete dir="${javadoc.destdir}" failonerror="false"/>
+        <mkdir dir="${javadoc.destdir}" />
         
         <javadoc
-            destdir="doc/api"
+            destdir="${javadoc.destdir}"
             author="true"
             version="true"
             use="true"
@@ -286,7 +291,7 @@
             
             <doctitle><![CDATA[<h1>PulpCore ${version.full}</h1>]]></doctitle>
             <header><![CDATA[<a href="http://www.interactivepulp.com/pulpcore/" target="_top">PulpCore</a>]]></header>
-            <bottom>Copyright &amp;copy; 2007-2009 Interactive Pulp, LLC.</bottom>
+            <bottom>Copyright &amp;copy; 2007-2009 Interactive Pulp, LLC.${javadoc.footer}</bottom>
             <!-- 
             <group title="PulpCore" packages="pulpcore*"/>
             <group title="PulpCore platform implementations" packages="pulpcore.platform*"/>
@@ -435,98 +440,10 @@
         <zip destfile="${build}/pulpcore-${version.full}.zip">
             <zipfileset dir="${dist.temp}" prefix="pulpcore-${version.full}" />
         </zip>
-
-        <antcall target="build-examples-for-www" />
         
         <delete dir="${dist.temp}" failonerror="false" />
     </target>
     
-    <target name="build-examples-for-www" if="build-examples-for-www" >
-
-        <!-- Compile examples for www -->
-        <subant>
-            <property name="pulpcore.path" location="${build}" />
-            <property name="library.path" location="${library.path}" />
-            <property name="proguard.path" location="${proguard.path}" />
-            <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
-            <property name="do.obfuscate" value="true" />
-            <property name="do.pack200" value="true" />
-            <property name="include.src" value="true" />
-            <fileset dir="${dist.temp}/examples" includes="*/build.xml"/>
-            <target name="build"/>
-            <target name="clean-temp"/>
-        </subant>
-        
-        <!-- 
-            Create the www folder used at interactivepulp.com
-            
-            Renaming the Easings example. 
-            
-            NOTE: explore using subant once Mac OS X has Java 6 (So the uppercase dir names can be
-            converted to lowercase using a scriptmapper)
-        -->
-        <copy todir="${build}/www/api">
-            <fileset dir="${dist.temp}/doc/api"/>
-        </copy>
-        <copy todir="${build}/www/bubblemark">
-            <fileset dir="${dist.temp}/examples/BubbleMark/build"/>
-        </copy>
-        <copy todir="${build}/www/clock">
-            <fileset dir="${dist.temp}/examples/Clock/build"/>
-        </copy>
-        <copy todir="${build}/www/compositing">
-            <fileset dir="${dist.temp}/examples/Compositing/build"/>
-        </copy>
-        <copy todir="${build}/www/dragme">
-            <fileset dir="${dist.temp}/examples/DragMe/build"/>
-        </copy>
-        <copy todir="${build}/www/easing">
-            <fileset dir="${dist.temp}/examples/Easings/build"/>
-        </copy>
-        <copy todir="${build}/www/filters">
-            <fileset dir="${dist.temp}/examples/Filters/build"/>
-        </copy>
-        <copy todir="${build}/www/flashlight">
-            <fileset dir="${dist.temp}/examples/Flashlight/build"/>
-        </copy>
-        <copy todir="${build}/www/images">
-            <fileset dir="${dist.temp}/examples/Images/build"/>
-        </copy>
-        <copy todir="${build}/www/particles">
-            <fileset dir="${dist.temp}/examples/Particles/build"/>
-        </copy>
-        <copy todir="${build}/www/pathmotion">
-            <fileset dir="${dist.temp}/examples/PathMotion/build"/>
-        </copy>
-        <copy todir="${build}/www/physics">
-            <fileset dir="${dist.temp}/examples/Physics/build"/>
-        </copy>
-        <copy todir="${build}/www/scalalanguage">
-            <fileset dir="${dist.temp}/examples/ScalaLanguage/build"/>
-        </copy>
-        <copy todir="${build}/www/scenegraph">
-            <fileset dir="${dist.temp}/examples/SceneGraph/build"/>
-        </copy>
-        <copy todir="${build}/www/sketch">
-            <fileset dir="${dist.temp}/examples/Sketch/build"/>
-        </copy>
-        <copy todir="${build}/www/sound">
-            <fileset dir="${dist.temp}/examples/Sounds/build"/>
-        </copy>
-        <copy todir="${build}/www/starfield">
-            <fileset dir="${dist.temp}/examples/Starfield/build"/>
-        </copy>
-        <copy todir="${build}/www/text">
-            <fileset dir="${dist.temp}/examples/Text/build"/>
-        </copy>
-        <copy todir="${build}/www/tilemap">
-            <fileset dir="${dist.temp}/examples/TileMap/build"/>
-        </copy>
-        <copy todir="${build}/www/widgets">
-            <fileset dir="${dist.temp}/examples/Widgets/build"/>
-        </copy>
-            
-    </target>
     
     <!-- Use this task to keep the example build files up to date -->
     <target name="update-example-build-files" 
@@ -557,8 +474,8 @@
             </keep>]]></replacevalue>
         </replace>
         <replace file="examples/BubbleMark/build.xml">
-            <replacetoken><![CDATA[<pulpcore-applet]]></replacetoken>
-            <replacevalue><![CDATA[<pulpcore-applet template="template.html"]]></replacevalue>
+            <replacetoken><![CDATA[<property name="applet.template" value="" />]]></replacetoken>
+            <replacevalue><![CDATA[<property name="applet.template" value="template.html" />]]></replacevalue>
         </replace>
     </target>
     

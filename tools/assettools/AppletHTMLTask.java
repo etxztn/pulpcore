@@ -37,6 +37,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.InputStream;
@@ -61,7 +62,7 @@ public class AppletHTMLTask extends Task {
     private static final int DEFAULT_HEIGHT = 480;
     
     private File destDir;
-    private File template = null;
+    private String template = null;
     private File displaySource = null;
     private String splash = null;
     private String playSplash = null;
@@ -85,7 +86,7 @@ public class AppletHTMLTask extends Task {
         this.displaySource = displaySource;
     }
     
-    public void setTemplate(File template) {
+    public void setTemplate(String template) {
         this.template = template;
     }
     
@@ -277,11 +278,12 @@ public class AppletHTMLTask extends Task {
         }
         
         String appletHTML;
-        if (template == null) {
+        if (template == null || template.trim().length() == 0) {
             appletHTML = readTextFile(getClass().getResourceAsStream("/applet.html"));
         }
         else {
-            appletHTML = readTextFile(new FileInputStream(template));
+            File templateFile = new File(getProject().getBaseDir(), template);
+            appletHTML = readTextFile(new FileInputStream(templateFile));
         }
             
         appletHTML = appletHTML.replace("@BGCOLOR@", bgcolor);

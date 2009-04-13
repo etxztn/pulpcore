@@ -1,0 +1,23 @@
+<div id="demoControls" style="margin-top: .5em">
+        <label for="cap"><input id="cap" type="checkbox" checked="checked"
+        onclick="pulpcore_object0.getCurrentScene().setCapFrameRate(this.checked);"/>Cap
+        Frame Rate</label> &nbsp;&nbsp;&nbsp;
+        <label for="pixelsnap"><input id="pixelsnap" type="checkbox"
+        onclick="pulpcore_object0.getCurrentScene().setPixelSnapping(this.checked);"/>Pixel
+        Snapping</label> &nbsp;&nbsp;&nbsp;
+        <label for="dirtyrects"><input id="dirtyrects" type="checkbox" checked="checked"
+        onclick="pulpcore_object0.getCurrentScene().setDirtyRectanglesEnabled(this.checked);"/>Dirty
+        Rectangles</label> &nbsp;&nbsp;&nbsp;
+        <select onchange="pulpcore_object0.getCurrentScene().setNumBalls(this.value);">
+            <option value="1" >1 Ball</option>
+            <option value="2">2 Balls</option>
+            <option value="4">4 Balls</option>
+            <option value="8">8 Balls</option>
+            <option value="16" selected="selected">16 Balls</option>
+            <option value="32">32 Balls</option>
+            <option value="64">64 Balls</option>
+            <option value="128">128 Balls</option>
+            <option value="256">256 Balls</option>
+            <option value="512">512 Balls</option>
+        </select><br />
+</div>
