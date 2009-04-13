@@ -28,6 +28,7 @@ public class Physics extends Scene2D {
     private World world;
     private float time;
     private float dt = 1 / 60f;
+    private float ballRadius = 31 / WORLD_TO_STAGE_SCALE;
 
     @Override
     public void load() {
@@ -38,6 +39,13 @@ public class Physics extends Scene2D {
         time = 0;
 
         createBridge("BridgePiece.png");
+
+        // Add a ball
+        Sprite ball = new ImageSprite("Ball.png", 0, 0);
+        Body ballBody = createBallBody(new Vec2(32, 8), ballRadius);
+        bindSpriteToBody(ball, ballBody);
+        ball.setTag(ballBody);
+        add(ball);
     }
 
     @Override
@@ -70,8 +78,7 @@ public class Physics extends Scene2D {
                 if (world.inRange(new AABB(new Vec2(x-1,y-1), new Vec2(x+1, y+1)))) {
                     // Create a new ball and bind the view (Sprite) to the data (Body)
                     Sprite ball = new ImageSprite("Ball.png", 0, 0);
-                    float radius = 31 / WORLD_TO_STAGE_SCALE;
-                    Body ballBody = createBallBody(new Vec2(x, y), radius);
+                    Body ballBody = createBallBody(new Vec2(x, y), ballRadius);
                     bindSpriteToBody(ball, ballBody);
                     ball.setTag(ballBody);
                     add(ball);
