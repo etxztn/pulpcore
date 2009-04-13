@@ -114,7 +114,8 @@ public class Compositing extends Scene2D {
         final ImageSprite sprite = new ImageSprite(image.tint(color), 0, 0);
         sprite.setAnchor(Sprite.CENTER);
         sprite.pixelSnapping.set(true);
-        Blur blur = new Blur(8, 3);
+        Blur blur = new Blur(8);
+        blur.quality.set(1);
         blur.radius.bindTo(new BindFunction() {
             public Number f() {
                 int w = Stage.getWidth()/2;
