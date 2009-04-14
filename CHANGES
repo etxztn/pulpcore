@@ -13,6 +13,11 @@
   * API: pulpcore.math.Path can now parse any SVG path data string, including
     relative commands, quadratic curves, and arcs. (The Path class is used
     for moving Sprites along a path, not for rendering).
+  * API: Added anchorX and anchorY properties and
+    setAnchor(double, double) method to Sprite. This means more exact anchors
+    can be chosen (not limited to the 8 compass directions and CENTER) and
+    the anchor can animate. The old setSprite(int anchor)
+    method is deprecated, and will be removed in 0.12. (Piotr Korzuszek)
   * Templates: Ant templates updated. Requires Ant 1.7.1.
         - Examples now have src/res/lib/build structure
         - Targets "debug" and "profile" included for NetBeans (Doug Holton)
