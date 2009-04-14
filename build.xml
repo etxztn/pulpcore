@@ -425,11 +425,12 @@
             <property name="proguard.path" location="${proguard.path}"/>
             <property name="scala.home" location="${scala.home}"/>
             <property name="retroweaver.jar.file" location="${build}/retroweaver-all.jar" />
+            <property name="do.combinedjar" value="true" /> <!-- For Scala -->
             <property name="do.obfuscate" value="true" />
             <property name="include.src" value="false" />
             <fileset dir="${dist.temp}/templates" includes="*/build.xml"/>
             <target name="build"/>
-            <target name="clean-temp"/>
+            <target name="-clean-temp"/>
         </subant>
 
         <!-- Zip up the source for IDEs -->
