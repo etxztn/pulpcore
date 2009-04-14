@@ -32,17 +32,17 @@ public class UncaughtExceptionScene extends Scene2D {
         CoreFont font = CoreFont.getSystemFont().tint(Colors.WHITE);
         Group message = Label.createMultilineLabel(font, "Oops! An error occurred.", 
             Stage.getWidth() / 2, 150, Stage.getWidth() - 20);
-        message.setAnchor(Sprite.CENTER);
+        message.setAnchor(0.5, 0.5);
         add(message);
         
         if (Build.DEBUG) {
             consoleButton = Button.createLabeledButton("Show Console", Stage.getWidth() / 2, 300);
-            consoleButton.setAnchor(Sprite.CENTER);
+            consoleButton.setAnchor(0.5, 0.5);
             add(consoleButton);
         }
         
         retryButton = Button.createLabeledButton("Restart", Stage.getWidth() / 2, 350);
-        retryButton.setAnchor(Sprite.CENTER);
+        retryButton.setAnchor(0.5, 0.5);
         add(retryButton);
     }
     

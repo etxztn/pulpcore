@@ -31,14 +31,14 @@ public class PathMotion extends Scene2D {
         for (int i = 0; i < count; i++) {
             // Create a Man. Animate position and angle along the path.
             Sprite man = new ImageSprite("Man.png", 0, 0);
-            man.setAnchor(Sprite.CENTER);
+            man.setAnchor(0.5, 0.5);
             double position = (double)(i) / count;
             timeline.moveAndRotate(man, path, position, position + 1, dur);
             add(man);
 
             // Create a Spirit. Animate position (but not angle) along the path
             Sprite spirit = new ImageSprite("Spirit.png", 0, 0);
-            spirit.setAnchor(Sprite.CENTER);
+            spirit.setAnchor(0.5, 0.5);
             position = (i + 0.18) / count;
             timeline.move(spirit, path, position, position + 1, dur);
             add(spirit);

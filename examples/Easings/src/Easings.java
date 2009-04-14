@@ -48,9 +48,9 @@ public class Easings extends Scene2D {
     public void load() {
         CoreFont font = CoreFont.getSystemFont().tint(WHITE);
         icon = new ImageSprite("earth.png", 140, 240);
-        icon.setAnchor(Sprite.CENTER);
+        icon.setAnchor(0.5, 0.5);
         label = new Label(font, "", 320, 20);
-        label.setAnchor(Sprite.NORTH);
+        label.setAnchor(0.5, 0);
         
         add(new ImageSprite("background.png", 0, 0));
         add(icon);

@@ -21,7 +21,7 @@ public class Flashlight extends Scene2D {
     public void load() {
         setCursor(Input.CURSOR_OFF);
         cursor = new ImageSprite("glow.png", 0, 0);
-        cursor.setAnchor(Sprite.CENTER);
+        cursor.setAnchor(0.5, 0.5);
         cursor.visible.set(false);
         
         // Create the mask 

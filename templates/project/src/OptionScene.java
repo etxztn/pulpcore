@@ -17,11 +17,11 @@ public class OptionScene extends Scene2D {
     @Override
     public void load() {
         toggleButton = Button.createLabeledToggleButton("Some Toggle", 320, 300);
-        toggleButton.setAnchor(Sprite.CENTER);
+        toggleButton.setAnchor(0.5, 0.5);
         errorButton = Button.createLabeledToggleButton("Some Error", 320, 350);
-        errorButton.setAnchor(Sprite.CENTER);
+        errorButton.setAnchor(0.5, 0.5);
         backButton = Button.createLabeledButton("<< Back", 320, 400);
-        backButton.setAnchor(Sprite.CENTER);
+        backButton.setAnchor(0.5, 0.5);
         
         add(new ImageSprite("background.png", 0, 0));
         add(toggleButton);

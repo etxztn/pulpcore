@@ -72,7 +72,7 @@ public class Text extends Scene2D {
             int labelWidth = -1; // auto
             int labelHeight = 10;
             Label label = new Label(messageFont, line, x, y, labelWidth, labelHeight);
-            label.setAnchor(Sprite.CENTER);
+            label.setAnchor(0.5, 0.5);
             label.alpha.set(0);
             label.setFilter(filter);
             add(label);

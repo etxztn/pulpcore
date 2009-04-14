@@ -17,7 +17,7 @@ public class HelloWorld extends Scene2D {
         
         CoreFont font = CoreFont.load("hello.font.png");
         label = new Label(font, "Hello World", 320, 240);
-        label.setAnchor(Sprite.CENTER);
+        label.setAnchor(0.5, 0.5);
         add(label);
         
         Sound sound = Sound.load("sound.wav");

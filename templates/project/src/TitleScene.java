@@ -18,11 +18,11 @@ public class TitleScene extends Scene2D {
     public void load() {
         
         Label title = new Label(CoreFont.load("hello.font.png"), "Hello World", 320, 240);
-        title.setAnchor(Sprite.CENTER);
+        title.setAnchor(0.5, 0.5);
         playButton = Button.createLabeledButton("Play", 320, 320);
-        playButton.setAnchor(Sprite.CENTER);
+        playButton.setAnchor(0.5, 0.5);
         optionsButton = Button.createLabeledButton("Options", 320, 370);
-        optionsButton.setAnchor(Sprite.CENTER);
+        optionsButton.setAnchor(0.5, 0.5);
         
         componentLayer = new Group();
         componentLayer.add(playButton);

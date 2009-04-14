@@ -26,7 +26,7 @@ public class Filters extends Scene2D {
         CoreFont font = CoreFont.getSystemFont().tint(Colors.WHITE);
         for (int i = 0; i < moons.length; i++) {
             labels[i] = new Label(font, moonNames[i], 0, 0);
-            labels[i].setAnchor(Sprite.NORTH);
+            labels[i].setAnchor(0.5, 0);
             labels[i].setFilter(new Glow(0.25));
             
             moons[i] = new Moon(moonNames[i] + ".png", labels[i]);
@@ -70,7 +70,7 @@ public class Filters extends Scene2D {
             this.label = label;
             this.label.alpha.set(0);
             setFilter(blur);
-            setAnchor(Sprite.CENTER);
+            setAnchor(0.5, 0.5);
             setCursor(Input.CURSOR_HAND);
         }
 

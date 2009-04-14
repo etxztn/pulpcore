@@ -88,7 +88,7 @@ public class Physics extends Scene2D {
     }
 
     private void bindSpriteToBody(Sprite sprite, final Body body) {
-        sprite.setAnchor(Sprite.CENTER);
+        sprite.setAnchor(0.5, 0.5);
         sprite.x.bindTo(new BindFunction() {
             public Number f() {
                 return body.getPosition().x * WORLD_TO_STAGE_SCALE;

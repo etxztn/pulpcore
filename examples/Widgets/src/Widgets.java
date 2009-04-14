@@ -32,43 +32,43 @@ public class Widgets extends Scene2D {
         
         // Create the form fields
         Label label = new Label(font, "Name: ", 225, 50);
-        label.setAnchor(Sprite.EAST);
+        label.setAnchor(1, 0.5);
         
         textField = new TextField("Suzy", 230, 50, 150, font.getHeight());
-        textField.setAnchor(Sprite.WEST);
+        textField.setAnchor(0, 0.5);
         textField.setFocus(true);
         
         Label label2 = new Label(font, "Secret Password: ", 225, 90);
-        label2.setAnchor(Sprite.EAST);
+        label2.setAnchor(1, 0.5);
         
         passwordField = new TextField(230, 90, 150, font.getHeight());
         passwordField.setPasswordMode(true);
-        passwordField.setAnchor(Sprite.WEST);
+        passwordField.setAnchor(0, 0.5);
         
         Slider slider = new Slider("slider.png", "slider-thumb.png", 225, 130);
-        slider.setAnchor(Sprite.WEST);
+        slider.setAnchor(0, 0.5);
         Label label3 = new Label(font, "Value: %d ", 225, 130);
         label3.setFormatArg(slider.value);
-        label3.setAnchor(Sprite.EAST);
+        label3.setAnchor(1, 0.5);
         
         CoreImage checkboxImage = CoreImage.load("checkbox.png");
         checkbox = Button.createLabeledToggleButton(checkboxImage.split(3,2), font,
-            "I'm feeling slanted", 225, 180, 30, 12, Sprite.WEST, false);
+            "I'm feeling slanted", 225, 180, 30, 12, 0.0, 0.5, false);
         checkbox.setCursor(Input.CURSOR_DEFAULT);
         checkbox.setPixelLevelChecks(false);
-        checkbox.setAnchor(Sprite.WEST);
+        checkbox.setAnchor(0, 0.5);
         
         CoreImage buttonImage = CoreImage.load("button.png");
         okButton = new Button(buttonImage.split(3), 225, 210);
-        okButton.setAnchor(Sprite.NORTH);
+        okButton.setAnchor(0.5, 0);
         okButton.setKeyBinding(Input.KEY_ENTER);
         
         answer = new Label(font, "", 225, 285);
-        answer.setAnchor(Sprite.CENTER);
+        answer.setAnchor(0.5, 0.5);
         
         // Add the form fields to a group
         form = new Group(Stage.getWidth() / 2, Stage.getHeight() / 2, 480, 320);
-        form.setAnchor(Sprite.CENTER);
+        form.setAnchor(0.5, 0.5);
         form.add(new StretchableSprite("border.9.png", 0, 0, 480, 320));
         form.add(label);
         form.add(createTextFieldBackground(textField));
@@ -90,7 +90,7 @@ public class Widgets extends Scene2D {
     public Sprite createTextFieldBackground(TextField field) {
         field.selectionColor.set(rgb(0x1d5ef2));
         ImageSprite background = new ImageSprite("textfield.png", field.x.get()-5, field.y.get());
-        background.setAnchor(Sprite.WEST);
+        background.setAnchor(0, 0.5);
         return background;
     }
     
@@ -104,7 +104,7 @@ public class Widgets extends Scene2D {
             answer.setText("Hello, " + textField.getText() + "!");
             double w = answer.width.get();
             double h = answer.height.get();
-            answer.scale(w*.1, h*.1, w, h, 300, Easing.BACK_OUT);
+            answer.scale(w*.1, h*.1, w, h, 200, Easing.BACK_OUT);
         }
         if (Input.isPressed(Input.KEY_TAB)) {
             if (textField.hasFocus()) {

@@ -59,7 +59,7 @@ public class Images extends Scene2D {
         // Show keyboard message
         clickMessage = new Label(CoreFont.getSystemFont().tint(WHITE),
             "Click to start", Stage.getWidth()/2, Stage.getHeight()/2);
-        clickMessage.setAnchor(Sprite.CENTER);
+        clickMessage.setAnchor(0.5, 0.5);
         add(clickMessage);
     }
     

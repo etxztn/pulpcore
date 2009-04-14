@@ -52,7 +52,7 @@ public class SceneGraph extends Scene2D {
             h *= CoreMath.rand(0.8, 1.2);
         }
         Stem stem = new Stem(0, 0, w, h, color.get());
-        stem.setAnchor(Sprite.SOUTH);
+        stem.setAnchor(0.5, 1);
         parent.add(stem);
         
         // Add two child stems (using recursion)

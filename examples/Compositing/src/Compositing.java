@@ -112,7 +112,7 @@ public class Compositing extends Scene2D {
         CoreImage image = CoreImage.load("particle.png");
         int color = hue(rand(0, 255));
         final ImageSprite sprite = new ImageSprite(image.tint(color), 0, 0);
-        sprite.setAnchor(Sprite.CENTER);
+        sprite.setAnchor(0.5, 0.5);
         sprite.pixelSnapping.set(true);
         Blur blur = new Blur(8);
         blur.quality.set(1);
