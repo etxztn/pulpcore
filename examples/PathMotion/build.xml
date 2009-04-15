@@ -110,6 +110,12 @@
     </target>
 
 
+    <!-- Cleans temp files used during build. Used by PulpCore's build.xml -->
+    <target name="-clean-temp">
+        <delete dir="${build.temp}" failonerror="false" />
+    </target>
+
+
     <!-- Initials directories and checks for valid properties -->
     <target name="-init">
         <fail message="Required file not found: ${core.jar.file}">
