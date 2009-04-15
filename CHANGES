@@ -1,4 +1,4 @@
-0.11.5 (In SVN)
+0.11.5 (April 15, 2009)
   * API: Added Sprite.setFilter(), pulpcore.image.filter package (Florent Dupont).
     Note - When setDirty(true) is called, the filter is updated. If you are creating
     custom Sprites, call setDirty(true) when the contents of the Sprite change.
