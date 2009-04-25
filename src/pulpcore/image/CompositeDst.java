@@ -45,27 +45,27 @@ package pulpcore.image;
  */
 final class CompositeDst extends Composite {
 
-	CompositeDst() {}
+    CompositeDst() {}
 
     // Different from the other Composites since it's a no-op
 
-	void blend(int[] destData, int destOffset, int srcARGB) {
-	}
+    void blend(int[] destData, int destOffset, int srcARGB) {
+    }
 
-	void blend(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
-	}
+    void blend(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
+    }
 
-	void blendRow(int[] destData, int destOffset, int srcARGB, int numPixels) {
-	}
+    void blendRow(int[] destData, int destOffset, int srcARGB, int numPixels) {
+    }
 
-	void blend(int[] srcData, int srcScanSize, boolean srcOpaque, int edgeClamp,
-			int srcX, int srcY, int srcWidth, int srcHeight, 
-			int u, int v, int du, int dv, 
-			boolean rotation,
-			boolean renderBilinear, int renderAlpha,
-			int[] destData, int destScanSize, int destOffset, int numPixels, int numRows)
-	{
-		
-	}        
+    void blend(int[] srcData, int srcScanSize, boolean srcOpaque, int edgeClamp,
+            int srcX, int srcY, int srcWidth, int srcHeight,
+            int u, int v, int du, int dv,
+            boolean rotation,
+            boolean renderBilinear, int renderAlpha,
+            int[] destData, int destScanSize, int destOffset, int numPixels, int numRows)
+    {
+
+    }
 }
 

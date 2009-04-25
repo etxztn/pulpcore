@@ -47,28 +47,32 @@ final class CompositeClear extends Composite {
     
     // If true, the blend() functions send transparent pixels to blendPixel()
     private static final boolean BLEND_TRANSPARENT_PIXELS = true;
-	
-    CompositeClear() {}
+
+    private final int clearColor;
+
+    CompositeClear(boolean destOpaque) {
+        if (destOpaque) {
+            clearColor = 0xff000000;
+        }
+        else {
+            clearColor = 0x00000000;
+        }
+    }
     
     private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
-    	destData[destOffset] = 0x00000000 ;
+        destData[destOffset] = clearColor;
     }
     
     private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
-    	
-        //destData[destOffset] = (extraAlpha<<24) | 0x0ff00000 ;
-    	destData[destOffset] = 0x00000000 ;
+        destData[destOffset] = clearColor;
     }
     
     private void blendPixel(int[] destData, int destOffset, int srcARGB) {
-    	//destData[destOffset] = 0xff000000 ;
-    	destData[destOffset] = 0x00000000 ;
-       
+        destData[destOffset] = clearColor;
     }
     
     private void blendPixel(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
-    	 //destData[destOffset] = (extraAlpha<<24) | 0x00ff0000 ;
-    	destData[destOffset] = 0x00000000 ;
+        destData[destOffset] = clearColor;
     }
  
     /*

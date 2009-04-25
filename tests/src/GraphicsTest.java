@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import org.junit.Test;
+import pulpcore.image.BlendMode;
 import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
@@ -14,6 +15,7 @@ import pulpcore.image.PNGWriter;
 import pulpcore.scene.Scene;
 import pulpcore.scene.Scene2D;
 import pulpcore.sprite.FilledSprite;
+import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Sprite;
 import pulpcore.util.ByteArray;
@@ -33,10 +35,10 @@ public class GraphicsTest {
 
             sprite1 = new ImageSprite("res/stripe.png", 320, 180, 600, 40);
             sprite1.alpha.set(128);
-            sprite1.setAnchor(Sprite.CENTER);
+            sprite1.setAnchor(0.5, 0.5);
 
             sprite2 = new FilledSprite(200, 180, 60, 60, 0x66660000);
-            sprite2.setAnchor(Sprite.CENTER);
+            sprite2.setAnchor(0.5, 0.5);
             sprite2.setBorderSize(4);
             sprite2.borderColor.set(Colors.TRANSPARENT);
 
@@ -55,9 +57,37 @@ public class GraphicsTest {
         testScene(new ClipError(), 2);
     }
 
+    // Tests using the Mult blend mode to perform masking
+    public static class MaskTest extends Scene2D {
+
+        @Override
+        public void load() {
+            add(new FilledSprite(Colors.BLUE));
+
+            Group group = new Group(0, 0, 640, 480);
+            group.createBackBuffer();
+            group.add(new ImageSprite("res/starmask.png", 0, 0));
+
+            Sprite sprite = new ImageSprite("res/stripe.png", 0, 0, 640, 480);
+            sprite.setBlendMode(BlendMode.Multiply());
+            group.add(sprite);
+
+            add(group);
+        }
+    }
+
+    @Test
+    public void MaskTest() {
+        testScene(new MaskTest());
+    }
+
     //
     //
     //
+
+    private void testScene(Scene scene) {
+        testScene(scene, 1);
+    }
 
     private void testScene(Scene scene, int loopIterations) {
         HeadlessApp app = new HeadlessApp(scene);

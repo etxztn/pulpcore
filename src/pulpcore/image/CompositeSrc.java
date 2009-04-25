@@ -32,75 +32,91 @@ package pulpcore.image;
 import pulpcore.math.CoreMath;
 
 /**
-	SRC (for premultiplied images)
+    SRC (for premultiplied images)
 
-	Porter-Duff's SRC rule:
-		Ar = As
-		Cr = Cs
+    Porter-Duff's SRC rule:
+        Ar = As
+        Cr = Cs
 
-	Porter-Duff's SRC rule with extra alpha:
-		Ar = As*Ae
-		Cr = Cs*Ae
+    Porter-Duff's SRC rule with extra alpha:
+        Ar = As*Ae
+        Cr = Cs*Ae
 
-	The source is copied to the destination.
+    The source is copied to the destination.
 
-	@author Florent Dupont
+    @author Florent Dupont
  */
 final class CompositeSrc extends Composite {
 
     // If true, the blend() functions send transparent pixels to blendPixel()
     private static final boolean BLEND_TRANSPARENT_PIXELS = true;
 
-    CompositeSrc() {}
+    private final boolean destOpaque;
 
-	private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
-		destData[destOffset] = srcRGB;
-	}
+    CompositeSrc(boolean destOpaque) {
+        this.destOpaque = destOpaque;
+    }
 
-	/**
+    private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
+        destData[destOffset] = srcRGB;
+    }
+
+    /**
         Ar = Ae
-    	Cr = Cs*Ae
-	 */
-	private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
-		int destRGB = destData[destOffset];
-		int destR = (destRGB >> 16) & 0xff;
-		int destG = (destRGB >> 8) & 0xff;
-		int destB = destRGB & 0xff;
-		int srcR = (srcRGB >> 16) & 0xff;
-		int srcG = (srcRGB >> 8) & 0xff;
-		int srcB = srcRGB & 0xff;
+        Cr = Cs*Ae
+     */
+    private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
+        int destRGB = destData[destOffset];
+        int destR = (destRGB >> 16) & 0xff;
+        int destG = (destRGB >> 8) & 0xff;
+        int destB = destRGB & 0xff;
+        int srcR = (srcRGB >> 16) & 0xff;
+        int srcG = (srcRGB >> 8) & 0xff;
+        int srcB = srcRGB & 0xff;
 
-		destR = (srcR * extraAlpha) >> 8;
-		destG = (srcG * extraAlpha) >> 8;
-		destB = (srcB * extraAlpha) >> 8;
+        destR = (srcR * extraAlpha) >> 8;
+        destG = (srcG * extraAlpha) >> 8;
+        destB = (srcB * extraAlpha) >> 8;
 
-		destData[destOffset] = (extraAlpha<<24) | (destR << 16) | (destG << 8) | destB;
-	}
+        if (destOpaque) {
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+        else {
+            destData[destOffset] = (extraAlpha<<24) | (destR << 16) | (destG << 8) | destB;
+        }
+    }
 
+    private void blendPixel(int[] destData, int destOffset, int srcARGB) {
+        if (destOpaque) {
+            destData[destOffset] = 0xff000000 | srcARGB;
+        }
+        else {
+            destData[destOffset] = srcARGB;
+        }
+    }
 
+    private void blendPixel(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
+        int destRGB = destData[destOffset];
+        int destR = (destRGB >> 16) & 0xff;
+        int destG = (destRGB >> 8) & 0xff;
+        int destB = destRGB & 0xff;
+        int srcR = (srcARGB >> 16) & 0xff;
+        int srcG = (srcARGB >> 8) & 0xff;
+        int srcB = srcARGB & 0xff;
+        int srcA = srcARGB >>> 24;
 
-	private void blendPixel(int[] destData, int destOffset, int srcARGB) {
-		destData[destOffset] = srcARGB;
-	}
+        destR = (srcR * extraAlpha) >> 8;
+        destG = (srcG * extraAlpha) >> 8;
+        destB = (srcB * extraAlpha) >> 8;
 
-
-	private void blendPixel(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
-		int destRGB = destData[destOffset];
-		int destR = (destRGB >> 16) & 0xff;
-		int destG = (destRGB >> 8) & 0xff;
-		int destB = destRGB & 0xff;
-		int srcR = (srcARGB >> 16) & 0xff;
-		int srcG = (srcARGB >> 8) & 0xff;
-		int srcB = srcARGB & 0xff;
-		int srcA = srcARGB >>> 24;
-
-		destR = (srcR * extraAlpha) >> 8;
-		destG = (srcG * extraAlpha) >> 8;
-		destB = (srcB * extraAlpha) >> 8;
-		int destA = (srcA * extraAlpha) >> 8;
-
-		destData[destOffset] = (destA<<24) | (destR << 16) | (destG << 8) | destB;
-	}
+        if (destOpaque) {
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+        else {
+            int destA = (srcA * extraAlpha) >> 8;
+            destData[destOffset] = (destA << 24) | (destR << 16) | (destG << 8) | destB;
+        }
+    }
 
     /*
         DO NOT EDIT BELOW HERE

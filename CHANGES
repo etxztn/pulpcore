@@ -1,3 +1,7 @@
+0.11.6 (In SVN)
+  * Graphics: Fixed Multiply blend mode when drawing an opaque src on a
+    non-opaque dest.
+
 0.11.5 (April 15, 2009)
   * API: Added Sprite.setFilter(), pulpcore.image.filter package (Florent Dupont).
     Note - When setDirty(true) is called, the filter is updated. If you are creating

@@ -51,149 +51,144 @@ final class CompositeDstAtop extends Composite {
 
     // If true, the blend() functions send transparent pixels to blendPixel()
     private static final boolean BLEND_TRANSPARENT_PIXELS = true;
-	
+
     private final boolean destOpaque;
 
-	CompositeDstAtop(boolean destOpaque) {
-		this.destOpaque = destOpaque;
-	}
+    CompositeDstAtop(boolean destOpaque) {
+        this.destOpaque = destOpaque;
+    }
 
-	/**
-	 * if source id opaque : 
-	 * Ar = 1
-	 * Cr = Cs*(1-Ad) + Cd
-	 */
-	private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
+    /**
+     * if source is opaque :
+     * Ar = 1
+     * Cr = Cs*(1-Ad) + Cd
+     */
+    private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
 
-		int destRGB = destData[destOffset];
-		int destR = (destRGB >> 16) & 0xff;
-		int destG = (destRGB >> 8) & 0xff;
-		int destB = destRGB & 0xff;
-		int srcR = (srcRGB >> 16) & 0xff;
-		int srcG = (srcRGB >> 8) & 0xff;
-		int srcB = srcRGB & 0xff;
+        int destRGB = destData[destOffset];
+        int destR = (destRGB >> 16) & 0xff;
+        int destG = (destRGB >> 8) & 0xff;
+        int destB = destRGB & 0xff;
+        int srcR = (srcRGB >> 16) & 0xff;
+        int srcG = (srcRGB >> 8) & 0xff;
+        int srcB = srcRGB & 0xff;
 
-		// Ar = 1
-		// Cr = Cd
-		if(destOpaque) {
-			destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
-		} 
-		else {
-			int destA = destRGB >>> 24;
-			int oneMinusDestA = 0xff - destA;
-			destR += ((srcR * oneMinusDestA) >> 8);
-			destG += ((srcG * oneMinusDestA) >> 8);
-			destB += ((srcB * oneMinusDestA) >> 8);
-			destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
-		}
-	}
+        // Ar = 1
+        // Cr = Cd
+        if (destOpaque) {
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+        else {
+            int destA = destRGB >>> 24;
+            int oneMinusDestA = 0xff - destA;
+            destR += ((srcR * oneMinusDestA) >> 8);
+            destG += ((srcG * oneMinusDestA) >> 8);
+            destB += ((srcB * oneMinusDestA) >> 8);
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+    }
 
-	/**
+    /**
         Ar = As*Ae
            = Ae
         Cr = Cs*Ae*(1-Ad) + Cd*Ae
         Cr = Ae*(Cs*(1-Ad) + Cd)
-	 */
-	private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
+     */
+    private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
 
-		int destRGB = destData[destOffset];
-		int destR = (destRGB >> 16) & 0xff;
-		int destG = (destRGB >> 8) & 0xff;
-		int destB = destRGB & 0xff;
-		int srcR = (srcRGB >> 16) & 0xff;
-		int srcG = (srcRGB >> 8) & 0xff;
-		int srcB = srcRGB & 0xff;
+        int destRGB = destData[destOffset];
+        int destR = (destRGB >> 16) & 0xff;
+        int destG = (destRGB >> 8) & 0xff;
+        int destB = destRGB & 0xff;
+        int srcR = (srcRGB >> 16) & 0xff;
+        int srcG = (srcRGB >> 8) & 0xff;
+        int srcB = srcRGB & 0xff;
 
-		int destA = destRGB >>> 24;
-		int oneMinusDestA = 0xff - destA;
+        // Ar = Ae
+        // Cr = Cd*Ae
+        if (destOpaque) {
+            destR = (destR * extraAlpha) >> 8;
+            destG = (destG * extraAlpha) >> 8;
+            destB = (destB * extraAlpha) >> 8;
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+        else {
+            int destA = destRGB >>> 24;
+            int oneMinusDestA = 0xff - destA;
+            destR = (extraAlpha * (((srcR * oneMinusDestA) >> 8) + extraAlpha) >>8);
+            destG = (extraAlpha * (((srcG * oneMinusDestA) >> 8) + extraAlpha) >>8);
+            destB = (extraAlpha * (((srcB * oneMinusDestA) >> 8) + extraAlpha) >>8);
+            destData[destOffset] = (extraAlpha<<24) | (destR << 16) | (destG << 8) | destB;
+        }
+    }
 
-		// Ar = Ae
-		// Cr = Cd*Ae
-		if(destOpaque) {
-			destR = (destR * extraAlpha) >> 8;
-			destG = (destG * extraAlpha) >> 8;
-			destB = (destB * extraAlpha) >> 8;
-		} 
-		else {
-			destR = (extraAlpha * (((srcR * oneMinusDestA) >> 8) + extraAlpha) >>8);
-			destG = (extraAlpha * (((srcG * oneMinusDestA) >> 8) + extraAlpha) >>8);
-			destB = (extraAlpha * (((srcB * oneMinusDestA) >> 8) + extraAlpha) >>8);
-		}
-		destData[destOffset] = (extraAlpha<<24) | (destR << 16) | (destG << 8) | destB;
-
-	}
-
-	/**
-	 *  Ar = As
-	 *  Cr = Cs*(1-Ad) + Cd
+    /**
+     *  Ar = As
+     *  Cr = Cs*(1-Ad) + Cd
         Cr = Cs*(1-Ad) + Cd*As 
-	 */
-	private void blendPixel(int[] destData, int destOffset, int srcARGB) {
-		int destRGB = destData[destOffset];
-		int destR = (destRGB >> 16) & 0xff;
-		int destG = (destRGB >> 8) & 0xff;
-		int destB = destRGB & 0xff;
-		int srcR = (srcARGB >> 16) & 0xff;
-		int srcG = (srcARGB >> 8) & 0xff;
-		int srcB = srcARGB & 0xff;
-		int srcA = srcARGB >>> 24;
+     */
+    private void blendPixel(int[] destData, int destOffset, int srcARGB) {
+        int destRGB = destData[destOffset];
+        int destR = (destRGB >> 16) & 0xff;
+        int destG = (destRGB >> 8) & 0xff;
+        int destB = destRGB & 0xff;
+        int srcR = (srcARGB >> 16) & 0xff;
+        int srcG = (srcARGB >> 8) & 0xff;
+        int srcB = srcARGB & 0xff;
+        int srcA = srcARGB >>> 24;
 
-		int destA = destRGB >>> 24;
-		// Ad = As
-		// Cr = Cd*As
-		if (destOpaque) {
-			destR = ((destR*srcA)>>8);
-			destG = ((destG*srcA)>>8);
-			destB = ((destB*srcA)>>8);
-		}
-		else {
-			int oneMinusDestA = 0xff - destA;
-			destR = ((srcR * oneMinusDestA) >> 8) + ((destR*srcA)>>8);
-			destG = ((srcG * oneMinusDestA) >> 8) + ((destG*srcA)>>8);
-			destB = ((srcB * oneMinusDestA) >> 8) + ((destB*srcA)>>8);
-		}
+        // Ad = As
+        // Cr = Cd*As
+        if (destOpaque) {
+            destR = ((destR*srcA)>>8);
+            destG = ((destG*srcA)>>8);
+            destB = ((destB*srcA)>>8);
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+        else {
+            int destA = destRGB >>> 24;
+            int oneMinusDestA = 0xff - destA;
+            destR = ((srcR * oneMinusDestA) >> 8) + ((destR*srcA)>>8);
+            destG = ((srcG * oneMinusDestA) >> 8) + ((destG*srcA)>>8);
+            destB = ((srcB * oneMinusDestA) >> 8) + ((destB*srcA)>>8);
+            destData[destOffset] = (srcA << 24) | (destR << 16) | (destG << 8) | destB;
+        }
+    }
 
-		destA = srcA;
-		destData[destOffset] = (destA << 24) | (destR << 16) | (destG << 8) | destB;    
-	}
-
-	/**
-	 *  Ar = As*Ae
+    /**
+     *  Ar = As*Ae
         Cr = Cs*Ae*(1-Ad) + Cd*As*Ae
         Cr = Ae*(Cs*(1-Ad) + Cd*As))
-	 */
-	private void blendPixel(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
-		int destRGB = destData[destOffset];
-		int destR = (destRGB >> 16) & 0xff;
-		int destG = (destRGB >> 8) & 0xff;
-		int destB = destRGB & 0xff;
-		int srcR = (srcARGB >> 16) & 0xff;
-		int srcG = (srcARGB >> 8) & 0xff;
-		int srcB = srcARGB & 0xff;
-		int srcA = srcARGB >>>24;
+     */
+    private void blendPixel(int[] destData, int destOffset, int srcARGB, int extraAlpha) {
+        int destRGB = destData[destOffset];
+        int destR = (destRGB >> 16) & 0xff;
+        int destG = (destRGB >> 8) & 0xff;
+        int destB = destRGB & 0xff;
+        int srcR = (srcARGB >> 16) & 0xff;
+        int srcG = (srcARGB >> 8) & 0xff;
+        int srcB = srcARGB & 0xff;
+        int srcA = srcARGB >>>24;
 
-		int destA = destRGB >>> 24;
-		extraAlpha = (extraAlpha & 0xff);
-
-		// Ad = As*Ae
-		// Cr = Cd*As*Ae
-		if (destOpaque) {
-			destR = (destR*srcA*extraAlpha)>>16;
-			destG = (destG*srcA*extraAlpha)>>16;
-			destB = (destB*srcA*extraAlpha)>>16;
-			destA = (srcA*extraAlpha)>>8;
-		}
-		else {
-			// Cr = Ae*(Cs*(1-Ad) + Cd*As))
-			int oneMinusDestA = 0xff - destA;
-			destR = extraAlpha * (((srcR * oneMinusDestA) >> 8) + ((destR*srcA)>>8)) >> 8;
-			destG = extraAlpha * (((srcG * oneMinusDestA) >> 8) + ((destG*srcA)>>8)) >> 8;
-			destB = extraAlpha * (((srcB * oneMinusDestA) >> 8) + ((destB*srcA)>>8)) >> 8;
-			destA = (extraAlpha * srcA)  >> 8;
-		}
-
-		destData[destOffset] = (destA << 24) | (destR << 16) | (destG << 8) | destB; 
-	}
+        // Ad = As*Ae
+        // Cr = Cd*As*Ae
+        if (destOpaque) {
+            destR = (destR*srcA*extraAlpha)>>16;
+            destG = (destG*srcA*extraAlpha)>>16;
+            destB = (destB*srcA*extraAlpha)>>16;
+            destData[destOffset] = 0xff000000 | (destR << 16) | (destG << 8) | destB;
+        }
+        else {
+            int destA = destRGB >>> 24;
+            // Cr = Ae*(Cs*(1-Ad) + Cd*As))
+            int oneMinusDestA = 0xff - destA;
+            destR = extraAlpha * (((srcR * oneMinusDestA) >> 8) + ((destR*srcA)>>8)) >> 8;
+            destG = extraAlpha * (((srcG * oneMinusDestA) >> 8) + ((destG*srcA)>>8)) >> 8;
+            destB = extraAlpha * (((srcB * oneMinusDestA) >> 8) + ((destB*srcA)>>8)) >> 8;
+            destA = (extraAlpha * srcA)  >> 8;
+            destData[destOffset] = (destA << 24) | (destR << 16) | (destG << 8) | destB;
+        }
+    }
 
     /*
         DO NOT EDIT BELOW HERE

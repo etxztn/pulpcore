@@ -52,6 +52,7 @@ final class CompositeMult extends Composite {
 
     private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB) {
         int destRGB = destData[destOffset];
+        int destA = destRGB & 0xff000000;
         int destR = (destRGB & 0xff0000) >> 16;
         int destG = (destRGB & 0x00ff00) >> 8;
         int destB = destRGB & 0x0000ff;
@@ -63,11 +64,12 @@ final class CompositeMult extends Composite {
         destG = (destG * srcG) & 0xff00;
         destB = (destB * srcB) >> 8;
         
-        destData[destOffset] = 0xff000000 | destR | destG | destB;
+        destData[destOffset] = destA | destR | destG | destB;
     }
     
     private void blendOpaquePixel(int[] destData, int destOffset, int srcRGB, int extraAlpha) {
         int destRGB = destData[destOffset];
+        int destA = destRGB & 0xff000000;
         int destR = (destRGB >> 16) & 0xff;
         int destG = (destRGB >> 8) & 0xff;
         int destB = destRGB & 0xff;
@@ -86,7 +88,7 @@ final class CompositeMult extends Composite {
         destG =  (destG * (srcG + oneMinusSrcA)) & 0xff00;
         destB =  (destB * (srcB + oneMinusSrcA)) >> 8;
         
-        destData[destOffset] = 0xff000000 | destR | destG | destB;
+        destData[destOffset] = destA | destR | destG | destB;
     }
     
     private void blendPixel(int[] destData, int destOffset, int srcARGB) {

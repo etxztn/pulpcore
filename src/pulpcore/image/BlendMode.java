@@ -44,9 +44,9 @@ package pulpcore.image;
 */
 public final class BlendMode {
     
-	private static BlendMode CLEAR = null;
-	private static BlendMode SRC = null;
-	private static BlendMode DST = null;
+    private static BlendMode CLEAR = null;
+    private static BlendMode SRC = null;
+    private static BlendMode DST = null;
     private static BlendMode SRC_OVER = null;
     private static BlendMode SRC_IN = null;
     private static BlendMode SRC_ATOP = null;
@@ -74,7 +74,7 @@ public final class BlendMode {
      */
     public static BlendMode Clear() {
         if (CLEAR == null) {
-            CLEAR = new BlendMode(new CompositeClear(), new CompositeClear());
+            CLEAR = new BlendMode(new CompositeClear(true), new CompositeClear(false));
         }
         return CLEAR;
     }
@@ -82,7 +82,7 @@ public final class BlendMode {
     /**
      * Gets the Xor blend mode (Porter-Duff).
      * The part of the source lying outside of the destination is combined with the
-	 * part of the destination lying outside of the source.
+     * part of the destination lying outside of the source.
      */
     public static BlendMode Xor() {
         if (XOR == null) {
@@ -105,7 +105,7 @@ public final class BlendMode {
     /**
      * Gets the DstOver blend mode (Porter-Duff).
      * The destination is composed with the source and the result replaces
-	 * the destination.
+     * the destination.
      */
     public static BlendMode DstOver() {
         if (DST_OVER == null) {
@@ -154,7 +154,7 @@ public final class BlendMode {
      */
     public static BlendMode Src() {
         if (SRC == null) {
-            SRC = new BlendMode(new CompositeSrc(), new CompositeSrc());
+            SRC = new BlendMode(new CompositeSrc(true), new CompositeSrc(false));
         }
         return SRC;
     }
@@ -184,7 +184,7 @@ public final class BlendMode {
     /**
      * Gets the SrcAtop blend mode (Porter-Duff).
      * The part of the source lying inside of the destination is composed with
-	 * the destination.
+     * the destination.
      */
     public static BlendMode SrcAtop() {
         if (SRC_ATOP == null) {
