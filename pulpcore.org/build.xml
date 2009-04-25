@@ -95,7 +95,7 @@
         <!--
             Create the www folder used at interactivepulp.com
 
-            Renaming the Easings example.
+            Renaming the Easings example and Sounds examples.
 
             NOTE: explore using subant once Mac OS X has Java 6 (So the uppercase dir names can be
             converted to lowercase using a scriptmapper)
