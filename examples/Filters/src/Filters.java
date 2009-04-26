@@ -69,6 +69,7 @@ public class Filters extends Scene2D {
             super(image, 0, 0);
             this.label = label;
             this.label.alpha.set(0);
+            blur.radius.set(10);
             setFilter(blur);
             setAnchor(0.5, 0.5);
             setCursor(Input.CURSOR_HAND);
