@@ -86,6 +86,8 @@ public class Blur extends Filter {
 
     private int actualRadius = 0;
     private int actualQuality = 0;
+    private int time;
+    private int lastUpdateTime;
     // For quality > 1
     private CoreImage workBuffer;
 
@@ -150,6 +152,7 @@ public class Blur extends Filter {
 
     public void update(int elapsedTime) {
 
+        time += elapsedTime;
         radius.update(elapsedTime);
         quality.update(elapsedTime);
 
@@ -169,19 +172,39 @@ public class Blur extends Filter {
             setDirty();
         }
         else if (actualRadius != r) {
-            // If the change crossed an integer boundary, use the int value.
-            if (r < actualRadius) {
-                if (CoreMath.toIntCeil(r) != CoreMath.toIntCeil(actualRadius)) {
-                    r = CoreMath.ceil(r);
-                }
+            // Update at a limited frame rate, depending on the radius
+            int timeLimit = 0;
+            if (r < CoreMath.toFixed(8)) {
+                timeLimit = 16; // ~60 fps
+            }
+            else if (r < CoreMath.toFixed(16)) {
+                timeLimit = 22; // ~45 fps
+            }
+            else if (r < CoreMath.toFixed(32)) {
+                timeLimit = 32; // ~30 fps
+            }
+            else if (r < CoreMath.toFixed(64)) {
+                timeLimit = 40; // ~25 fps
             }
             else {
-                if (CoreMath.toIntFloor(r) != CoreMath.toIntFloor(actualRadius)) {
-                    r = CoreMath.floor(r);
-                }
+                timeLimit = 50; // ~20 fps
             }
-            actualRadius = r;
-            setDirty();
+
+            if (time - lastUpdateTime >= timeLimit) {
+                // If the change crossed an integer boundary, use the int value.
+                if (r < actualRadius) {
+                    if (CoreMath.toIntCeil(r) != CoreMath.toIntCeil(actualRadius)) {
+                        r = CoreMath.ceil(r);
+                    }
+                }
+                else {
+                    if (CoreMath.toIntFloor(r) != CoreMath.toIntFloor(actualRadius)) {
+                        r = CoreMath.floor(r);
+                    }
+                }
+                actualRadius = r;
+                setDirty();
+            }
         }
     }
 
@@ -223,6 +246,7 @@ public class Blur extends Filter {
     }
 
     protected void filter(CoreImage input, CoreImage output, int shiftX, int shiftY, boolean clamp) {
+        lastUpdateTime = time;
         if ((actualRadius <= 0 || actualQuality <= 0) && !CPU_TEST) {
             if (input.getWidth() == output.getWidth() &&
                     input.getHeight() == output.getHeight())
