@@ -86,8 +86,6 @@ public class Blur extends Filter {
 
     private int actualRadius = 0;
     private int actualQuality = 0;
-    private int time;
-    private int lastUpdateTime;
     // For quality > 1
     private CoreImage workBuffer;
 
@@ -152,7 +150,6 @@ public class Blur extends Filter {
 
     public void update(int elapsedTime) {
 
-        time += elapsedTime;
         radius.update(elapsedTime);
         quality.update(elapsedTime);
 
@@ -226,7 +223,6 @@ public class Blur extends Filter {
     }
 
     protected void filter(CoreImage input, CoreImage output, int shiftX, int shiftY, boolean clamp) {
-        lastUpdateTime = time;
         if ((actualRadius <= 0 || actualQuality <= 0) && !CPU_TEST) {
             if (input.getWidth() == output.getWidth() &&
                     input.getHeight() == output.getHeight())
@@ -247,7 +243,8 @@ public class Blur extends Filter {
                         workBuffer.getHeight() != output.getHeight() ||
                         workBuffer.isOpaque() != output.isOpaque())
                 {
-                    workBuffer = new CoreImage(output.getWidth(), output.getHeight(),
+                    ImageCache.instance.put(workBuffer);
+                    workBuffer = ImageCache.instance.get(output.getWidth(), output.getHeight(),
                             output.isOpaque());
                 }
             }

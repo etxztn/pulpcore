@@ -151,7 +151,7 @@ public abstract class Filter {
         CoreImage oldInput = getInput();
         // Set input so that getWidth(), etc. is correct.
         setInput(input);
-        CoreImage newOutput = new CoreImage(getWidth(), getHeight(), isOpaque());
+        CoreImage newOutput = ImageCache.instance.get(getWidth(), getHeight(), isOpaque());
         filter(input, newOutput);
         setInput(oldInput);
         return newOutput;
@@ -181,7 +181,8 @@ public abstract class Filter {
             output.getHeight() != h ||
             output.isOpaque() != isOpaque())
         {
-            output = new CoreImage(w, h, isOpaque());
+            ImageCache.instance.put(output);
+            output = ImageCache.instance.get(w, h, isOpaque());
             //pulpcore.CoreSystem.print("New output for " + getClass().getName() + ": " + this.output.getWidth() + "x" + this.output.getHeight());
             setDirty();
         }

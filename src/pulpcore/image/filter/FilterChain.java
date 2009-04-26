@@ -216,7 +216,7 @@ public class FilterChain extends Filter {
                     newOutput = output;
                 }
                 else {
-                    newOutput = new CoreImage(f.getWidth(), f.getHeight(), f.isOpaque());
+                    newOutput = ImageCache.instance.get(f.getWidth(), f.getHeight(), f.isOpaque());
                 }
                 f.filter(input, newOutput);
                 f.setInput(oldInput);
