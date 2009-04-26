@@ -172,43 +172,19 @@ public class Blur extends Filter {
             setDirty();
         }
         else if (actualRadius != r) {
-            // Update at a limited frame rate, depending on the radius
-            int timeLimit = 0;
-            if (r < CoreMath.toFixed(4)) {
-                timeLimit = 16; // ~60 fps
-            }
-            else if (r < CoreMath.toFixed(8)) {
-                timeLimit = 22; // ~45 fps
-            }
-            else if (r < CoreMath.toFixed(16)) {
-                timeLimit = 32; // ~30 fps
-            }
-            else if (r < CoreMath.toFixed(32)) {
-                timeLimit = 40; // ~25 fps
-            }
-            else if (r < CoreMath.toFixed(64)) {
-                timeLimit = 50; // ~20 fps
+            // If the change crossed an integer boundary, use the int value.
+            if (r < actualRadius) {
+                if (CoreMath.toIntCeil(r) != CoreMath.toIntCeil(actualRadius)) {
+                    r = CoreMath.ceil(r);
+                }
             }
             else {
-                timeLimit = 64; // ~15 fps
-            }
-
-            if (time - lastUpdateTime >= timeLimit) {
-
-                // If the change crossed an integer boundary, use the int value.
-                if (r < actualRadius) {
-                    if (CoreMath.toIntCeil(r) != CoreMath.toIntCeil(actualRadius)) {
-                        r = CoreMath.ceil(r);
-                    }
+                if (CoreMath.toIntFloor(r) != CoreMath.toIntFloor(actualRadius)) {
+                    r = CoreMath.floor(r);
                 }
-                else {
-                    if (CoreMath.toIntFloor(r) != CoreMath.toIntFloor(actualRadius)) {
-                        r = CoreMath.floor(r);
-                    }
-                }
-                actualRadius = r;
-                setDirty();
             }
+            actualRadius = r;
+            setDirty();
         }
     }
 
