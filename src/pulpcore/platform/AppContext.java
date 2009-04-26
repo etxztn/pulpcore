@@ -64,7 +64,7 @@ public abstract class AppContext {
 
     // Logging
 
-    private LinkedList logLines = new LinkedList();
+    private final LinkedList logLines = new LinkedList();
     private boolean consoleOut = Build.DEBUG;
     
     /** Last memory value recorded in the printMemory() method. */
@@ -365,16 +365,20 @@ public abstract class AppContext {
     
     public String getLogText() {
         StringBuffer buffer = new StringBuffer();
-        Iterator i = logLines.iterator();
-        while (i.hasNext()) {
-            buffer.append(i.next());
-            buffer.append("\n");
+        synchronized (logLines) {
+            Iterator i = logLines.iterator();
+            while (i.hasNext()) {
+                buffer.append(i.next());
+                buffer.append("\n");
+            }
         }
         return buffer.toString();
     }
 
     public void clearLog() {
-        logLines = new LinkedList();
+        synchronized (logLines) {
+            logLines.clear();
+        }
     }
 
     /**
@@ -390,19 +394,21 @@ public abstract class AppContext {
 
         if (Build.DEBUG) {
             // Split statement by newlines
-            while (true) {
-                int index = statement.indexOf('\n');
-                if (index == -1) {
-                    break;
+            synchronized (logLines) {
+                while (true) {
+                    int index = statement.indexOf('\n');
+                    if (index == -1) {
+                        break;
+                    }
+                    logLines.add(statement.substring(0, index));
+                    statement = statement.substring(index + 1);
                 }
-                logLines.add(statement.substring(0, index));
-                statement = statement.substring(index + 1);
-            }
-            logLines.add(statement);
+                logLines.add(statement);
 
-            // Trim the log if there are too many lines.
-            while (logLines.size() > MAX_LOG_LINES) {
-                logLines.removeFirst();
+                // Trim the log if there are too many lines.
+                while (logLines.size() > MAX_LOG_LINES) {
+                    logLines.removeFirst();
+                }
             }
         }
     }

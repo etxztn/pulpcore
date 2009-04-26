@@ -120,29 +120,31 @@ public class ConsoleScene extends Scene2D {
     
     private void refresh() {
         LinkedList logLines = CoreSystem.getThisAppContext().getLogLines();
-        if (logLines.size() > 0) {
-            lastLine = (String)logLines.getLast();
-        }
-        else {
-            lastLine = null;
-        }
-        
-        textbox.removeAll();
-        int numLines = 0;
-        int y = 0;
-        int w = textbox.width.getAsInt() - ScrollPane.SCROLLBAR_WIDTH;
-        Iterator i = logLines.iterator();
-        while (i.hasNext()) {
-            String[] text = StringUtil.wordWrap((String)i.next(), null, w);
-            
-            if (text.length == 0) {
-                text = new String[] { " " };
+        synchronized (logLines) {
+            if (logLines.size() > 0) {
+                lastLine = (String)logLines.getLast();
             }
-            for (int j = 0; j < text.length; j++) {
-                String line = StringUtil.replace(text[j], "\t", "    ");
-                textbox.add(new Label(line, 0, y));
-                y += lineSpacing;
-                numLines++;
+            else {
+                lastLine = null;
+            }
+
+            textbox.removeAll();
+            int numLines = 0;
+            int y = 0;
+            int w = textbox.width.getAsInt() - ScrollPane.SCROLLBAR_WIDTH;
+            Iterator i = logLines.iterator();
+            while (i.hasNext()) {
+                String[] text = StringUtil.wordWrap((String)i.next(), null, w);
+
+                if (text.length == 0) {
+                    text = new String[] { " " };
+                }
+                for (int j = 0; j < text.length; j++) {
+                    String line = StringUtil.replace(text[j], "\t", "    ");
+                    textbox.add(new Label(line, 0, y));
+                    y += lineSpacing;
+                    numLines++;
+                }
             }
         }
     }
