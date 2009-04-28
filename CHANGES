@@ -4,6 +4,9 @@
   * Graphics: Discarded images from filters are now cached for later, which will 
     limit GC is many scenarios.
   * Fixed bug: CoreSystem.print() wasn't thread-safe when viewing the Console.
+  * Fixed bug: Upload now correctly follows HTTP redirects (If you pass in URL
+    "http://localhost/test", the uplaod data is now correctly uploaded to
+    "http://localhost/test/")
 
 0.11.5 (April 15, 2009)
   * API: Added Sprite.setFilter(), pulpcore.image.filter package (Florent Dupont).

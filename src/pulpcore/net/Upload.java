@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Iterator;
@@ -48,7 +49,7 @@ import pulpcore.util.ByteArray;
     The Upload class represents name/value pairs for sending to an HTTP server 
     via the POST method (multipart form). Values can be either plain text or files.
 */
-public class Upload implements Runnable {
+public class Upload {
     
     private static final int BUFFER_SIZE = 1024;
     private static final String NEW_LINE = "\r\n";
@@ -123,16 +124,19 @@ public class Upload implements Runnable {
             return field.getBytes();
         }
     }
+
+    private class Runner implements Runnable {
     
-    public void run() {
-        try {
-            send();
-        }
-        catch (IOException ex) {
-            if (Build.DEBUG) CoreSystem.print("Upload.sendNow()", ex);
-            response = null;
-            completed = true;
-            uncaughtException = ex;
+        public void run() {
+            try {
+                send();
+            }
+            catch (IOException ex) {
+                if (Build.DEBUG) CoreSystem.print("Upload", ex);
+                response = null;
+                completed = true;
+                uncaughtException = ex;
+            }
         }
     }
     
@@ -144,7 +148,7 @@ public class Upload implements Runnable {
     */
     public void start() {
         completed = false;
-        new Thread(this, "PulpCore-Upload").start();
+        new Thread(new Runner(), "PulpCore-Upload").start();
     }
     
     /**
@@ -160,28 +164,50 @@ public class Upload implements Runnable {
             start();
         }
         else {
-            run();
-        }
-    }
-
-    /**
-        Write the form to an URL via the POST method.
-        The form is sent using the multipart/form-data encoding.
-        The response, if any, can be retrieved using getResponse().
-        This method blocks until the call is complete or an error occurs.
-        @deprecated Use send(false);
-        @throws IOException if an error occurs.
-    */
-    public void sendNow() throws IOException {
-        run();
-        if (uncaughtException != null) {
-            throw uncaughtException;
+            new Runner().run();
         }
     }
     
     private void send() throws IOException {
         completed = false;
         URLConnection connection = url.openConnection();
+
+        // Java doesn't re-send output on redirect, so handle it ourselves.
+        // Use HEAD to check for redirects before sending
+        final int redirectLimit = 10;
+        int numRedirects = 0;
+        boolean checkRedirect = true;
+        while (checkRedirect) {
+            checkRedirect = false;
+            if (connection instanceof HttpURLConnection) {
+                HttpURLConnection c = (HttpURLConnection)connection;
+                c.setRequestMethod("HEAD");
+                c.setInstanceFollowRedirects(false);
+                if ((c.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM ||
+                    c.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) &&
+                    c.getHeaderField("Location") != null)
+                {
+                    String newURL = c.getHeaderField("Location");
+                    if (Build.DEBUG) {
+                        CoreSystem.print("Upload redirected to: " + newURL);
+                    }
+                    numRedirects++;
+                    if (numRedirects > redirectLimit) {
+                        throw new IOException("Too many redirects: " + numRedirects);
+                    }
+                    connection = new URL(newURL).openConnection();
+                    checkRedirect = true;
+                }
+                else {
+                    connection = connection.getURL().openConnection();
+                }
+            }
+        }
+
+        if (connection instanceof HttpURLConnection) {
+            HttpURLConnection c = (HttpURLConnection)connection;
+            c.setRequestMethod("POST");
+        }
         connection.setDoInput(true);
         connection.setDoOutput(true);
         connection.setUseCaches(false);
@@ -193,7 +219,7 @@ public class Upload implements Runnable {
         for (int i = 0; i < fields.size(); i++) {
             out.write((byte[])fields.get(i));
         }
-        
+
         out.write(getBytes("--" + formBoundary + "--"));
         out.flush();
         out.close();
@@ -201,11 +227,10 @@ public class Upload implements Runnable {
         // Get response data.
         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         StringBuffer responseBuffer = new StringBuffer();
-        
         char[] buffer = new char[BUFFER_SIZE];
-        while (true) { 
+        while (true) {
             int charsRead = in.read(buffer);
-            if (charsRead == -1) { 
+            if (charsRead == -1) {
                 break;
             }
             responseBuffer.append(buffer, 0, charsRead);
@@ -216,7 +241,10 @@ public class Upload implements Runnable {
         this.response = responseBuffer.toString();
         this.completed = true;
     }
-    
+
+    /**
+        @return the response string.
+    */
     public String getResponse() {
         return response;
     }
