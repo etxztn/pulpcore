@@ -172,38 +172,6 @@ public class Upload {
         completed = false;
         URLConnection connection = url.openConnection();
 
-        // Java doesn't re-send output on redirect, so handle it ourselves.
-        // Use HEAD to check for redirects before sending
-        final int redirectLimit = 10;
-        int numRedirects = 0;
-        boolean checkRedirect = true;
-        while (checkRedirect) {
-            checkRedirect = false;
-            if (connection instanceof HttpURLConnection) {
-                HttpURLConnection c = (HttpURLConnection)connection;
-                c.setRequestMethod("HEAD");
-                c.setInstanceFollowRedirects(false);
-                if ((c.getResponseCode() == HttpURLConnection.HTTP_MOVED_PERM ||
-                    c.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) &&
-                    c.getHeaderField("Location") != null)
-                {
-                    String newURL = c.getHeaderField("Location");
-                    if (Build.DEBUG) {
-                        CoreSystem.print("Upload redirected to: " + newURL);
-                    }
-                    numRedirects++;
-                    if (numRedirects > redirectLimit) {
-                        throw new IOException("Too many redirects: " + numRedirects);
-                    }
-                    connection = new URL(newURL).openConnection();
-                    checkRedirect = true;
-                }
-                else {
-                    connection = connection.getURL().openConnection();
-                }
-            }
-        }
-
         if (connection instanceof HttpURLConnection) {
             HttpURLConnection c = (HttpURLConnection)connection;
             c.setRequestMethod("POST");
@@ -237,6 +205,13 @@ public class Upload {
         }
 
         in.close();
+
+        if (Build.DEBUG) {
+            URL newURL = connection.getURL();
+            if (!url.toString().equals(newURL.toString())) {
+                CoreSystem.print("Note: POST redirected to: " + newURL);
+            }
+        }
 
         this.response = responseBuffer.toString();
         this.completed = true;
