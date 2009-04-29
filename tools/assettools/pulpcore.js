@@ -440,6 +440,8 @@ PulpCore.applet.prototype = {
             else {
                 // Firefox, Safari, Opera, Mozilla, etc.
                 // Note: the minimum version string is ignored on the Mozilla family
+                // Note: Mac + Safari 4 + Out-of-process plugin tries to get the class
+                // file from the server (but it runs anyway).
                 this.appletHTML =
                 '<object id="pulpcore_object' + this.id + '"\n' +
                 '  classid="java:' + code + '"\n' +
@@ -601,6 +603,13 @@ PulpCore.JRE = window.PulpCore.JRE || {
         else if (PulpCore.System.browserName == "Safari" &&
             navigator.plugins && navigator.plugins.length)
         {
+            // First try mime types (Safari + Java 6)
+            version = PulpCore.JRE.getHighestInstalledViaMimeTypes();
+            if (PulpCore.JRE.isAcceptableVersion(version)) {
+                return true
+            }
+
+            // Try old Safari detection
             for (i = 0; i < navigator.plugins.length; i++) {
                 var s = navigator.plugins[i].description;
                 // Based on code from the Deployment Toolkit

@@ -1,12 +1,10 @@
 0.11.6 (In SVN)
-  * Graphics: Fixed Multiply blend mode when drawing an opaque src on a
+  * Performance: Discarded images from filters are now cached for later, which will
+    limit GC and improve performance.
+  * Core: updated pulpcore.js for DP Java update 4 for Mac OS X 10.5.
+  * Fixed bug: Fixed Multiply blend mode when drawing an opaque src on a
     non-opaque dest.
-  * Graphics: Discarded images from filters are now cached for later, which will 
-    limit GC is many scenarios.
   * Fixed bug: CoreSystem.print() wasn't thread-safe when viewing the Console.
-  * Fixed bug: Upload now correctly follows HTTP redirects (If you pass in URL
-    "http://localhost/test", the uplaod data is now correctly uploaded to
-    "http://localhost/test/")
 
 0.11.5 (April 15, 2009)
   * API: Added Sprite.setFilter(), pulpcore.image.filter package (Florent Dupont).
