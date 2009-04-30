@@ -1,11 +1,9 @@
 // TileMap
-// Shows a scrolling tile-map with click-to-move.
-// Pixel-snapping is used to improve rendering speed of the map.
-// Rendering speed can be further improved by using opaque tiles.
+// Drag the map to scroll (like Google Maps)
+// Rendering speed can be improved by using opaque tiles.
 // Tile images from http://www.lostgarden.com/2007/05/dancs-miraculously-flexible-game.html
-import pulpcore.animation.Easing;
 import pulpcore.animation.Int;
-import pulpcore.image.BlendMode;
+import pulpcore.image.Colors;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.Input;
@@ -15,7 +13,6 @@ import pulpcore.sprite.Group;
 import pulpcore.sprite.ImageSprite;
 import pulpcore.sprite.Sprite;
 import pulpcore.Stage;
-import static pulpcore.image.Colors.*;
 
 public class TileMap extends Scene2D {
     
@@ -43,13 +40,12 @@ public class TileMap extends Scene2D {
     };
     
     TileMapSprite tileMap;
-    ImageSprite cursor;
     Group mapSprites;
     
     @Override
     public void load() {
         // Add the background (sky-blue)
-        add(new FilledSprite(rgb(185, 209, 255)));
+        add(new FilledSprite(Colors.rgb(185, 209, 255)));
         
         // Add the tileset
         tileMap = createTileMapSprite(tiles, map, 100, 80);
@@ -62,31 +58,6 @@ public class TileMap extends Scene2D {
         mapSprites.x.bindTo(tileMap.viewX);
         mapSprites.y.bindTo(tileMap.viewY);
         add(mapSprites);
-        
-        // Add the cursor
-        setCursor(Input.CURSOR_OFF);
-        cursor = new ImageSprite("cursor.png", 0, 0);
-        cursor.setBlendMode(BlendMode.Add());
-        add(cursor);
-    }
-    
-    @Override
-    public void update(int elapsedTime) {
-        cursor.setLocation(Input.getMouseX(), Input.getMouseY());
-        
-        // When scrolling, disable dirty rectangles and hide the cursor
-        setDirtyRectanglesEnabled(!tileMap.isScrolling());
-        cursor.visible.set(Input.isMouseInside() && !tileMap.isScrolling());
-
-        // Click-to-scroll
-        if (Input.isMousePressed()) {
-            int x = Input.getMousePressX();
-            int y = Input.getMousePressY();
-            int goalX = tileMap.viewX.get() - (x - Stage.getWidth() / 2);
-            int goalY = tileMap.viewY.get() - (y - Stage.getHeight() / 2);
-            tileMap.viewX.animateTo(goalX, 500, Easing.REGULAR_OUT);
-            tileMap.viewY.animateTo(goalY, 500, Easing.REGULAR_OUT);
-        }
     }
     
     TileMapSprite createTileMapSprite(String[] tiles, String[] map, int tileWidth, int tileHeight) {
@@ -131,6 +102,10 @@ public class TileMap extends Scene2D {
         private int tileHeight;
         private int numTilesAcross;
         private int numTilesDown;
+
+        private boolean mouseDragging = false;
+        private int mouseDeltaX = 0;
+        private int mouseDeltaY = 0;
         
         public final Int viewX = new Int(this);
         public final Int viewY = new Int(this);
@@ -142,6 +117,8 @@ public class TileMap extends Scene2D {
             this.tileHeight = tileHeight;
             numTilesAcross = tileMap.length;
             numTilesDown = tileMap[0].length;
+            
+            setCursor(Input.CURSOR_MOVE);
         }
         
         public int getMapWidth() {
@@ -152,27 +129,37 @@ public class TileMap extends Scene2D {
             return tileHeight * numTilesDown;
         }
         
-        public boolean isScrolling() {
-            return viewX.isAnimating() || viewY.isAnimating();
-        }
-        
         @Override 
         public void update(int elapsedTime) {
             super.update(elapsedTime);
             viewX.update(elapsedTime);
             viewY.update(elapsedTime);
+
+            // Handle dragging
+            if (isMousePressed()) {
+                mouseDragging = true;
+                mouseDeltaX = Input.getMouseX() - (int)viewX.get();
+                mouseDeltaY = Input.getMouseY() - (int)viewY.get();
+            }
+            if (Input.isMouseReleased()) {
+                mouseDragging = false;
+            }
+            if (mouseDragging && Input.isMouseMoving()) {
+                viewX.set(Input.getMouseX() - mouseDeltaX);
+                viewY.set(Input.getMouseY() - mouseDeltaY);
+            }
         }
         
         @Override
         protected void drawSprite(CoreGraphics g) {
-            int y = viewY.get();
+            int ty = viewY.get();
             for (int j = 0; j < numTilesDown; j++) {
-                int x = viewX.get();
+                int tx = viewX.get();
                 for (int i = 0; i < numTilesAcross; i++) {
-                    g.drawImage(tileMap[i][j], x, y);
-                    x += tileWidth;
+                    g.drawImage(tileMap[i][j], tx, ty);
+                    tx += tileWidth;
                 }
-                y += tileHeight;
+                ty += tileHeight;
             }
         }
     }
