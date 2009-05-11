@@ -27,25 +27,33 @@ public class CoreMathTest {
         }
     }
     
-    @Test public void randWithinBounds() {
-        int min = -100;
-        int max = 100;
+    @Test public void randIntWithinBounds() {
+        int min = -10000;
+        int max = 10000;
         for (int i = 0; i < NUM_TESTS; i++) {
             int value = CoreMath.rand(min, max);
             assertTrue("Random out of range: " + value, value >= min && value <= max);
         }
     }
-    
-    @Test public void randDistribution() {
-        int min = -100;
-        int max = 100;
+
+    @Test public void randDoubleWithinBounds() {
+        double min = -10000;
+        double max = 10000;
+        for (int i = 0; i < NUM_TESTS; i++) {
+            double value = CoreMath.rand(min, max);
+            assertTrue("Random out of range: " + value, value >= min && value <= max);
+        }
+    }
+
+    @Test public void randIntDistribution() {
+        int min = -10000;
+        int max = 10000;
         int numValues = max - min + 1;
         int[] count = new int[numValues];
-        int samples = NUM_TESTS;
-        double expected = (double)samples / count.length;
+        double expected = (double)NUM_TESTS / numValues;
         
         // Create samples
-        for (int i = 0; i < samples; i++) {
+        for (int i = 0; i < NUM_TESTS; i++) {
             count[-min + CoreMath.rand(min, max)]++;
         }
         
@@ -55,11 +63,57 @@ public class CoreMathTest {
             double s = Math.abs(count[i] - expected);
             variance += s*s;
         }
-        variance /= samples;
+        variance /= NUM_TESTS;
         assertTrue("Distribution not uniform: " + variance, variance >= 0 && variance < 1.25);
     }
     
-    
+    @Test public void randDoubleDistribution() {
+        int min = -10000;
+        int max = 10000;
+        int numValues = max - min + 1;
+        int[] count = new int[numValues];
+        double expected = (double)NUM_TESTS / numValues;
+
+        // Create samples
+        for (int i = 0; i < NUM_TESTS; i++) {
+            count[-min + (int)Math.round(CoreMath.rand((double)min, (double)max))]++;
+        }
+
+        // Get the variance
+        double variance = 0;
+        for (int i = 0; i < numValues; i++) {
+            double s = Math.abs(count[i] - expected);
+            variance += s*s;
+        }
+        variance /= NUM_TESTS;
+        assertTrue("Distribution not uniform: " + variance, variance >= 0 && variance < 1.25);
+
+//        double min = -100;
+//        double max = 100;
+//        double numValues = max - min + 1;
+//        double[] samples = new double[NUM_TESTS];
+//        double expected = (double)numValues / NUM_TESTS;
+//
+//        // Create samples
+//        for (int i = 0; i < NUM_TESTS; i++) {
+//            samples[i] = CoreMath.rand(min, max);
+//        }
+//
+//        java.util.Arrays.sort(samples);
+//
+//        // Get the variance
+//        double variance = 0;
+//        for (int i = 1; i < NUM_TESTS; i++) {
+//            double d = samples[i] - samples[i-1];
+//            double s = Math.abs(d - expected);
+//            variance += s*s;
+//        }
+//        variance /= NUM_TESTS;
+//        System.out.println("Variance: " + variance);
+//        System.out.println("Expected: " + expected);
+//        assertTrue("Distribution not uniform: " + variance, variance >= 0 && variance < 1.25);
+    }
+
     @Test public void sqrtGreaterThanOne() {
         for (int i = 0; i < NUM_TESTS; i++) {
             double v = CoreMath.rand(1.0, CoreMath.MAX_DOUBLE_VALUE);

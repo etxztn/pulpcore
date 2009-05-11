@@ -29,6 +29,8 @@
 
 package pulpcore.math;
 
+import java.util.Random;
+
 /**
     The CoreMath class contains fixed-point arithmetic functions and other 
     useful math functions.
@@ -100,6 +102,8 @@ public class CoreMath {
     
     /** Number of fractional bits used for some internal calculations */
     private static final int INTERNAL_BITS = 24;
+
+    private static final Random rand = new Random();
     
     // Prevent instantiation
     private CoreMath() { }
@@ -961,16 +965,15 @@ public class CoreMath {
         Returns a random integer from min to max, inclusive
     */
     public static final int rand(int min, int max) {
-        // Prevent overflow
         long range = (long)max - (long)min + 1;
-        int value = (int)(min + (long)(Math.random() * range));
+        long r = rand.nextInt() & 0xffffffffL;
+        int value = (int)(min + r * range / 0xffffffffL);
         
-        // The Java 1.1 doc is unclear -  Math.random() could return 1.0.
-        // In later versions of the doc, Math.random() is stated to return 
-        // 0 <= x < 1.0. For the sake of compatibility, assume the
-        // return value is 0 <= x <= 1.0
-        // (In any case, Math.random() returning 1.0 will be a very rare case.)
-        if (value > max) {
+        // Bounds check is probably not needed.
+        if (value < min) {
+            return min;
+        }
+        else if (value > max) {
             return max;
         }
         else {
@@ -989,7 +992,17 @@ public class CoreMath {
         Returns a random double from min to max, inclusive
     */
     public static final double rand(double min, double max) {
-        return min + (Math.random()*(max-min));
+        double value = min + (rand.nextDouble()*(max-min));
+        // Bounds check is probably not needed.
+        if (value < min) {
+            return min;
+        }
+        else if (value > max) {
+            return max;
+        }
+        else {
+            return value;
+        }
     }
     
     /**

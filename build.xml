@@ -345,7 +345,7 @@
         
         <java classname="org.junit.runner.JUnitCore" fork="true" dir="${basedir}/tests">
             <arg value="AnimationTest"/>
-            <!--<arg value="CoreMathTest"/>-->
+            <arg value="CoreMathTest"/>
             <arg value="PNGTest"/>
             <arg value="GraphicsTest"/>
             <classpath>
