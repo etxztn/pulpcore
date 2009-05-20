@@ -93,7 +93,15 @@ final class CompositeAdd extends Composite {
         if (destG > 0x00ff00) destG = 0x00ff00;
         if (destB > 0x0000ff) destB = 0x0000ff;
         
-        destData[destOffset] = 0xff000000 | destR | destG | destB;
+        if (destOpaque) {
+            destData[destOffset] = 0xff000000 | destR | destG | destB;
+        }
+        else {
+            int destA = destRGB >>> 24;
+            destA += extraAlpha;
+            if (destA > 0xff) destA = 0xff;
+            destData[destOffset] = (destA << 24) | destR | destG | destB;
+        }
     }
     
     private void blendPixel(int[] destData, int destOffset, int srcARGB) {
