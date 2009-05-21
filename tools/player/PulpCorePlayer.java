@@ -274,7 +274,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
         if (waitUntilClosed) {
             // Redirect output from AWT thread to this thread (for IDEs)
             final PulpCorePlayer p = player;
-            Thread t = new Thread() {
+            Thread t = new Thread("PulpCorePlayer-OutputRedirector") {
                 public void run() {
                     try {
                         BufferedReader r = new BufferedReader(
@@ -295,6 +295,7 @@ public class PulpCorePlayer extends JFrame implements AppletStub, AppletContext 
                     }
                 }
             };
+            t.setDaemon(true);
             t.start();
 
             synchronized (key) {
