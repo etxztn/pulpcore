@@ -698,24 +698,7 @@ public class Scene2D extends Scene {
         }
         // Allow subclasses to check input, change scenes, etc.
         update(elapsedTime);
-        
-        // Set cursor
-        int cursor = Input.CURSOR_DEFAULT;
-        if (Input.isMouseInside()) {
-            Sprite pick = root.pickEnabledAndVisible(Input.getMouseX(), Input.getMouseY());
-            if (pick != null) {
-                cursor = pick.getCursor();
-            }
-        }
-        Input.setCursor(cursor);
-        
-        if (!dirtyRectanglesEnabled || needsFullRedraw) {
-            dirtyRectangles.overflow();
-        }
-        else {
-            dirtyRectangles.clear();
-        }
-        
+
         if (needsFullRedraw) {
             root.setDirty(true);
             if (Build.DEBUG) {
@@ -724,6 +707,15 @@ public class Scene2D extends Scene {
                     overlay.setDirty(true);
                 }
             }
+        }
+
+        updateFilters(root);
+
+        if (!dirtyRectanglesEnabled || needsFullRedraw) {
+            dirtyRectangles.overflow();
+        }
+        else {
+            dirtyRectangles.clear();
         }
         
         if (dirtyRectanglesEnabled) {
@@ -766,6 +758,39 @@ public class Scene2D extends Scene {
         else {
             updateTransforms(root);
         }
+
+        // Scene graph transforms now up-to-date
+
+        // Set cursor
+        int cursor = Input.CURSOR_DEFAULT;
+        if (Input.isMouseInside()) {
+            Sprite pick = root.pickEnabledAndVisible(Input.getMouseX(), Input.getMouseY());
+            if (pick != null) {
+                cursor = pick.getCursor();
+            }
+        }
+        Input.setCursor(cursor);
+    }
+
+    private boolean updateFilters(Group group) {
+        boolean hasFilter = group.getFilter() != null && group.hasBackBuffer();
+        boolean wasDirty = group.isDirty();
+        boolean isDirty = wasDirty;
+        for (int i = 0; i < group.size(); i++) {
+            Sprite sprite = group.get(i);
+            if (sprite instanceof Group) {
+                isDirty |= updateFilters((Group)sprite);
+            }
+            else {
+                isDirty |= sprite.isDirty();
+            }
+        }
+        if (hasFilter && !wasDirty && isDirty) {
+            // If and of the group's ancestors is dirty, and this group has a filter,
+            // mark it as dirty.
+            group.setDirty(true);
+        }
+        return isDirty;
     }
     
     private void setDirty(Group group, boolean dirty) {
@@ -869,6 +894,8 @@ public class Scene2D extends Scene {
                 }
             }
         }
+
+        parentDirty |= parentBoundsChanged;
         
         // Add dirty rects for the sprites
         for (int i = 0; i < group.size(); i++) {

@@ -106,7 +106,6 @@ public class Group extends Sprite {
         return lock;
     }
 
-
     /**
         Returns {@code true} if sprites inside this Group are not visible outside the
         natural bounds of this Group.
@@ -560,7 +559,7 @@ public class Group extends Sprite {
     //
     // Back buffers
     //
-
+    
     /* package-private */ Transform getBackBufferTransform() {
         return (getFilter() != null) ? Sprite.IDENTITY : backBufferTransform;
     }
@@ -697,16 +696,27 @@ public class Group extends Sprite {
     public void update(int elapsedTime) {
         super.update(elapsedTime);
 
-        Filter f = getWorkingFilter();
-        
         Sprite[] snapshot = sprites;
         for (int i = 0; i < snapshot.length; i++) {
             snapshot[i].update(elapsedTime);
-            if (f != null && snapshot[i].isDirty()) {
-                setDirty(true);
+        }
+    }
+
+    /* package-private */ void setChildrenDirty(boolean dirty) {
+        setDirty(dirty);
+        Sprite[] snapshot = sprites;
+        for (int i = 0; i < snapshot.length; i++) {
+            Sprite sprite = snapshot[i];
+            if (sprite instanceof Group) {
+                ((Group)sprite).setChildrenDirty(dirty);
+            }
+            else {
+                sprite.setDirty(dirty);
             }
         }
     }
+
+
     
     protected final void drawSprite(CoreGraphics g) {
         Sprite[] snapshot = sprites;

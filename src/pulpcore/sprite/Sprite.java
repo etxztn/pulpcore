@@ -602,7 +602,7 @@ public abstract class Sprite implements PropertyListener {
             else {
                 updateTransform(pdt, drawTransform);
             }
-            
+
             // Keep track of dirty state
             transformDirty = false;
             if (parent != null) {
@@ -775,22 +775,32 @@ public abstract class Sprite implements PropertyListener {
         Filter currFilter = getFilter();
         Filter newFilter = filter;
         if (currFilter != newFilter) {
-            setDirty(true);
             synchronized (usedFilters) {
                 if (currFilter != null) {
                     currFilter.setInput(null);
                     markAsUnused(currFilter);
                     this.filter = null;
                 }
-                
-                newFilter = copyIfUsed(newFilter);
+
+                setDirty(true);
+                if (this instanceof Group) {
+                    // I'm not sure why this is needed. I found one case where it is needed,
+                    // but I'm not sure why.
+                    // To reproduce:
+                    // 1. Run BackBufferTest
+                    // 2. Click "Blue filter"
+                    // 3. Click "White filter"
+                    // 4. Notice white square is incorrectly offset.
+                    ((Group)this).setChildrenDirty(true);
+                }
 
                 if (newFilter != null) {
+                    newFilter = copyIfUsed(newFilter);
                     markAsUsed(newFilter);
-                    this.filter = new SpriteFilter(this, newFilter);
                     if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
                         ((Group)this).createBackBuffer();
                     }
+                    this.filter = new SpriteFilter(this, newFilter);
                 }
             }
         }
