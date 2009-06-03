@@ -270,33 +270,34 @@ public class ScrollPane extends Group {
             
             double layoutX = 0;
             double layoutY = 0;
-            
+            int newLength = length;
+
             // Create slider
             if (orientation == Slider.VERTICAL) {
-                int l = length;
                 if (up != null) {
-                    l -= up.height.getAsInt();
+                    newLength -= up.height.getAsInt();
                 }
                 if (down != null) {
-                    l -= down.height.getAsInt();
+                    newLength -= down.height.getAsInt();
                 }
-                slider = createVerticalScrollBar(l);
-                slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
+                newLength = Math.max(newLength, 0);
+                slider = createVerticalScrollBar(newLength);
                 this.width.set(slider.width.get());
                 this.height.set(length);
             }
             else {
-                int l = length;
                 if (up != null) {
-                    l -= up.width.getAsInt();
+                    newLength -= up.width.getAsInt();
                 }
                 if (down != null) {
-                    l -= down.height.getAsInt();
+                    newLength -= down.height.getAsInt();
                 }
-                slider = createHorizontalScrollBar(l);
+                newLength = Math.max(newLength, 0);
+                slider = createHorizontalScrollBar(newLength);
                 this.width.set(length);
                 this.height.set(slider.height.get());
             }
+            slider.setAnimationDuration(unitDuration/scrollUnitSize, pageDuration);
             super.add(slider);
             
             // Up arrow
@@ -312,12 +313,20 @@ public class ScrollPane extends Group {
             }
             
             // Position slider
-            slider.setLocation(layoutX, layoutY);
-            if (orientation == Slider.VERTICAL) {
-                layoutY += slider.height.get();
+            if (newLength > 0) {
+                slider.enabled.set(true);
+                slider.visible.set(true);
+                slider.setLocation(layoutX, layoutY);
+                if (orientation == Slider.VERTICAL) {
+                    layoutY += slider.height.get();
+                }
+                else {
+                    layoutX += slider.width.get();
+                }
             }
             else {
-                layoutX += slider.width.get();
+                slider.enabled.set(false);
+                slider.visible.set(false);
             }
             
             // Down arrow
