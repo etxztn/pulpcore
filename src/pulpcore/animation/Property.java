@@ -89,7 +89,7 @@ public abstract class Property {
         immediately set if {@code behavior.update(0)} returns {@code true}.
         @param behavior The new behavior.
     */
-    public final void setBehavior(Behavior behavior) {
+    public void setBehavior(Behavior behavior) {
         Binding bidirectionalBinding = null;
         if (isBehaviorBidirectionalBinding()) {
             bidirectionalBinding = (Binding)this.behavior;
@@ -123,7 +123,7 @@ public abstract class Property {
         a behavior.
         @return the behavior.
     */
-    public final Behavior getBehavior() {
+    public Behavior getBehavior() {
         return behavior;
     }
     

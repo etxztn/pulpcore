@@ -147,7 +147,7 @@ public abstract class Filter {
         Performs this filter on the input image onto a newly created output image. The current
         input image, if any, is ignored.
      */
-    public final CoreImage filter(CoreImage input) {
+    public CoreImage filter(CoreImage input) {
         CoreImage oldInput = getInput();
         // Set input so that getWidth(), etc. is correct.
         setInput(input);
@@ -160,7 +160,7 @@ public abstract class Filter {
     /**
         Sets the filter input.
      */
-    public final void setInput(CoreImage input) {
+    public void setInput(CoreImage input) {
         if (this.input != input) {
             this.input = input;
             setDirty();
@@ -169,7 +169,7 @@ public abstract class Filter {
         }
     }
 
-    public final CoreImage getInput() {
+    public CoreImage getInput() {
         return input;
     }
 
@@ -192,7 +192,7 @@ public abstract class Filter {
     /**
         Gets the filtered output image.
     */
-    public final CoreImage getOutput() {
+    public CoreImage getOutput() {
         CoreImage out = getUnfilteredOutput();
         if (isDirty()) {
             filter(input, out);
@@ -210,11 +210,11 @@ public abstract class Filter {
         return isDirty;
     }
 
-    public final boolean isDirty() {
+    public boolean isDirty() {
         return isDirtyFlagSet() || isChildDirty();
     }
 
-    public final void setDirty() {
+    public void setDirty() {
         setDirty(true);
     }
 

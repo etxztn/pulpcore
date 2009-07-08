@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -75,7 +75,10 @@ public class FilledSprite extends Sprite {
             setDirty(true);
         }
     }
-    
+
+    /**
+        This method calls {@code setBorderSize(borderSize, borderSize, borderSize, borderSize) }.
+     */
     public final void setBorderSize(int borderSize) {
         setBorderSize(borderSize, borderSize, borderSize, borderSize);
     }

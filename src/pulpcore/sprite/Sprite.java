@@ -470,11 +470,11 @@ public abstract class Sprite implements PropertyListener {
     /**
         Marks this Sprite as dirty, which will force it to redraw on the next frame.
     */
-    public final void setDirty(boolean dirty) {
+    public void setDirty(boolean dirty) {
         setDirty(dirty, dirty);
     }
 
-    private final void setDirty(boolean dirty, boolean contentsChanged) {
+    private void setDirty(boolean dirty, boolean contentsChanged) {
         this.dirty = dirty;
         if (dirty) {
             transformDirty = true;
@@ -487,7 +487,7 @@ public abstract class Sprite implements PropertyListener {
     /**
         Returns true if the Sprite's properties have changed since the last call to draw()
     */
-    public final boolean isDirty() {
+    public boolean isDirty() {
         if (!dirty) {
             Filter f = getWorkingFilter();
             if (f != null && f.isDirty()) {
@@ -712,7 +712,7 @@ public abstract class Sprite implements PropertyListener {
         @see #getCursor()
         @see #clearCursor()
     */
-    public final void setCursor(int cursor) {
+    public void setCursor(int cursor) {
         this.cursor = cursor;
     }
     
@@ -722,7 +722,7 @@ public abstract class Sprite implements PropertyListener {
         @see #getCursor()
         @see #setCursor(int)
     */
-    public final void clearCursor() {
+    public void clearCursor() {
         this.cursor = -1;
     }
     
@@ -733,7 +733,7 @@ public abstract class Sprite implements PropertyListener {
         @see #setCursor(int)
         @see #clearCursor()
     */
-    public final int getCursor() {
+    public int getCursor() {
         if (cursor == -1) {
             if (parent == null) {
                 return Input.CURSOR_DEFAULT;
@@ -752,14 +752,14 @@ public abstract class Sprite implements PropertyListener {
         method is null, which means the blend mode of this Sprite's parent is used. 
         @see pulpcore.image.BlendMode
     */
-    public final void setBlendMode(BlendMode blendMode) {
+    public void setBlendMode(BlendMode blendMode) {
         if (this.blendMode != blendMode) {
             this.blendMode = blendMode;
             setDirty(true);
         }
     }
     
-    public final BlendMode getBlendMode() {
+    public BlendMode getBlendMode() {
         return blendMode;
     }
 
@@ -771,7 +771,7 @@ public abstract class Sprite implements PropertyListener {
         If the specified filter is already attached to a Sprite, a clone of it is created.
         @see #getFilter()
     */
-    public final void setFilter(Filter filter) {
+    public void setFilter(Filter filter) {
         Filter currFilter = getFilter();
         Filter newFilter = filter;
         if (currFilter != newFilter) {
@@ -849,7 +849,7 @@ public abstract class Sprite implements PropertyListener {
         Gets the image filter for this Sprite, or null if there is no filter.
         @see #setFilter(pulpcore.image.filter.Filter) 
     */
-    public final Filter getFilter() {
+    public Filter getFilter() {
         if (filter != null) {
             return filter.getFilter();
         }

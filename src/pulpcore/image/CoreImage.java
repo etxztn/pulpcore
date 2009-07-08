@@ -206,7 +206,7 @@ public class CoreImage {
         @see #getHotspotX()
         @see #getHotspotY()
     */
-    public final void setHotspot(int x, int y) {
+    public void setHotspot(int x, int y) {
         hotspotX = x;
         hotspotY = y;
     }
@@ -216,7 +216,7 @@ public class CoreImage {
         @see #getHotspotY()
         @see #setHotspot(int, int)
     */
-    public final int getHotspotX() {
+    public int getHotspotX() {
         return hotspotX; 
     }
     
@@ -225,7 +225,7 @@ public class CoreImage {
         @see #getHotspotX()
         @see #setHotspot(int, int)
     */
-    public final int getHotspotY() {
+    public int getHotspotY() {
         return hotspotY; 
     }
     

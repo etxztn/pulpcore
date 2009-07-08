@@ -66,7 +66,7 @@ public abstract class Playback {
     /**
         Gets the current playback position in microseconds.
     */
-    public final long getMicrosecondPosition() {
+    public long getMicrosecondPosition() {
         return 1000000L * getFramePosition() / getSampleRate();
     }
     
@@ -75,7 +75,7 @@ public abstract class Playback {
         but there may be a slight delay (a few milliseconds) before the frame position is actually 
         set (to avoid clicks/pops).
     */
-    public final void rewind() {
+    public void rewind() {
         setFramePosition(0);
     }
     
@@ -91,7 +91,7 @@ public abstract class Playback {
         but there may be a slight delay (a few milliseconds) before the frame position is actually 
         set (to avoid clicks/pops).
     */
-    public final void setMicrosecondPosition(long pos) {
+    public void setMicrosecondPosition(long pos) {
         setFramePosition((int)(pos * getSampleRate() / 1000000));
     }
     

@@ -228,7 +228,7 @@ public class ImageSprite extends Sprite {
     /**
         Sets whether this sprite should use pixel-level checking for intersections and picking.
     */
-    public final void setPixelLevelChecks(boolean pixelLevel) {
+    public void setPixelLevelChecks(boolean pixelLevel) {
         this.pixelLevel = pixelLevel;
     }
     
@@ -236,7 +236,7 @@ public class ImageSprite extends Sprite {
         Returns true if this sprite should use pixel-level checks for intersections and picking.
         @see #setPixelLevelChecks(boolean)
     */
-    public final boolean getPixelLevelChecks() {
+    public boolean getPixelLevelChecks() {
         return pixelLevel;
     }
     
