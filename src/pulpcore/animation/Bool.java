@@ -32,7 +32,7 @@ package pulpcore.animation;
 /**
     An Bool is an boolean value that can be animated over time.
 */
-public final class Bool extends Property {
+public class Bool extends Property {
 
     public Bool() {
         this(null, false);

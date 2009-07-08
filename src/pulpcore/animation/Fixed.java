@@ -36,7 +36,7 @@ import pulpcore.math.CoreMath;
     that can be animated over time. See {@link pulpcore.math.CoreMath} for
     methods to convert between integers and fixed-point numbers.
 */
-public final class Fixed extends Property {
+public class Fixed extends Property {
 
     public Fixed() {
         this(null, 0);
