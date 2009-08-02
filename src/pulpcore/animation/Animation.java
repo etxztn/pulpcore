@@ -327,6 +327,13 @@ public abstract class Animation {
         return update(elapsedTime, false);
     }
 
+    /**
+
+     @param elapsedTime The elapsedTime, in milliseconds, since the last update.
+     @param parentLooped True if the parent timeline looped since the last update. This forces a
+     call to {@link #updateState(int)} if this Animation doesn't updateState() in setTime().
+     @return
+     */
     /* package private */ boolean update(int elapsedTime, boolean parentLooped) {
         int newTime = this.elapsedTime + elapsedTime;
         int oldLoop = getAnimLoop(this.elapsedTime);

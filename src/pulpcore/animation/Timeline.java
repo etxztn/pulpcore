@@ -160,7 +160,11 @@ public final class Timeline extends Animation {
     protected void updateState(int animTime) {
         int oldLoop = getAnimLoop(lastTime);
         int newLoop = getAnimLoop(getTime());
-        boolean looped = lastParentLooped || (newLoop != oldLoop);
+        boolean looped = lastParentLooped;
+        if (!looped && newLoop != oldLoop) {
+            // Negative value means the timeline hasn't started yet (before startDelay).
+            looped = !(oldLoop == -1 && newLoop == 0);
+        }
         if (looped) {
             for (int i = 0; i < animationList.size(); i++) {
                 Animation anim = (Animation)animationList.get(i);

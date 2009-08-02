@@ -174,6 +174,44 @@ public class AnimationTest {
         assertEquals("Incorrect value.", d*6, property.get());
     }
 
+    @Test public void subTimelineEventTriggersOnce() {
+        Int property = new Int(0);
+        final int[] executions = { 0 };
+        Timeline t = new Timeline();
+        t.animate(property, 0, 100, 2000);
+        t.after().add(new TimelineEvent(100) {
+            public void run() {
+                executions[0]++;
+            }
+        });
+        t.update(2000);
+        assertEquals("Event in subtimeline does not trigger once.", 0, executions[0]);
+        t.update(200);
+        assertEquals("Event in subtimeline does not trigger once.", 1, executions[0]);
+    }
+    
+    @Test public void subTimelineEventTriggersOncePart2() {
+        Int property = new Int(0);
+        final int[] executions = { 0 };
+        Timeline t1 = new Timeline();
+        Timeline t2 = new Timeline();
+        t1.animate(property, 50, 0, 2000);
+        t2.animate(property, 0, 100, 2000);
+        t2.after().addEvent(new TimelineEvent(100) {
+            public void run() {
+                executions[0]++;
+            }
+        });
+        t1.after().add(t2);
+        t1.update(2000);
+        assertEquals("Event in subtimeline does not trigger once.", 0, executions[0]);
+        t1.update(2000);
+        assertEquals("Event in subtimeline does not trigger once.", 0, executions[0]);
+        t1.update(200);
+        assertEquals("Event in subtimeline does not trigger once.", 1, executions[0]);
+    }
+
+
     @Test public void backForthTimeline() {
         Int property = new Int(0);
         int dur = 100;
