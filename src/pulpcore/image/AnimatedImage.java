@@ -102,18 +102,39 @@ public class AnimatedImage extends CoreImage {
     
     /**
         Creates a copy of the specified AnimatedImage. The internal raster data array is shared.
+        The new AnimatedImage's current frame is set to the first frame and the "playing" state
+        is set to true.
     */
     public AnimatedImage(AnimatedImage image) {
+        this(image, false);
+    }
+
+    /**
+        Creates a copy of the specified AnimatedImage. The internal raster data array is shared.
+        @param copyState If true, the new AnimatedImage's current frame, animation time, and
+        "playing" state are copied from the specified image. If false, the new AnimatedImage's
+        current frame is set to the first frame and the "playing" state is set to true.
+    */
+    public AnimatedImage(AnimatedImage image, boolean copyState) {
         super(image);
-        
+
         frames = new CoreImage[image.frames.length];
         for (int i = 0; i < frames.length; i++) {
             frames[i] = new CoreImage(image.frames[i]);
         }
         setSequence(image.frameSequence, image.frameDuration, image.loop);
         differentHotSpotPerFrame = image.differentHotSpotPerFrame;
-        setFrame(0);
-        playing = true;
+
+        if (copyState) {
+            setFrame(image.currentFrame);
+            this.playing = image.playing;
+            this.animTime = image.animTime;
+            this.lastFrame = image.lastFrame;
+        }
+        else {
+            setFrame(0);
+            playing = true;
+        }
     }
     
     /**
@@ -293,7 +314,8 @@ public class AnimatedImage extends CoreImage {
     }
     
     /**
-        Returns true if this AnimatedImage is currently playing.
+        Returns true if this AnimatedImage is currently playing. When an AnimatedImage is playing,
+        the frames are automatically updated in the {@link #update(int)} method.
         @see #start()
         @see #stop()
         @see #pause()
