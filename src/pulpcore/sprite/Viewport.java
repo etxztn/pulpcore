@@ -31,8 +31,6 @@ package pulpcore.sprite;
 
 import pulpcore.animation.Bool;
 import pulpcore.animation.Fixed;
-import pulpcore.image.BlendMode;
-import pulpcore.image.CoreGraphics;
 import pulpcore.math.CoreMath;
 import pulpcore.math.Rect;
 import pulpcore.math.Transform;
@@ -72,6 +70,7 @@ public class Viewport extends Group {
         scrollPixelSnapping = getContentPane().pixelSnapping;
         scrollPixelSnapping.set(true);
         super.add(contents);
+        setClippedToBounds(true);
     }
     
     public Group getContentPane() {
@@ -92,13 +91,6 @@ public class Viewport extends Group {
     
     protected int getNaturalHeight() {
         return height.getAsFixed();
-    }
-    
-    /**
-        Returns {@code true}.
-    */
-    public boolean isOverflowClipped() {
-        return true;
     }
     
     private void calcContentDimension() {
@@ -132,20 +124,6 @@ public class Viewport extends Group {
         
         // For now, recompute the content dimension every frame
         calcContentDimension();
-        
-        // If the conditions are right, set the clip. Otherwise use a back buffer.
-        // This is because the software renderer can only clip rectangles in device space.
-        Transform t = getDrawTransform();
-        BlendMode b = getBackBufferBlendMode();
-        if (b == BlendMode.SrcOver() && 
-            (t.getType() == Transform.TYPE_IDENTITY ||
-            t.getType() == Transform.TYPE_TRANSLATE))
-        {
-            removeBackBuffer();
-        }
-        else {
-            createBackBuffer(b);
-        }
     }
     
     /**

@@ -395,13 +395,14 @@ public abstract class Sprite implements PropertyListener {
         boolean isUnconstrainedGroup = false;
         if (this instanceof Group) {
             Group group = (Group)this;
-            if (!group.isOverflowClipped()) {
+            if (!(group.isClippedToBounds() || group.hasBackBuffer())) {
                 isUnconstrainedGroup = true;
             }
             else if ((group.getNaturalWidth() == 0 || group.getNaturalHeight() == 0) &&
                     getWorkingFilter() == null)
             {
                 // Group has backbuffer that covers the stage, but no filter
+                // TODO: Is this ever reached?
                 isUnconstrainedGroup = true;
             }
         }
@@ -783,23 +784,10 @@ public abstract class Sprite implements PropertyListener {
                 }
 
                 setDirty(true);
-                if (this instanceof Group) {
-                    // I'm not sure why this is needed. I found one case where it is needed,
-                    // but I'm not sure why.
-                    // To reproduce:
-                    // 1. Run BackBufferTest
-                    // 2. Click "Blue filter"
-                    // 3. Click "White filter"
-                    // 4. Notice white square is incorrectly offset.
-                    ((Group)this).setChildrenDirty(true);
-                }
 
                 if (newFilter != null) {
                     newFilter = copyIfUsed(newFilter);
                     markAsUsed(newFilter);
-                    if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
-                        ((Group)this).createBackBuffer();
-                    }
                     this.filter = new SpriteFilter(this, newFilter);
                 }
             }
@@ -861,14 +849,8 @@ public abstract class Sprite implements PropertyListener {
     /* package-private */ Filter getWorkingFilter() {
         Filter f = getFilter();
         if (f != null) {
-            if ((this instanceof Group) && !((Group)this).hasBackBuffer()) {
-                // Ignore filters on groups with no back buffer
-                return null;
-            }
-            else {
-                // Make sure input is up to date
-                f.setInput(filter.getCacheImage());
-            }
+            // Make sure input is up to date
+            f.setInput(filter.getCacheImage());
         }
         return f;
     }
@@ -883,7 +865,6 @@ public abstract class Sprite implements PropertyListener {
             this.sprite = sprite;
             this.filter = filter;
             this.filter.setDirty();
-            this.filter.setInput(getCacheImage());
         }
 
         public Filter getFilter() {
@@ -891,7 +872,9 @@ public abstract class Sprite implements PropertyListener {
         }
 
         private int getCacheWidth() {
-            if (sprite instanceof Group && ((Group)sprite).hasBackBuffer()) {
+            if (sprite instanceof Group) {
+                // Assume Group has a backbuffer if it has a Filter.
+                // See Group#needsBackBuffer()
                 return ((Group)sprite).getBackBuffer().getWidth();
             }
             else {
@@ -900,7 +883,9 @@ public abstract class Sprite implements PropertyListener {
         }
 
         private int getCacheHeight() {
-            if (sprite instanceof Group && ((Group)sprite).hasBackBuffer()) {
+            if (sprite instanceof Group) {
+                // Assume Group has a backbuffer if it has a Filter.
+                // See Group#needsBackBuffer()
                 return ((Group)sprite).getBackBuffer().getHeight();
             }
             else {
@@ -917,7 +902,7 @@ public abstract class Sprite implements PropertyListener {
             if (sprite instanceof ImageSprite) {
                 return ((ImageSprite)sprite).getImage();
             }
-            else if (sprite instanceof Group && ((Group)sprite).hasBackBuffer()) {
+            else if (sprite instanceof Group) {
                 // Update the back buffer
                 cache = null;
                 if (cacheDirty) {

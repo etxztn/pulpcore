@@ -60,7 +60,10 @@ public class Group extends Sprite {
     
     private int fNaturalWidth;
     private int fNaturalHeight;
-    
+
+    private boolean clipChildrenToBounds = false;
+
+    private boolean backBufferRequested = false;
     private CoreImage backBuffer;
     private boolean backBufferCoversStage;
     private BlendMode backBufferBlendMode = BlendMode.SrcOver();
@@ -107,15 +110,115 @@ public class Group extends Sprite {
     }
 
     /**
+        Sets whether this Group clips its child Sprites to the bounds of this Group. Note that
+        in order to achieve the clip on scaled or rotated Groups, a backbuffer will be created.
+        The default value is false.
+     */
+    public void setClippedToBounds(boolean clipToBounds) {
+        if (this.clipChildrenToBounds != clipToBounds) {
+            this.clipChildrenToBounds = clipToBounds;
+            updateBackBuffer();
+        }
+    }
+
+    /**
+        Returns true if this Group clips its child Sprites to the bounds of this Group. Note that
+        even if this method returns false, the Group is also clipped if it has a backbuffer.
+        The default value is false.
+     */
+    public boolean isClippedToBounds() {
+        return clipChildrenToBounds;
+    }
+
+    /**
         Returns {@code true} if sprites inside this Group are not visible outside the
         natural bounds of this Group.
 
         The default implementation returns {@code true} if the Group has a back buffer.
         @see #getNaturalWidth()
         @see #getNaturalHeight()
+        @deprecated
     */
     public boolean isOverflowClipped() {
-        return hasBackBuffer();
+        return isClippedToBounds() || hasBackBuffer();
+    }
+
+    /**
+        Sets whether a back buffer is requested for this Group.
+     */
+    public void setBackBuffered(boolean backBuffered) {
+        if (this.backBufferRequested != backBuffered) {
+            this.backBufferRequested = backBuffered;
+            updateBackBuffer();
+        }
+    }
+
+    /**
+        Returns whether a back buffer is requested for this Group. Note that a Group may have a
+        back buffer even if this method returns false. To check if a Group has a back buffer
+        for any reason, call {@link #hasBackBuffer() }.
+     */
+    public boolean isBackBuffered() {
+        return backBufferRequested;
+    }
+
+    /**
+        Gets this Group's back buffer. A Group has a back buffer if
+        {@link #isBackBuffered() } is true, the Group has a filter, or if
+        {@link #isClippedToBounds() } is true and a back buffer is required to clip.
+     */
+    public CoreImage getBackBuffer() {
+        return backBuffer;
+    }
+
+    /**
+        Checks if this Group has a back buffer. A Group has a back buffer if
+        {@link #isBackBuffered() } is true, the Group has a filter, or if
+        {@link #isClippedToBounds() } is true and a back buffer is required to clip.
+        @return true if this Group has a back buffer.
+    */
+    public boolean hasBackBuffer() {
+        return backBuffer != null;
+    }
+
+    /**
+        Sets this Group's blend mode for rendering onto its back buffer.
+        @param backBufferBlendMode the blend mode.
+    */
+    public void setBackBufferBlendMode(BlendMode backBufferBlendMode) {
+        if (backBufferBlendMode == null) {
+            backBufferBlendMode = BlendMode.SrcOver();
+        }
+        if (this.backBufferBlendMode != backBufferBlendMode) {
+            this.backBufferBlendMode = backBufferBlendMode;
+            if (backBuffer != null) {
+                backBufferChanged();
+            }
+        }
+    }
+
+    /**
+        Gets this Group's blend mode for rendering onto its back buffer.
+        @return the blend mode.
+    */
+    public BlendMode getBackBufferBlendMode() {
+        return backBufferBlendMode;
+    }
+
+    public void setFilter(Filter filter) {
+        Filter currFilter = getFilter();
+        if (currFilter != filter) {
+            super.setFilter(filter);
+            updateBackBuffer();
+            // I'm not sure why this is needed. I found one case where it is needed,
+            // but I'm not sure why.
+            // To reproduce:
+            // 1. Run BackBufferTest
+            // 2. Click "Blue filter"
+            // 3. Click "White filter"
+            // 4. Notice white square is incorrectly offset.
+            setChildrenDirty(true);
+        }
     }
     
     //
@@ -213,7 +316,8 @@ public class Group extends Sprite {
         @return The top-most sprite at the specified location, or null if none is found.
     */
     public Sprite pick(int viewX, int viewY) {
-        if (isOverflowClipped()) {
+        boolean clipped = isClippedToBounds() || hasBackBuffer();
+        if (clipped) {
             double lx = getLocalX(viewX, viewY);
             double ly = getLocalY(viewX, viewY);
             double lw = CoreMath.toFloat(getNaturalWidth());
@@ -254,7 +358,8 @@ public class Group extends Sprite {
         if none is found.
     */
     public Sprite pickEnabledAndVisible(int viewX, int viewY) {
-        if (isOverflowClipped()) {
+        boolean clipped = isClippedToBounds() || hasBackBuffer();
+        if (clipped) {
             double lx = getLocalX(viewX, viewY);
             double ly = getLocalY(viewX, viewY);
             double lw = CoreMath.toFloat(getNaturalWidth());
@@ -550,8 +655,8 @@ public class Group extends Sprite {
         }
         width.setAsFixed(fNaturalWidth);
         height.setAsFixed(fNaturalHeight);
-        if (hasBackBuffer()) {
-            createBackBuffer(backBufferBlendMode);
+        if (backBuffer != null) {
+            createBackBufferImpl();
         }
         setDirty(true);
     }
@@ -563,30 +668,35 @@ public class Group extends Sprite {
     /* package-private */ Transform getBackBufferTransform() {
         return (getFilter() != null) ? Sprite.IDENTITY : backBufferTransform;
     }
-    
-    /**
-        Creates a back buffer for this Group.
-        <p>
-        If this Group was created with a dimension (constructors {@link #Group(int,int,int,int) } 
-        or {@link #Group(double,double,double,double) } or has a dimension after calling
-        {@link #pack() }, then the back buffer has the same dimensions of this Group. Otherwise,
-        the back buffer has the same dimensions of the Stage.
-    */
-    public void createBackBuffer() {
-        createBackBuffer(BlendMode.SrcOver());
+
+    private boolean needsBackBuffer() {
+        if (isBackBuffered() || getFilter() != null) {
+            return true;
+        }
+        else if (isClippedToBounds()) {
+            Transform t = getDrawTransform();
+            return !(t.getType() == Transform.TYPE_IDENTITY ||
+                    t.getType() == Transform.TYPE_TRANSLATE);
+        }
+        else {
+            return false;
+        }
     }
-    
-    /**
-        Creates a back buffer for this Group, and sets the blend mode for rendering onto 
-        the back buffer.
-        <p>
-        If this Group was created with a dimension (constructors {@link #Group(int,int,int,int) } 
-        or {@link #Group(double,double,double,double) } or has a dimension after calling
-        {@link #pack() }, then the back buffer has the same dimensions of this Group. Otherwise,
-        the back buffer has the same dimensions of the Stage.
-    */
-    public void createBackBuffer(BlendMode blendMode) {
-        setBackBufferBlendMode(blendMode);
+
+    private void updateBackBuffer() {
+        if (needsBackBuffer()) {
+            if (backBuffer == null) {
+                createBackBufferImpl();
+            }
+        }
+        else {
+            if (backBuffer != null) {
+                removeBackBufferImpl();
+            }
+        }
+    }
+
+    private void createBackBufferImpl() {
         Transform t = new Transform();
         int w = getNaturalWidth();
         int h = getNaturalHeight();
@@ -603,7 +713,7 @@ public class Group extends Sprite {
             backBufferHeight = CoreMath.toIntCeil(h);
             backBufferCoversStage = false;
         }
-        if (backBuffer == null || 
+        if (backBuffer == null ||
             backBuffer.getWidth() != backBufferWidth ||
             backBuffer.getHeight() != backBufferHeight)
         {
@@ -615,55 +725,55 @@ public class Group extends Sprite {
             backBufferChanged();
         }
     }
-    
-    private void backBufferChanged() {
-        setDirty(true);
-    }
-    
-    /**
-        Checks if this Group has a back buffer.
-        @return true if this Group has a back buffer.
-    */
-    public boolean hasBackBuffer() {
-        return (backBuffer != null);
-    }
 
-    public CoreImage getBackBuffer() {
-        return backBuffer;
-    }
-    
-    /**
-        Removes this Group's back buffer.
-    */
-    public void removeBackBuffer() {
+    private void removeBackBufferImpl() {
         if (backBuffer != null) {
             backBuffer = null;
             backBufferChanged();
         }
     }
-    
-    /**
-        Sets this Group's blend mode for rendering onto its back buffer.
-        @param backBufferBlendMode the blend mode.
-    */
-    public void setBackBufferBlendMode(BlendMode backBufferBlendMode) {
-        if (backBufferBlendMode == null) {
-            backBufferBlendMode = BlendMode.SrcOver();
-        }
-        if (this.backBufferBlendMode != backBufferBlendMode) {
-            this.backBufferBlendMode = backBufferBlendMode;
-            backBufferChanged();
-        }
+
+    private void backBufferChanged() {
+        setDirty(true);
     }
     
     /**
-        Gets this Group's blend mode for rendering onto its back buffer.
-        @return the blend mode.
+        Creates a back buffer for this Group.
+        <p>
+        If this Group was created with a dimension (constructors {@link #Group(int,int,int,int) } 
+        or {@link #Group(double,double,double,double) } or has a dimension after calling
+        {@link #pack() }, then the back buffer has the same dimensions of this Group. Otherwise,
+        the back buffer has the same dimensions of the Stage.
+        @deprecated Use {@link #setBackBuffered(boolean) }.
     */
-    public BlendMode getBackBufferBlendMode() {
-        return backBufferBlendMode;
+    public void createBackBuffer() {
+        createBackBuffer(BlendMode.SrcOver());
     }
     
+    /**
+        Creates a back buffer for this Group, and sets the blend mode for rendering onto 
+        the back buffer.
+        <p>
+        If this Group was created with a dimension (constructors {@link #Group(int,int,int,int) } 
+        or {@link #Group(double,double,double,double) } or has a dimension after calling
+        {@link #pack() }, then the back buffer has the same dimensions of this Group. Otherwise,
+        the back buffer has the same dimensions of the Stage.
+        @deprecated Use {@link #setBackBuffered(boolean) } and
+        {@link #setBackBufferBlendMode(pulpcore.image.BlendMode) }.
+    */
+    public void createBackBuffer(BlendMode blendMode) {
+        setBackBufferBlendMode(blendMode);
+        setBackBuffered(true);
+    }
+
+    /**
+        Removes this Group's back buffer.
+        @deprecated Use {@link #setBackBuffered(boolean) }.
+    */
+    public void removeBackBuffer() {
+        setBackBuffered(false);
+    }
+        
     //
     // Sprite class implementation
     // 
@@ -688,7 +798,7 @@ public class Group extends Sprite {
     
     public void propertyChange(Property p) {
         super.propertyChange(p);
-        if ((p == width || p == height) && hasBackBuffer()) {
+        if ((p == width || p == height) && backBuffer != null) {
             setDirty(true);
         }
     }
@@ -699,6 +809,10 @@ public class Group extends Sprite {
         Sprite[] snapshot = sprites;
         for (int i = 0; i < snapshot.length; i++) {
             snapshot[i].update(elapsedTime);
+        }
+
+        if (isClippedToBounds()) {
+            updateBackBuffer();
         }
     }
 
@@ -716,14 +830,12 @@ public class Group extends Sprite {
         }
     }
 
-
-    
     protected final void drawSprite(CoreGraphics g) {
         Sprite[] snapshot = sprites;
-        
+
         if (backBuffer == null) {
             Rect oldClip = null;
-            boolean setClip = isOverflowClipped();
+            boolean setClip = isClippedToBounds();
 
             if (setClip) {
                 Transform t = g.getTransform();
