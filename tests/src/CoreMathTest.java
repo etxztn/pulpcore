@@ -165,7 +165,7 @@ public class CoreMathTest {
             double angle = CoreMath.rand(CoreMath.MIN_DOUBLE_VALUE, CoreMath.MAX_DOUBLE_VALUE);
             double expectedResult = Math.sin(angle);
             double actualResult = CoreMath.toDouble(CoreMath.sin(CoreMath.toFixed(angle)));
-            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.0009);
+            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.00092);
         }
     }
     
@@ -222,7 +222,7 @@ public class CoreMathTest {
             double angle = CoreMath.rand(CoreMath.MIN_DOUBLE_VALUE, CoreMath.MAX_DOUBLE_VALUE);
             double expectedResult = Math.atan(angle);
             double actualResult = CoreMath.toDouble(CoreMath.atan(CoreMath.toFixed(angle)));
-            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.0009);
+            assertEquals("Bad result for " + angle, expectedResult, actualResult, 0.000981);
         }
     }
     
@@ -234,7 +234,7 @@ public class CoreMathTest {
             double y = CoreMath.toDouble(fy);
             double expectedResult = Math.atan2(y, x);
             double actualResult = CoreMath.toDouble(CoreMath.atan2(fy, fx));
-            assertEquals("Bad result for " + x + ", " + y, expectedResult, actualResult, 0.00006);
+            assertEquals("Bad result for " + x + ", " + y, expectedResult, actualResult, 0.000063);
         }
     }
     
