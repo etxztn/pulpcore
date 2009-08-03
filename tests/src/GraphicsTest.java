@@ -65,7 +65,7 @@ public class GraphicsTest {
             add(new FilledSprite(Colors.BLUE));
 
             Group group = new Group(0, 0, 640, 480);
-            group.createBackBuffer();
+            group.setBackBuffered(true);
             group.add(new ImageSprite("res/starmask.png", 0, 0));
 
             Sprite sprite = new ImageSprite("res/stripe.png", 0, 0, 640, 480);
