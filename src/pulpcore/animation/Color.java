@@ -241,4 +241,33 @@ public class Color extends Property {
             }
         }
     }
+
+    /* package-private */ static class ColorTweenTo extends ColorTween {
+
+        private Color fromARGB;
+        private boolean started;
+
+        public ColorTweenTo(Color fromARGB, int toARGB, int duration) {
+            this(fromARGB, toARGB, duration, null, 0);
+        }
+
+        public ColorTweenTo(Color fromARGB, int toARGB, int duration, Easing easing) {
+            this(fromARGB, toARGB, duration, easing, 0);
+        }
+
+        public ColorTweenTo(Color fromARGB, int toARGB, int duration, Easing easing, int startDelay) {
+            super(0, toARGB, duration, easing, startDelay);
+            this.fromARGB = fromARGB;
+            this.started = false;
+        }
+
+        protected void updateState(int animTime) {
+            if (!started) {
+                started = true;
+                setFromValue(fromARGB.getValue());
+            }
+            super.updateState(animTime);
+        }
+    }
+
 }

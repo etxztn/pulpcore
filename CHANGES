@@ -2,6 +2,11 @@
   * API: Added Group.setClippedToBounds(boolean), getClippedToBounds()
   * API: Added Group.setBackBuffered(boolean), isBackBuffered(). (Replaced
     removeBackBuffer() and createBackBuffer())
+  * API: Timeline animateTo() methods now animate from the property's value when
+    the tween starts rather than the property's value when the tween is created.
+    (Issue 24).
+  * API: Added AnimatedImage(AnimatedImage image, boolean copyState) constructor 
+    (Issue 25).
   * Performance: Discarded images from filters are now cached for later, which will
     limit GC and improve performance.
   * Core: updated pulpcore.js for DP Java update 4 for Mac OS X 10.5.
@@ -9,7 +14,7 @@
     non-opaque dest.
   * Fixed bug: CoreSystem.print() wasn't thread-safe when viewing the Console.
   * Fixed bug: TimelineEvents in a delayed Timeline were sometimes executed
-    more than once.
+    more than once. (Issue 27 and Issue 28)
 
 0.11.5 (April 15, 2009)
   * API: Added Sprite.setFilter(), pulpcore.image.filter package (Florent Dupont).

@@ -1,9 +1,11 @@
 import org.junit.Test;
+import pulpcore.animation.Color;
 import pulpcore.animation.Easing;
 import pulpcore.animation.Fixed;
 import pulpcore.animation.event.TimelineEvent;
 import pulpcore.animation.Int;
 import pulpcore.animation.Timeline;
+import pulpcore.math.CoreMath;
 import static org.junit.Assert.*;
 
 public class AnimationTest {
@@ -261,5 +263,76 @@ public class AnimationTest {
         property.animate(1234, 5678, 1000, Easing.NONE, 500);
         assertTrue("Property incorrectly updates on delayed setBehavior()", property.get() == 0);
     }
-    
+
+    @Test public void moveToInt() {
+        Int property = new Int(0);
+        Timeline t = new Timeline();
+        t.animate(property, 100, 200, 1000);
+        t.animateTo(property, 300, 1000, null, 1000);
+
+        t.update(1);
+        assertEquals(100, property.get());
+        t.update(999);
+        assertEquals(200, property.get());
+        t.update(1);
+        assertEquals(200, property.get());
+        t.update(999);
+        assertEquals(300, property.get());
+        t.update(100);
+        assertEquals(300, property.get());
+    }
+
+    @Test public void moveToFixedAsInt() {
+        Fixed property = new Fixed(0);
+        Timeline t = new Timeline();
+        t.animate(property, 100, 200, 1000);
+        t.animateTo(property, 300, 1000, null, 1000);
+
+        t.update(1);
+        assertEquals(100, property.get(), 1);
+        t.update(999);
+        assertEquals(200, property.get(), 0);
+        t.update(1);
+        assertEquals(200, property.get(), 1);
+        t.update(999);
+        assertEquals(300, property.get(), 0);
+        t.update(100);
+        assertEquals(300, property.get(), 0);
+    }
+
+    @Test public void moveToFixed() {
+        Fixed property = new Fixed(0);
+        Timeline t = new Timeline();
+        t.animateAsFixed(property, CoreMath.toFixed(100), CoreMath.toFixed(200), 1000);
+        t.animateToFixed(property, CoreMath.toFixed(300), 1000, null, 1000);
+
+        t.update(1);
+        assertEquals(100, property.get(), 1);
+        t.update(999);
+        assertEquals(200, property.get(), 0);
+        t.update(1);
+        assertEquals(200, property.get(), 1);
+        t.update(999);
+        assertEquals(300, property.get(), 0);
+        t.update(100);
+        assertEquals(300, property.get(), 0);
+    }
+
+    @Test public void moveToColor() {
+        Color property = new Color(0);
+        Timeline t = new Timeline();
+        t.animate(property, 0xff000033, 0xff000066, 1000);
+        t.animateTo(property, 0xff000099, 1000, null, 1000);
+
+        t.update(1);
+        assertEquals(0xff000033, property.get());
+        t.update(999);
+        assertEquals(0xff000066, property.get());
+        t.update(1);
+        assertEquals(0xff000066, property.get());
+        t.update(999);
+        assertEquals(0xff000099, property.get());
+        t.update(100);
+        assertEquals(0xff000099, property.get());
+    }
 }

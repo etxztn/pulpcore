@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -33,8 +33,8 @@ import pulpcore.math.CoreMath;
 
 public class Tween extends Animation implements Behavior {
 
-    private final int fromValue;
-    private final int toValue;
+    private int fromValue;
+    private int toValue;
     private int value;
     
     public Tween(int fromValue, int toValue, int duration) {
@@ -65,15 +65,23 @@ public class Tween extends Animation implements Behavior {
         }
     }
     
-    public final int getFromValue() {
+    public int getFromValue() {
         return fromValue;
     }
+
+    public void setFromValue(int fromValue) {
+        this.fromValue = fromValue;
+    }
     
-    public final int getToValue() {
+    public int getToValue() {
         return toValue;
     }
     
-    protected final void setValue(int value) {
+    public void setToValue(int toValue) {
+        this.toValue = toValue;
+    }
+
+    protected void setValue(int value) {
         this.value = value;
     }
     

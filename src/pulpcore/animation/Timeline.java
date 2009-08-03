@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -451,15 +451,15 @@ public final class Timeline extends Animation {
     }
     
     public void animateTo(Int property, int toValue, int duration) {
-        add(property, new Tween(property.get(), toValue, duration));
+        add(property, new TweenTo(property, toValue, duration));
     }
     
     public void animateTo(Int property, int toValue, int duration, Easing easing) {
-        add(property, new Tween(property.get(), toValue, duration, easing));
+        add(property, new TweenTo(property, toValue, duration, easing));
     }
     
     public void animateTo(Int property, int toValue, int duration, Easing easing, int startDelay) {
-        add(property, new Tween(property.get(), toValue, duration, easing, startDelay));
+        add(property, new TweenTo(property, toValue, duration, easing, startDelay));
     }
 
     //
@@ -481,15 +481,15 @@ public final class Timeline extends Animation {
     }
     
     public void animateTo(Color property, int toARGB, int duration) {
-        add(property, new Color.ColorTween(property.get(), toARGB, duration));
+        add(property, new Color.ColorTweenTo(property, toARGB, duration));
     }
     
     public void animateTo(Color property, int toARGB, int duration, Easing easing) {
-        add(property, new Color.ColorTween(property.get(), toARGB, duration, easing));
+        add(property, new Color.ColorTweenTo(property, toARGB, duration, easing));
     }
     
     public void animateTo(Color property, int toARGB, int duration, Easing easing, int startDelay) {
-        add(property, new Color.ColorTween(property.get(), toARGB, duration, easing, startDelay));
+        add(property, new Color.ColorTweenTo(property, toARGB, duration, easing, startDelay));
     }
     
     //
@@ -513,18 +513,18 @@ public final class Timeline extends Animation {
     }
     
     public void animateToFixed(Fixed property, int fToValue, int duration) {
-        add(property, new Tween(property.getAsFixed(), fToValue, duration));
+        add(property, new TweenTo(property, fToValue, duration));
     }
     
     
     public void animateToFixed(Fixed property, int fToValue, int duration, Easing easing) {
-        add(property, new Tween(property.getAsFixed(), fToValue, duration, easing));
+        add(property, new TweenTo(property, fToValue, duration, easing));
     }
     
     public void animateToFixed(Fixed property, int fToValue, int duration, Easing easing, 
         int startDelay)
     {
-        add(property, new Tween(property.getAsFixed(), fToValue, duration, easing, 
+        add(property, new TweenTo(property, fToValue, duration, easing,
             startDelay));
     }    
 
@@ -553,23 +553,20 @@ public final class Timeline extends Animation {
     }
     
     public void animateTo(Fixed property, int toValue, int duration) {
-        int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        add(property, new Tween(fFromValue, fToValue, duration));
+        add(property, new TweenTo(property, fToValue, duration));
     }
     
     public void animateTo(Fixed property, int toValue, int duration, Easing easing) {
-        int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        add(property, new Tween(fFromValue, fToValue, duration, easing));
+        add(property, new TweenTo(property, fToValue, duration, easing));
     }
     
     public void animateTo(Fixed property, int toValue, int duration, Easing easing, 
         int startDelay)
     {
-        int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new TweenTo(property, fToValue, duration, easing, startDelay));
     }    
     
     //
@@ -599,23 +596,20 @@ public final class Timeline extends Animation {
     }
 
     public void animateTo(Fixed property, double toValue, int duration) {
-        int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        add(property, new Tween(fFromValue, fToValue, duration));
+        add(property, new TweenTo(property, fToValue, duration));
     }
     
     public void animateTo(Fixed property, double toValue, int duration, Easing easing) {
-        int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        add(property, new Tween(fFromValue, fToValue, duration, easing));
+        add(property, new TweenTo(property, fToValue, duration, easing));
     }
     
     public void animateTo(Fixed property,double toValue, int duration, Easing easing, 
         int startDelay)
     {
-        int fFromValue = property.getAsFixed();
         int fToValue = CoreMath.toFixed(toValue);
-        add(property, new Tween(fFromValue, fToValue, duration, easing, startDelay));
+        add(property, new TweenTo(property, fToValue, duration, easing, startDelay));
     }    
 
     //
