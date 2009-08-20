@@ -84,6 +84,15 @@ public class AnimationTest {
         assertEquals("Random order - Binding X broken", z.get(), x.get());
         assertEquals("Random order - Binding Y broken", z.get(), y.getAsInt());
     }
+
+    @Test public void loopingTimelineReachesEnd() {
+        Int property = new Int(0);
+        Timeline timeline = new Timeline();
+        timeline.loopForever();
+        timeline.animate(property, 0, 5, 100);
+        timeline.update(100);
+        assertEquals("Looping timeline does not reach end.", property.get(), 5);
+    }
     
     @Test public void eventTriggersOnFastForward() {
         final int[] executions = { 0 };
