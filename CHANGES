@@ -10,6 +10,10 @@
   * Performance: Discarded images from filters are now cached for later, which will
     limit GC and improve performance.
   * Core: updated pulpcore.js for DP Java update 4 for Mac OS X 10.5.
+  * Fixed bug: Modern browsers that do full-page zooming (IE8, FF 3.5, Safari 4,
+    etc.) now zoom the PulpCore applet correctly if the zoom is set before
+    the applet's page is loaded. Also the page can be zoomed while the applet
+    is running.
   * Fixed bug: Fixed Multiply blend mode when drawing an opaque src on a
     non-opaque dest.
   * Fixed bug: CoreSystem.print() wasn't thread-safe when viewing the Console.

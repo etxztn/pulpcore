@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -70,6 +70,17 @@ public final class CoreApplet extends Applet {
         return null;
     }
 
+    private int getIntParameter(String param, int defaultValue) {
+        String value = getParameter(param);
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            }
+            catch (NumberFormatException ex) { }
+        }
+        return defaultValue;
+    }
+
     public final void init() {
         Color bgColor = getColorParameter("boxbgcolor");
         if (bgColor != null) {
@@ -136,7 +147,9 @@ public final class CoreApplet extends Applet {
     */
     public Scene createFirstScene() {
         
-        Stage.setAutoScale(getWidth(), getHeight());
+        Stage.setAutoScale(
+                getIntParameter("pulpcore_width", getWidth()),
+                getIntParameter("pulpcore_height", getHeight()));
         
         Scene firstScene;
         

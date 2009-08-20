@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -351,6 +351,8 @@ PulpCore.applet.prototype = {
             '  <param name="boxmessage" value="" />\n' +
             '  <param name="codebase_lookup" value="false" />\n' +
             '  <param name="pulpcore_id" value="' + this.id + '" />\n' +
+            '  <param name="pulpcore_width" value="' + width + '" />\n' +
+            '  <param name="pulpcore_height" value="' + height + '" />\n' +
             '  <param name="pulpcore_browser_name" value="' + PulpCore.System.browserName + '" />\n' +
             '  <param name="pulpcore_browser_version" value="' + PulpCore.System.browserVersion + '" />\n';
 
@@ -528,7 +530,7 @@ PulpCore.JRE = window.PulpCore.JRE || {
     // First is for Windows9x, second is For XP/2000/Vista/etc.
     getJavaCAB: [
         "http://java.sun.com/update/1.5.0/jinstall-1_5_0_17-windows-i586.cab",
-        "http://java.sun.com/update/1.6.0/jinstall-6u13-windows-i586.cab"
+        "http://java.sun.com/update/1.6.0/jinstall-6u16-windows-i586.cab"
     ],
 
     // The URL to the page to visit to install Java
