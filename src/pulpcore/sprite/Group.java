@@ -387,6 +387,44 @@ public class Group extends Sprite {
         }
         return null;
     }
+
+    /**
+        Checks if the specified location is within the bounds of this
+        Group and this Group is an ancestor of the top-most Sprite at that location.
+        @param viewX x-coordinate in view space
+        @param viewY y-coordinate in view space
+    */
+    //@Override
+    public boolean isPick(int viewX, int viewY) {
+        if (contains(viewX, viewY)) {
+            // Since the location is within the sprite, root.pick() won't search below this
+            // sprite in the scene graph
+            Group root = getRoot();
+            return (root == null || this.isAncestorOf(root.pick(viewX, viewY)));
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+        Checks if the specified location is within the bounds of this
+        Group and this Group is an ancestor of the top-most Sprite at that location.
+        @param viewX x-coordinate in view space
+        @param viewY y-coordinate in view space
+    */
+    //@Override
+    public boolean isPickEnabledAndVisible(int viewX, int viewY) {
+        if (contains(viewX, viewY)) {
+            // Since the location is within the sprite, root.pick() won't search below this
+            // sprite in the scene graph
+            Group root = getRoot();
+            return (root == null || this.isAncestorOf(root.pickEnabledAndVisible(viewX, viewY)));
+        }
+        else {
+            return false;
+        }
+    }
     
     /**
         Returns the number of sprites in this group and all child groups (not counting child

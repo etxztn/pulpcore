@@ -1201,7 +1201,7 @@ public abstract class Sprite implements PropertyListener {
         @param viewX x-coordinate in view space
         @param viewY y-coordinate in view space
     */
-    public final boolean isPick(int viewX, int viewY) {
+    public boolean isPick(int viewX, int viewY) {
         if (contains(viewX, viewY)) {
             // Since the location is within the sprite, root.pick() won't search below this
             // sprite in the scene graph
@@ -1219,7 +1219,7 @@ public abstract class Sprite implements PropertyListener {
         @param viewX x-coordinate in view space
         @param viewY y-coordinate in view space
     */
-    public final boolean isPickEnabledAndVisible(int viewX, int viewY) {
+    public boolean isPickEnabledAndVisible(int viewX, int viewY) {
         if (contains(viewX, viewY)) {
             // Since the location is within the sprite, root.pick() won't search below this
             // sprite in the scene graph

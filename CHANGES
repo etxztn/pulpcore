@@ -7,6 +7,9 @@
     (Issue 24).
   * API: Added AnimatedImage(AnimatedImage image, boolean copyState) constructor 
     (Issue 25).
+  * API: Group.isPick and Group.isPickEnabledAndVisible return true if the group
+    is an ancestor of the pick. (Previously, those two methods always returned
+    false for Groups)
   * Performance: Discarded images from filters are now cached for later, which will
     limit GC and improve performance.
   * Core: updated pulpcore.js for DP Java update 4 for Mac OS X 10.5.
