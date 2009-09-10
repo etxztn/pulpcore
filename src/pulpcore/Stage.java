@@ -535,9 +535,10 @@ public class Stage implements Runnable {
                         CoreSystem.setTalkBackField("pulpcore.uncaught-exception", t);
                     }
                     catch (Exception ex) {
-                        t.printStackTrace();
+                        // Ignore
                     }
                     if (uncaughtExceptionScene == null) {
+                        t.printStackTrace();
                         // Delay and reboot
                         try {
                             Thread.sleep(1000);
