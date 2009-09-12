@@ -32,9 +32,10 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
+import pulpcore.Build;
+import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
 
 /**
@@ -55,8 +56,8 @@ import pulpcore.image.CoreImage;
     private static Timer EXPIRATION_TIMER = new Timer(true);
 
     // HashMap<String, SoftReference<CoreImage>>
-    private HashMap cache = new HashMap();
-    private long timeoutMillis;
+    private final HashMap cache = new HashMap();
+    private final long timeoutMillis;
 
     public ImageCache(int timeoutMillis) {
         this.timeoutMillis = timeoutMillis;
@@ -100,11 +101,9 @@ import pulpcore.image.CoreImage;
         ArrayList existingList = (ArrayList)cache.get(key);
         boolean found = false;
         if (existingList != null) {
-            Iterator i = existingList.iterator();
-            while (i.hasNext()) {
-                SoftReference ref = (SoftReference)i.next();
-                if (ref == value) {
-                    i.remove();
+            for (int i = 0; i < existingList.size(); i++) {
+                if (existingList.get(i) == value) {
+                    existingList.remove(i);
                     found = true;
                     break;
                 }
@@ -145,18 +144,28 @@ import pulpcore.image.CoreImage;
 
     private void scheduleRemoval(final String key, SoftReference value) {
         // Keep a reference to the key. If a WeakReference is used for the key,
-        // the referenced is removed when additional values are added to a previes copy of the key.
+        // the referenced is removed when additional values are added to a previous copy of the key.
         final WeakReference valueReference = new WeakReference(value);
         EXPIRATION_TIMER.schedule(
             new TimerTask() {
                 public void run() {
-                    synchronized (ImageCache.this) {
-                        SoftReference value = (SoftReference)valueReference.get();
-                        if (value != null && removeSpecific(key, value)) {
-                            //pulpcore.CoreSystem.print("Removed: " + key + " " + cache);
+                    try {
+                        synchronized (ImageCache.this) {
+                            SoftReference value = (SoftReference)valueReference.get();
+                            if (value != null && removeSpecific(key, value)) {
+                                //pulpcore.CoreSystem.print("Removed: " + key + " " + cache);
+                            }
+                            else {
+                                //pulpcore.CoreSystem.print("Not removed: " + key + " " + cache);
+                            }
                         }
-                        else {
-                            //pulpcore.CoreSystem.print("Not removed: " + key + " " + cache);
+                    }
+                    catch (Exception ex) {
+                        // Shouldn't happen, but it needs to be caught to prevent
+                        // the timer from being cancelled
+                        if (Build.DEBUG) {
+                            CoreSystem.print("Please post this stacktrace to PulpCore mailing list",
+                                    ex);
                         }
                     }
                 }
