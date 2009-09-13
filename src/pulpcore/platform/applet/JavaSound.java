@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -684,7 +684,7 @@ public class JavaSound implements SoundEngine {
                         int actualSize;
                         available = line.available();
 
-                        if (CoreSystem.isMacOSX() && !CoreSystem.isMacOSXLeopardOrNewer()) {
+                        if (CoreSystem.isMacOSX() && !CoreSystem.isMacOSX105()) {
                             actualSize = (framesWritten - line.getFramePosition()) * FRAME_SIZE;
                         }
                         else {

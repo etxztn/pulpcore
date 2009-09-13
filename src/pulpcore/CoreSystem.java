@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,8 @@ public class CoreSystem {
         }
         
         IS_MAC_OS_X = osName.equals("Mac OS X");
-        IS_MAC_OS_X_LEOPARD = osName.equals("Mac OS X") && (osVersion.compareTo("10.5") >= 0);
+        IS_MAC_OS_X_10_5 = osName.equals("Mac OS X") && (osVersion.compareTo("10.5") >= 0);
+        IS_MAC_OS_X_10_6 = osName.equals("Mac OS X") && (osVersion.compareTo("10.6") >= 0);
         
         IS_WINDOWS = osName.startsWith("Windows");
         IS_WINDOWS_XP = osName.startsWith("Windows") && (osVersion.compareTo("5.1") >= 0);
@@ -70,7 +71,8 @@ public class CoreSystem {
     }
 
     private static final boolean IS_MAC_OS_X;
-    private static final boolean IS_MAC_OS_X_LEOPARD;
+    private static final boolean IS_MAC_OS_X_10_5;
+    private static final boolean IS_MAC_OS_X_10_6;
     private static final boolean IS_WINDOWS;
     private static final boolean IS_WINDOWS_XP;
     private static final boolean IS_JAVA_1_3;
@@ -169,9 +171,24 @@ public class CoreSystem {
     
     /**
         Returns true if the current operating system is Mac OS X Leopard (10.5) or newer.
+        @deprecated Use isMacOSX105()
     */
     public static final boolean isMacOSXLeopardOrNewer() {
-        return IS_MAC_OS_X_LEOPARD;
+        return IS_MAC_OS_X_10_5;
+    }
+
+    /**
+        Returns true if the current operating system is Mac OS X Leopard (10.5) or newer.
+    */
+    public static final boolean isMacOSX105() {
+        return IS_MAC_OS_X_10_5;
+    }
+
+    /**
+        Returns true if the current operating system is Mac OS X Snow Leopard (10.6) or newer.
+    */
+    public static final boolean isMacOSX106() {
+        return IS_MAC_OS_X_10_6;
     }
     
     /**

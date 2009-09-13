@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -289,7 +289,10 @@ public final class AppletAppContext extends AppContext {
             useBufferStrategy = false;
         }
         else if (CoreSystem.isMacOSX() && CoreSystem.isJava15orNewer()) {
-            if (CoreSystem.isMacOSXLeopardOrNewer()) {
+            if (CoreSystem.isMacOSX106()) {
+                useBufferStrategy = true;
+            }
+            else if (CoreSystem.isMacOSX105()) {
                 // For Mac OS X 10.5:
                 // Only use BufferStrategy on Firefox (the "apple.awt.MyCPanel" peer)
                 try {
@@ -359,7 +362,7 @@ public final class AppletAppContext extends AppContext {
 
     public int getRefreshRate() {
         // Apply 55 fps limit on old Java 5 versions on Leopard
-        if (CoreSystem.isMacOSXLeopardOrNewer()) {
+        if (CoreSystem.isMacOSX105()) {
             try {
                 if (System.getProperty("java.version").compareTo("1.5.0_16") < 0) {
                     return 55;
