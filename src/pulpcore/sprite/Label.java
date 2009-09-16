@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -38,7 +38,6 @@ import pulpcore.image.CoreFont;
 import pulpcore.image.CoreGraphics;
 import pulpcore.image.CoreImage;
 import pulpcore.math.CoreMath;
-import pulpcore.sprite.Group;
 import pulpcore.util.StringUtil;
 
 /**
@@ -194,6 +193,27 @@ public class Label extends Sprite {
             }
         }
     }
+
+    //@Override
+    protected boolean isTransparent(int localX, int localY) {
+        if (localX < 0 || localY < 0 || localY >= font.getHeight()) {
+            return true;
+        }
+        else {
+            int numChars = Math.min(numDisplayChars.get(), displayText.length());
+            for (int i = 0; i < numChars; i++) {
+                int cx = font.getCharPosition(displayText, 0, i);
+                char ch = displayText.charAt(i);
+                //int charWidth = font.getCharWidth(ch);
+                //if (localX < cx + charWidth) {
+                    if (!font.isTransparent(ch, localX - cx, localY)) {
+                        return false;
+                    }
+                //}
+            }
+            return true;
+        }
+    }
     
     /**
         @return this Label's font.
@@ -203,11 +223,17 @@ public class Label extends Sprite {
     }
     
     /**
-        Set this Label's font and resizes it if necessary.
+        Set this Label's font and resizes it if necessary. If font is {@code null}, the system
+        font is used.
     */
     public void setFont(CoreFont font) {
-        this.font = font;
-        format();
+        if (font == null) {
+            font = CoreFont.getSystemFont();
+        }
+        if (this.font != font) {
+            this.font = font;
+            format();
+        }
     }
     
     /**

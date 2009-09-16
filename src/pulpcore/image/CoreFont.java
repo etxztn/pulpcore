@@ -267,6 +267,29 @@ public class CoreFont {
     public CoreImage getImage() {
         return image;
     }
+
+    /**
+        Checks if the pixel at the specified location is transparent.
+        @param ch The character to check
+        @param x The x location within the character.
+        @param y The y location within the character.
+        @return true if the pixel is transpent or if the location is out of bounds.
+    */
+    public boolean isTransparent(char ch, int x, int y) {
+        if (x < 0 || y < 0 ||  y >= getHeight()) {
+            return true;
+        }
+        int index = getCharIndex(ch);
+        int chImageX = charPositions[index];
+        int chWidth = charPositions[index + 1] - chImageX;
+
+        if (x >= chWidth) {
+            return true;
+        }
+        else {
+            return image.isTransparent(x + chImageX, y);
+        }
+    }
     
     private boolean shouldIgnoreTracking(int index) {
         int width = (charPositions[index+1] - charPositions[index]);

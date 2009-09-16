@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -227,6 +227,7 @@ public abstract class Sprite implements PropertyListener {
     private BlendMode blendMode = null;
     private SpriteFilter filter;
     private Object tag;
+    private boolean pixelLevelChecks = false;
 
     // State information
     private int cosAngle = CoreMath.ONE;
@@ -1169,15 +1170,23 @@ public abstract class Sprite implements PropertyListener {
             return false;
         }
     }
+
+    /**
+        Sets whether this sprite should use pixel-level checking for intersections and picking.
+        Note, pixel-level checks only work on subclasses of Sprite that
+        implement the {@link #isTransparent(int, int) } method ({@link Button},
+        {@link ImageSprite}, {@link Label}, {@link StretchableSprite}).
+    */
+    public void setPixelLevelChecks(boolean pixelLevelChecks) {
+        this.pixelLevelChecks = pixelLevelChecks;
+    }
     
     /**
         Returns true if this sprite should use pixel-level checks for intersections and picking.
-        <p>
-        This method returns false. Subclasses of Sprite should override this method if they
-        have pixel-level checks in their implementation of {@link #isTransparent(int, int) }.
+        By default, this method returns false. 
     */
     public boolean getPixelLevelChecks() {
-        return false;
+        return pixelLevelChecks;
     }
     
     /**

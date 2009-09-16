@@ -11,6 +11,8 @@
     is an ancestor of the pick. (Previously, those two methods always returned
     false for Groups)
   * API: Added CoreSystem.isMacOSX106()
+  * API: Added Sprite.setPixelLevelChecks(boolean) (previously this method
+    was in ImageSprite).
   * Performance: Discarded images from filters are now cached for later, which will
     limit GC and improve performance.
   * Core: updated pulpcore.js for DP Java update 4 for Mac OS X 10.5.

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2008-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -435,7 +435,7 @@ public class StretchableSprite extends ImageSprite {
     
     protected boolean isTransparent(int localX, int localY) {
         CoreImage image = getImage();
-        if (getPixelLevelChecks() && image != null) {
+        if (image != null) {
             int imageX = borderSize + 
                 CoreMath.toInt(convertLocalXtoImageX(CoreMath.toFixed(localX)));
             int imageY = borderSize + 
@@ -452,7 +452,7 @@ public class StretchableSprite extends ImageSprite {
             }
         }
         else {
-            return super.isTransparent(localX, localY);
+            return true;
         }
     }
     

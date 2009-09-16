@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -49,7 +49,6 @@ import pulpcore.math.CoreMath;
 public class ImageSprite extends Sprite {
     
     private CoreImage image;
-    private boolean pixelLevel = true;
     
     /**
         Flag indicating whether the edges of this ImageSprite are anti-aliased when rotating or
@@ -95,6 +94,7 @@ public class ImageSprite extends Sprite {
             height.set(image.getHeight());
         }
         setAnchorToHotSpot();
+        setPixelLevelChecks(true);
     }
     
     /**
@@ -225,21 +225,6 @@ public class ImageSprite extends Sprite {
         }
     }
     
-    /**
-        Sets whether this sprite should use pixel-level checking for intersections and picking.
-    */
-    public void setPixelLevelChecks(boolean pixelLevel) {
-        this.pixelLevel = pixelLevel;
-    }
-    
-    /**
-        Returns true if this sprite should use pixel-level checks for intersections and picking.
-        @see #setPixelLevelChecks(boolean)
-    */
-    public boolean getPixelLevelChecks() {
-        return pixelLevel;
-    }
-    
     protected int getNaturalWidth() {
         if (image != null) {
             return CoreMath.toFixed(image.getWidth());
@@ -259,12 +244,7 @@ public class ImageSprite extends Sprite {
     }
     
     protected boolean isTransparent(int localX, int localY) {
-        if (getPixelLevelChecks()) {
-            return (image == null || image.isTransparent(localX, localY));
-        }
-        else {
-            return super.isTransparent(localX, localY);
-        }
+        return (image == null || image.isTransparent(localX, localY));
     }
 
     protected void drawSprite(CoreGraphics g) {
