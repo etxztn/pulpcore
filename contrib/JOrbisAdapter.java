@@ -5,7 +5,7 @@
     1. Get the JOrbis binary, jorbis-0.0.17.jar
        - Source is located here: http://www.jcraft.com/jorbis/
        - Binaries may also be found: http://www.google.com/search?q=jorbis+maven
-    2. Drop jorbis-0.0.17.jar in your lib/ directory 
+    2. Drop jorbis-0.0.17.jar in your lib/ directory
     3. Drop this file in your src/ directory.
        - Your IDE may prefer you put the file in src/pulpcore/sound/
     4. Load sounds like normal:
@@ -88,6 +88,13 @@ public class JOrbisAdapter extends Sound {
         super(file.getSampleRate());
         this.filename = filename;
         this.file = file;
+    }
+
+    JOrbisAdapter(JOrbisAdapter src) {
+        super(src.file.getSampleRate());
+        this.filename = src.filename;
+        this.file = src.file;
+        setSimultaneousPlaybackCount(src.getSimultaneousPlaybackCount());
     }
 
     public int getNumFrames() {
@@ -177,12 +184,16 @@ public class JOrbisAdapter extends Sound {
         }
         else {
             // Simultaneous playback - create a new copy (compressed data is shared between copies)
-            return new JOrbisAdapter(filename, file.duplicate()).playImpl(level, pan, loop);
+            return new JOrbisAdapter(this).playImpl(level, pan, loop);
         }
     }
 
     private Playback playImpl(Fixed level, Fixed pan, boolean loop) {
         return super.play(level, pan, loop);
+    }
+
+    public boolean equals(Object obj) {
+        return (obj instanceof JOrbisAdapter) && file != null && file.equals(((JOrbisAdapter)obj).file);
     }
 
     public String toString() {
@@ -252,6 +263,10 @@ public class JOrbisAdapter extends Sound {
         */
         public VorbisFile duplicate() {
             return new VorbisFile(this);
+        }
+
+        public boolean equals(Object obj) {
+            return (obj instanceof VorbisFile) && data == ((VorbisFile)obj).data;
         }
 
         public void rewind() {

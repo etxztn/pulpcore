@@ -393,7 +393,7 @@ public class JavaSound implements SoundEngine {
         // Check if the playing limit for this sound is reached
         int playingCount = 0;
         for (int i = 0; i < p.length; i++) {
-            if (p[i].getPlayingSound() == sound) {
+            if (sound.equals(p[i].getPlayingSound())) {
                 playingCount++;
                 if (playingCount >= sound.getSimultaneousPlaybackCount()) {
                     return null;
