@@ -85,6 +85,7 @@ public class JavaSound implements SoundEngine {
     private DataLinePlayer[] players;
     private int[] maxSoundsForSampleRate;
     private int[] sampleRates;
+    private boolean[] usedSampleRates;
     private int state;
     
     public static SoundEngine create() {
@@ -125,6 +126,7 @@ public class JavaSound implements SoundEngine {
         players = new DataLinePlayer[0];
         maxSoundsForSampleRate = new int[SAMPLE_RATES.length];
         sampleRates = new int[0];
+        usedSampleRates = new boolean[0];
         state = STATE_INIT;
     }
     
@@ -166,6 +168,7 @@ public class JavaSound implements SoundEngine {
         
         // Create the list of supported sample rates
         sampleRates = new int[numSampleRates];
+        usedSampleRates = new boolean[numSampleRates];
         int index = 0;
         for (int i = 0; i < SAMPLE_RATES.length && index < numSampleRates; i++) {
             if (maxSoundsForSampleRate[i] > 0) {
@@ -195,7 +198,7 @@ public class JavaSound implements SoundEngine {
             // Play a buffer's worth of silence to warm up HotSpot (helps remove popping)
             for (int i = 0; i < sampleRates.length; i++) {
                 Sound noSound = new SilentSound(sampleRates[i], 0);
-                play(null, noSound, new Fixed(1), new Fixed(0), false);
+                play(null, noSound, new Fixed(1), new Fixed(0), false, false);
             }
             
             // Bizarre: The DirectX implementation of JavaSound (Windows, Java 5 or newer)
@@ -345,13 +348,13 @@ public class JavaSound implements SoundEngine {
             for (int i = 0; i < p.length; i++) {
                 if (!p[i].isPlaying()) {
                     int playerSampleRate = p[i].getSampleRate();
-                    for (int j = 0; j < availableSampleRates.length; j++) {
-                        if (availableSampleRates[j] == 0) {
+                    for (int j = 0; j < sampleRates.length; j++) {
+                        if (availableSampleRates[j] == 0 && usedSampleRates[j]) {
                             boolean success = p[i].reopen(sampleRates[j]);
                             if (success) {
                                 modified = true;
                                 availableSampleRates[j] = 1;
-                                
+
                                 int index = indexOf(sampleRates, playerSampleRate);
                                 if (index != -1) {
                                     availableSampleRates[index]--;
@@ -370,20 +373,35 @@ public class JavaSound implements SoundEngine {
             }
         }
     }
+
+    public Playback play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop) {
+        return play(context, sound, level, pan, loop, true);
+    }
     
-    public synchronized Playback play(AppContext context, Sound sound, Fixed level, Fixed pan,
-        boolean loop) 
+    private synchronized Playback play(AppContext context, Sound sound, Fixed level, Fixed pan,
+        boolean loop, boolean userRequested)
     {
         boolean played = false;
         int numOpenLines = 0;
         Playback playback = null;
         DataLinePlayer[] p = players;
         
-        if (state != STATE_READY || !canPlay(sound)) {
+        if (state != STATE_READY || sound == null || sound.getNumFrames() == 0 || !canPlay(sound)) {
             return null;
         }
         
-        // First, try to play an open line
+        // Check if the playing limit for this sound is reached
+        int playingCount = 0;
+        for (int i = 0; i < p.length; i++) {
+            if (p[i].getPlayingSound() == sound) {
+                playingCount++;
+                if (playingCount >= sound.getSimultaneousPlaybackCount()) {
+                    return null;
+                }
+            }
+        }
+        
+        // Try to play an open line
         for (int i = 0; i < p.length; i++) {
             if (!p[i].isPlaying() && p[i].isOpen()) {
                 if (!played && p[i].getSampleRate() == sound.getSampleRate()) {
@@ -398,10 +416,7 @@ public class JavaSound implements SoundEngine {
         
         if (!played) {
             // Next, open a line at the sound's sample rate and play
-            if (numOpenLines == 0) {
-                if (Build.DEBUG) CoreSystem.print("Couldn't play sound: no available lines.");
-            }
-            else {
+            if (numOpenLines > 0) {
                 for (int i = 0; i < p.length; i++) {
                     if (!p[i].isPlaying()) {
                         boolean success = p[i].reopen(sound.getSampleRate());
@@ -418,6 +433,14 @@ public class JavaSound implements SoundEngine {
                     if (Build.DEBUG) CoreSystem.print("Couldn't play " + sound.getSampleRate() +
                         "Hz sound.");
                 }
+            }
+        }
+
+        // Mark this sample rate as used
+        if (userRequested && played) {
+            int index = indexOf(sampleRates, sound.getSampleRate());
+            if (index != -1) {
+                usedSampleRates[index] = true;
             }
         }
         
@@ -485,6 +508,7 @@ public class JavaSound implements SoundEngine {
     static class DataLinePlayer {
         
         private final Mixer mixer;
+        private Sound source;
         private SoundStream stream;
         private SourceDataLine line;
         private int sampleRate;
@@ -508,6 +532,10 @@ public class JavaSound implements SoundEngine {
         
         public int getSampleRate() {
             return sampleRate;
+        }
+
+        public Sound getPlayingSound() {
+            return source;
         }
         
         public synchronized boolean isOpen() {
@@ -538,17 +566,33 @@ public class JavaSound implements SoundEngine {
 
         private void reopen() {
             stream = null;
+            source = null;
             boolean success = false;
-            if (line != null && CoreSystem.isJava15orNewer()) {
-                try {
-                    // Re-opening lines reduces latency.
-                    // However, it fails silently (no exception thrown) on some versions of Java 1.4
-                    line.close();
-                    line.open();
-                    success = true;
+            if (line != null) {
+                if (CoreSystem.isJava16orNewer()) {
+                    // Not tested on Java 5
+                    try {
+                        line.stop();
+                        line.flush();
+                        success = true;
+                    }
+                    catch (Exception ex) {
+                        ex.printStackTrace();
+                        success = false;
+                    }
                 }
-                catch (Exception ex) {
-                    success = false;
+                else if (CoreSystem.isJava15orNewer()) {
+                    try {
+                        // Re-opening lines reduces latency.
+                        // However, it fails silently (no exception thrown) on some versions of Java 1.4
+                        line.close();
+                        line.open();
+                        success = true;
+                    }
+                    catch (Exception ex) {
+                        ex.printStackTrace();
+                        success = false;
+                    }
                 }
             }
 
@@ -583,6 +627,7 @@ public class JavaSound implements SoundEngine {
         
         public synchronized void close(boolean drain) {
             stream = null;
+            source = null;
             if (line == null) {
                 return;
             }
@@ -616,6 +661,7 @@ public class JavaSound implements SoundEngine {
             int loopFrame = 0;
             int stopFrame = clip.getNumFrames();
             int numLoopFrames = loop ? stopFrame : 0;
+            source = clip;
             
             // Create a full buffer of post-clip silence
             // This fixes a problem with circular buffers.
