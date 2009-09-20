@@ -61,6 +61,7 @@ public abstract class Sound {
     private static HashMap loadedSounds = new HashMap();
     
     private final int sampleRate;
+    private int simultaneousPlaybackCount = 8;
     
     /**
         Creates a new Sound with the specified sample rate.
@@ -93,6 +94,24 @@ public abstract class Sound {
         return 1000L * getNumFrames() / sampleRate;
     }
     
+    /**
+        Gets the number of copies of this sound that can be played simultaneously. 
+        The default is 1 for Ogg Vorbis, 8 for other formats.
+        @see #setSimultaneousPlaybackCount(int) 
+     */
+    public int getSimultaneousPlaybackCount() {
+        return simultaneousPlaybackCount;
+    }
+
+    /**
+        Sets the number of copies this sound that can be played simultaneously.
+        The default is 1 for Ogg Vorbis, 8 for other formats.
+        @see #getSimultaneousPlaybackCount()
+     */
+    public void setSimultaneousPlaybackCount(int simultaneousPlaybackCount) {
+        this.simultaneousPlaybackCount = simultaneousPlaybackCount;
+    }
+
     /**
         Gets the length of this sound, expressed in the number of frames. For mono sounds,
         a frame is one sample, for stereo sounds, a frame consists of two samples - one for
@@ -266,6 +285,9 @@ public abstract class Sound {
         <p>
         Sounds are internally cached (using a WeakReference), and if the sound was previously 
         loaded, this method may return the same reference.
+        <p>
+        Ogg Vorbis sounds are set to only play one copy at a time; other formats can play 8
+        copies at a time. To override this setting, use {@link setSimultaneousPlaybackCount(int) }.
         @param soundAsset The name of a AU, WAV, or OGG sound file.
         @return The sound, or a zero-length Sound on error.
     */
@@ -464,6 +486,9 @@ public abstract class Sound {
             Sound sound = (Sound)method.invoke(null, new Object[] { in, soundAsset } );
             if (sound == null) {
                 sound = NO_SOUND;
+            }
+            else {
+                sound.setSimultaneousPlaybackCount(1);
             }
             return sound;
         }
