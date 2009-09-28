@@ -116,6 +116,7 @@ public class Scene2D extends Scene {
     
     private Rect newRect = new Rect();
     private Rect workRect = new Rect();
+    private Rect workParentRect = new Rect();
     private Rect unionRect = new Rect();
     private Rect intersectionRect = new Rect();
     
@@ -453,26 +454,34 @@ public class Scene2D extends Scene {
     //
     // Dirty Rectangles
     //
-    
+
     private void addDirtyRectangle(Rect parentClip, Rect r) {
         if (r == null) {
             return;
         }
         
         subRects.clear();
+
+        Rect currParentClip = null;
+        if (parentClip != null) {
+            currParentClip = workParentRect;
+            // Increase bounds to correct off-by-one miscalculation in some rare rotated sprites.
+            currParentClip.setBounds(parentClip.x - dirtyRectPadX, parentClip.y - dirtyRectPadY,
+                parentClip.width + dirtyRectPadX*2, parentClip.height + dirtyRectPadY*2);
+        }
         
         // Increase bounds to correct off-by-one miscalculation in some rare rotated sprites.
-        addDirtyRectangle(parentClip, r.x - dirtyRectPadX, r.y - dirtyRectPadY, 
+        addDirtyRectangle(currParentClip, r.x - dirtyRectPadX, r.y - dirtyRectPadY,
             r.width + dirtyRectPadX*2, r.height + dirtyRectPadY*2, MAX_NON_DIRTY_AREA);
-        
+
         int originalSize = subRects.size();
         for (int i = 0; i < subRects.size() && !dirtyRectangles.isOverflowed(); i++) {
             Rect r2 = subRects.get(i);
             if (i < originalSize) {
-                addDirtyRectangle(parentClip, r2.x, r2.y, r2.width, r2.height, MAX_NON_DIRTY_AREA);
+                addDirtyRectangle(null, r2.x, r2.y, r2.width, r2.height, MAX_NON_DIRTY_AREA);
             }
             else {
-                addDirtyRectangle(parentClip, r2.x, r2.y, r2.width, r2.height, 0);
+                addDirtyRectangle(null, r2.x, r2.y, r2.width, r2.height, 0);
             }
             if (subRects.isOverflowed()) {
                 // Ah, crap.
@@ -832,7 +841,7 @@ public class Scene2D extends Scene {
             }
         }
     }
-    
+
     /**
         Recursive function to loop through all the child sprites of the 
         specified group.
@@ -866,6 +875,9 @@ public class Scene2D extends Scene {
             }
             // Special case: Group has a dirty filter
             if (group.hasBackBuffer() && group.getFilter() != null && group.isDirty()) {
+                if (parentBoundsChanged) {
+                    addDirtyRectangle(null, oldParentClip);
+                }
                 addDirtyRectangle(null, parentClip);
             }
         }
