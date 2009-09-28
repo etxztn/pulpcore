@@ -22,6 +22,8 @@
   * Core: BufferedStrategy now used on Snow Leopard
   * Core: Fixed bug where playing many sounds simultaneously caused a slowdown
     (Java 6+ only).
+  * Fixed bug: Fixed several dirty rectangle and clipping bugs for Groups
+    with a back buffer.
   * Fixed bug: Modern browsers that do full-page zooming (IE8, FF 3.5, Safari 4,
     etc.) now zoom the PulpCore applet correctly if the zoom is set before
     the applet's page is loaded. Also the page can be zoomed while the applet

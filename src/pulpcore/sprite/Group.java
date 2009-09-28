@@ -48,6 +48,10 @@ import pulpcore.image.filter.Filter;
     A container of Sprites.
 */
 public class Group extends Sprite {
+
+    private static final Tuple2i[] transformedClip = {
+        new Tuple2i(), new Tuple2i(), new Tuple2i(), new Tuple2i(),
+    };
     
     /** Immutable list of sprites. A new array is created when the list changes. */
     private Sprite[] sprites = new Sprite[0];
@@ -868,6 +872,7 @@ public class Group extends Sprite {
         }
     }
 
+    // g may be null if this Group has a Filter
     protected final void drawSprite(CoreGraphics g) {
         Sprite[] snapshot = sprites;
 
@@ -896,56 +901,66 @@ public class Group extends Sprite {
             int clipY; 
             int clipW;
             int clipH;
-            Transform clipTransform;
+            Transform drawTransform;
             CoreGraphics g2 = backBuffer.createGraphics();
             g2.setBlendMode(backBufferBlendMode);
-            
+
             if (g == null) {
                 clipX = 0;
-                clipY = 0; 
+                clipY = 0;
                 clipW = backBuffer.getWidth();
                 clipH = backBuffer.getHeight();
-                clipTransform = Sprite.IDENTITY;
+                drawTransform = Sprite.IDENTITY;
             }
             else {
                 clipX = g.getClipX();
-                clipY = g.getClipY(); 
+                clipY = g.getClipY();
                 clipW = g.getClipWidth();
                 clipH = g.getClipHeight();
                 if (backBufferCoversStage) {
-                    clipTransform = g.getTransform();
+                    drawTransform = g.getTransform();
                 }
                 else {
-                    clipTransform = getDrawTransform();
+                    drawTransform = getDrawTransform();
                 }
             }
 
-            if (clipTransform.getType() != Transform.TYPE_IDENTITY) {
-                Tuple2i p1 = new Tuple2i(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY));
-                Tuple2i p2 = new Tuple2i(
-                    CoreMath.toFixed(clipX + clipW), 
+            // Translate the clip rect (device space) to this Group's draw space
+            if (drawTransform.getType() != Transform.TYPE_IDENTITY) {
+                int numPoints = ((drawTransform.getType() & Transform.TYPE_ROTATE) != 0) ? 4 : 2;
+                transformedClip[0].set(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY));
+                transformedClip[1].set(
+                    CoreMath.toFixed(clipX + clipW),
                     CoreMath.toFixed(clipY + clipH));
-                
-                boolean success = true;
-                success &= clipTransform.inverseTransform(p1);
-                success &= clipTransform.inverseTransform(p2);
-                if (!success) {
-                    return;
+                transformedClip[2].set(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY + clipH));
+                transformedClip[3].set(CoreMath.toFixed(clipX + clipW), CoreMath.toFixed(clipY));
+
+                int x1 = Integer.MAX_VALUE;
+                int y1 = Integer.MAX_VALUE;
+                int x2 = Integer.MIN_VALUE;
+                int y2 = Integer.MIN_VALUE;
+                for (int i = 0; i < numPoints; i++) {
+                    Tuple2i t = transformedClip[i];
+                    if (!drawTransform.inverseTransform(t)) {
+                        return;
+                    }
+                    if (t.x < x1) {
+                        x1 = t.x;
+                    }
+                    if (t.y < y1) {
+                        y1 = t.y;
+                    }
+                    if (t.x > x2) {
+                        x2 = t.x;
+                    }
+                    if (t.y > y2) {
+                        y2 = t.y;
+                    }
                 }
-                if (p2.x < p1.x) {
-                    int t = p1.x;
-                    p1.x = p2.x;
-                    p2.x = t;
-                }
-                if (p2.y < p1.y) {
-                    int t = p1.y;
-                    p1.y = p2.y;
-                    p2.y = t;
-                }
-                clipX = CoreMath.toIntFloor(p1.x) - 1;
-                clipY = CoreMath.toIntFloor(p1.y) - 1;
-                clipW = CoreMath.toIntCeil(p2.x) - clipX + 2;
-                clipH = CoreMath.toIntCeil(p2.y) - clipY + 2;
+                clipX = CoreMath.toIntFloor(x1) - 1;
+                clipY = CoreMath.toIntFloor(y1) - 1;
+                clipW = CoreMath.toIntCeil(x2) - clipX + 2;
+                clipH = CoreMath.toIntCeil(y2) - clipY + 2;
             }
             g2.setClip(clipX, clipY, clipW, clipH);
             g2.clear();
