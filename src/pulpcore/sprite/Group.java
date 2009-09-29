@@ -49,10 +49,6 @@ import pulpcore.image.filter.Filter;
 */
 public class Group extends Sprite {
 
-    private static final Tuple2i[] transformedClip = {
-        new Tuple2i(), new Tuple2i(), new Tuple2i(), new Tuple2i(),
-    };
-    
     /** Immutable list of sprites. A new array is created when the list changes. */
     private Sprite[] sprites = new Sprite[0];
     /** The list of sprites at the last call to getRemovedSprites() */
@@ -72,6 +68,7 @@ public class Group extends Sprite {
     private boolean backBufferCoversStage;
     private BlendMode backBufferBlendMode = BlendMode.SrcOver();
     private Transform backBufferTransform = new Transform();
+    private Tuple2i[] transformedClip = null;
     
     public Group() {
         this(0, 0, 0, 0);
@@ -928,12 +925,22 @@ public class Group extends Sprite {
             // Translate the clip rect (device space) to this Group's draw space
             if (drawTransform.getType() != Transform.TYPE_IDENTITY) {
                 int numPoints = ((drawTransform.getType() & Transform.TYPE_ROTATE) != 0) ? 4 : 2;
+
+                if (transformedClip == null || transformedClip.length < numPoints) {
+                    transformedClip = new Tuple2i[numPoints];
+                    for (int i = 0; i < numPoints; i++) {
+                        transformedClip[i] = new Tuple2i();
+                    }
+                }
+
                 transformedClip[0].set(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY));
                 transformedClip[1].set(
                     CoreMath.toFixed(clipX + clipW),
                     CoreMath.toFixed(clipY + clipH));
-                transformedClip[2].set(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY + clipH));
-                transformedClip[3].set(CoreMath.toFixed(clipX + clipW), CoreMath.toFixed(clipY));
+                if (numPoints == 4) {
+                    transformedClip[2].set(CoreMath.toFixed(clipX), CoreMath.toFixed(clipY + clipH));
+                    transformedClip[3].set(CoreMath.toFixed(clipX + clipW), CoreMath.toFixed(clipY));
+                }
 
                 int x1 = Integer.MAX_VALUE;
                 int y1 = Integer.MAX_VALUE;
