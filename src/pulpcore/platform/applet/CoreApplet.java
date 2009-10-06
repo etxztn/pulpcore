@@ -49,7 +49,7 @@ import pulpcore.Stage;
 */
 // CoreApplet is final so that developers don't override CoreApplet constructor, and call Stage or 
 // some other class that isn't ready until after init()
-public final class CoreApplet extends Applet {
+public final class CoreApplet extends Applet implements Runnable {
     
     static {
         // Send a message to the Java Console
@@ -58,6 +58,7 @@ public final class CoreApplet extends Applet {
     }
     
     private AppletAppContext context;
+    private boolean destroyed = false;
     
     private Color getColorParameter(String param) {
         String color = getParameter(param);
@@ -95,6 +96,7 @@ public final class CoreApplet extends Applet {
             context.stop();
         }
         context = (AppletAppContext)AppletPlatform.getInstance().registerApp(this);
+        new Thread(this, "PulpCore-Destroyer").start();
     }
     
     public final void start() {
@@ -109,11 +111,33 @@ public final class CoreApplet extends Applet {
         }
     }
     
-    public final void destroy() {
-        if (context != null) {
-            // Calls context.destroy()
-            AppletPlatform.getInstance().unregisterApp(this);
-            context = null;
+    public final synchronized void destroy() {
+        if (!destroyed) {
+            destroyed = true;
+            if (context != null) {
+                // Calls context.destroy()
+                AppletPlatform.getInstance().unregisterApp(this);
+                context = null;
+            }
+        }
+    }
+
+    // The destroy() method isn't called on Safari 4 + Snow Leopard.
+    // This will call it when the applet gets the ThreadDeath exception.
+    public void run() {
+        Object obj = new Object();
+        try {
+            while (true) {
+                try {
+                    synchronized (obj) {
+                       obj.wait();
+                    }
+                }
+                catch (InterruptedException ex) { }
+            }
+        }
+        finally {
+            destroy();
         }
     }
     
