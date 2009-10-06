@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -705,6 +705,10 @@ public class Scene2D extends Scene {
                 }
             }
         }
+        else {
+            root.update(0);
+        }
+
         // Allow subclasses to check input, change scenes, etc.
         update(elapsedTime);
 
