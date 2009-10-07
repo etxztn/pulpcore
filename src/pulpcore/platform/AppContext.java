@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
@@ -61,6 +62,9 @@ public abstract class AppContext {
     private Map talkbackFields = new HashMap();
     private final ArrayList runnables = new ArrayList();
     private PrintStream out = System.out;
+    // List<AssetCatalog>
+    // Might need to be a copy-on-write list in Java 5
+    private final ArrayList assetCatalogs = new ArrayList();
 
     // Logging
 
@@ -218,7 +222,11 @@ public abstract class AppContext {
     public int getDefaultForegroundColor() {
         return Colors.rgb(170, 170, 170);
     }
-    
+
+    public List getAssetCatalogs() {
+        return assetCatalogs;
+    }
+
     public abstract String getAppProperty(String name);
     
     public abstract Scene createFirstScene();

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -34,12 +34,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import pulpcore.platform.AppContext;
+import pulpcore.platform.AssetCatalog;
 import pulpcore.util.ByteArray;
 
 /**
@@ -50,12 +50,19 @@ public class Assets {
     
     // Lock for multiple app contexts running simultaneously.
     private static final Object LOCK = new Object();
-                     
-    private static final Map CATALOGS = new HashMap();
-    private static final Map ASSETS = new HashMap();
-    
+
     // Prevent instantiation
     private Assets() { }
+
+    // List<AssetCatalog>
+    private static List getContextCatalogs() {
+        AppContext context = CoreSystem.getThisAppContext();
+        if (context == null) {
+            return null;
+        }
+
+        return context.getAssetCatalogs();
+    }
     
     /**
         Adds the contents of an asset catalog (zip file) into memory.
@@ -88,12 +95,13 @@ public class Assets {
     public static boolean addCatalog(String catalogName, InputStream is) {
         // NOTE: this method used by PulpCorePlayer via reflection 
         
-        if (is == null) {
+        List catalogs = getContextCatalogs();
+
+        if (is == null || catalogs == null) {
             return false;
         }
-        
-        List assetNames = new ArrayList();
-        List assetData = new ArrayList();
+
+        AssetCatalog catalog = new AssetCatalog(catalogName);
         
         // Read zip file
         try {
@@ -137,8 +145,7 @@ public class Assets {
                         out.write(buffer, 0, bytesRead);
                     }
                 }
-                assetNames.add(entryName);
-                assetData.add(entryData);
+                catalog.put(entryName, entryData);
             }
             in.close();
         }
@@ -147,28 +154,15 @@ public class Assets {
             return false;
         }
         
-        if (assetNames.size() == 0) {
+        if (catalog.size() == 0) {
             if (Build.DEBUG) CoreSystem.print("Warning: no assets found: " + catalogName);
         }
         
         synchronized (LOCK) {
-            // Remove old catalog
+            // Remove old catalog of the same name
             removeCatalog(catalogName);
-            
-            // Add assets
-            for (int i = 0; i < assetNames.size(); i++) {
-                String name = (String)assetNames.get(i);
-                byte[] data = (byte[])assetData.get(i);
-                
-                // Remove any asset of the same name from a different catalog
-                removeAsset(name);
-                
-                // Add the new entry
-                ASSETS.put(name, data);
-            }
-            
-            // Add catalog name and its list of assets
-            CATALOGS.put(catalogName, assetNames);
+
+            catalogs.add(catalog);
         }
         return true;        
     }
@@ -176,11 +170,30 @@ public class Assets {
     /**
         Gets an iterator of catalog names (zip files) stored in memory.
     */
+    // Iterator<String>
     public static Iterator getCatalogs() {
         // NOTE: this method used by PulpCorePlayer via reflection
-        synchronized (LOCK) {
-            return CATALOGS.keySet().iterator();
+        List catalogs = getContextCatalogs();
+        if (catalogs == null) {
+            return null;
         }
+        final List catalogsCopy = new ArrayList(catalogs);
+        return new Iterator() {
+
+            int index = 0;
+
+            public boolean hasNext() {
+                return index < catalogsCopy.size();
+            }
+
+            public Object next() {
+                return ((AssetCatalog)catalogsCopy.get(index++)).getName();
+            }
+
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /**
@@ -188,7 +201,15 @@ public class Assets {
     */
     public static boolean containsCatalog(String catalogName) {
         synchronized (LOCK) {
-            return (CATALOGS.get(catalogName) != null);
+            List catalogs = getContextCatalogs();
+            if (catalogName != null && catalogs != null) {
+                for (int i = 0; i < catalogs.size(); i++) {
+                    if (catalogName.equals(((AssetCatalog)catalogs.get(i)).getName())) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
     
@@ -196,27 +217,37 @@ public class Assets {
         Removes all assets downloaded from the specified catalog (zip file).
     */
     public static void removeCatalog(String catalogName) {
-        
         synchronized (LOCK) {
-            List assetList = (List)CATALOGS.get(catalogName);
-            
-            if (assetList != null) {
-                for (int i = 0; i < assetList.size(); i++) {
-                    ASSETS.remove(assetList.get(i));
+            // Remove from context's catalog list
+            List catalogs = getContextCatalogs();
+            if (catalogName != null && catalogs != null) {
+                for (int i = 0; i < catalogs.size(); i++) {
+                    if (catalogName.equals(((AssetCatalog)catalogs.get(i)).getName())) {
+                        catalogs.remove(i);
+                        break;
+                    }
                 }
             }
-            
-            CATALOGS.remove(catalogName);
         }
     }
-    
+
     /**
         Gets an iterator of the names of all assets from all zip files stored in memory. 
         Does not include assets in the jar file.
     */
+    // Iterator<String>
     public static Iterator getAssetNames() {
         synchronized (LOCK) {
-            return ASSETS.keySet().iterator();
+            List catalogs = getContextCatalogs();
+            if (catalogs != null) {
+                List assetNames = new ArrayList();
+                for (int i = 0; i < catalogs.size(); i++) {
+                    assetNames.addAll(((AssetCatalog)catalogs.get(i)).getAssetNames());
+                }
+
+                return assetNames.iterator();
+            }
+            return null;
         }
     }
     
@@ -229,30 +260,35 @@ public class Assets {
         }
         
         synchronized (LOCK) {
-            return (ASSETS.get(assetName) != null);
+            List catalogs = getContextCatalogs();
+            if (catalogs != null) {
+                for (int i = 0; i < catalogs.size(); i++) {
+                    if (((AssetCatalog)catalogs.get(i)).contains(assetName)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
-    
-    /**
-        Removes a specific asset from memory.
-    */
-    public static void removeAsset(String assetName) {
-        synchronized (LOCK) {
-            ASSETS.remove(assetName);
-        
-            // Remove it from the catalog list
-            Iterator i = CATALOGS.values().iterator();
-            while (i.hasNext()) {
-                List list = (List)i.next();
-                for (int j = 0; j < list.size(); j++) {
-                    if (assetName.equals(list.get(j))) {
-                        list.remove(j);
-                        j--;
+
+    private static byte[] getBytes(String assetName) {
+        List catalogs = getContextCatalogs();
+        if (catalogs != null) {
+            synchronized (LOCK) {
+                // Reverse iteration. If the assetName is in multiple catalogs, uses the most
+                // recently added.
+                for (int i = catalogs.size() - 1; i >= 0; i--) {
+                    AssetCatalog catalog = (AssetCatalog)catalogs.get(i);
+                    byte[] data = catalog.get(assetName);
+                    if (data != null) {
+                        return data;
                     }
                 }
             }
         }
-    }    
+        return null;
+    }
     
     /**
         Gets an asset as a {@link pulpcore.util.ByteArray}.
@@ -269,13 +305,11 @@ public class Assets {
         if (assetName.startsWith("/")) {
             assetName = assetName.substring(1);
         }
-        
+
         // Check loaded zip file(s)
-        synchronized (LOCK) {
-            byte[] assetData = (byte[])ASSETS.get(assetName);
-            if (assetData != null) {
-                return new ByteArray(assetData);
-            }
+        byte[] assetData = getBytes(assetName);
+        if (assetData != null) {
+            return new ByteArray(assetData);
         }
         
         // Check the jar file, then the server
@@ -316,11 +350,9 @@ public class Assets {
         }
         
         // Check loaded zip file(s)
-        synchronized (LOCK) {
-            byte[] assetData = (byte[])ASSETS.get(assetName);
-            if (assetData != null) {
-                return new ByteArrayInputStream(assetData);
-            }
+        byte[] assetData = getBytes(assetName);
+        if (assetData != null) {
+            return new ByteArrayInputStream(assetData);
         }
         
         // Check the jar file, then the server
