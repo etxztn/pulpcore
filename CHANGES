@@ -16,6 +16,7 @@
   * API: Added Sound.getSimultaneousPlaybackCount() and
     Sound.setSimultaneousPlaybackCount(int). The default is 1 for Ogg; 8 for
     all others.
+  * API: Buttons can have an optional disabled appearance (Dan Watling).
   * Performance: Discarded images from filters are now cached for later, which will
     limit GC and improve performance.
   * Core: updated pulpcore.js for DP Java update 4 for Mac OS X 10.5.
