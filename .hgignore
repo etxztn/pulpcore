@@ -4,5 +4,6 @@
 \.rej$
 \.conflict\~$
 syntax: glob
-build/**
+build
+.DS_Store
 
