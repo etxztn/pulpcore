@@ -6,4 +6,4 @@
 syntax: glob
 build
 .DS_Store
-
+doc/api
