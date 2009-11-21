@@ -26,7 +26,7 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 */
-package pulpcore.image.filter;
+package pulpcore.platform;
 
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
@@ -49,15 +49,18 @@ import pulpcore.image.CoreImage;
     a transparent image to be created.
 
  */
-/* package */ class ImageCache {
+public class ImageCache {
 
-    public static ImageCache instance = new ImageCache(30*1000);
-
-    private static Timer EXPIRATION_TIMER = new Timer(true);
+    private static final boolean LOG = false;
 
     // HashMap<String, SoftReference<CoreImage>>
     private final HashMap cache = new HashMap();
     private final long timeoutMillis;
+    private Timer expirationTimer = new Timer(true);
+
+    public ImageCache() {
+        this(30*1000);
+    }
 
     public ImageCache(int timeoutMillis) {
         this.timeoutMillis = timeoutMillis;
@@ -123,10 +126,10 @@ import pulpcore.image.CoreImage;
         String key = createKey(width, height, isOpaque);
         CoreImage image = removeAny(key);
         if (image != null) {
-            //pulpcore.CoreSystem.print("Retrieved: " + key);
+            if (LOG) CoreSystem.print("ImageCache: Retrieved: " + key);
             return image;
         }
-        //pulpcore.CoreSystem.print("Created: " + key);
+        if (LOG) CoreSystem.print("ImageCache: Created: " + key);
         return new CoreImage(width, height, isOpaque);
     }
 
@@ -136,6 +139,7 @@ import pulpcore.image.CoreImage;
     public synchronized void put(CoreImage image) {
         if (image != null) {
             String key = createKey(image.getWidth(), image.getHeight(), image.isOpaque());
+            if (LOG) CoreSystem.print("ImageCache: Put: " + key);
             SoftReference value = new SoftReference(image);
             put(key, value);
             scheduleRemoval(key, value);
@@ -146,29 +150,41 @@ import pulpcore.image.CoreImage;
         // Keep a reference to the key. If a WeakReference is used for the key,
         // the referenced is removed when additional values are added to a previous copy of the key.
         final WeakReference valueReference = new WeakReference(value);
-        EXPIRATION_TIMER.schedule(
-            new TimerTask() {
-                public void run() {
-                    try {
-                        synchronized (ImageCache.this) {
-                            SoftReference value = (SoftReference)valueReference.get();
-                            if (value != null && removeSpecific(key, value)) {
-                                //pulpcore.CoreSystem.print("Removed: " + key + " " + cache);
-                            }
-                            else {
-                                //pulpcore.CoreSystem.print("Not removed: " + key + " " + cache);
-                            }
+        TimerTask removalTask = new TimerTask() {
+            public void run() {
+                try {
+                    synchronized (ImageCache.this) {
+                        SoftReference value = (SoftReference)valueReference.get();
+                        if (value != null && removeSpecific(key, value)) {
+                            if (LOG) CoreSystem.print("ImageCache: Removed after timeout: " + key);
                         }
-                    }
-                    catch (Exception ex) {
-                        // Shouldn't happen, but it needs to be caught to prevent
-                        // the timer from being cancelled
-                        if (Build.DEBUG) {
-                            CoreSystem.print("Please post this stacktrace to PulpCore mailing list",
-                                    ex);
+                        else {
+                            if (LOG) CoreSystem.print("ImageCache: Not removed after timeout: " + key);
                         }
                     }
                 }
-            }, timeoutMillis);
+                catch (Exception ex) {
+                    // Shouldn't happen, but it needs to be caught to prevent
+                    // the timer from being cancelled
+                    if (Build.DEBUG) {
+                        CoreSystem.print("Please post this stacktrace to PulpCore mailing list",
+                                ex);
+                    }
+                }
+            }
+        };
+
+        int maxAttempts = 2;
+        while (maxAttempts > 0) {
+            try {
+                expirationTimer.schedule(removalTask, timeoutMillis);
+                break;
+            }
+            catch (IllegalStateException ex) {
+                // TODO: In Java 1.5, name this thread
+                expirationTimer = new Timer(true);
+            }
+            maxAttempts--;
+        }
     }
 }

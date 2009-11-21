@@ -65,6 +65,7 @@ public abstract class AppContext {
     // List<AssetCatalog>
     // Might need to be a copy-on-write list in Java 5
     private final ArrayList assetCatalogs = new ArrayList();
+    private ImageCache imageCache;
 
     // Logging
 
@@ -213,6 +214,13 @@ public abstract class AppContext {
                 r.notifyAll();
             }
         }
+    }
+
+    public ImageCache getImageCache() {
+        if (imageCache == null) {
+            imageCache = new ImageCache();
+        }
+        return imageCache;
     }
     
     public int getDefaultBackgroundColor() {

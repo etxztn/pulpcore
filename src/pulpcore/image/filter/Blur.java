@@ -267,8 +267,8 @@ public class Blur extends Filter {
                         workBuffer.getHeight() != output.getHeight() ||
                         workBuffer.isOpaque() != output.isOpaque())
                 {
-                    ImageCache.instance.put(workBuffer);
-                    workBuffer = ImageCache.instance.get(output.getWidth(), output.getHeight(),
+                    releaseImageToCache(workBuffer);
+                    workBuffer = getImageFromCache(output.getWidth(), output.getHeight(),
                             output.isOpaque());
                 }
             }

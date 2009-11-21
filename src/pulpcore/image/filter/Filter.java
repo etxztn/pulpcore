@@ -28,7 +28,9 @@
 */
 package pulpcore.image.filter;
 
+import pulpcore.CoreSystem;
 import pulpcore.image.CoreImage;
+import pulpcore.platform.AppContext;
 
 /**
     Base class for image filters. Subclasses override the
@@ -151,7 +153,7 @@ public abstract class Filter {
         CoreImage oldInput = getInput();
         // Set input so that getWidth(), etc. is correct.
         setInput(input);
-        CoreImage newOutput = ImageCache.instance.get(getWidth(), getHeight(), isOpaque());
+        CoreImage newOutput = getImageFromCache(getWidth(), getHeight(), isOpaque());
         filter(input, newOutput);
         setInput(oldInput);
         return newOutput;
@@ -181,8 +183,8 @@ public abstract class Filter {
             output.getHeight() != h ||
             output.isOpaque() != isOpaque())
         {
-            ImageCache.instance.put(output);
-            output = ImageCache.instance.get(w, h, isOpaque());
+            releaseImageToCache(output);
+            output = getImageFromCache(w, h, isOpaque());
             //pulpcore.CoreSystem.print("New output for " + getClass().getName() + ": " + this.output.getWidth() + "x" + this.output.getHeight());
             setDirty();
         }
@@ -220,5 +222,26 @@ public abstract class Filter {
 
     private void setDirty(boolean dirty) {
         this.isDirty = dirty;
+    }
+    
+    // Static methods to get/put cached images when the AppContext is not available
+
+    /* package private */ static void releaseImageToCache(CoreImage image) {
+        if (image != null) {
+            AppContext appContext = CoreSystem.getThisAppContext();
+            if (appContext != null) {
+                appContext.getImageCache().put(image);
+            }
+        }
+    }
+
+    /* package private */ static CoreImage getImageFromCache(int width, int height, boolean opaque) {
+        AppContext appContext = CoreSystem.getThisAppContext();
+        if (appContext != null) {
+            return appContext.getImageCache().get(width, height, opaque);
+        }
+        else {
+            return new CoreImage(width, height, opaque);
+        }
     }
 }

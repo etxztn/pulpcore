@@ -13,7 +13,7 @@
             public static final String VERSION = "0.11.6";
             
             /** The build date. */
-            public static final String BUILD_DATE = "2009/11/16 13:24:10";
+            public static final String BUILD_DATE = "2009/11/21 10:43:38";
             
             /** The platform name of this PulpCore build. */
             public static final String PLATFORM = "applet";

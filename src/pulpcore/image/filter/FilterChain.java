@@ -28,6 +28,7 @@
 */
 package pulpcore.image.filter;
 
+import pulpcore.platform.ImageCache;
 import java.util.ArrayList;
 import java.util.List;
 import pulpcore.image.CoreImage;
@@ -216,7 +217,7 @@ public class FilterChain extends Filter {
                     newOutput = output;
                 }
                 else {
-                    newOutput = ImageCache.instance.get(f.getWidth(), f.getHeight(), f.isOpaque());
+                    newOutput = getImageFromCache(f.getWidth(), f.getHeight(), f.isOpaque());
                 }
                 f.filter(input, newOutput);
                 f.setInput(oldInput);
