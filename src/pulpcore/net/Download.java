@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,7 +30,6 @@
 package pulpcore.net;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -53,8 +52,8 @@ public class Download implements Runnable {
     public static final int ERROR = 4;
     
     private static final int BUFFER_SIZE = 1024;
-    private static final int MAX_UNSUCCESSFUL_ATTEMPTS = 10;
-    private static final int TIME_BETWEEN_ATTEMPTS = 3000;
+    private static final int MAX_UNSUCCESSFUL_ATTEMPTS = 5;
+    private static final int TIME_BETWEEN_ATTEMPTS = 1000;
     
     private final Object lock = new Object();
     
@@ -63,7 +62,9 @@ public class Download implements Runnable {
     private int unsuccessfulAttempts;
     private boolean resetUnsuccessfulAttempts;
     
-    private URL url;
+    private final URL url;
+    private final boolean useCaches;
+
     private int size;
     
     private int startPosition;
@@ -73,12 +74,20 @@ public class Download implements Runnable {
     private Throwable lastException;
     
     private byte[] data;
-    
+
     /**
         Starts downloading a file from the server. Returns immediatly.
         @return a Download object, or null if the path is invalid.
     */
     public static Download startDownload(String file) {
+        return startDownload(file, true);
+    }
+    
+    /**
+        Starts downloading a file from the server. Returns immediatly.
+        @return a Download object, or null if the path is invalid.
+    */
+    public static Download startDownload(String file, boolean useCaches) {
         URL url;
         try {
             url = new URL(CoreSystem.getBaseURL(), file);
@@ -88,13 +97,18 @@ public class Download implements Runnable {
             return null;
         }
         
-        Download download = new Download(url);
+        Download download = new Download(url, useCaches);
         download.start();
         return download;
     }
   
     public Download(URL url) {
+        this(url, true);
+    }
+
+    public Download(URL url, boolean useCaches) {
         this.url = url;
+        this.useCaches = useCaches;
         state = IDLE;
         size = -1;
         startTime = -1;
@@ -195,12 +209,6 @@ public class Download implements Runnable {
             try {
                 attemptDownload();
             }
-            catch (FileNotFoundException ex) {
-                if (Build.DEBUG) CoreSystem.print("File not found: " + url);
-                lastException = ex;
-                setState(ERROR);
-                return;
-            }
             catch (IOException ex) {
                 if (Build.DEBUG) CoreSystem.print("Download", ex);
                 lastException = ex;
@@ -237,10 +245,20 @@ public class Download implements Runnable {
         
         int newStartPosition = 0;
         resetUnsuccessfulAttempts = false;
+        boolean isRetryAfterCompleteFailure = (unsuccessfulAttempts > 0 && restartPosition == 0);
         if (connection instanceof HttpURLConnection) {
-            connection.setRequestProperty("Cache-Control", "no-transform");
-            if (restartPosition > 0) {
-                connection.setRequestProperty("Range", "bytes=" + restartPosition + "-");
+            if (useCaches && !isRetryAfterCompleteFailure) {
+                connection.setRequestProperty("Cache-Control", "no-transform");
+                connection.setUseCaches(true);
+                if (restartPosition > 0) {
+                    connection.setRequestProperty("Range", "bytes=" + restartPosition + "-");
+                }
+            }
+            else {
+                restartPosition = 0;
+                connection.setRequestProperty("Cache-Control", "no-cache");
+                connection.setRequestProperty("Pragma", "no-cache");
+                connection.setUseCaches(false);
             }
             
             // Connect

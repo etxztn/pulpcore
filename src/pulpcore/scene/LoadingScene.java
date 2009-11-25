@@ -179,7 +179,7 @@ public class LoadingScene extends Scene2D {
     }
     
     public void load() {
-        startDownload();
+        startDownload(true);
     }
     
     public void unload() {
@@ -190,7 +190,7 @@ public class LoadingScene extends Scene2D {
         }
     }
     
-    private void startDownload() {
+    private void startDownload(boolean useCaches) {
         normalLayer.visible.set(true);
         errorLayer.visible.set(false);
                 
@@ -204,7 +204,7 @@ public class LoadingScene extends Scene2D {
             download.getState() == Download.CANCELED) 
         {
             showProgress = false;
-            download = Download.startDownload(assetCatalogFile);
+            download = Download.startDownload(assetCatalogFile, useCaches);
             if (download == null) {
                 state = Download.ERROR;
             }
@@ -270,7 +270,7 @@ public class LoadingScene extends Scene2D {
             normalLayer.visible.set(false);
             errorLayer.visible.set(true);
             if (tryAgainButton.isClicked()) {
-                startDownload();
+                startDownload(false);
             }
         }
         
