@@ -287,7 +287,7 @@ public abstract class Sound {
         loaded, this method may return the same reference.
         <p>
         Ogg Vorbis sounds are set to only play one copy at a time; other formats can play 8
-        copies at a time. To override this setting, use {@link setSimultaneousPlaybackCount(int) }.
+        copies at a time. To override this setting, use {@link #setSimultaneousPlaybackCount(int) }.
         @param soundAsset The name of a AU, WAV, or OGG sound file.
         @return The sound, or a zero-length Sound on error.
     */
