@@ -719,18 +719,18 @@ public class Path {
         int y1 = yPoints[0];
         for (int i = 1; i < numPoints; i++) {
             if (drawJoints) {
-                g.fillRectFixedPoint(x1-CoreMath.ONE, y1-CoreMath.ONE, 
+                g.fillRectx(x1-CoreMath.ONE, y1-CoreMath.ONE,
                     CoreMath.toFixed(3), CoreMath.toFixed(3));
             }
             int x2 = xPoints[i];
             int y2 = yPoints[i];
-            g.drawLineFixedPoint(x1, y1, x2, y2);
+            g.drawLinex(x1, y1, x2, y2);
             x1 = x2;
             y1 = y2;
         }
         
         if (drawJoints) {
-            g.fillRectFixedPoint(x1-CoreMath.ONE, y1-CoreMath.ONE, 
+            g.fillRectx(x1-CoreMath.ONE, y1-CoreMath.ONE,
                 CoreMath.toFixed(3), CoreMath.toFixed(3));
         }
     }

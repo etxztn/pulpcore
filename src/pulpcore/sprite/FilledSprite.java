@@ -124,23 +124,23 @@ public class FilledSprite extends Sprite {
         // Inner fill
         if ((fillColor.get() >>> 24) != 0) {
             g.setColor(fillColor.get());
-            g.fillRectFixedPoint(borderLeft, borderTop, innerWidth, innerHeight);
+            g.fillRectx(borderLeft, borderTop, innerWidth, innerHeight);
         }
         
         // Border fill
         if ((borderColor.get() >>> 24) != 0) {
             g.setColor(borderColor.get());
             if (borderTop > 0) {
-                g.fillRectFixedPoint(0, 0, w, borderTop);
+                g.fillRectx(0, 0, w, borderTop);
             }
             if (borderBottom > 0) {
-                g.fillRectFixedPoint(0, h - borderBottom, w, borderBottom);
+                g.fillRectx(0, h - borderBottom, w, borderBottom);
             }
             if (borderLeft > 0) {
-                g.fillRectFixedPoint(0, borderTop, borderLeft, innerHeight);
+                g.fillRectx(0, borderTop, borderLeft, innerHeight);
             }
             if (borderRight > 0) {
-                g.fillRectFixedPoint(w - borderRight, borderTop, borderRight, innerHeight);
+                g.fillRectx(w - borderRight, borderTop, borderRight, innerHeight);
             }
         }
     }

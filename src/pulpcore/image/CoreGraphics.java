@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2009, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -36,7 +36,14 @@ import pulpcore.math.Rect;
 import pulpcore.math.Transform;
 
 /**
-    Graphics rendering routines onto a CoreImage surface. 
+    Graphics rendering routines.
+    <p>
+    All rendering methods have three versions: integer coordinates, floating-point coordinates,
+    and fixed-point coordinates. Floating-point method names end with an 'f', and fixed-point
+    method names end with an 'x'. For example the three methods to draw an image at a specific
+    location are {@link #drawImage(CoreImage, int, int)},
+    {@link #drawImagef(CoreImage, float, float)}, and
+    {@link #drawImagex(CoreImage, int, int)}.
     <p>
     The default blend mode is {@link BlendMode#SrcOver()}.
     <p>
@@ -503,12 +510,24 @@ public class CoreGraphics {
             internalDrawLine(x1, y1, x2, y2, true);
         }
     }
-    
+
     /**
         Draws a line using the current color.
     */
+    public void drawLinef(float x1, float y1, float x2, float y2) {
+        drawLinex(
+            CoreMath.toFixed(x1),
+            CoreMath.toFixed(y1),
+            CoreMath.toFixed(x2),
+            CoreMath.toFixed(y2));
+    }
+    
+    /**
+        Draws a line using the current color.
+        @deprecated Use {@link #drawLinef(float, float, float, float)}
+    */
     public void drawLine(double x1, double y1, double x2, double y2) {
-        drawLineFixedPoint(
+        drawLinex(
             CoreMath.toFixed(x1),
             CoreMath.toFixed(y1),
             CoreMath.toFixed(x2),
@@ -517,8 +536,16 @@ public class CoreGraphics {
     
     /**
         Draws a line (at fixed-point coordinates) using the current color.
+        @deprecated Use {@link #drawLinex(int, int, int, int)}
     */
     public void drawLineFixedPoint(int x1, int y1, int x2, int y2) {
+        drawLinex(x1, y1, x2, y2);
+    }
+
+    /**
+        Draws a line (at fixed-point coordinates) using the current color.
+    */
+    public void drawLinex(int x1, int y1, int x2, int y2) {
         internalDrawLine(x1, y1, x2, y2, false);
     }
     
@@ -535,6 +562,36 @@ public class CoreGraphics {
         fillRect(x, y + h - 1, w, 1);
         fillRect(x, y, 1, h);
         fillRect(x + w - 1, y, 1, h);
+    }
+
+    /**
+        Draws a rectangle using the current color. This method draws
+        rectangles at integer coordinates.
+        <p>
+        Note, this method is different from
+        java.awt.Graphics.drawRect() which draws a rectangle with
+        a width of (w+1) and a height of (h+1).
+    */
+    public void drawRectf(float x, float y, float w, float h) {
+        fillRectf(x, y, w, 1);
+        fillRectf(x, y + h - 1, w, 1);
+        fillRectf(x, y, 1, h);
+        fillRectf(x + w - 1, y, 1, h);
+    }
+
+    /**
+        Draws a rectangle using the current color. This method draws
+        rectangles at integer coordinates.
+        <p>
+        Note, this method is different from
+        java.awt.Graphics.drawRect() which draws a rectangle with
+        a width of (w+1) and a height of (h+1).
+    */
+    public void drawRectx(int fx, int fy, int fw, int fh) {
+        drawRectx(fx, fy, fw, CoreMath.ONE);
+        drawRectx(fx, fy + fh - CoreMath.ONE, fw, CoreMath.ONE);
+        drawRectx(fx, fy, CoreMath.ONE, fh);
+        drawRectx(fx + fw - CoreMath.ONE, fy, CoreMath.ONE, fh);
     }
 
     /**
@@ -577,22 +634,39 @@ public class CoreGraphics {
         Fills a rectangle with the current color. 
     */
     public void fillRect(int x, int y, int w, int h) {
-        fillRectFixedPoint(CoreMath.toFixed(x), CoreMath.toFixed(y),
+        fillRectx(CoreMath.toFixed(x), CoreMath.toFixed(y),
+            CoreMath.toFixed(w), CoreMath.toFixed(h));
+    }
+
+    /**
+        Fills a rectangle with the current color.
+    */
+    public void fillRectf(float x, float y, float w, float h) {
+        fillRectx(CoreMath.toFixed(x), CoreMath.toFixed(y),
             CoreMath.toFixed(w), CoreMath.toFixed(h));
     }
     
     /**
-        Fills a rectangle with the current color. 
+        Fills a rectangle with the current color.
+        @deprecated Use {@link #fillRectf(float, float, float, float)}
     */
     public void fillRect(double x, double y, double w, double h) {
-        fillRectFixedPoint(CoreMath.toFixed(x), CoreMath.toFixed(y),
+        fillRectx(CoreMath.toFixed(x), CoreMath.toFixed(y),
             CoreMath.toFixed(w), CoreMath.toFixed(h));
     }
     
     /**
-        Fills a rectangle (at fixed-point coordinates) with the current color. 
+        Fills a rectangle (at fixed-point coordinates) with the current color.
+        @deprecated Use {@link #fillRectx(int, int, int, int)}
     */
     public void fillRectFixedPoint(int fx, int fy, int fw, int fh) {
+        fillRectx(fx, fy, fw, fh);
+    }
+
+    /**
+        Fills a rectangle (at fixed-point coordinates) with the current color.
+    */
+    public void fillRectx(int fx, int fy, int fw, int fh) {
         if (isSrcColorTransparent || fw == 0 || fh == 0) {
             return;
         }
@@ -681,18 +755,36 @@ public class CoreGraphics {
     }
     
     public void drawString(String str, int x, int y) {
+        drawStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y));
+    }
+
+    public void drawStringf(String str, float x, float y) {
+        drawStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y));
+    }
+
+    public void drawStringx(String str, int fx, int fy) {
         if (str == null || str.length() == 0 || alpha == 0) {
             return;
         }
-        
+
         pushTransform();
-        transform.translate(CoreMath.toFixed(x), CoreMath.toFixed(y));
+        transform.translate(fx, fy);
         drawString(str);
         popTransform();
     }
     
     public void drawScaledString(String str, int x, int y, int w, int h) {
-        if (str == null || str.length() == 0 || w == 0 || h == 0 || alpha == 0) {
+        drawScaledStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                 CoreMath.toFixed(w), CoreMath.toFixed(h));
+    }
+
+    public void drawScaledStringf(String str, float x, float y, float w, float h) {
+        drawScaledStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                 CoreMath.toFixed(w), CoreMath.toFixed(h));
+    }
+
+    public void drawScaledStringx(String str, int fx, int fy, int fw, int fh) {
+        if (str == null || str.length() == 0 || fw == 0 || fh == 0 || alpha == 0) {
             return;
         }
         
@@ -707,22 +799,51 @@ public class CoreGraphics {
             return;
         }
         
-        int scaleX = CoreMath.toFixed(w) / originalWidth;
-        int scaleY = CoreMath.toFixed(h) / originalHeight;
+        int scaleX = fw / originalWidth;
+        int scaleY = fh / originalHeight;
         
         pushTransform();
-        transform.translate(CoreMath.toFixed(x), CoreMath.toFixed(y));
+        transform.translate(fx, fy);
         transform.scale(scaleX, scaleY);
         drawString(str);
         popTransform();
     }
     
-    public void drawRotatedString(String str, int x, int y, int w, int h, int angle) {
-        drawRotatedString(str, x, y, w, h, CoreMath.cos(angle), CoreMath.sin(angle));
+    public void drawRotatedString(String str, int x, int y, int w, int h, int fangle) {
+        drawRotatedStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                 CoreMath.toFixed(w), CoreMath.toFixed(h),
+                 CoreMath.cos(fangle), CoreMath.sin(fangle));
     }
     
-    public void drawRotatedString(String str, int x, int y, int w, int h, 
-        int cosAngle, int sinAngle) 
+    public void drawRotatedStringf(String str, float x, float y, float w, float h, float angle) {
+        drawRotatedStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                 CoreMath.toFixed(w), CoreMath.toFixed(h),
+                 CoreMath.toFixed(Math.cos(angle)), CoreMath.toFixed(Math.sin(angle)));
+    }
+
+    public void drawRotatedStringx(String str, int fx, int fy, int fw, int fh, int fangle) {
+        drawRotatedStringx(str, fx, fy, fw, fh,
+                 CoreMath.cos(fangle), CoreMath.sin(fangle));
+    }
+
+    public void drawRotatedString(String str, int x, int y, int w, int h,
+        int fcosAngle, int fsinAngle)
+    {
+        drawRotatedStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                 CoreMath.toFixed(w), CoreMath.toFixed(h),
+                 fcosAngle, fsinAngle);
+    }
+
+    public void drawRotatedStringf(String str, float x, float y, float w, float h,
+        float cosAngle, float sinAngle)
+    {
+        drawRotatedStringx(str, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                 CoreMath.toFixed(w), CoreMath.toFixed(h),
+                 CoreMath.toFixed(cosAngle), CoreMath.toFixed(sinAngle));
+    }
+    
+    public void drawRotatedStringx(String str, int fx, int fy, int fw, int fh,
+        int fcosAngle, int fsinAngle)
     {
         if (str == null || str.length() == 0 || alpha == 0) {
             return;
@@ -739,19 +860,17 @@ public class CoreGraphics {
             return;
         }
         
-        int fw = CoreMath.toFixed(w);
-        int fh = CoreMath.toFixed(h);
         int fSrcWidth = CoreMath.toFixed(originalWidth);
         int fSrcHeight = CoreMath.toFixed(originalHeight);
         int scaleX = fw / originalWidth;
         int scaleY = fh / originalHeight;
         
         pushTransform();
-        transform.translate(CoreMath.toFixed(x), CoreMath.toFixed(y));
+        transform.translate(fx, fy);
         transform.scale(scaleX, scaleY);
         
         transform.translate(fSrcWidth / 2, fSrcHeight / 2);
-        transform.rotate(cosAngle, sinAngle);
+        transform.rotate(fcosAngle, fsinAngle);
         transform.translate(-fSrcWidth / 2, -fSrcHeight / 2);
         
         drawString(str);
@@ -780,13 +899,19 @@ public class CoreGraphics {
             throw new IllegalArgumentException("CoreImage source bounds outside of image bounds");
         }
     }
-    
+
+    /**
+        Draw an image using the current transform.
+     */
     public void drawImage(CoreImage image) {
         if (image != null) {
             drawImage(image, 0, 0, image.getWidth(), image.getHeight());
         }
     }
     
+    /**
+        Draw a portion of an image using the current transform.
+     */
     public void drawImage(CoreImage image, 
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
@@ -828,39 +953,101 @@ public class CoreGraphics {
     */
     public void drawImage(CoreImage image, int x, int y) {
         if (image != null) {
-            drawImage(image, x, y, 0, 0, image.getWidth(), image.getHeight());
+            drawImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                    0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    public void drawImagef(CoreImage image, float x, float y) {
+        if (image != null) {
+            drawImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                    0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    /**
+        Draws an image at a specific location using fixed-point coordinates.
+        The image is drawn using the current clip, transform, alpha value, and blend mode.
+        If the image is null, no action is taken and no exception is thrown.
+        @param image the image to draw.
+        @param fx the x coordinate in fixed-point.
+        @param fy the y coordinate in fixed-point.
+    */
+    public void drawImagex(CoreImage image, int fx, int fy) {
+        if (image != null) {
+            drawImagex(image, fx, fy, 0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    public void drawImage(CoreImage image, int x, int y,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                srcX, srcY, srcWidth, srcHeight);
+    }
+
+    public void drawImagef(CoreImage image, float x, float y,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        if (image != null) {
+            drawImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                    0, 0, image.getWidth(), image.getHeight());
         }
     }
     
-    public void drawImage(CoreImage image, int x, int y,
-        int srcX, int srcY, int srcWidth, int srcHeight) 
+    public void drawImagex(CoreImage image, int fx, int fy,
+        int srcX, int srcY, int srcWidth, int srcHeight)
     {
         if (Build.DEBUG) {
             validateImage(image, srcX, srcY, srcWidth, srcHeight);
         }
-        
-        if (alpha == 0 || srcWidth == 0 || srcHeight == 0) {
-            return;
+
+        if (alpha > 0 && srcWidth > 0 && srcHeight > 0) {
+            pushTransform();
+            transform.translate(fx, fy);
+            drawImage(image, srcX, srcY, srcWidth, srcHeight);
+            popTransform();
         }
-        
-        pushTransform();
-        
-        int fx = CoreMath.toFixed(x);
-        int fy = CoreMath.toFixed(y);
-        
-        transform.translate(fx, fy);
-        drawImage(image, srcX, srcY, srcWidth, srcHeight);
-        
-        popTransform();
     }
     
     public void drawScaledImage(CoreImage image, int x, int y, int w, int h) {
         if (image != null) {
-            drawScaledImage(image, x, y, w, h, 0, 0, image.getWidth(), image.getHeight());
+            drawScaledImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    public void drawScaledImagef(CoreImage image, float x, float y, float w, float h) {
+        if (image != null) {
+            drawScaledImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                0, 0, image.getWidth(), image.getHeight());
         }
     }
     
+    public void drawScaledImagex(CoreImage image, int fx, int fy, int fw, int fh) {
+        if (image != null) {
+            drawScaledImagex(image, fx, fy, fw, fh,
+                0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
     public void drawScaledImage(CoreImage image, int x, int y, int w, int h,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawScaledImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h), srcX, srcY, srcWidth, srcHeight);
+    }
+
+    public void drawScaledImagef(CoreImage image, float x, float y, float w, float h,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawScaledImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h), srcX, srcY, srcWidth, srcHeight);
+    }
+    
+    public void drawScaledImagex(CoreImage image, int fx, int fy, int fw, int fh,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
         if (Build.DEBUG) {
@@ -872,75 +1059,208 @@ public class CoreGraphics {
         }
         
         pushTransform();
-        
-        int fx = CoreMath.toFixed(x);
-        int fy = CoreMath.toFixed(y);
         transform.translate(fx, fy);
         
         int type = transform.getType();
         
         if (type == Transform.TYPE_IDENTITY || type == Transform.TYPE_TRANSLATE) {
             // Scale by exact dimensions
-            internalDrawScaledImage(image, w, h, srcX, srcY, srcWidth, srcHeight);
+            internalDrawScaledImage(image, fw, fh, srcX, srcY, srcWidth, srcHeight);
         }
         else {
             // Scale by value
-            int fScaleX = CoreMath.toFixed(w) / srcWidth;
-            int fScaleY = CoreMath.toFixed(h) / srcHeight;
+            int fScaleX = fw / srcWidth;
+            int fScaleY = fh / srcHeight;
             transform.scale(fScaleX, fScaleY);
             drawImage(image, srcX, srcY, srcWidth, srcHeight);
         }
         
         popTransform();
     }
+
+    //
+    // Rotation with angle
+    //
     
     /**
         Draws a rotated and scaled image. The image is rotated around it's center.
-        @param angle a fixed-point angle, typically in the range from 0 to 
+        @param fangle a fixed-point angle, typically in the range from 0 to
             2 * CoreMath.PI.
     */
-    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, int angle) {
+    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, int fangle) {
         if (image != null) {
-            drawRotatedImage(image, x, y, w, h, CoreMath.cos(angle), CoreMath.sin(angle),
-                0, 0, image.getWidth(), image.getHeight());
+            drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                    CoreMath.toFixed(w), CoreMath.toFixed(h),
+                    CoreMath.cos(fangle), CoreMath.sin(fangle),
+                    0, 0, image.getWidth(), image.getHeight());
         }
+    }
+
+    /**
+        Draws a rotated and scaled image. The image is rotated around it's center.
+        @param angle an angle, typically in the range from 0 to 2 * Math.PI.
+    */
+    public void drawRotatedImagef(CoreImage image, float x, float y, float w, float h, float angle) {
+        if (image != null) {
+            drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                    CoreMath.toFixed(w), CoreMath.toFixed(h),
+                    CoreMath.toFixed(Math.cos(angle)), CoreMath.toFixed(Math.sin(angle)),
+                    0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    /**
+        Draws a rotated and scaled image. The image is rotated around it's center.
+        @param fangle a fixed-point angle, typically in the range from 0 to
+            2 * CoreMath.PI.
+    */
+    public void drawRotatedImagex(CoreImage image, int fx, int fy, int fw, int fh, int fangle) {
+        if (image != null) {
+            drawRotatedImagex(image, fx, fy, fw, fh,
+                    CoreMath.cos(fangle), CoreMath.sin(fangle),
+                    0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+
+    //
+    // Rotation with angle and source dimensions
+    //
+    
+    /**
+        Draws a rotated and scaled image. The image is rotated around it's center.
+        @param fangle a fixed-point angle, typically in the range from 0 to
+            2 * CoreMath.PI.
+    */
+    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, int fangle,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                CoreMath.cos(fangle), CoreMath.sin(fangle),
+                srcX, srcY, srcWidth, srcHeight);
+    }
+
+    /**
+        Draws a rotated and scaled image. The image is rotated around it's center.
+        @param angle an angle, typically in the range from 0 to 2 * Math.PI.
+    */
+    public void drawRotatedImagef(CoreImage image, float x, float y, float w, float h, float angle,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                CoreMath.toFixed(Math.cos(angle)), CoreMath.toFixed(Math.sin(angle)),
+                srcX, srcY, srcWidth, srcHeight);
     }
     
     /**
         Draws a rotated and scaled image. The image is rotated around it's center.
-        @param angle a fixed-point angle, typically in the range from 0 to 
+        @param fangle a fixed-point angle, typically in the range from 0 to
             2 * CoreMath.PI.
     */
-    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, int angle,
+    public void drawRotatedImagex(CoreImage image, int fx, int fy, int fw, int fh, int fangle,
         int srcX, int srcY, int srcWidth, int srcHeight)
     {
-        drawRotatedImage(image, x, y, w, h, CoreMath.cos(angle), CoreMath.sin(angle),
-            srcX, srcY, srcWidth, srcHeight);
+        drawRotatedImagex(image, fx, fy, fw, fh,
+                    CoreMath.cos(fangle), CoreMath.sin(fangle),
+                    srcX, srcY, srcWidth, srcHeight);
+    }
+
+    //
+    // Rotation with cos/sin
+    //
+    
+    /**
+        Draws a rotated and scaled image using pre-computed cosine and sine
+        of the angle. The image is rotated around it's center.
+        @param fcosAngle The fixed-point cosine of the angle.
+        @param fsinAngle The fixed-point sine of the angle.
+    */
+    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, 
+        int fcosAngle, int fsinAngle)
+    {
+        if (image != null) {
+            drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                fcosAngle, fsinAngle,
+                0, 0, image.getWidth(), image.getHeight());
+        }
     }
     
     /**
         Draws a rotated and scaled image using pre-computed cosine and sine
         of the angle. The image is rotated around it's center.
-        @param cosAngle The fixed-point cosine of the angle.
-        @param sinAngle The fixed-point sine of the angle.
+        @param cosAngle The cosine of the angle.
+        @param sinAngle The sine of the angle.
     */
-    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h, 
-        int cosAngle, int sinAngle) 
+    public void drawRotatedImagef(CoreImage image, float x, float y, float w, float h, 
+        float cosAngle, float sinAngle) 
     {
         if (image != null) {
-            drawRotatedImage(image, x, y, w, h, cosAngle, sinAngle,
+            drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h), 
+                CoreMath.toFixed(cosAngle), CoreMath.toFixed(sinAngle),
                 0, 0, image.getWidth(), image.getHeight());
         }
+    }
+    
+    /**
+        Draws a rotated and scaled image using pre-computed cosine and sine
+        of the angle. The image is rotated around it's center.
+        @param fcosAngle The fixed-point cosine of the angle.
+        @param fsinAngle The fixed-point sine of the angle.
+    */
+    public void drawRotatedImagex(CoreImage image, int fx, int fy, int fw, int fh, 
+        int fcosAngle, int fsinAngle) 
+    {
+        if (image != null) {
+            drawRotatedImagex(image, fx, fy, fw, fh, fcosAngle, fsinAngle,
+                0, 0, image.getWidth(), image.getHeight());
+        }
+    }
+    
+    //
+    // Rotation with cos/sin and source dimensions
+    //
+
+    /**
+        Draws a rotated and scaled image using pre-computed cosine and sine
+        of the angle. The image is rotated around it's center.
+        @param fcosAngle The fixed-point cosine of the angle.
+        @param fsinAngle The fixed-point sine of the angle.
+    */
+    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h,
+        int fcosAngle, int fsinAngle,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                fcosAngle, fsinAngle,
+                srcX, srcY, srcWidth, srcHeight);
+    }
+
+    /**
+        Draws a rotated and scaled image using pre-computed cosine and sine
+        of the angle. The image is rotated around it's center.
+    */
+    public void drawRotatedImagef(CoreImage image, float x, float y, float w, float h,
+        float cosAngle, float sinAngle,
+        int srcX, int srcY, int srcWidth, int srcHeight)
+    {
+        drawRotatedImagex(image, CoreMath.toFixed(x), CoreMath.toFixed(y),
+                CoreMath.toFixed(w), CoreMath.toFixed(h),
+                CoreMath.toFixed(cosAngle), CoreMath.toFixed(sinAngle),
+                srcX, srcY, srcWidth, srcHeight);
     }
      
     /**
         Draws a rotated and scaled image using pre-computed cosine and sine
         of the angle. The image is rotated around it's center.
-        @param cosAngle The fixed-point cosine of the angle.
-        @param sinAngle The fixed-point sine of the angle.
+        @param fcosAngle The fixed-point cosine of the angle.
+        @param fsinAngle The fixed-point sine of the angle.
     */
-    public void drawRotatedImage(CoreImage image, int x, int y, int w, int h,
-        int cosAngle, int sinAngle,
+    public void drawRotatedImagex(CoreImage image, int fx, int fy, int fw, int fh,
+        int fcosAngle, int fsinAngle,
         int srcX, int srcY, int srcWidth, int srcHeight)
     {
         if (Build.DEBUG) {
@@ -952,11 +1272,6 @@ public class CoreGraphics {
         }
         
         pushTransform();
-        
-        int fx = CoreMath.toFixed(x);
-        int fy = CoreMath.toFixed(y);
-        int fw = CoreMath.toFixed(w);
-        int fh = CoreMath.toFixed(h);
         int fSrcWidth = CoreMath.toFixed(srcWidth);
         int fSrcHeight = CoreMath.toFixed(srcHeight);
         int fScaleX = fw / srcWidth;
@@ -966,7 +1281,7 @@ public class CoreGraphics {
         transform.scale(fScaleX, fScaleY);
         
         transform.translate(fSrcWidth / 2, fSrcHeight / 2);
-        transform.rotate(cosAngle, sinAngle);
+        transform.rotate(fcosAngle, fsinAngle);
         transform.translate(-fSrcWidth / 2, -fSrcHeight / 2);
         
         drawImage(image, srcX, srcY, srcWidth, srcHeight);
@@ -1033,23 +1348,21 @@ public class CoreGraphics {
         results from CoreImage.scale(), which is used in other parts of the
         engine.
     */
-    private void internalDrawScaledImage(CoreImage image, int w, int h,
+    private void internalDrawScaledImage(CoreImage image, int fw, int fh,
         int srcX, int srcY, int srcWidth, int srcHeight) 
     {
         if (Build.DEBUG) {
             validateImage(image, srcX, srcY, srcWidth, srcHeight);
         }
         
-        if (alpha == 0 || srcWidth == 0 || srcHeight == 0 || w == 0 || h == 0) {
+        if (alpha == 0 || srcWidth == 0 || srcHeight == 0 || fw == 0 || fh == 0) {
             return;
         }
         
-        int fW = CoreMath.toFixed(w);
-        int fH = CoreMath.toFixed(h);
-        int du = CoreMath.div(CoreMath.toFixed(srcWidth), fW);
-        int dv = CoreMath.div(CoreMath.toFixed(srcHeight), fH);
+        int du = CoreMath.div(CoreMath.toFixed(srcWidth), fw);
+        int dv = CoreMath.div(CoreMath.toFixed(srcHeight), fh);
     
-        internalDrawScaledImage(image, fW, fH, du, dv,
+        internalDrawScaledImage(image, fw, fh, du, dv,
             srcX, srcY, srcWidth, srcHeight);
     }
 
