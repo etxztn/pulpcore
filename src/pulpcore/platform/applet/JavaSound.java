@@ -97,14 +97,14 @@ public class JavaSound implements SoundEngine {
         Thread t = new Thread("PulpCore-SoundInit") {
             public void run() {
                 try {
-                    js.init();
+                    js.init(lock);
                 }
                 catch (Exception ex) {
                     CoreSystem.setTalkBackField("pulpcore.sound-exception", ex);
                     js.state = STATE_FAILURE;
-                }
-                synchronized (lock) {
-                    lock.notify();
+                    synchronized (lock) {
+                        lock.notify();
+                    }
                 }
             }
         };
@@ -130,7 +130,7 @@ public class JavaSound implements SoundEngine {
         state = STATE_INIT;
     }
     
-    private void init() {
+    private void init(final Object lock) {
 
         try {
             mixer = AudioSystem.getMixer(null);
@@ -152,6 +152,9 @@ public class JavaSound implements SoundEngine {
         }
         if (mixer == null) {
             state = STATE_FAILURE;
+            synchronized (lock) {
+                lock.notify();
+            }
             return;
         }
         
@@ -191,14 +194,20 @@ public class JavaSound implements SoundEngine {
         
         if (sampleRates.length == 0) {
             state = STATE_FAILURE;
+            synchronized (lock) {
+                lock.notify();
+            }
         }
         else {
-            state = STATE_READY;
-
             // Play a buffer's worth of silence to warm up HotSpot (helps remove popping)
             for (int i = 0; i < sampleRates.length; i++) {
                 Sound noSound = new SilentSound(sampleRates[i], 0);
                 play(null, noSound, new Fixed(1), new Fixed(0), false, false);
+            }
+
+            state = STATE_READY;
+            synchronized (lock) {
+                lock.notify();
             }
             
             // Bizarre: The DirectX implementation of JavaSound (Windows, Java 5 or newer)

@@ -42,6 +42,8 @@ public class JOrbisAdapter extends Sound {
     */
     private static final float DECOMPRESS_THRESHOLD = 4;
 
+    private static boolean needsWarmup = false;
+
     // NOTE: Don't change the method name! This method is called via reflection.
     public static Sound decode(ByteArray input, String soundAsset) {
         VorbisFile file;
@@ -61,9 +63,15 @@ public class JOrbisAdapter extends Sound {
 
         JOrbisAdapter clip = new JOrbisAdapter(soundAsset, file);
         if (file.getDuration() <= DECOMPRESS_THRESHOLD) {
+            needsWarmup = false;
             return clip.decompress();
         }
         else {
+            if (needsWarmup) {
+                needsWarmup = false;
+                // Decompress a small amount to warmup HotSpot
+                new JOrbisAdapter(clip).warmup();
+            }
             return clip;
         }
     }
@@ -171,6 +179,15 @@ public class JOrbisAdapter extends Sound {
             byte[] dest = new byte[2 * file.getNumChannels() * file.getNumFrames()];
             getSamples(dest, 0, file.getNumChannels(), 0, file.getNumFrames());
             return Sound.load(dest, file.getSampleRate(), (file.getNumChannels() == 2));
+        }
+    }
+
+    // Warmup for HotSpot
+    void warmup() {
+        if (file != null) {
+            int frames = Math.min(4096, file.getNumFrames());
+            byte[] dest = new byte[2 * file.getNumChannels() * frames];
+            getSamples(dest, 0, file.getNumChannels(), 0, frames);
         }
     }
 
