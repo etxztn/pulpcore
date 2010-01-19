@@ -42,7 +42,7 @@ public class JOrbisAdapter extends Sound {
     */
     private static final float DECOMPRESS_THRESHOLD = 4;
 
-    private static boolean needsWarmup = false;
+    private static boolean needsWarmup = true;
 
     // NOTE: Don't change the method name! This method is called via reflection.
     public static Sound decode(ByteArray input, String soundAsset) {

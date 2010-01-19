@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -30,7 +30,6 @@
 package pulpcore.platform;
 
 import pulpcore.animation.Fixed;
-import pulpcore.platform.AppContext;
 import pulpcore.sound.Sound;
 import pulpcore.sound.Playback;
 

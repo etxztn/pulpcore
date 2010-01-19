@@ -23,6 +23,7 @@
   * Core: BufferedStrategy now used on Snow Leopard
   * Core: Fixed bug where playing many sounds simultaneously caused a slowdown
     (Java 6+ only).
+  * Fixed bug: Playing a sound immediately on startup didn't always work.
   * Fixed bug: Fixed several dirty rectangle and clipping bugs for Groups
     with a back buffer.
   * Fixed bug: Modern browsers that do full-page zooming (IE8, FF 3.5, Safari 4,

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007-2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -80,6 +80,8 @@ public class JavaSound implements SoundEngine {
     
     // Work buffer used during audio rendering.
     private static final byte[] WORK_BUFFER = new byte[44100 * FRAME_SIZE * MAX_BUFFER_SIZE / 1000];
+
+    private static final Object INIT_LOCK = new Object();
     
     private Mixer mixer;
     private DataLinePlayer[] players;
@@ -87,33 +89,33 @@ public class JavaSound implements SoundEngine {
     private int[] sampleRates;
     private boolean[] usedSampleRates;
     private int state;
+    private boolean extraWaitOccurred = false;
     
     public static SoundEngine create() {
         final JavaSound js = new JavaSound();
-        final Object lock = new Object();
         
         // Initialize in a new thread because creating a new Mixer takes
-        // a long time on some systems.
+        // a long time (up to a minute) on some systems.
         Thread t = new Thread("PulpCore-SoundInit") {
             public void run() {
                 try {
-                    js.init(lock);
+                    js.init();
                 }
                 catch (Exception ex) {
                     CoreSystem.setTalkBackField("pulpcore.sound-exception", ex);
                     js.state = STATE_FAILURE;
-                    synchronized (lock) {
-                        lock.notify();
+                    synchronized (INIT_LOCK) {
+                        INIT_LOCK.notifyAll();
                     }
                 }
             }
         };
-        
-        synchronized (lock) {
+
+        synchronized (INIT_LOCK) {
             t.start();
-            // Guess: Most engines will be initialized in 100ms or less
-            try { 
-                lock.wait(100);
+            // Guess: Most engines will be initialized in 250ms or less
+            try {
+                INIT_LOCK.wait(250);
             }
             catch (InterruptedException ex) { }
         }
@@ -130,7 +132,7 @@ public class JavaSound implements SoundEngine {
         state = STATE_INIT;
     }
     
-    private void init(final Object lock) {
+    private void init() {
 
         try {
             mixer = AudioSystem.getMixer(null);
@@ -152,8 +154,8 @@ public class JavaSound implements SoundEngine {
         }
         if (mixer == null) {
             state = STATE_FAILURE;
-            synchronized (lock) {
-                lock.notify();
+            synchronized (INIT_LOCK) {
+                INIT_LOCK.notifyAll();
             }
             return;
         }
@@ -194,20 +196,21 @@ public class JavaSound implements SoundEngine {
         
         if (sampleRates.length == 0) {
             state = STATE_FAILURE;
-            synchronized (lock) {
-                lock.notify();
+            synchronized (INIT_LOCK) {
+                INIT_LOCK.notifyAll();
             }
         }
         else {
+            state = STATE_READY;
+
             // Play a buffer's worth of silence to warm up HotSpot (helps remove popping)
             for (int i = 0; i < sampleRates.length; i++) {
                 Sound noSound = new SilentSound(sampleRates[i], 0);
                 play(null, noSound, new Fixed(1), new Fixed(0), false, false);
             }
-
-            state = STATE_READY;
-            synchronized (lock) {
-                lock.notify();
+            
+            synchronized (INIT_LOCK) {
+                INIT_LOCK.notifyAll();
             }
             
             // Bizarre: The DirectX implementation of JavaSound (Windows, Java 5 or newer)
@@ -386,19 +389,38 @@ public class JavaSound implements SoundEngine {
     public Playback play(AppContext context, Sound sound, Fixed level, Fixed pan, boolean loop) {
         return play(context, sound, level, pan, loop, true);
     }
-    
+
     private synchronized Playback play(AppContext context, Sound sound, Fixed level, Fixed pan,
         boolean loop, boolean userRequested)
     {
+        if (sound == null || sound.getNumFrames() == 0) {
+            return null;
+        }
+
+        // Check if sound system is ready. If still initializing, wait again, but only do it once.
+        if (state == STATE_INIT && !extraWaitOccurred) {
+            synchronized (INIT_LOCK) {
+                if (state == STATE_INIT) {
+                    try {
+                        INIT_LOCK.wait(250);
+                    }
+                    catch (InterruptedException ex) { }
+                    extraWaitOccurred = true;
+                }
+            }
+        }
+
+        if (state != STATE_READY || !canPlay(sound)) {
+            return null;
+        }
+
+        // The sound engine is ready, and the sound is valid
+
         boolean played = false;
         int numOpenLines = 0;
         Playback playback = null;
         DataLinePlayer[] p = players;
-        
-        if (state != STATE_READY || sound == null || sound.getNumFrames() == 0 || !canPlay(sound)) {
-            return null;
-        }
-        
+
         // Check if the playing limit for this sound is reached
         int playingCount = 0;
         for (int i = 0; i < p.length; i++) {
@@ -513,11 +535,10 @@ public class JavaSound implements SoundEngine {
             }
         }
     }
-    
+
     static class DataLinePlayer {
         
         private final Mixer mixer;
-        private Sound source;
         private SoundStream stream;
         private SourceDataLine line;
         private int sampleRate;
@@ -544,7 +565,13 @@ public class JavaSound implements SoundEngine {
         }
 
         public Sound getPlayingSound() {
-            return source;
+            SoundStream s = stream;
+            if (s != null) {
+                return s.getSound();
+            }
+            else {
+                return null;
+            }
         }
         
         public synchronized boolean isOpen() {
@@ -575,7 +602,6 @@ public class JavaSound implements SoundEngine {
 
         private void reopen() {
             stream = null;
-            source = null;
             boolean success = false;
             if (line != null) {
                 if (CoreSystem.isJava16orNewer()) {
@@ -636,7 +662,6 @@ public class JavaSound implements SoundEngine {
         
         public synchronized void close(boolean drain) {
             stream = null;
-            source = null;
             if (line == null) {
                 return;
             }
@@ -670,7 +695,6 @@ public class JavaSound implements SoundEngine {
             int loopFrame = 0;
             int stopFrame = clip.getNumFrames();
             int numLoopFrames = loop ? stopFrame : 0;
-            source = clip;
             
             // Create a full buffer of post-clip silence
             // This fixes a problem with circular buffers.

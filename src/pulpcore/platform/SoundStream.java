@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -103,6 +103,10 @@ public class SoundStream {
     // Called right after creation of SoundStream
     public Playback getPlayback() {
         return this.playback;
+    }
+
+    public Sound getSound() {
+        return sound;
     }
     
     public boolean isFinished() {
@@ -264,14 +268,14 @@ public class SoundStream {
             }
             
             // Figure out the next level and pan (for interpolation)
-            int startFrame = frame;
+            int srcFrame = frame;
             advanceFramePosition(framesToRender);
             int nextLevel = getCurrLevel();
             int nextPan = getCurrPan();
             
             // Render
             if (currLevel > 0 || nextLevel > 0) {
-                sound.getSamples(dest, destOffset, destChannels, startFrame, framesToRender);
+                sound.getSamples(dest, destOffset, destChannels, srcFrame, framesToRender);
             }
             render(dest, destOffset, destChannels, framesToRender, 
                 currLevel, nextLevel, currPan, nextPan);
