@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -768,8 +768,8 @@ public class ScrollPane extends Group {
         <p>
         {@inheritDoc}
     */
-    public void add(Sprite sprite) {
-        viewport.add(sprite);
+    public Sprite add(Sprite sprite) {
+        return viewport.add(sprite);
     }
     
     /**
@@ -777,8 +777,8 @@ public class ScrollPane extends Group {
         <p>
         {@inheritDoc}
     */
-    public void add(int index, Sprite sprite) {
-        viewport.add(index, sprite);
+    public Sprite add(int index, Sprite sprite) {
+        return viewport.add(index, sprite);
     }
     
     /**

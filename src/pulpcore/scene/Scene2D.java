@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007-2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -264,11 +264,13 @@ public class Scene2D extends Scene {
         method. The Timeline is removed when is is finished animating.
         <p>
         This method is safe to call from any thread.
+        @return The Timeline.
     */
-    public synchronized void addTimeline(Timeline timeline) {
+    public synchronized Timeline addTimeline(Timeline timeline) {
         if (!timelines.contains(timeline)) {
             timelines.add(timeline);
         }
+        return timeline;
     }
     
     
@@ -404,9 +406,10 @@ public class Scene2D extends Scene {
     
     /**
         Adds the specified Group as the top-most layer.
+        @return The Group.
     */
-    public synchronized void addLayer(Group layer) {
-        root.add(layer);
+    public synchronized Group addLayer(Group layer) {
+        return (Group)root.add(layer);
     }
     
     /**
@@ -439,9 +442,10 @@ public class Scene2D extends Scene {
     
     /**
         Adds a sprite to the main (bottom) layer.
+        @return The Sprite.
     */
-    public synchronized void add(Sprite sprite) {
-        getMainLayer().add(sprite);
+    public synchronized Sprite add(Sprite sprite) {
+        return getMainLayer().add(sprite);
     }
     
     /**

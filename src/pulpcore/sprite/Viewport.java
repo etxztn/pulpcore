@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -131,9 +131,10 @@ public class Viewport extends Group {
         <p>
         {@inheritDoc}
     */
-    public void add(Sprite sprite) {
-        getContentPane().add(sprite);
+    public Sprite add(Sprite sprite) {
+        Sprite retValue = getContentPane().add(sprite);
         calcContentDimension();
+        return retValue;
     }
 
     /**
@@ -141,9 +142,10 @@ public class Viewport extends Group {
         <p>
         {@inheritDoc}
     */
-    public void add(int index, Sprite sprite) {
-        getContentPane().add(index, sprite);
+    public Sprite add(int index, Sprite sprite) {
+        Sprite retValue = getContentPane().add(index, sprite);
         calcContentDimension();
+        return retValue;
     }
     
     /**

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -478,8 +478,9 @@ public class Group extends Sprite {
         Adds a Sprite to this Group. The Sprite is added so it appears above all other sprites in
         this Group. If this Sprite already belongs to a Group, it is first removed from that 
         Group before added to this one.
+        @return The sprite
     */
-    public void add(Sprite sprite) {
+    public Sprite add(Sprite sprite) {
         if (sprite != null) {
             synchronized (getTreeLock()) {
                 Group parent = sprite.getParent();
@@ -491,6 +492,7 @@ public class Group extends Sprite {
                 sprite.setParent(this);
             }
         }
+        return sprite;
     }
     
     /**
@@ -502,8 +504,9 @@ public class Group extends Sprite {
         z-order).
         If the index is greater than or equal to {@link #size()}, the sprite is inserted at 
         position {@link #size()} (the top in the z-order).
+        @return The sprite
     */
-    public void add(int index, Sprite sprite) {
+    public Sprite add(int index, Sprite sprite) {
         if (sprite != null) {
             synchronized (getTreeLock()) {
                 Group parent = sprite.getParent();
@@ -515,6 +518,7 @@ public class Group extends Sprite {
                 sprite.setParent(this);
             }
         }
+        return sprite;
     }
     
     /**
