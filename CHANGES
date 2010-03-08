@@ -25,6 +25,7 @@
   * Core: BufferedStrategy now used on Snow Leopard
   * Core: Fixed bug where playing many sounds simultaneously caused a slowdown
     (Java 6+ only).
+  * Fixed bug: Reflection constructor ignored the specified gap.
   * Fixed bug: Playing a sound immediately on startup didn't always work.
   * Fixed bug: Fixed several dirty rectangle and clipping bugs for Groups
     with a back buffer.

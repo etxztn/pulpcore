@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2009, Interactive Pulp, LLC
+    Copyright (c) 2009-2010, Interactive Pulp, LLC
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -77,14 +77,14 @@ public final class Reflection extends Filter {
 		Creates a Reflection filter with the default parameters.
 	 */
 	public Reflection() {
-		this(1, 0.75f, 128, 0);
+		this(1);
 	}
 
     /**
 		Creates a Reflection filter with the specified gap.
 	 */
 	public Reflection(int gap) {
-		this(gap, 0.75f, 128, 0);
+		this(gap, 0.75f);
 	}
 	
 	/**
@@ -92,7 +92,7 @@ public final class Reflection extends Filter {
         the input image).
 	*/
 	public Reflection(int gap, float fraction) {
-		this(1, fraction, 128, 0);
+		this(gap, fraction, 128, 0);
 	}
 	
 	/**
