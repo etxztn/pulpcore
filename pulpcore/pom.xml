@@ -1,0 +1,51 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.pulpcore</groupId>
+    <artifactId>pulpcore</artifactId>
+    <packaging>pom</packaging>
+    <version>0.12.0-SNAPSHOT</version>
+    <name>PulpCore</name>
+    <url>http://www.pulpcore.org</url>
+
+    <inceptionYear>2007</inceptionYear>
+
+    <organization>
+        <name>Interactive Pulp, LLC</name>
+        <url>http://www.interactivepulp.com</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>New BSD</name>
+            <!--<url>LICENSEURL</url>-->
+        </license>
+    </licenses>
+
+    <modules>
+        <module>../pulpcore-runtime</module>
+        <module>../pulpcore-runtime-applet</module>
+        <module>../pulpcore-resource-processor-plugin</module>
+        <module>../pulpcore-player</module>
+        <module>../pulpcore-archetype-simple</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>Debug</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
+        <profile>
+            <id>Release</id>
+        </profile>
+    </profiles>
+</project>
+
+
+
+

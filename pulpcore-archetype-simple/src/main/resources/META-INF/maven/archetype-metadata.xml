@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archetype-descriptor name="pulpcore-archetype-simple">
+  <requiredProperties>
+      <requiredProperty key="scene">
+          <defaultValue>HelloWorld</defaultValue>
+      </requiredProperty>
+      <requiredProperty key="width">
+          <defaultValue>640</defaultValue>
+      </requiredProperty>
+      <requiredProperty key="height">
+          <defaultValue>480</defaultValue>
+      </requiredProperty>
+  </requiredProperties>
+  <fileSets>
+    <fileSet filtered="true" packaged="true" encoding="UTF-8">
+      <directory>src</directory>
+      <includes>
+        <include>**/*.java</include>
+      </includes>
+    </fileSet>
+    <fileSet encoding="UTF-8">
+      <directory>res</directory>
+      <includes>
+        <include>**/*.png</include>
+      </includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory></directory>
+      <includes>
+        <include>nbactions.xml</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</archetype-descriptor>

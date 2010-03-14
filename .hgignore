@@ -5,5 +5,5 @@
 \.conflict\~$
 syntax: glob
 build
+target
 .DS_Store
-doc/api

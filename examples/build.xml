@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+
+<project name="PulpCore 0.12" default="update-example-poms" basedir=".">
+
+    <property name="simple-dir"
+        value="../pulpcore-archetype-simple/src/main/resources/archetype-resources" />
+
+    <target name="update-example-poms"
+        description="Updates the example poms">
+        <subant target="-copy-simple-template" genericantfile="build.xml">
+            <property name="template.dir" location="${simple-dir}" />
+            <dirset dir=".">
+                <include name="*" />
+                <exclude name="build.xml" />
+                <exclude name="*Scala*" />
+            </dirset>
+        </subant>
+    </target>
+    
+    <target name="-copy-simple-template">
+        <!-- Get folder name -->
+        <path id="example.path" path="${basedir}"/>
+        <pathconvert property="example.name" refid="example.path">
+            <flattenmapper/>
+        </pathconvert>
+        
+        <copy file="${template.dir}/pom.xml" overwrite="true" tofile="pom.xml" />
+        <copy file="${template.dir}/nbactions.xml" overwrite="true" tofile="nbactions.xml" />
+        <replace file="pom.xml">
+            <replacefilter token="$${package}." value="" />
+            <replacefilter token="$${scene}" value="${example.name}" />
+            <replacefilter token="$${width}" value="640" />
+            <replacefilter token="$${height}" value="480" />
+            <replacefilter token="$${groupId}" value="org.pulpcore" />
+            <replacefilter token="$${artifactId}" value="pulpcore-examples-$${pulpcore.scene}" />
+            <replacefilter token="$${version}" value="1.0" />
+        </replace>
+
+    </target>
+
+</project>
+

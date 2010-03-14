@@ -1,0 +1,52 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.pulpcore</groupId>
+    <artifactId>java-rt-jar-stubs</artifactId>
+    <packaging>jar</packaging>
+    <version>1.5.0</version>
+    <name>Java rt.jar stubs</name>
+    
+    <description>A jar containing public API stubs for the Java 5 rt.jar file,
+    excluding packages sun.*, com.sun.* and sunw.*. The jar can be used as
+    a bootclasspath for targeting the Java 5 API on machines that do not have
+    Java 5 installed. The jar can also be useful for running ProGuard, which
+    requires a rt.jar file.
+    
+    The jar contains stubs only, so it is only usable for compiling.
+    All methods perform no action and return values are always null
+    (or 0 if primitive).</description>
+    
+    <build>
+        <plugins>
+
+            <!-- Chicken and Egg. Install jar that was generated elsewhere. -->
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <groupId>org.pulpcore</groupId>
+                            <artifactId>java-rt-jar-stubs</artifactId>
+                            <version>1.5.0</version>
+                            <packaging>jar</packaging>
+                            <file>src/main/non-packaged-resources/java-rt-jar-stubs-1.5.0.jar</file>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
+
+
+
+
+

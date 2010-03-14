@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * To build and run:
+   mvn verify pulpcore-player:run
+ * To create a release build:
+   mvn -P Release clean verify
+ * When switching from Debug to Release builds, or vice versa, perform a clean build:
+   mvn clean
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <properties>
+        <pulpcore.scene>Images</pulpcore.scene>
+        <pulpcore.width>640</pulpcore.width>
+        <pulpcore.height>480</pulpcore.height>
+        <pulpcore.params></pulpcore.params>
+        <pulpcore.version>0.12.0-SNAPSHOT</pulpcore.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.test.skip>true</maven.test.skip>
+    </properties>
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.pulpcore</groupId>
+    <artifactId>pulpcore-examples-${pulpcore.scene}</artifactId>
+    <packaging>jar</packaging>
+    <name>Images</name>
+    <version>1.0</version>
+
+    <build>
+
+        <directory>build</directory>
+        <outputDirectory>build/tmp/classes</outputDirectory>
+        <finalName>${name}-1.0</finalName>
+        <testOutputDirectory>build/tmp/test-classes</testOutputDirectory>
+        <sourceDirectory>src</sourceDirectory>
+        <scriptSourceDirectory>scripts</scriptSourceDirectory>
+        <testSourceDirectory>test/src</testSourceDirectory>
+
+        <resources>
+            <resource>
+                <!--
+                    Define the resource directory for the IDE, but exclude
+                    everything from copies (the resource processor plugin takes
+                    care of copying)
+                -->
+                <directory>res</directory>
+                <excludes>
+                    <exclude>**/*</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>test/res</directory>
+            </testResource>
+        </testResources>
+
+        <plugins>
+
+            <!-- Compile -->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                    <showWarnings>true</showWarnings>
+                    <showDeprecation>true</showDeprecation>
+                    <compilerArguments>
+                        <bootclasspath>${settings.localRepository}/org/pulpcore/java-rt-jar-stubs/1.5.0/java-rt-jar-stubs-1.5.0.jar</bootclasspath>
+                    </compilerArguments>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pulpcore</groupId>
+                        <artifactId>java-rt-jar-stubs</artifactId>
+                        <version>1.5.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- Create resources zip file -->
+
+            <plugin>
+                <groupId>org.pulpcore</groupId>
+                <artifactId>pulpcore-resource-processor-plugin</artifactId>
+                <version>${pulpcore.version}</version>
+                <executions>
+                    <execution>
+                        <id>convert-resources</id>
+                        <goals><goal>convert-resources</goal></goals>
+                        <configuration>
+                            <srcDir>${basedir}/res</srcDir>
+                            <destDir>${project.build.directory}/tmp/zip</destDir>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-html</id>
+                        <goals><goal>create-html</goal></goals>
+                        <configuration>
+                            <destDir>${project.build.directory}</destDir>
+                            <archive>${project.build.finalName}.jar</archive>
+                            <assets>${project.build.finalName}.zip</assets>
+                            <scene>${pulpcore.scene}</scene>
+                            <width>${pulpcore.width}</width>
+                            <height>${pulpcore.height}</height>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>zip-resources</id>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <tasks>
+                                <!--<delete file="${project.build.directory}/${project.build.finalName}.zip" failonerror="false" />-->
+                                <zip destfile="${project.build.directory}/${project.build.finalName}.zip"
+                                    filesonly="true"
+                                    whenempty="create"
+                                    basedir="${project.build.directory}/tmp/zip" />
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Run. Configuration is pulled from project properties.
+                PulpCore Player is required for running in an IDE, but not
+                required for running in a browser.
+            -->
+
+            <plugin>
+                <groupId>org.pulpcore</groupId>
+                <artifactId>pulpcore-player</artifactId>
+                <version>${pulpcore.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+
+    <profiles>
+        <profile>
+            <id>Debug</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+
+                <!-- Debug: Create assembly only -->
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <!-- Older betas have a duplicate file bug -->
+                        <version>2.2-beta-4</version>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptorRefs>
+                                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                                    </descriptorRefs>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+        </profile>
+        <profile>
+            <id>Release</id>
+            <build>
+
+                <!-- Release: Assemble, obfuscate (with ProGuard) and create Pack200 file -->
+
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <!-- Older betas have a duplicate file bug -->
+                        <version>2.2-beta-4</version>
+                        <executions>
+                            <execution>
+                                <id>make-assembly-for-proguard</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptorRefs>
+                                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                                    </descriptorRefs>
+                                    <attach>false</attach>
+                                    <outputDirectory>${project.build.directory}/tmp</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>com.pyx4me</groupId>
+                        <artifactId>proguard-maven-plugin</artifactId>
+                        <executions>
+                           <execution>
+                               <id>obfuscate-jar</id>
+                               <phase>package</phase>
+                               <goals><goal>proguard</goal></goals>
+                           </execution>
+                        </executions>
+                        <configuration>
+                            <includeDependency>false</includeDependency>
+                            <injar>tmp/${project.build.finalName}-jar-with-dependencies.jar</injar>
+                            <outjar>${project.build.finalName}.jar</outjar>
+                            <maxMemory>512m</maxMemory>
+                            <options>
+                                <option>-ignorewarnings</option>
+                                <option>-defaultpackage ''</option>
+                                <option>-allowaccessmodification</option>
+                                <option>-printmapping ${project.build.directory}/tmp/proguard-mapping.txt</option>
+                                <option>-printseeds ${project.build.directory}/tmp/proguard-seeds.txt</option>
+                                <option>-printusage ${project.build.directory}/tmp/proguard-usage.txt</option>
+                                <option>-keep public class pulpcore.sound.JOrbisAdapter {
+                                        public static pulpcore.sound.Sound decode(pulpcore.util.ByteArray, java.lang.String);
+                                }</option>
+                                <option>-keep public class pulpcore.platform.applet.CoreApplet {
+                                        public pulpcore.scene.Scene getCurrentScene();
+                                }</option>
+                                <option>-keep public class ${pulpcore.scene}</option>
+                            </options>
+
+                            <libs>
+                                <lib>${settings.localRepository}/org/pulpcore/java-rt-jar-stubs/1.5.0/java-rt-jar-stubs-1.5.0.jar</lib>
+                            </libs>
+                        </configuration>
+
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.proguard</groupId>
+                                <artifactId>proguard</artifactId>
+                                <version>4.4</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>com.pyx4me</groupId>
+                                <artifactId>proguard-maven-plugin</artifactId>
+                                <version>2.0.4</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.pulpcore</groupId>
+                                <artifactId>java-rt-jar-stubs</artifactId>
+                                <version>1.5.0</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>pack200</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <taskdef name="pack200"
+                                                 classname="com.sun.tools.apache.ant.pack200.Pack200Task"
+                                                 classpathref="maven.runtime.classpath"/>
+                                        <pack200 src="${project.build.directory}/${project.build.finalName}.jar"
+                                                 gzipoutput="true" effort="9"
+                                                 destfile="${project.build.directory}/${project.build.finalName}.jar.pack.gz"/>
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.codehaus.mojo.webstart-maven-plugin</groupId>
+                                <artifactId>pack200-anttasks</artifactId>
+                                <version>1.0</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+
+                </plugins>
+
+            </build>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.pulpcore</groupId>
+            <artifactId>pulpcore-runtime-applet</artifactId>
+            <version>${pulpcore.version}-debug</version>
+        </dependency>
+    </dependencies>
+</project>
