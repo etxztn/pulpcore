@@ -54,12 +54,13 @@ import pulpcore.sound.SoundSequence;
 public class JavaSound implements SoundEngine {
     
     // Max simultaneous sounds (if the underlying Java Sound implementation doesn't have a limit). 
-    private static final int MAX_SIMULTANEOUS_SOUNDS = 32;
+    private static final int MAX_SIMULTANEOUS_SOUNDS = 40;
     
     // The playback formats supported (mono is converted to stereo in SoundStream)
-    private static final int[] SAMPLE_RATES = { 8000, 11025, 22050, 44100 };
+    private static final int[] SAMPLE_RATES = { 8000, 11025, 22050, 44100, 48000 };
     private static final int NUM_CHANNELS = 2;
     private static final int FRAME_SIZE = 2 * NUM_CHANNELS;
+    private static final int MAX_RATE = SAMPLE_RATES[SAMPLE_RATES.length - 1];
     
     // The amount of time (in milliseconds) before a clip is played, on Windows.
     // The first 0-10ms sometimes plays at 100% volume, but the remainder is at 50%.
@@ -79,7 +80,7 @@ public class JavaSound implements SoundEngine {
     private static final int MAX_BUFFER_SIZE = 1000;
     
     // Work buffer used during audio rendering.
-    private static final byte[] WORK_BUFFER = new byte[44100 * FRAME_SIZE * MAX_BUFFER_SIZE / 1000];
+    private static final byte[] WORK_BUFFER = new byte[MAX_RATE * FRAME_SIZE * MAX_BUFFER_SIZE / 1000];
 
     private static final Object INIT_LOCK = new Object();
     

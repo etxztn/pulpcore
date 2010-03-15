@@ -32,6 +32,29 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                    <compilerArguments>
+                        <bootclasspath>${settings.localRepository}/org/pulpcore/java-rt-jar-stubs/1.5.0/java-rt-jar-stubs-1.5.0.jar</bootclasspath>
+                    </compilerArguments>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pulpcore</groupId>
+                        <artifactId>java-rt-jar-stubs</artifactId>
+                        <version>1.5.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
     <repositories>
         <!-- Repo for jorbis -->
         <repository>
