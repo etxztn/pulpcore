@@ -1,22 +1,3 @@
-/*
-    Sound loader for JOrbis' OGG Vorbis decoder. Requires PulpCore 0.11.5.
-
-    To use:
-    1. Get the JOrbis binary, jorbis-0.0.17.jar
-       - Source is located here: http://www.jcraft.com/jorbis/
-       - Binaries may also be found: http://www.google.com/search?q=jorbis+maven
-    2. Drop jorbis-0.0.17.jar in your lib/ directory
-    3. Drop this file in your src/ directory.
-       - Your IDE may prefer you put the file in src/pulpcore/sound/
-    4. Load sounds like normal:
-
-    Sound sound = Sound.load("mysound.ogg");
-
-    Ogg Vorbis is fully integrated with PulpCore, so you can pause playback and set the
-    level and pan in realtime, just like with regular Sounds.
-*/
-
-// NOTE: Don't change the package name! This class is called via reflection.
 package pulpcore.sound;
 
 import com.jcraft.jogg.Packet;
@@ -33,6 +14,20 @@ import pulpcore.Build;
 import pulpcore.CoreSystem;
 import pulpcore.util.ByteArray;
 
+/**
+
+ Sound loader for JOrbis' OGG Vorbis decoder. Requires PulpCore 0.12.0.
+
+ This class is called via reflection from PulpCore. It exists as a separate project so that
+ projects that don't use Ogg Vorbis have a smaller resulting jar file.
+ When this class is included, Ogg Vorbis sounds can be loaded like normal:
+
+ <p><code>Sound sound = Sound.load("mysound.ogg");</code></p>
+
+ Ogg Vorbis is fully integrated with PulpCore, so you can pause playback and set the
+ level and pan in realtime, just like with regular Sounds.
+
+ */
 public class JOrbisAdapter extends Sound {
 
     /**
@@ -44,7 +39,7 @@ public class JOrbisAdapter extends Sound {
 
     private static boolean needsWarmup = true;
 
-    // NOTE: Don't change the method name! This method is called via reflection.
+    // NOTE: This method is called via reflection.
     public static Sound decode(ByteArray input, String soundAsset) {
         VorbisFile file;
         try {

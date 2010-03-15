@@ -1,0 +1,64 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <parent>
+        <groupId>org.pulpcore</groupId>
+        <artifactId>pulpcore</artifactId>
+        <relativePath>../pulpcore</relativePath>
+        <version>0.12.0-SNAPSHOT</version>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.pulpcore</groupId>
+    <artifactId>pulpcore-ogg-vorbis</artifactId>
+    <packaging>jar</packaging>
+    <name>PulpCore Ogg Vorbis</name>
+    <version>${parent.version}</version>
+
+    <description>
+    Ogg Vorbis support for PulpCore. Uses the JOrbis decoder. When this
+    artifact is included in a PulpCore project, Ogg Vorbis sounds can be
+    loaded like normal:
+
+        Sound sound = Sound.load("mysound.ogg");
+
+    Ogg Vorbis is fully integrated with PulpCore, so you can pause playback
+    and set the level and pan in realtime, just like with regular sounds.
+    Ogg sounds must be included in the resources file - streaming is not
+    supported.
+    </description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <!-- Repo for jorbis -->
+        <repository>
+            <id>maven2-repository.dev.java.net</id>
+            <name>Java.net Repository for Maven</name>
+            <url>http://download.java.net/maven/2/</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.pulpcore</groupId>
+            <artifactId>pulpcore-runtime</artifactId>
+            <version>${parent.version}-debug</version>
+        </dependency>
+        <dependency>
+            <groupId>com.projectdarkstar.ext.jorbis</groupId>
+            <artifactId>jorbis</artifactId>
+            <version>0.0.17</version>
+            <type>jar</type>
+        </dependency>
+    </dependencies>
+
+</project>
+
+
+
+
+

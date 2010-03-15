@@ -28,6 +28,7 @@
         <module>../pulpcore-resource-processor-plugin</module>
         <module>../pulpcore-player</module>
         <module>../pulpcore-archetype-simple</module>
+        <module>../pulpcore-ogg-vorbis</module>
     </modules>
 
     <profiles>
