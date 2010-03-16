@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -271,6 +271,10 @@ public class TextField extends Sprite {
     }
     
     private void setSelectionLength(int length) {
+        int minLength = -caretPosition;
+        int maxLength = text.length() - caretPosition;
+        length = Math.min(maxLength, length);
+        length = Math.max(minLength, length);
         if (selectionLength != length) {
             selectionLength = length;
             setDirty(true);
@@ -634,7 +638,7 @@ public class TextField extends Sprite {
             isMouseDragging = true;
             dragScrollDelay = DRAG_SCROLL_DELAY;
             setFocus(true);
-            setCaretPosition(getCharPositionFromMouse());
+            setCaretPosition(getCharPositionFromMouse(), Input.isShiftDown());
         }
         else if (Input.isMousePressed()) {
             setFocus(false);
