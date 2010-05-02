@@ -1,9 +1,10 @@
 package pulpcore.sound;
 
-import com.jcraft.jorbis.JOrbisException;
+import pulpcore.sound.ogg.VorbisFile;
 import pulpcore.animation.Fixed;
 import pulpcore.Build;
 import pulpcore.CoreSystem;
+import pulpcore.sound.ogg.VorbisFile.State;
 import pulpcore.util.ByteArray;
 
 /**
@@ -33,13 +34,10 @@ public class JOrbisAdapter extends Sound {
 
     // NOTE: This method is called via reflection.
     public static Sound decode(ByteArray input, String soundAsset) {
-        VorbisFile file;
-        try {
-            file = new VorbisFile(input.getData());
-        }
-        catch (JOrbisException ex) {
+        VorbisFile file = new VorbisFile(input.getData());
+        if (file.getState() != State.OPEN) {
             if (Build.DEBUG) {
-                CoreSystem.print("Couldn't load Ogg Vorbis file: " + soundAsset, ex);
+                CoreSystem.print("Couldn't load Ogg Vorbis file: " + soundAsset);
             }
             return null;
         }
@@ -79,16 +77,16 @@ public class JOrbisAdapter extends Sound {
     private String filename;
     private VorbisFile file;
 
-    JOrbisAdapter(String filename, VorbisFile file) {
+    private JOrbisAdapter(String filename, VorbisFile file) {
         super(file.getSampleRate());
         this.filename = filename;
         this.file = file;
     }
 
-    JOrbisAdapter(JOrbisAdapter src) {
+    private JOrbisAdapter(JOrbisAdapter src) {
         super(src.file.getSampleRate());
         this.filename = src.filename;
-        this.file = src.file;
+        this.file = new VorbisFile(src.file);
         setSimultaneousPlaybackCount(src.getSimultaneousPlaybackCount());
     }
 
@@ -127,10 +125,6 @@ public class JOrbisAdapter extends Sound {
                         destOffset += f * frameSize;
                     }
                 }
-
-                if (file.getFramePosition() == file.getNumFrames()) {
-                    file.rewind();
-                }
             }
             catch (Exception ex) {
                 CoreSystem.setTalkBackField("pulpcore.sound-exception", ex);
@@ -138,12 +132,8 @@ public class JOrbisAdapter extends Sound {
                 // Kill JOrbis and start over.
                 clearDest = true;
 
-                byte[] data = file.getData();
-                file = null;
-                try {
-                    file = new VorbisFile(data);
-                }
-                catch (JOrbisException ex2) {
+                file = new VorbisFile(file);
+                if (file.getState() == State.INVALID) {
                     file = null;
                 }
             }

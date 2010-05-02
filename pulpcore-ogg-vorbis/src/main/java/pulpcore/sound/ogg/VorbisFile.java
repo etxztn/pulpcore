@@ -1,32 +1,61 @@
-package pulpcore.sound;
+/*
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+        * Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+        * Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in the
+          documentation and/or other materials provided with the distribution.
+        * Neither the name of Interactive Pulp, LLC nor the names of its
+          contributors may be used to endorse or promote products derived from
+          this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+*/
+package pulpcore.sound.ogg;
 
 import com.jcraft.jogg.Packet;
 import com.jcraft.jogg.Page;
 import com.jcraft.jogg.StreamState;
-import com.jcraft.jogg.SyncState;
 import com.jcraft.jorbis.Block;
 import com.jcraft.jorbis.Comment;
 import com.jcraft.jorbis.DspState;
 import com.jcraft.jorbis.Info;
-import com.jcraft.jorbis.JOrbisException;
+import pulpcore.sound.ogg.data.ByteArrayDataSource;
+import pulpcore.sound.ogg.data.DataSource;
 
-/* package */ class VorbisFile {
+public class VorbisFile extends OggFile {
 
-    private static final int CHUNK_SIZE = 4096;
-    private static final int OV_FALSE = -1;
-    private static final int OV_EOF = -2;
-    private final byte[] data;
-    private int dataStartOffset;
-    private int dataEndOffset;
-    private int dataPosition;
-    private int nextPageOffset = 0;
-    private final Info info;
-    private final Comment comment;
+    public enum State {
+        INIT,
+        INVALID,
+        OPEN,
+    }
+    
+    private State state;
+    private Info info;
+    private Comment comment;
     private int serialno;
     private int numFrames;
-    private int framePosition;
-    private boolean decodeReady;
-    private final SyncState oy = new SyncState();
+    private int startOffset;
+
+    private int framePosition = 0;
+    private boolean decodeReady = false;
+    
     private StreamState os = null;
     private final DspState vd = new DspState();
     private final Block vb = new Block(vd);
@@ -34,67 +63,53 @@ import com.jcraft.jorbis.JOrbisException;
     private float[][][] _pcm = new float[1][][];
 
     public VorbisFile(VorbisFile file) {
-        this.data = file.data;
-        this.info = file.info;
-        this.comment = file.comment;
-        this.serialno = file.serialno;
-        this.numFrames = file.numFrames;
-        this.framePosition = 0;
-        this.decodeReady = false;
-        slice(file.dataStartOffset, file.dataEndOffset);
-        this._index = new int[info.channels];
+        super(file.getData().newView());
+
+        switch (file.getState()) {
+            case INVALID:
+                this.state = State.INVALID;
+                break;
+            case OPEN:
+                this.state = State.OPEN;
+                this.info = file.info;
+                this.comment = file.comment;
+                this.serialno = file.serialno;
+                this.numFrames = file.numFrames;
+                this.startOffset = file.startOffset;
+                this.os = new StreamState();
+                this._index = new int[this.info.channels];
+                seek(startOffset);
+                break;
+            case INIT: default:
+                this.state = State.INIT;
+                open();
+                break;
+        }
     }
 
-    public VorbisFile(byte[] data) throws JOrbisException {
-        this(data, 0, data.length);
+    public VorbisFile(byte[] data) {
+        this(new ByteArrayDataSource(data));
     }
 
-    public VorbisFile(byte[] data, int offset, int length) throws JOrbisException {
-        this.data = data;
-        this.info = new Info();
-        this.comment = new Comment();
-        slice(offset, offset + length);
+    public VorbisFile(DataSource data) {
+        super(data);
+        this.state = State.INIT;
         open();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return (obj instanceof VorbisFile) && data == ((VorbisFile) obj).data;
+    public State getState() {
+        return state;
     }
 
-    public void rewind() {
-        this.framePosition = 0;
-        this.decodeReady = false;
-        this.dataPosition = dataStartOffset;
-        this.nextPageOffset = dataPosition;
-    }
-
-    public byte[] getData() {
-        return data;
-    }
+//    @Override
+//    public void rewind() {
+//        super.rewind();
+//        this.framePosition = 0;
+//        this.decodeReady = false;
+//    }
 
     public boolean isRunning() {
         return decodeReady;
-    }
-
-    private int remaining() {
-        return dataEndOffset - dataPosition;
-    }
-
-    private int get(byte[] dest, int offset, int length) {
-        if (length > remaining()) {
-            length = remaining();
-        }
-        System.arraycopy(data, dataPosition, dest, offset, length);
-        dataPosition += length;
-        return length;
-    }
-
-    private void slice(int startOffset, int endOffset) {
-        dataStartOffset = startOffset;
-        dataEndOffset = endOffset;
-        dataPosition = startOffset;
-        nextPageOffset = startOffset;
     }
 
     // Public methods (file info)
@@ -122,21 +137,40 @@ import com.jcraft.jorbis.JOrbisException;
         return framePosition;
     }
 
-    private void open() throws JOrbisException {
-        getHeaders();
-        os.clear();
-        getEnd();
-        this._index = new int[info.channels];
+    private void open() {
+        Info tempInfo = new Info();
+        Comment tempComment = new Comment();
+        int ret = getHeaders(tempInfo, tempComment);
+        if (ret < 0) {
+            state = State.INIT;
+        }
+        else if (ret == 0) {
+            state = State.INVALID;
+        }
+        else if (!getData().isFilled()) {
+            // TODO: Allow streaming. Currently requiring a filled datasource to get the
+            // duration.
+            state = State.INVALID;
+        }
+        else if (seekDuration() < 0) {
+            state = State.INVALID;
+        }
+        else {
+            this.info = tempInfo;
+            this.comment = tempComment;
+            this._index = new int[info.channels];
+            os.clear();
+            state = State.OPEN;
+        }
     }
-    
-    private int get(SyncState oy) {
-        int index = oy.buffer(CHUNK_SIZE);
-        int bytes = get(oy.data, index, CHUNK_SIZE);
-        oy.wrote(bytes);
-        return bytes;
-    }
-    
-    private void getHeaders() throws JOrbisException {
+
+    /**
+
+     @return a negative number if not enough data available,
+     0 for failure or
+     a positive number for success.
+     */
+    private int getHeaders(Info tempInfo, Comment tempComment) {
         Page og = new Page();
         Packet op = new Packet();
         boolean done = false;
@@ -145,9 +179,9 @@ import com.jcraft.jorbis.JOrbisException;
         // Parse the headers
         // Only interested in Vorbis stream
         while (!done) {
-            int ret = get(oy);
-            if (ret == 0) {
-                break;
+            int ret = getDataChunk();
+            if (ret <= 0) {
+                return ret;
             }
             while (oy.pageout(og) > 0) {
                 StreamState test = new StreamState();
@@ -166,7 +200,7 @@ import com.jcraft.jorbis.JOrbisException;
                 test.pagein(og);
                 test.packetout(op);
 
-                if (packets == 0 && info.synthesis_headerin(comment, op) >= 0) {
+                if (packets == 0 && tempInfo.synthesis_headerin(tempComment, op) >= 0) {
                     os = test;
                     serialno = testSerialNo;
                     packets = 1;
@@ -179,9 +213,7 @@ import com.jcraft.jorbis.JOrbisException;
         }
 
         if (packets == 0) {
-            info.clear();
-            comment.init();
-            throw new JOrbisException("No Vorbis stream found");
+            return 0;
         }
 
         // we've now identified all the bitstreams. parse the secondary header packets.
@@ -190,8 +222,8 @@ import com.jcraft.jorbis.JOrbisException;
 
             // look for more vorbis header packets
             while (packets < 3 && ((ret = os.packetout(op)) != 0)) {
-                if (ret < 0 || info.synthesis_headerin(comment, op) != 0) {
-                    throw new JOrbisException("Couldn't parse Vorbis headers");
+                if (ret < 0 || tempInfo.synthesis_headerin(tempComment, op) != 0) {
+                    return 0;
                 }
                 packets++;
             }
@@ -202,14 +234,15 @@ import com.jcraft.jorbis.JOrbisException;
                 os.pagein(og);
             }
             else {
-                if (get(oy) == 0) {
-                    throw new JOrbisException("Couldn't parse Vorbis headers");
+                ret = getDataChunk();
+                if (ret <= 0) {
+                    return ret;
                 }
             }
         }
 
-        vd.synthesis_init(info);
-
+        vd.synthesis_init(tempInfo);
+        return 1;
     }
 
     // Ogg Vorbis requires seeking to the end to get the duration of the audio.
@@ -218,72 +251,25 @@ import com.jcraft.jorbis.JOrbisException;
     //       2. While the downloading occurs, in a second connection open the file
     //       near its end and seek to find the last granulepos
 
-    private void getEnd() throws JOrbisException {
-        Page og = new Page();
-        int startOffset = nextPageOffset;
-        int endOffset = dataEndOffset;
-        numFrames = -1;
-        while (true) {
-            int ret = getNextPage(og, CHUNK_SIZE);
-            if (ret == OV_EOF) {
-                endOffset = nextPageOffset;
-                break;
-            }
-            else if (ret < 0) {
-                throw new JOrbisException();
-            }
-            else if (serialno == og.serialno()) {
-                if (og.granulepos() != -1) {
-                    numFrames = (int) og.granulepos();
-                }
-                if (og.eos() != 0) {
-                    endOffset = nextPageOffset;
-                    break;
-                }
-            }
-            else {
-                // Ignore non-Vorbis stream
-            }
-        }
-        if (numFrames < 0) {
-            throw new JOrbisException();
-        }
-        oy.reset();
-        slice(startOffset, endOffset);
-    }
-
     /**
-    On success, nextPageOffset is set.
-    @return negative value on error; otherwise, the offset of the start of the page.
+
+     @return negative value on error
      */
-    private int getNextPage(Page page, int boundary) {
-        if (boundary > 0) {
-            boundary += nextPageOffset;
+    private int seekDuration() {
+        this.startOffset = getNextPageOffset();
+
+        seek(getData().size());
+
+        Page og = new Page();
+
+        int endOffset = getPrevPage(og, serialno);
+        if (endOffset < 0) {
+            return -1;
         }
-        while (true) {
-            if (boundary > 0 && nextPageOffset >= boundary) {
-                return OV_FALSE;
-            }
-            int more = oy.pageseek(page);
-            if (more < 0) {
-                nextPageOffset -= more;
-            }
-            else if (more == 0) {
-                if (boundary == 0) {
-                    return OV_FALSE;
-                }
-                int index = oy.buffer(CHUNK_SIZE);
-                int bytes = get(oy.data, index, CHUNK_SIZE);
-                oy.wrote(bytes);
-                if (bytes == 0) {
-                    return OV_EOF;
-                }
-            }
-            else {
-                int ret = nextPageOffset;
-                nextPageOffset += more;
-                return ret;
-            }
+        else {
+            numFrames = (int)og.granulepos();
+            seek(startOffset);
+            return 0;
         }
     }
 
@@ -328,6 +314,12 @@ import com.jcraft.jorbis.JOrbisException;
     // TODO: needs a better seek algorithm.
     // See http://svn.xiph.org/trunk/vorbis/lib/vorbisfile.c
     public void setFramePosition(int newFramePosition) {
+        if (state == State.INIT) {
+            open();
+        }
+        if (state != State.OPEN) {
+            return;
+        }
         if (newFramePosition < 0) {
             newFramePosition = 0;
         }
@@ -335,7 +327,7 @@ import com.jcraft.jorbis.JOrbisException;
             newFramePosition = numFrames;
         }
         if (newFramePosition < framePosition) {
-            rewind();
+            seek(startOffset);
         }
         int framesToSkip = newFramePosition - framePosition;
         while (framesToSkip > 0) {
@@ -352,12 +344,17 @@ import com.jcraft.jorbis.JOrbisException;
     /**
     @return number of frames skipped, or -1 on error.
      */
-    public int skip(int numFrames) {
+    private int skip(int numFrames) {
+        if (state == State.INIT) {
+            open();
+        }
+        if (state != State.OPEN) {
+            return 0;
+        }
         while (true) {
             if (decodeReady) {
                 int frames = vd.synthesis_pcmout(_pcm, _index);
                 if (frames != 0) {
-                    int channels = info.channels;
                     if (frames > numFrames) {
                         frames = numFrames;
                     }
@@ -381,6 +378,15 @@ import com.jcraft.jorbis.JOrbisException;
     than two channels.
      */
     public int read(byte[] dest, int destOffset, int destChannels, int numFrames) {
+        if (state == State.INIT) {
+            open();
+        }
+        if (state == State.INVALID) {
+            return -1;
+        }
+        else if (state != State.OPEN) {
+            return 0;
+        }
         while (true) {
             if (decodeReady) {
                 int frames = vd.synthesis_pcmout(_pcm, _index);
