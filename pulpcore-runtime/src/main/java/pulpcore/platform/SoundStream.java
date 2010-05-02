@@ -293,7 +293,6 @@ public class SoundStream {
         }
         if (currLevel <= 0) {
             currLevel = 0;
-            loop = false;
         }
         else {
             currLevel = CoreMath.mul(currLevel, outputLevel.getAsFixed());

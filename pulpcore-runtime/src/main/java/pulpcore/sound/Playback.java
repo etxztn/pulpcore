@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -33,18 +33,19 @@ import pulpcore.animation.Fixed;
 
 /**
     The Playback class allows a Sound be modified while it is playing.
+    @see Sound#play()
 */
 public abstract class Playback {
     
     /**
         The level, from 0 to 1. The level animation is synchronized with the Sound's playback time,
-        and can't be animated with a Timeline.
+        and cannot be animated with a Timeline. Setting the level to zero does not stop the sound.
     */
     public final Fixed level;
     
     /**
         The pan, from -1 to 1. The pan animation is synchronized with the Sound's playback time,
-        and can't be animated with a Timeline.
+        and cannot be animated with a Timeline.
     */
     public final Fixed pan;
     
@@ -71,7 +72,7 @@ public abstract class Playback {
     }
     
     /**
-        Sets the current plaback position to the first frame. This method returns immediately, 
+        Sets the current playback position to the first frame. This method returns immediately,
         but there may be a slight delay (a few milliseconds) before the frame position is actually 
         set (to avoid clicks/pops).
     */

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2008, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -148,7 +148,7 @@ public abstract class Sound {
     }
         
     /**
-        Plays this sound clip with the specified colume level (0.0 to 1.0). 
+        Plays this sound clip with the specified volume level (0.0 to 1.0).
         The level may have a property animation attached.
         @return a Playback object for this unique sound playback (one Sound can have many 
         simultaneous Playback objects) or {@code null} if the sound could not be played.
