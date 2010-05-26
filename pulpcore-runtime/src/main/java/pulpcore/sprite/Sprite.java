@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007-2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
     
     Redistribution and use in source and binary forms, with or without 
@@ -694,7 +694,7 @@ public abstract class Sprite implements PropertyListener {
             |                     |
             |                     |
             +----------+----------+
-        (0.0,0.0)  (0.5,1.0)  (1.0,1.0)
+        (0.0,1.0)  (0.5,1.0)  (1.0,1.0)
         </pre>
         For example, to center the Sprite at it's (x,y) location, use
         <code>sprite.setAnchor(0.5, 0.5);</code>
