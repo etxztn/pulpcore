@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2007-2009, Interactive Pulp, LLC
+    Copyright (c) 2007-2010, Interactive Pulp, LLC
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -26,6 +26,8 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 */
+
+// PulpCore 0.12.0
 
 // Global functions accessed via LiveConnect
 
@@ -416,22 +418,25 @@ PulpCore.applet.prototype = {
                 '</object>';
         }
         else {
-            if (PulpCore.System.osName == "Windows" &&
+            if ((PulpCore.System.osName == "Windows" &&
                 PulpCore.System.browserName == "Safari" &&
-                PulpCore.compareVersions(PulpCore.System.browserVersion, "522.11") >= 0)
+                PulpCore.compareVersions(PulpCore.System.browserVersion, "522.11") >= 0) ||
+                (PulpCore.System.browserName == "Chrome" && PulpCore.compareVersions(PulpCore.System.browserVersion, "7") >= 0))
             {
                 // Known versions: 522.11, 522.12, 522.15, 523.12
                 // Safari 3 beta on Windows doesn't recognize the archive param when
                 // the <object> tag is used. For now, use the <applet> tag.
                 // See http://joliclic.free.fr/html/object-tag/en/object-java.html
                 // LiveConnect also does not work.
-                var extraSafariAttributes = "";
+                //
+                // Chrome 7 on all OSes has the same issue, but LiveConnect does work.
+                var extraAppletAttributes = "";
                 if (codebase.length > 0) {
-                    extraSafariAttributes += '  codebase="' + codebase + '"\n';
+                    extraAppletAttributes += '  codebase="' + codebase + '"\n';
                 }
                 this.appletHTML =
                 '<applet id="pulpcore_object' + this.id + '"\n' +
-                extraSafariAttributes +
+                extraAppletAttributes +
                 '  code="' + code + '"\n' +
                 '  archive="' + archive + '"\n' +
                 '  width="' + width + '"\n' +
@@ -526,11 +531,11 @@ PulpCore.applet.prototype = {
 PulpCore.JRE = window.PulpCore.JRE || {
 
     // The URL to the CAB of the latest JRE (for IE)
-    // See http://java.sun.com/javase/6/docs/technotes/guides/deployment/deployment-guide/autodl-files.html
-    // First is for Windows9x, second is For XP/2000/Vista/etc.
+    // See http://download.oracle.com/javase/1.5.0/docs/guide/deployment/deployment-guide/autodl-files.html
+    // First is for Windows9x, second is For XP/2000/Vista/7/etc.
     getJavaCAB: [
-        "http://java.sun.com/update/1.5.0/jinstall-1_5_0_17-windows-i586.cab",
-        "http://java.sun.com/update/1.6.0/jinstall-6u16-windows-i586.cab"
+        "http://java.sun.com/update/1.5.0/jinstall-1_5_0_22-windows-i586.cab",
+        "http://java.sun.com/update/1.6.0/jinstall-6u22-windows-i586.cab"
     ],
 
     // The URL to the page to visit to install Java
