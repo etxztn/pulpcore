@@ -1,0 +1,1 @@
+PulpCore is no longer maintained - please use [PlayN](http://code.google.com/p/playn/) or [libgdx](http://code.google.com/p/libgdx/) instead.
